@@ -23,6 +23,7 @@ export default mergeConfig(
             name: 'unit',
             environment: 'node',
             include: ['tests/**/*.test.ts', 'src/**/*.test.ts'],
+            setupFiles: ['./src/test/setup-i18n.ts'],
           },
         },
         {
@@ -31,7 +32,7 @@ export default mergeConfig(
             name: 'dom',
             environment: 'jsdom',
             include: ['src/**/*.dom.test.tsx'],
-            setupFiles: ['./src/test/setup-dom.ts'],
+            setupFiles: ['./src/test/setup-i18n.ts', './src/test/setup-dom.ts'],
             // Test màn đi cả luồng người dùng (gõ form, mở Select, chuyển route) mất 2–3 giây khi chạy riêng; chạy song song
             // với cả bộ thì vượt mức 5 giây mặc định dù không hỏng gì (TripFormPage, DriverStopPage — LM-085).
             testTimeout: 15_000,

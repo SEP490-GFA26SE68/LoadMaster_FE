@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
+import { pollInterval } from '@/lib/polling'
 import { useAuth } from '@/features/auth/AuthProvider'
 import type { DeliveryIssueInput, ManualConfirmInput } from '@/lib/mock-db'
 import {
@@ -66,7 +67,7 @@ export function useDriverTripMonitoringQuery(tripId: string, enabled: boolean) {
     queryFn: () => fetchDriverTripMonitoring(tripId),
     enabled,
     staleTime: 0,
-    refetchInterval: (query) => query.state.data?.refreshMs ?? false,
+    refetchInterval: (query) => pollInterval(query, query.state.data?.refreshMs),
   })
 }
 
@@ -146,6 +147,6 @@ export function useDriverStopTimesQuery(tripId: string) {
     queryFn: () => fetchDriverStopTimes(tripId),
     enabled: DRIVER_CAPABILITIES.backend && tripId !== '',
     staleTime: 0,
-    refetchInterval: (query) => query.state.data?.refreshMs ?? false,
+    refetchInterval: (query) => pollInterval(query, query.state.data?.refreshMs),
   })
 }

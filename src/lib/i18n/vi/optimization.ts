@@ -35,6 +35,9 @@ export const optimization = {
   "backend": {
     /** INITIAL action: retry never rotates the request key. */
     action: {
+      rejected: 'Yêu cầu bị từ chối do cấu hình hướng xoay. Kiểm tra lại kiện; theo dõi trạng thái lần chạy này.',
+      refundPending: 'Đang xử lý hoàn Credit.',
+      refunded: 'Đã hoàn Credit theo giao dịch gốc.',
       retry: 'Thử lại yêu cầu hiện tại',
       checkStatus: 'Kiểm tra lại trạng thái',
       uncertain: 'Chưa xác nhận được yêu cầu đã bắt đầu hay chưa. Giữ lần chạy này và thử lại an toàn; nếu đã có mã lần chạy, chỉ kiểm tra trạng thái.',
@@ -86,8 +89,8 @@ export const optimization = {
     title: 'Giữ kiện đã ghim',
     switch: { one: 'Giữ nguyên chỗ {count} kiện đã ghim', other: 'Giữ nguyên chỗ {count} kiện đã ghim' },
     on: {
-      plan: 'Phương án {revision} có {count} kiện đã ghim. Lần chạy này giữ đúng vị trí và hướng của chúng, mock chỉ xếp các kiện còn lại quanh chúng. Vẫn ba phương án A · B · C, vẫn một credit.',
-      loaded: 'Kho đã xếp {count} kiện lên xe trước khi gặp kiện hỏng. Lần chạy này giữ nguyên chỗ và hướng của chúng, chỉ xếp các kiện còn lại quanh chúng — không phải dỡ chúng ra. Vẫn ba phương án A · B · C, vẫn một credit.',
+      plan: 'Phương án {revision} có {count} kiện đã ghim. Lần chạy này giữ đúng vị trí và hướng của chúng, mock chỉ xếp các kiện còn lại quanh chúng. Vẫn ba phương án A · B · C, vẫn tính là một lần chạy.',
+      loaded: 'Kho đã xếp {count} kiện lên xe trước khi gặp kiện hỏng. Lần chạy này giữ nguyên chỗ và hướng của chúng, chỉ xếp các kiện còn lại quanh chúng — không phải dỡ chúng ra. Vẫn ba phương án A · B · C, vẫn tính là một lần chạy.',
     },
     off: 'Chạy bình thường: mọi kiện được xếp lại từ đầu.',
     blocked: {
@@ -102,14 +105,16 @@ export const optimization = {
     usage: { one: 'Lần chạy này dùng {count} credit · còn {left}', other: 'Lần chạy này dùng {count} credit · còn {left}' },
     usageUnlimited: 'Lần chạy này dùng 0 credit · Không giới hạn',
     tier: 'Hạng thuật toán của gói {plan}',
+    tierNow: 'Hạng thuật toán lúc này',
+    expiredBasic: 'Gói đã hết hạn nên chỉ dùng hạng Cơ bản (EP + DBLF). Số dư credit vẫn dùng được.',
     tiers: { EP_DBLF: 'EP + DBLF', EP_DBLF_GA: 'EP + DBLF + GA/SA', EP_DBLF_GA_AI: 'EP + DBLF + GA/SA' },
     aiOptimizer: 'AI Optimizer — chưa có',
     tierNote: 'Hệ thống tự chọn thuật toán trong hạng của gói. Bản demo chạy EP + DBLF (mock) cho mọi hạng.',
     noPlan: 'Công ty chưa có gói cước.',
     /** Chỉ điều phối viên mở được màn này (`optimization.run`); quản trị công ty nạp credit ở màn gói cước. */
     blocked: {
-      INSUFFICIENT_CREDITS: 'Hết credit — liên hệ quản trị công ty',
-      SUBSCRIPTION_EXPIRED: 'Gói cước đã hết hạn — liên hệ quản trị công ty',
+      INSUFFICIENT_CREDITS: 'Không đủ credit cho lần chạy này — liên hệ quản trị công ty',
+      SUBSCRIPTION_EXPIRED: 'Công ty chưa có gói cước — liên hệ quản trị công ty',
     },
   },
   limits: {

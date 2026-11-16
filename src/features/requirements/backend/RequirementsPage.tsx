@@ -23,7 +23,7 @@ import { RequirementDetailDialog } from './RequirementDetailDialog'
 import { RequirementFormDialog } from './RequirementFormDialog'
 import type { RequirementRow } from './requirements-api'
 import { RequirementsTableContext, type RequirementAction, type RequirementsTableContextValue } from './requirements-table-context'
-import { useDeleteRequirementMutation, useRequirementsPageQuery } from './useRequirementsQuery'
+import { useDeleteRequirementMutation, useRequirementsPageQuery, useUnassignRequirementMutation } from './useRequirementsQuery'
 import { useNavigate } from 'react-router'
 import { REQUIREMENT_SERVER_SUPPORT } from './requirements-capabilities'
 
@@ -31,20 +31,21 @@ import { REQUIREMENT_SERVER_SUPPORT } from './requirements-capabilities'
 type Editing = { kind: 'create' } | { kind: 'edit'; row: RequirementRow }
 
 /**
- * Backend requirements: Dispatcher can create using the verified CREATE capability.
- * Existing list/detail/filter/assignment and coordinate-only editing are unchanged.
- * Other management actions remain gated separately.
+ * Yêu cầu giao `/yeu-cau-giao` khi đọc ghi máy chủ (FE-4b-02, D-72). Điều phối viên (`requirements.edit`) tạo, sửa, xoá: nút
+ * chính "Tạo yêu cầu giao" trên dải trời; đưa yêu cầu vào chuyến / gỡ khỏi chuyến (`trips.edit`) từ menu cuối dòng. Quản lý công ty
+ * chỉ xem. Một thẻ gồm thanh tìm / lọc (trạng thái, ưu tiên, khoảng hạn) và bảng, mặc định sắp theo hạn gần
+ * nhất trước; bấm mã yêu cầu mở chi tiết. Tìm, lọc, sắp xếp giữ trên URL (D-52).
  */
 export function RequirementsPage() {
   const t = useT()
   const can = useCan()
   const navigate = useNavigate()
-  // CREATE is verified separately; existing missing-coordinate actions remain available.
   const canEdit = can('requirements.edit')
   const { user } = useAuth()
   const canCreate = user?.role === 'dispatcher' && canEdit && REQUIREMENT_SERVER_SUPPORT.create
   const canAssign = can('trips.edit')
   const remove = useDeleteRequirementMutation()
+  const unassign = useUnassignRequirementMutation()
   const list = useListUrlState({ filters: REQUIREMENT_FILTERS, defaultSort: { id: 'deadline', desc: false } })
   const sort = list.sorting[0]
   const query = useRequirementsPageQuery({
@@ -85,9 +86,14 @@ export function RequirementsPage() {
         setDeleting(row)
       } else if (action === 'assign') {
         setAssigning(id)
+      } else if (action === 'unassign' && row.requirement.tripId) {
+        unassign.mutate({ requirementId: id, tripId: row.requirement.tripId }, {
+          onSuccess: () => toast.success(t('requirements.assign.unassigned', { id })),
+          onError: (error) => toast.error(dataErrorMessage(error, t)),
+        })
       }
     },
-  }), [canEdit, canAssign, navigate])
+  }), [canEdit, canAssign, navigate, unassign, t])
 
   const fields: FilterField<RequirementFilterName>[] = [
     { kind: 'select', name: STATUS_FILTER, label: t('requirements.filters.status'), options: REQUIREMENT_STATUS_ORDER.map((value) => ({ value: REQUIREMENT_STATUS_SLUGS[value], label: t(`requirements.status.${value}`) })) },
@@ -115,7 +121,6 @@ export function RequirementsPage() {
   return (
     <div className="flex min-w-0 flex-1 flex-col">
       <PageHero
-        overlap={all.length > 0}
         title={t('requirements.title')}
         meta={!query.isFetching && query.isSuccess ? t('requirements.count', { count: query.data.totalElements }) : undefined}
         description={t('pageHero.requirements')}
@@ -177,7 +182,7 @@ export function RequirementsPage() {
             open={deleting !== null}
             onOpenChange={(open) => { if (!open) setDeleting(null) }}
             title={t('requirements.remove.title', { id: deleting?.requirement.id ?? '' })}
-            description={t('requirements.remove.description', { destination: deleting?.requirement.destinationName ?? '', count: deleting?.packages.length ?? 0 })}
+            description={t('requirements.remove.description', { destination: deleting?.requirement.destinationName ?? '', count: deleting?.requirement.packageIds.length ?? 0 })}
             cancelLabel={t('requirements.remove.keep')}
             confirmLabel={t('requirements.remove.confirm')}
             danger

@@ -1,4 +1,7 @@
-import { apiFetch, apiFetchBlob } from '@/lib/api-client'
+import { ApiError, apiFetch, apiFetchBlob, isApiError } from '@/lib/api-client'
+
+/** Câu của lỗi / cảnh báo dòng do máy chủ trả — màn đọc qua đây, không import file DTO. */
+export { backendRowErrorOf, backendRowWarningOf } from '../package-pool-dto'
 
 type ApiResponse<T> = {
   success: boolean
@@ -78,6 +81,16 @@ function createConfirmImportFormData(
 }
 
 /**
+ * Máy chủ chưa trả mã cho lỗi đọc file (chỉ HTTP 400): ở bước xem trước, 400 chỉ là file không đọc được — thường là file chưa có dòng
+ * kiện nào dưới tiêu đề (file mẫu còn trống), hoặc file hỏng, quá số dòng. Đổi sang `IMPORT_FILE_REJECTED` để câu báo nói đúng việc thay
+ * câu chung của 400; máy chủ trả mã riêng thì giữ mã đó.
+ */
+function previewFailure(error: unknown): unknown {
+  if (isApiError(error) && error.code === 'BAD_REQUEST' && error.status === 400) return new ApiError('IMPORT_FILE_REJECTED', { status: 400 })
+  return error
+}
+
+/**
  * Xem trước, kiểm tra file XLSX.
  * Không ghi dữ liệu vào PostgreSQL.
  */
@@ -90,7 +103,9 @@ export async function previewCargoPackageImport(
       method: 'POST',
       body: createImportFormData(file),
     },
-  )
+  ).catch((error: unknown) => {
+    throw previewFailure(error)
+  })
 
   return response.data
 }

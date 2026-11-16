@@ -1,7 +1,6 @@
 import { useFormState, type Control, type UseFormRegister } from 'react-hook-form'
 import { Input } from '@/components/ui/Input'
 import { useT } from '@/lib/i18n'
-import { useFleetCapabilities } from './useVehiclesQuery'
 import type { VehicleFormValues } from './vehicle-form'
 
 /** Bước nhập của Spec: 0,1 cm và 0,01 kg — đúng bước `roundCm` / `roundKg` áp khi lưu. */
@@ -25,7 +24,6 @@ export function VehicleSpecFields({
   register: UseFormRegister<VehicleFormValues>
 }) {
   const t = useT()
-  const caps = useFleetCapabilities()
   const { errors } = useFormState({ control })
 
   return (
@@ -60,18 +58,16 @@ export function VehicleSpecFields({
           {...NUMERIC_FIELD_PROPS}
           {...register('maxPayloadKg', { valueAsNumber: true })}
         />
-        {caps.clearance ? (
-          <Input
-            label={t('fleet.form.clearanceCm')}
-            required
-            suffix="cm"
-            step={CM_STEP}
-            hint={t('fleet.form.clearanceHint')}
-            error={errors.clearanceCm?.message}
-            {...NUMERIC_FIELD_PROPS}
-            {...register('clearanceCm', { valueAsNumber: true })}
-          />
-        ) : null}
+        <Input
+          label={t('fleet.form.clearanceCm')}
+          required
+          suffix="cm"
+          step={CM_STEP}
+          hint={t('fleet.form.clearanceHint')}
+          error={errors.clearanceCm?.message}
+          {...NUMERIC_FIELD_PROPS}
+          {...register('clearanceCm', { valueAsNumber: true })}
+        />
       </div>
 
       <p className="text-caption text-text-3">

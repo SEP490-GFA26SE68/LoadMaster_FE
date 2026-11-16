@@ -120,14 +120,13 @@ function AuditLogContent() {
   return (
     <div className="flex min-w-0 flex-1 flex-col">
       <PageHero
-        overlap
         title={t('audit.log.title')}
         meta={events.data ? t('audit.log.count', { count: rows.length }) : undefined}
         description={t('pageHero.audit')}
         badge={<Badge>{t('audit.log.readOnly')}</Badge>}
       />
 
-      <div className="sky-overlap flex min-h-0 flex-1 flex-col gap-4 overflow-auto px-shell pb-6">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto px-shell py-6">
         {failed ? (
           <EmptyState
             mascot="error"

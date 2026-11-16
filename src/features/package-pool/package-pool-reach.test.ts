@@ -7,9 +7,11 @@ vi.mock('@/lib/backend-config', () => ({
   usesBackend: (feature: string) => feature === 'packages',
 }))
 
-// Ma trận quyền của nhánh nhóm: `packages.manage` (quản lý kho kiện) là của nhân viên kho
-test('kho kiện nối backend: chỉ người quản lý kho kiện đọc được, người khác không có nút tra cứu hay in lại nhãn', () => {
+// Máy chủ cho nhân viên kho, điều phối viên, quản lý công ty đọc kiện — đúng ba vai trò có `packages.view`
+test('kho kiện nối backend: ba vai trò có packages.view đọc được, vai trò khác thì không', () => {
   expect(packagePoolReachable((permission) => can('warehouse', permission))).toBe(true)
-  expect(packagePoolReachable((permission) => can('dispatcher', permission))).toBe(false)
-  expect(packagePoolReachable((permission) => can('companyManager', permission))).toBe(false)
+  expect(packagePoolReachable((permission) => can('dispatcher', permission))).toBe(true)
+  expect(packagePoolReachable((permission) => can('companyManager', permission))).toBe(true)
+  expect(packagePoolReachable((permission) => can('driver', permission))).toBe(false)
+  expect(packagePoolReachable((permission) => can('companyAdmin', permission))).toBe(false)
 })

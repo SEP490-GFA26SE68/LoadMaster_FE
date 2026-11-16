@@ -154,11 +154,11 @@ export async function updateTripFrame(tripId: string, changes: TripFrameChanges)
 /** Xe của ô chọn: chỉ các số form hiện ra, để backend (loại xe của xe) và kho mẫu cùng điền được. */
 export type VehicleOption = {
   readonly vehicle: Pick<VehicleConfig, 'id' | 'name' | 'innerLengthCm' | 'innerWidthCm' | 'innerHeightCm' | 'maxPayloadKg'>
-  readonly status: VehicleStatus
+  readonly status: Exclude<VehicleStatus, 'retired'>
 }
 
 /**
- * Xe và tài xế chọn được ở form chuyến (D-46, D-53): xe kèm trạng thái để khoá xe bảo dưỡng; mọi người dùng vai trò tài xế. `depot`:
+ * Xe và tài xế chọn được ở form chuyến (D-46, D-53): xe kèm trạng thái để khoá xe bảo dưỡng, xe Ngừng sử dụng không có; mọi người dùng vai trò tài xế. `depot`:
  * kho của công ty của người đang đăng nhập — kho xuất phát mặc định của chuyến mới (D-76).
  */
 export type TripFormOptions = { readonly vehicles: readonly VehicleOption[]; readonly drivers: readonly User[]; readonly depot: CompanyDepot | null }
@@ -172,7 +172,10 @@ export async function fetchTripFormOptions(): Promise<TripFormOptions> {
   // Phiên của một công ty chỉ thấy công ty mình; kho chưa có phiên (test) thì lấy công ty đầu tiên, như công ty mặc định của kho
   const company = companies.find((item) => item.id === db.sessionUser()?.companyId) ?? companies[0]
   return {
-    vehicles: vehicles.map((vehicle) => ({ vehicle, status: statusById.get(vehicle.id) ?? 'available' })),
+    vehicles: vehicles.flatMap((vehicle) => {
+      const status = statusById.get(vehicle.id) ?? 'available'
+      return status === 'retired' ? [] : [{ vehicle, status }]
+    }),
     drivers: users.filter((user) => user.role === 'driver'),
     depot: company?.depot ?? null,
   }

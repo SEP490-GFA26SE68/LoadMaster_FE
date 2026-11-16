@@ -1,20 +1,24 @@
 import { api, ApiError, type ApiClient, type QueryValue } from './api-client'
 
+/** Complete lists fail explicitly at the cap. Use fetchFirstPage for previews;
+ * truncate is retained only for callers intentionally requesting a bounded prefix. */
 export type FetchAllPagesOptions = {
   readonly query?: Readonly<Record<string, QueryValue>>
   readonly size?: number
   readonly maxPages?: number
   /** Only for a verified unpaged endpoint. Paged callers must not accept lost pagination metadata. */
   readonly allowUnpaged?: boolean
+  /** Chỉ đọc `maxPages` trang đầu là ý của nơi gọi (ví dụ 50 giao dịch gần nhất): tới giới hạn thì trả phần đã đọc, không lỗi. */
+  readonly truncate?: boolean
 }
 
 type Page<T> = { rows: T[]; last: boolean; totalPages?: number; totalElements?: number }
 
 /** Complete dataset only. Plain arrays require allowUnpaged=true; paged responses
- * must prove termination. Limits/errors never return accumulated rows as a success. */
+ * must prove termination. Default limits/errors never return accumulated rows as success. */
 export async function fetchAllPages<T>(
   path: string,
-  { query = {}, size = 200, maxPages = 50, allowUnpaged = false }: FetchAllPagesOptions = {},
+  { query = {}, size = 200, maxPages = 50, allowUnpaged = false, truncate = false }: FetchAllPagesOptions = {},
   client: ApiClient = api(),
 ): Promise<T[]> {
   limits(size, maxPages)
@@ -30,6 +34,7 @@ export async function fetchAllPages<T>(
     checkCount(result, items.length, totalElements)
     if (result.last) return items
   }
+  if (truncate) return items
   throw new ApiError('DATASET_INCOMPLETE', { params: { loadedCount: items.length, maxPages } })
 }
 

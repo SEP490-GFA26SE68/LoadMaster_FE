@@ -81,10 +81,15 @@ test('maplibre-gl is imported only inside src/components/map (AGENTS mục 2)', 
     .filter(([path, source]) => !path.endsWith('.test.ts') && /(from|import|import\()\s*'maplibre-gl/.test(source))
     .map(([path]) => path)
   expect(importers.filter((path) => !path.startsWith('/src/components/map/'))).toStrictEqual([])
-  // chỉ hai file chạy thư viện (file còn lại chỉ lấy kiểu), đều là chunk lười: bản đồ của `RouteMap` và của `CoordinatePicker`
+  // chỉ một file chạy thư viện và đặt URL worker (file còn lại chỉ lấy kiểu); nó chỉ được hai chunk lười dùng: bản đồ của `RouteMap`
+  // và của `CoordinatePicker`
   const runtime = importers.filter((path) => !/^import type [^\n]* from 'maplibre-gl'$/m.test(sources[path] ?? ''))
-  expect(runtime).toStrictEqual(['/src/components/map/CoordinatePickerMap.tsx', '/src/components/map/RouteMapCanvas.tsx'])
-  for (const path of runtime) {
+  expect(runtime).toStrictEqual(['/src/components/map/maplibre-runtime.ts'])
+  const lazyChunks = Object.entries(sources)
+    .filter(([path, source]) => !path.endsWith('.test.ts') && source.includes(`from './maplibre-runtime'`))
+    .map(([path]) => path)
+  expect(lazyChunks).toStrictEqual(['/src/components/map/CoordinatePickerMap.tsx', '/src/components/map/RouteMapCanvas.tsx'])
+  for (const path of lazyChunks) {
     const name = path.slice(path.lastIndexOf('/') + 1, -'.tsx'.length)
     const users = Object.entries(sources).filter(([other, source]) => other !== path && !other.endsWith('.test.ts') && source.includes(`./${name}'`))
     expect(users.map(([, source]) => source.includes(`lazy(() => import('./${name}'))`))).toStrictEqual([true])

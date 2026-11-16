@@ -99,7 +99,6 @@ export function FleetPage() {
   return (
     <div className="flex min-w-0 flex-1 flex-col">
       <PageHero
-        overlap
         title={t('fleet.title')}
         description={
           vehiclesQuery.isSuccess && !isPending

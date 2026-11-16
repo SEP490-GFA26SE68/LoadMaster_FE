@@ -21,12 +21,13 @@ import { CompanyPanel } from './CompanyPanel'
 import { recentCompanyChat } from './support-chat'
 import { createTicketColumns } from './support-columns'
 import { TicketThread } from './TicketThread'
-import { ticketCompanies, ticketLabel } from './ticket-view'
+import { ticketCompanies, ticketLabel, withThread } from './ticket-view'
 import {
   SUPPORT_SOURCE,
   useReplyMutation,
   useSetTicketStatusMutation,
   useSupportTicketsQuery,
+  useTicketThreadsQuery,
   useUnlockTrialMutation,
 } from './useSupportQuery'
 
@@ -59,7 +60,8 @@ function StatusSelect({ ticket, pending, onChange }: { ticket: SupportTicket; pe
  * công ty, loại, trạng thái và tìm theo tiêu đề / mã / người gửi — tất cả trên URL; bấm một dòng mở cuộc trao đổi ở cột bên phải (`?ticket=`)
  * để trả lời và đổi trạng thái (kể cả mở lại yêu cầu đã đóng), kèm khung **chỉ đọc** về công ty đó: gói, số dư và 20 giao dịch credit gần nhất.
  * Màn không có nút chính ngoài "Gửi trả lời" của cuộc trao đổi. Nối backend (`SUPPORT_SOURCE`): trao đổi và khung công ty đọc từ máy
- * chủ, khung công ty có thêm ô "Đổi gói nhanh" (`planAssign`); tên công ty đi kèm yêu cầu, chưa có giờ hoạt động gần nhất.
+ * chủ (trao đổi đọc riêng cho các yêu cầu của công ty đang chọn, `threads`), khung công ty có thêm ô "Đổi gói nhanh" (`planAssign`); tên
+ * công ty đi kèm yêu cầu.
  */
 export function SupportPage() {
   const t = useT()
@@ -85,8 +87,18 @@ export function SupportPage() {
   const columns = useMemo(() => createTicketColumns(t, format, companyNames, SUPPORT_SOURCE.activityTime), [t, format, companyNames])
 
   const selectedId = params.get(SELECTED_PARAM)
-  const selected = tickets.find((ticket) => ticket.id === selectedId)
-  const companyChat = useMemo(() => (selected ? recentCompanyChat(tickets, selected.companyId) : []), [tickets, selected])
+  const listed = tickets.find((ticket) => ticket.id === selectedId)
+  // Backend: trao đổi đọc riêng cho các yêu cầu của công ty đang chọn — khung trao đổi và khung trao đổi gần đây của công ty
+  const companyTicketIds = useMemo(
+    () => (listed ? tickets.filter((ticket) => ticket.companyId === listed.companyId).map((ticket) => ticket.id) : []),
+    [tickets, listed],
+  )
+  const threads = useTicketThreadsQuery(companyTicketIds)
+  const selected = listed ? withThread(listed, threads) : undefined
+  const companyChat = useMemo(
+    () => (listed ? recentCompanyChat(tickets.map((ticket) => withThread(ticket, threads)), listed.companyId) : []),
+    [tickets, listed, threads],
+  )
   function select(ticket: SupportTicket) {
     setParams((previous) => {
       const next = new URLSearchParams(previous)
@@ -110,17 +122,15 @@ export function SupportPage() {
       options: companies.map(({ id, name }) => ({ value: id, label: name })), secondary: true,
     },
   ]
-  const showTable = query.isSuccess && tickets.length > 0
 
   return (
     <div className="flex min-w-0 flex-1 flex-col">
       <PageHero
-        overlap={showTable}
         title={t('support.page.title')}
         meta={query.isSuccess ? t('support.page.count', { count: tickets.length }) : undefined}
         description={t(SUPPORT_SOURCE.replies ? 'pageHero.support' : 'pageHero.supportStatusOnly')}
       />
-      <div className={showTable ? 'sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6' : 'min-h-0 flex-1 overflow-auto px-shell py-6'}>
+      <div className="min-h-0 flex-1 overflow-auto px-shell py-6">
         {query.isPending ? (
           <div role="status" aria-label={t('support.page.loading')} className="flex justify-center py-16"><Spinner /></div>
         ) : query.isError ? (

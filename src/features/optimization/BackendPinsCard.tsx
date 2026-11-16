@@ -6,7 +6,7 @@ import { useT } from '@/lib/i18n'
 
 /**
  * "Giữ kiện đã ghim" của Thiết lập tối ưu bản máy chủ, khi màn mở từ "Chạy lại giữ ghim" của Planner (`?giu-ghim=<mã phương án>`):
- * công tắc bật sẵn kèm câu nói nó làm gì — vẫn một lần chạy, một credit, ba phương án; máy chủ kiểm bộ ghim trước khi chạy. Phương án
+ * công tắc bật sẵn kèm câu nói nó làm gì — vẫn một lần chạy, ba phương án; máy chủ kiểm bộ ghim trước khi chạy. Phương án
  * không còn kiện ghim nào thì chỉ một câu, lần chạy là bình thường.
  */
 export function BackendPinsCard({ count, keep, onKeepChange }: { count: number; keep: boolean; onKeepChange: (keep: boolean) => void }) {

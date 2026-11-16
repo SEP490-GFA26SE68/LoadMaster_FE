@@ -6,9 +6,9 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader } from '@/components/
 import { Spinner } from '@/components/ui/Spinner'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import type { Package } from '@/lib/mock-db'
-import { importTemplateRows, MAX_IMPORT_ROWS } from './package-pool-import'
+import { importTemplateRows, MAX_IMPORT_FILE_MB, MAX_IMPORT_ROWS } from './package-pool-import'
 import { PackageImportPreview } from './PackageImportPreview'
-import { PACKAGE_POOL_SUPPORT, useConfirmPackageImportMutation, useDownloadImportTemplateMutation, usePreviewPackageImportMutation } from './usePackagePoolQuery'
+import { useConfirmPackageImportMutation, useDownloadImportTemplateMutation, usePreviewPackageImportMutation } from './usePackagePoolQuery'
 
 /**
  * "Nhập file" vào kho kiện (FE-3b-02): chọn `.csv` / `.xlsx` → xem trước (tổng dòng, hợp lệ, lỗi, cảnh báo, từng dòng kèm kết quả
@@ -47,7 +47,7 @@ export function PackageImportDialog({ onClose, onDone }: {
   return (
     <Dialog open onOpenChange={(open) => (open || pending ? undefined : onClose())}>
       <DialogContent className="w-240">
-        <DialogHeader icon={FileUp} title={t('sourcing.import.title')} description={t('sourcing.import.description', { maxRows: MAX_IMPORT_ROWS, maxMb: PACKAGE_POOL_SUPPORT.maxImportMb })} />
+        <DialogHeader icon={FileUp} title={t('sourcing.import.title')} description={t('sourcing.import.description', { maxRows: MAX_IMPORT_ROWS, maxMb: MAX_IMPORT_FILE_MB })} />
         <div className="flex max-h-[64vh] flex-col gap-3 overflow-y-auto px-7 pt-5 pb-6">
           <div className="flex flex-wrap items-center gap-2.5">
             <input ref={input} id={inputId} type="file" accept=".csv,.xlsx" className="sr-only" tabIndex={-1} aria-label={t('sourcing.import.fileInput')} onChange={(event) => handleFile(event.target.files?.[0])} />
@@ -59,14 +59,12 @@ export function PackageImportDialog({ onClose, onDone }: {
               <Download strokeWidth={1.5} />
               {t('sourcing.import.templateXlsx')}
             </Button>
-            {PACKAGE_POOL_SUPPORT.serverTemplate ? null : (
-              <Button type="button" variant="ghost" onClick={() => handleTemplate('csv')}>
-                <Download strokeWidth={1.5} />
-                {t('sourcing.import.templateCsv')}
-              </Button>
-            )}
+            <Button type="button" variant="ghost" onClick={() => handleTemplate('csv')}>
+              <Download strokeWidth={1.5} />
+              {t('sourcing.import.templateCsv')}
+            </Button>
           </div>
-          <p id={`${inputId}-hint`} className="text-fine text-ink-3">{PACKAGE_POOL_SUPPORT.serverTemplate ? t('sourcing.import.hintBackend') : t('sourcing.import.hint')}</p>
+          <p id={`${inputId}-hint`} className="text-fine text-ink-3">{t('sourcing.import.hint')}</p>
           {template.error ? <Banner tone="danger">{dataErrorMessage(template.error, t)}</Banner> : null}
           {fileName ? <p className="min-w-0 truncate font-mono text-caption text-ink-2">{fileName}</p> : null}
 

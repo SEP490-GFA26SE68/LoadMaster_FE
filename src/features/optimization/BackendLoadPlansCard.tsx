@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Spinner } from '@/components/ui/Spinner'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
-import type { LoadPlan } from './load-plan-dto'
+import type { LoadPlan } from './load-plans-backend-api'
 import { planAlgorithmLabel, runAlgorithmLabel } from './server-algorithms'
 import { useTripLoadPlansQuery } from './useLoadPlansQuery'
 

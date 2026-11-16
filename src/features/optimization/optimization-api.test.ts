@@ -7,7 +7,7 @@ import { fetchOptimizationCredit, runOptimization } from './optimization-api'
 /**
  * Credit của một lần chạy tối ưu 3D qua lớp `-api.ts` (FE-8-05, D-89): giữ khi bắt đầu, trừ khi lưu xong, hoàn khi lỗi hoặc huỷ — mỗi
  * lần chạy đúng một bộ giao dịch. Luật chặn (hết credit, gói hết hạn, gói không giới hạn) kiểm ở `billing.test.ts`. Kho dùng chung
- * không phiên: công ty mặc định Long Bình, gói Pro, 486 credit (kho có độ trễ giả nên mỗi lượt chạy mất vài giây).
+ * không phiên: công ty mặc định Long Bình, gói Pro, 9.972 credit; một lần chạy 2 credit (kho có độ trễ giả nên mỗi lượt chạy mất vài giây).
  */
 
 const TRIP_ID = 'TRIP-012'
@@ -20,14 +20,14 @@ async function runInput(overrides: { simulateFailure?: boolean; signal?: AbortSi
   return { tripId: TRIP_ID, request, simulateFailure: false, ...overrides }
 }
 
-test('a saved run costs one credit for its three plans, and reports its three steps in order', async () => {
+test('a saved run costs the credits of one run (2) for its three plans, and reports its three steps in order', async () => {
   const before = (await fetchOptimizationCredit()).balance
   const stages: string[] = []
   const outcome = await runOptimization({ ...(await runInput()), onStage: (stage) => stages.push(stage) })
   expect(stages).toStrictEqual(['reserve', 'pack', 'save'])
   expect(outcome.kind === 'saved' ? outcome.revisions : []).toHaveLength(3)
-  expect(await fetchOptimizationCredit()).toMatchObject({ balance: before - 1, cost: 1, planName: 'Pro', algorithmTier: 'EP_DBLF_GA', block: null })
-  expect((await getMockDb().listCreditTransactions())[0]).toMatchObject({ type: 'USAGE', amount: -1, usageStatus: 'DEDUCTED', tripId: TRIP_ID })
+  expect(await fetchOptimizationCredit()).toMatchObject({ balance: before - 2, cost: 2, planName: 'Pro', algorithmTier: 'EP_DBLF_GA', block: null })
+  expect((await getMockDb().listCreditTransactions())[0]).toMatchObject({ type: 'USAGE', amount: -2, usageStatus: 'DEDUCTED', tripId: TRIP_ID })
 }, SLOW)
 
 test.each([
@@ -43,7 +43,7 @@ test.each([
   expect((await fetchOptimizationCredit()).balance).toBe(before)
   const [refund, usage] = await db.listCreditTransactions()
   expect([refund, usage]).toMatchObject([
-    { type: 'REFUND', amount: 1, reference: usage?.reference },
-    { type: 'USAGE', amount: -1, usageStatus: 'REFUNDED', refunded: true },
+    { type: 'REFUND', amount: 2, reference: usage?.reference },
+    { type: 'USAGE', amount: -2, usageStatus: 'REFUNDED', refunded: true },
   ])
 }, SLOW)

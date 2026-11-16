@@ -1,10 +1,9 @@
 /**
- * Backend capabilities are independent: verified POST create is available to
- * Dispatcher; editing/deleting/scheduling/extending remain disabled in this task.
- * Assignment and missing-coordinate updates retain their existing behavior.
+ * Backend capabilities verified against the merged Dispatcher endpoints.
+ * CREATE remains explicit; manage/unassign preserve the newly integrated CRUD.
  */
 export const REQUIREMENT_SERVER_SUPPORT = {
   create: true,
-  manage: false,
-  unassign: false,
+  manage: true,
+  unassign: true,
 } as const

@@ -20,6 +20,15 @@ export function ticketsToDisplay(
   return tickets.filter((ticket) => ticket.senderId === viewer.id)
 }
 
+/**
+ * Yêu cầu của danh sách kèm trao đổi đọc riêng (`SUPPORT_SOURCE.threads`): chỉ lấy trao đổi, các trường khác giữ của danh sách — khoá xử
+ * lý theo người xem (`lockedByOther`) chỉ danh sách tính.
+ */
+export function withThread(ticket: SupportTicket, threads: ReadonlyMap<string, SupportTicket>): SupportTicket {
+  const thread = threads.get(ticket.id)
+  return thread === undefined ? ticket : { ...ticket, replies: thread.replies }
+}
+
 /** Mã người đọc thấy: mã backend cấp (`TCK-…`) khi có, không thì mã của kho mẫu (`TKT-NNN`). */
 export function ticketLabel(ticket: SupportTicket): string {
   return ticket.code ?? ticket.id

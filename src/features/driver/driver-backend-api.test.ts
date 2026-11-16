@@ -175,6 +175,8 @@ test('dỡ: mã gõ khớp mã trên nhãn (không phân biệt hoa thường), 
   routes['POST /api/driver/packages/11/unload'] = ok({ packageId: 11, trackingBarcode: 'LB-PK-0007', stopId: 2, remainingPackagesCount: 1 })
   expect(await driver.unload('1', { stopNumber: 2, code: '  lb-pk-0007 ' })).toStrictEqual({ packageInstanceId: '11' })
   expect(paths().at(-1)).toBe('POST /api/driver/packages/11/unload?driverId=9')
+  // Không nói cách đối chiếu thì là quét, như mặc định của máy chủ
+  expect(calls.at(-1)?.body).toStrictEqual({ method: 'QR' })
   routes['GET /api/driver/trips/1/current-stop'] = ok({
     ...STOP,
     packages: [{ ...STOP.packages[0], unloaded: true, unloadedAt: '2026-10-17 14:25:00' }, { ...STOP.packages[1], unloaded: false }, STOP.packages[2]],
@@ -234,8 +236,9 @@ test('dỡ: backend trả mã của bên gửi thì gõ được mã đó; mã t
   // Dòng kiện đứng đầu bằng mã của bên gửi khi nó duy nhất trong điểm; trùng thì bằng mã riêng của kiện
   expect(screen.kind === 'stop' && screen.view.items.map(({ item }) => item.label)).toStrictEqual(['BHXDA-1001', '12', 'LB-PK-0009'])
   routes['POST /api/driver/packages/11/unload'] = ok({ packageId: 11, stopId: 2, remainingPackagesCount: 2 })
-  expect(await driver.unload('1', { stopNumber: 2, code: 'bhxda-1001' })).toStrictEqual({ packageInstanceId: '11' })
+  expect(await driver.unload('1', { stopNumber: 2, code: 'bhxda-1001', method: 'CODE' })).toStrictEqual({ packageInstanceId: '11' })
   expect(paths().at(-1)).toBe('POST /api/driver/packages/11/unload?driverId=9')
+  expect(calls.at(-1)?.body).toStrictEqual({ method: 'CODE' })
   const sent = calls.length
   expect(await rejection(driver.unload('1', { stopNumber: 2, code: 'BHXDA-2002' }))).toMatchObject({ code: 'UNLOAD_CODE_AMBIGUOUS', params: { code: 'BHXDA-2002', count: 2 } })
   expect(calls).toHaveLength(sent)
@@ -334,8 +337,9 @@ test('điểm nhận dọc đường: kiện nhận là việc của điểm, qu
   expect(screen.view).toMatchObject({ total: 2, unloadedCount: 1, remaining: 1, verifiable: 1 })
 
   routes['POST /api/driver/pickup-packages/500/pick'] = ok({ id: 7, status: 'APPROVED' })
-  expect(await driver.unload('1', { stopNumber: 2, code: 'QR-500' })).toStrictEqual({ packageInstanceId: '500' })
+  expect(await driver.unload('1', { stopNumber: 2, code: 'QR-500', method: 'CODE' })).toStrictEqual({ packageInstanceId: '500' })
   expect(paths().at(-1)).toBe('POST /api/driver/pickup-packages/500/pick')
+  expect(calls.at(-1)?.body).toStrictEqual({ method: 'CODE' })
   const count = calls.length
   expect((await rejection(driver.unload('1', { stopNumber: 2, code: 'qr-500' }))).code).toBe('PICKUP_PACKAGE_ALREADY_PICKED')
   expect((await rejection(driver.unload('1', { stopNumber: 2, code: 'SHIP-10' }))).code).toBe('PICKUP_PACKAGE_ALREADY_PICKED')

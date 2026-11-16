@@ -8,20 +8,17 @@
  *   listTripMonitoring   → GET /api/trips/monitoring (BE)
  *   fetchMonitoringBoard → GET /api/dispatcher/dashboard (BE)
  *   subscribeTrip        → WebSocket /ws/trips/{tripId}/monitoring (Q-08)
- *   chưa có ở BE: reorderRunningStops (Luồng BE mục 13 "Dynamic stop reordering" chưa có endpoint), setDriverGps (đồng hồ mô phỏng chỉ có ở FE)
+ *   reorderRunningStops  → POST /api/trips/{id}/stops/reorder (BE)
+ *   chưa có ở BE: setDriverGps (đồng hồ mô phỏng chỉ có ở FE)
  */
-import { ApiError } from '@/lib/api-client'
 import { usesBackend } from '@/lib/backend-config'
-import { getMockDb, type DriverLocationInput, type LocationPoint, type StopKind, type StopReorder, type TripMonitoring } from '@/lib/mock-db'
+import { getMockDb, type DriverLocationInput, type LocationPoint, type StopKind, type StopReorderWarning, type TripMonitoring } from '@/lib/mock-db'
 import * as backend from './monitoring-backend-api'
 import { publish, publishFleet, subscribe, type TripMonitoringEvent } from './monitoring-events'
 
 const ON_BACKEND = usesBackend('monitoring')
 /** Chi tiết chuyến đọc giám sát theo mã chuyến của chính nó: chỉ hỏi máy chủ khi chuyến cũng là của máy chủ. */
 const TRIP_ON_BACKEND = ON_BACKEND && usesBackend('trips')
-
-/** Việc backend chưa có: màn đã ẩn nút, lỡ gọi tới thì từ chối — không bao giờ ghi vào kho mẫu thay cho chuyến của backend. */
-const unsupported = (): Promise<never> => Promise.reject(new ApiError('NOT_SUPPORTED'))
 
 /** Giám sát một chuyến như màn đọc: kho mẫu luôn là kết quả mock; backend tính giờ đến từ vị trí GPS (`isMockResult: false`). */
 export type LiveMonitoring = Omit<TripMonitoring, 'isMockResult'> & { readonly isMockResult: boolean }
@@ -86,14 +83,17 @@ export function subscribeTrip(tripId: string, onEvent: (event: TripMonitoringEve
   return subscribe(tripId, onEvent)
 }
 
+/** Kết quả đổi thứ tự điểm: kiện bị che một phần lối dỡ theo thứ tự mới (cảnh báo, không chặn). */
+export type StopReorderResult = { readonly partial: readonly StopReorderWarning[] }
+
 /**
  * Điều phối viên đổi thứ tự các điểm chưa giao khi xe đang chạy (FE-BL-03, D-87). Kho kiểm lại khả năng dỡ của phương án như đã xếp; không đạt
  * thì từ chối `STOP_ORDER_BLOCKS_CARGO` kèm kiện bị chắn và không đổi gì. Đạt thì áp dụng: giờ đến, mức hạn tính lại, xe đi tiếp từ chỗ
- * đang đứng tới điểm kế tiếp mới, tài xế nhận thông báo.
+ * đang đứng tới điểm kế tiếp mới, tài xế nhận thông báo. Backend kiểm cùng luật và trả lỗi cùng dạng; mã điểm là mã số của máy chủ.
  */
-// chưa có ở BE
-export function reorderRunningStops(tripId: string, orderedStopIds: string[]): Promise<StopReorder> {
-  if (ON_BACKEND) return unsupported()
+// POST /api/trips/{id}/stops/reorder
+export function reorderRunningStops(tripId: string, orderedStopIds: string[]): Promise<StopReorderResult> {
+  if (ON_BACKEND) return backend.reorderStops(tripId, orderedStopIds)
   return getMockDb().reorderRunningStops(tripId, orderedStopIds)
 }
 

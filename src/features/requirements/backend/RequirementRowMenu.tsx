@@ -17,12 +17,10 @@ import { useRequirementsTable } from './requirements-table-context'
 import { REQUIREMENT_SERVER_SUPPORT } from './requirements-capabilities'
 
 /**
- * Menu thao tác ở cuối dòng yêu cầu giao khi đọc máy chủ. Máy chủ chưa cho sửa, xoá, gỡ khỏi chuyến (`REQUIREMENT_SERVER_SUPPORT`):
- * "Sửa" chỉ còn khi yêu cầu thiếu toạ độ (form chỉ lưu toạ độ), "Xoá" và "Gỡ khỏi chuyến" không hiện.
- *
- * Menu thao tác ở cuối dòng yêu cầu giao (FE-4b-02). Ai cũng có "Xem chi tiết". Quản lý công ty: Sửa, Xoá. Điều phối viên: Đưa vào
- * chuyến, hoặc Gỡ khỏi chuyến khi yêu cầu đã vào chuyến. Thao tác kho sẽ từ chối hiện mờ kèm lý do ngay dưới nhãn (AGENTS mục 5),
- * không để bấm rồi mới báo lỗi.
+ * Menu thao tác ở cuối dòng yêu cầu giao khi đọc ghi máy chủ (FE-4b-02). Ai cũng có "Xem chi tiết". Điều phối viên (`requirements.edit`,
+ * `trips.edit`): Sửa, Xoá, Đưa vào chuyến, hoặc Gỡ khỏi chuyến khi yêu cầu đã vào chuyến. Thao tác máy chủ sẽ từ chối hiện mờ kèm lý do
+ * ngay dưới nhãn (AGENTS mục 5): xoá chỉ yêu cầu còn chờ và không giữ kiện nào. Dòng của máy chủ không mang pha chuyến, nên chuyến đã
+ * sang xếp hàng thì máy chủ từ chối gỡ (`TRIP_NOT_EDITABLE`).
  */
 export function RequirementRowMenu({ row }: { row: RequirementRow }) {
   const t = useT()
@@ -30,7 +28,8 @@ export function RequirementRowMenu({ row }: { row: RequirementRow }) {
   const { status, id } = row.requirement
   const pending = status === 'PENDING'
   const onlyPending = pending ? null : t('requirements.menu.onlyPending')
-  const unassignBlock = status === 'ASSIGNED' && row.trip?.phase === 'planning' ? null : t('requirements.menu.tripLocked')
+  const unassignBlock = status === 'ASSIGNED' ? null : t('requirements.menu.tripLocked')
+  const deleteBlock = onlyPending ?? (row.requirement.packageIds.length > 0 ? t('requirements.menu.hasPackages') : null)
   const { manage, unassign } = REQUIREMENT_SERVER_SUPPORT
   const canOpenForm = canEdit && (manage || row.requirement.lat === undefined)
 
@@ -70,7 +69,7 @@ export function RequirementRowMenu({ row }: { row: RequirementRow }) {
         {canEdit && manage ? (
           <>
             <DropdownMenuSeparator />
-            <MenuAction icon={<Trash2 strokeWidth={1.5} aria-hidden />} label={t('requirements.menu.delete')} block={onlyPending} danger onSelect={() => onAction('delete', row)} />
+            <MenuAction icon={<Trash2 strokeWidth={1.5} aria-hidden />} label={t('requirements.menu.delete')} block={deleteBlock} danger onSelect={() => onAction('delete', row)} />
           </>
         ) : null}
       </DropdownMenuContent>

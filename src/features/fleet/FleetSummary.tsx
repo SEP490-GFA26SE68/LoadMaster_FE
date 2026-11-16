@@ -1,11 +1,12 @@
 import { CircleCheck, Truck, Warehouse, Wrench, type LucideIcon } from 'lucide-react'
 import { KpiTile, type KpiTone } from '@/components/KpiTile'
 import { useFormat, useT } from '@/lib/i18n'
-import type { VehicleStatus } from '@/lib/mock-db'
 import { VEHICLE_STATUSES, VEHICLE_STATUS_SLUGS, type VehicleRow } from './vehicle-status'
 
+type TileStatus = (typeof VEHICLE_STATUSES)[number]
+
 /** Icon và tint theo nghĩa cố định (AGENTS mục 4): sẵn sàng → xanh lá, vận hành → xanh dương, cần chú ý → hổ phách. */
-const STATUS_TILE: Record<VehicleStatus, { icon: LucideIcon; tone: KpiTone }> = {
+const STATUS_TILE: Record<TileStatus, { icon: LucideIcon; tone: KpiTone }> = {
   available: { icon: CircleCheck, tone: 'green' },
   in_use: { icon: Truck, tone: 'blue' },
   maintenance: { icon: Wrench, tone: 'amber' },
@@ -23,7 +24,7 @@ export function FleetSummary({ vehicles, statusSlug, onStatusSlugChange }: {
 }) {
   const t = useT()
   const format = useFormat()
-  const countOf = (status: VehicleStatus) => vehicles.filter((vehicle) => vehicle.state.status === status).length
+  const countOf = (status: TileStatus) => vehicles.filter((vehicle) => vehicle.state.status === status).length
 
   return (
     <div className="grid flex-none grid-cols-2 gap-3 lg:grid-cols-4">

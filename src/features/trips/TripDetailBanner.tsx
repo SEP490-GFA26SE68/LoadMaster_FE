@@ -1,4 +1,4 @@
-import { ArrowRight, Lock, Pencil } from 'lucide-react'
+import { ArrowRight, Lock } from 'lucide-react'
 import { useMemo } from 'react'
 import { Link } from 'react-router'
 import { Banner } from '@/components/Banner'
@@ -46,14 +46,8 @@ export function TripDetailBanner({ trip }: { trip: Trip }) {
       <Banner
         tone="info"
         icon={Lock}
-        action={can('trips.edit') ? (
-          <Link to={`/chuyen/${trip.id}/sua`} className={actionLink}>
-            <Pencil strokeWidth={1.75} aria-hidden />
-            {t('trips.detail.edit')}
-          </Link>
-        ) : null}
       >
-        <b className="font-semibold">{t(`trips.detail.locked.${trip.phase}`)}</b> {t('trips.detail.stillEditable')}
+        <b className="font-semibold">{t(`trips.detail.locked.${trip.phase}`)}</b>
       </Banner>
     )
   }

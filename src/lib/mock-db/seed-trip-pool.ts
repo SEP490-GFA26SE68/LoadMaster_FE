@@ -32,7 +32,7 @@ export function seedTripPool(options: {
   const { trips, existing, plannerOf, idOf } = options
   const clock = { at: '' }
   const state: DbState = {
-    vehicles: new Map(), vehicleCompany: new Map(), maintenance: new Map(), trips: new Map(), revisions: new Map(), users: new Map(),
+    vehicles: new Map(), vehicleCompany: new Map(), maintenance: new Map(), retiredVehicles: new Map(), trips: new Map(), revisions: new Map(), users: new Map(),
     passwords: new Map(), events: [], session: { userId: null }, companies: new Map(), packageTypes: new Map(),
     packages: new Map(existing.map((pkg) => [pkg.id, pkg])), tripPackageLinks: new Map(), requirements: new Map(), runs: new Map(),
     vehicleTypes: new Map(), vehicleTypeOf: new Map(), tracking: new Map(), exceptions: new Map(), pickups: new Map(),

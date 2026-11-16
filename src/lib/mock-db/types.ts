@@ -261,8 +261,11 @@ export type NewOptimizationRun = {
 /** Lần chạy đã lưu và các revision nó tạo, theo thứ tự của `plans`. */
 export type SavedOptimizationRun = { run: OptimizationRun; revisions: Revision[] }
 
-/** Trạng thái xe (D-53): suy từ chuyến đang chạy, riêng bảo dưỡng đặt tay. */
-export type VehicleStatus = 'available' | 'in_use' | 'maintenance'
+/**
+ * Trạng thái xe (D-53): suy từ chuyến đang chạy, riêng bảo dưỡng đặt tay. `retired` (Ngừng sử dụng): xe từng chạy chuyến bị xoá thì kho
+ * giữ lại ở trạng thái này thay vì xoá, như máy chủ — chỉ đọc, không gán vào chuyến.
+ */
+export type VehicleStatus = 'available' | 'in_use' | 'maintenance' | 'retired'
 
 export type VehicleState = {
   vehicleId: string
@@ -271,6 +274,8 @@ export type VehicleState = {
   tripId?: string
   /** Khi `maintenance`: ghi chú và thời điểm bật. */
   maintenance?: { note: string; since: string }
+  /** Khi `retired`: thời điểm chuyển sang Ngừng sử dụng. */
+  retiredAt?: string
 }
 
 /** Dữ liệu tạo người dùng: kho cấp mã, trạng thái hoạt động và mật khẩu tạm. */

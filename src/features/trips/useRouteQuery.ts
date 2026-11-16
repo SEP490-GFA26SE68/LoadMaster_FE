@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { GeoPoint } from '@/domain/routing'
 import { getTripEta, optimizeTripRoute } from './route-api'
-import { getTripRoutePath } from './route-plan-api'
+import { getActiveRoutePlan, getTripRoutePath } from './route-plan-api'
 
 /**
  * Hook Query cho tuyến của chuyến (FE-4b-09). Khoá đọc nằm dưới `['trips', tripId]`: đổi thứ tự điểm, thêm / bớt điểm, đưa yêu cầu
@@ -12,19 +12,33 @@ export function useTripEtaQuery(tripId: string) {
   return useQuery({ queryKey: ['trips', tripId, 'eta'], queryFn: () => getTripEta(tripId), enabled: tripId !== '', staleTime: 0 })
 }
 
-/** Path polyline cho `RouteMap` (canonical RoutePlan khi BE thật; mock suy từ kho + stops). */
+/**
+ * Đường vẽ cho `RouteMap`: tuyến đã lưu ở máy chủ khi `onServer` (chuyến của máy chủ), không thì các đoạn nối thẳng kho → điểm giao.
+ * Lỗi của máy chủ nằm ở `isError` của truy vấn và màn nói ra — không thành "không có đường".
+ */
 export function useTripRoutePathQuery(
   tripId: string,
-  fallback?: { depot?: GeoPoint; stops: readonly GeoPoint[] },
-  enabled = true,
+  fallback: { depot?: GeoPoint; stops: readonly GeoPoint[] },
+  enabled: boolean,
+  onServer: boolean,
 ) {
-  const depotKey = fallback?.depot ? `${fallback.depot.lat},${fallback.depot.lng}` : ''
-  const stopsKey = (fallback?.stops ?? []).map((stop) => `${stop.lat},${stop.lng}`).join('|')
+  const depotKey = fallback.depot ? `${fallback.depot.lat},${fallback.depot.lng}` : ''
+  const stopsKey = fallback.stops.map((stop) => `${stop.lat},${stop.lng}`).join('|')
   return useQuery({
-    queryKey: ['trips', tripId, 'route-path', depotKey, stopsKey],
-    queryFn: () => getTripRoutePath(tripId, fallback),
+    queryKey: ['trips', tripId, 'route-path', onServer, depotKey, stopsKey],
+    queryFn: () => getTripRoutePath(tripId, fallback, onServer),
     enabled: enabled && tripId !== '',
     staleTime: 30_000,
+  })
+}
+
+/** Tuyến đang dùng kèm hướng dẫn từng chặng (dẫn đường của tài xế); `onServer` như `useTripRoutePathQuery`. */
+export function useActiveRoutePlanQuery(tripId: string, onServer: boolean) {
+  return useQuery({
+    queryKey: ['trips', tripId, 'route-plan'],
+    queryFn: () => getActiveRoutePlan(tripId, onServer),
+    enabled: tripId !== '',
+    staleTime: 15_000,
   })
 }
 

@@ -55,7 +55,7 @@ test.each([{ data: [] }, { data: [saved] }])('Dispatcher can open existing form 
   mount()
   const dialog = await open()
   expect(await dialog.findByLabelText(/^Số kiện dự kiến/)).not.toHaveAttribute('readonly')
-  expect(REQUIREMENT_SERVER_SUPPORT).toEqual({ create: true, manage: false, unassign: false })
+  expect(REQUIREMENT_SERVER_SUPPORT).toEqual({ create: true, manage: true, unassign: true })
 })
 test('read-only Manager cannot create', async () => {
   const { calls } = stubBackend({ 'GET /api/delivery-requirements': { body: list([]) } })
@@ -87,7 +87,7 @@ test('valid submit uses server contract, refetches server row, closes and never 
   expect(await screen.findByRole('button', { name: 'Xem chi tiết yêu cầu 741' })).toBeInTheDocument()
   expect(calls.filter(c => c.method === 'POST').map(c => c.body)).toEqual([{
     customerId: 12, destination: 'Địa chỉ máy chủ', destinationLat: null, destinationLng: null,
-    deadline: expect.stringMatching(/^2099-12-31T/), priority: 'NORMAL', expectedPackageCount: 3, note: '', packageIds: [],
+    deadline: expect.stringMatching(/^2099-12-31T/), priority: 'NORMAL', expectedPackageCount: 3, note: null, packageIds: [],
   }])
   expect(calls.filter(c => c.path === '/api/delivery-requirements' && c.method === 'GET').length).toBeGreaterThan(1)
   expect(mockCreate).not.toHaveBeenCalled()
@@ -131,16 +131,16 @@ test('two synchronous submits make only one POST while pending', async () => {
   expect(calls.filter(c => c.method === 'POST')).toHaveLength(1)
 })
 
-test('CREATE does not enable edit/delete/extend/schedule; existing coordinate-only edit stays locked', async () => {
+test('Dispatcher retains merged edit/delete support for an unassigned pending requirement; viewing never writes', async () => {
   const { calls } = stubBackend({ 'GET /api/delivery-requirements': { body: list([saved]) }, 'GET /api/customers': customers })
   mount()
   await userEvent.click(await screen.findByRole('button', { name: 'Thao tác với yêu cầu 741' }))
   const menu = within(await screen.findByRole('menu'))
-  expect(menu.queryByRole('menuitem', { name: 'Xoá yêu cầu' })).not.toBeInTheDocument()
+  expect(menu.getByRole('menuitem', { name: 'Xoá yêu cầu' })).toBeInTheDocument()
   await userEvent.click(menu.getByRole('menuitem', { name: 'Sửa yêu cầu' }))
   const dialog = within(await screen.findByRole('dialog', { name: 'Sửa yêu cầu 741' }))
-  expect(dialog.getByLabelText(/^Địa chỉ/)).toHaveAttribute('readonly')
-  expect(dialog.queryByRole('button', { name: 'Lưu thay đổi' })).not.toBeInTheDocument()
+  expect(dialog.getByLabelText(/^Địa chỉ/)).not.toHaveAttribute('readonly')
+  expect(dialog.getByRole('button', { name: 'Lưu yêu cầu' })).toBeInTheDocument()
   expect(dialog.queryByRole('button', { name: 'Lưu hạn giao và ưu tiên' })).not.toBeInTheDocument()
   expect(dialog.queryByRole('button', { name: 'Gia hạn giao hàng' })).not.toBeInTheDocument()
   expect(calls.every(c => c.method === 'GET')).toBe(true)

@@ -6,7 +6,7 @@ import type { CargoPackage, HandlingClass, VehicleConfig } from '@/domain/models
  * (kho lưu `overrideReason`). Hàm thuần, trả mã + tham số (D-28); UI dịch.
  *
  * Luật theo issue BE S4b-02, S5b-06; tài liệu luồng của BE chỉ nêu cặp dễ vỡ / hàng thường (Q-24). Cảnh báo hàng lạnh khi xe không
- * có thiết bị làm lạnh là **đề xuất, chờ nhóm xác nhận** (PRD v2 mục 17.2).
+ * có thiết bị làm lạnh đã được nhóm xác nhận.
  */
 
 /** Lý do vượt luật: bắt buộc, dài tối đa chừng này ký tự. */

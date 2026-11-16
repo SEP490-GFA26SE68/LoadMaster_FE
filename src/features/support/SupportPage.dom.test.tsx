@@ -92,7 +92,7 @@ test('the side panel shows the plan, the balance and the latest credit transacti
   await within(panel).findByText('Basic', {}, SLOW)
   expect(within(panel).getByText('Công ty CP Giao nhận Phương Nam')).toBeInTheDocument()
   expect(within(panel).getByText('Đang hoạt động')).toBeInTheDocument()
-  // Phương Nam đã dùng gần hết 100 credit của gói Basic: còn 2, và hơn 20 giao dịch nên khung chỉ giữ 20 dòng mới nhất
+  // Phương Nam đã dùng gần hết 3.000 credit của gói Basic: còn 2, và hơn 20 giao dịch nên khung chỉ giữ 20 dòng mới nhất
   expect(within(panel).getByText('Số dư credit').nextElementSibling).toHaveTextContent('2')
   expect(within(panel).getAllByRole('listitem')).toHaveLength(20)
   expect(within(panel).getAllByRole('listitem')[0]).toHaveTextContent('Dùng')

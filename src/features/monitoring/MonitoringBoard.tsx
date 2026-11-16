@@ -89,7 +89,7 @@ function FleetMap({ trips, fleet, selected }: { trips: readonly MonitoringTrip[]
     depot: depot ? { lat: depot.lat, lng: depot.lng } : undefined,
     stops: stops.map((stop) => ({ lat: stop.lat, lng: stop.lng })),
   }), [depot, stops])
-  const routePathQuery = useTripRoutePathQuery(selected?.tripId ?? '', pathFallback, Boolean(selected && stops.length > 0))
+  const routePathQuery = useTripRoutePathQuery(selected?.tripId ?? '', pathFallback, Boolean(selected && stops.length > 0), caps.backend)
   const monitoringPath = useMemo(() => {
     const legs = liveSelected?.routeLegs
     if (!legs?.length) return undefined
@@ -114,6 +114,9 @@ function FleetMap({ trips, fleet, selected }: { trips: readonly MonitoringTrip[]
             {t(caps.backend ? 'monitoring.backend.noPosition' : 'monitoring.map.noPosition', { id: selected?.tripId ?? '' })}
           </p>
         )}
+        {routePathQuery.isError && !monitoringPath ? (
+          <p role="alert" className="m-0 text-small text-danger">{t('monitoring.map.pathFailed', { id: selected?.tripId ?? '' })}</p>
+        ) : null}
         <RouteMap
           label={t('monitoring.map.label')}
           className="h-112"

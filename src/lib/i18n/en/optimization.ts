@@ -34,6 +34,9 @@ export const optimization = {
   "backend": {
     /** INITIAL action: retry never rotates the request key. */
     action: {
+      rejected: 'The request was rejected because a packing orientation is invalid. Check the packages and follow this run.',
+      refundPending: 'Credit refund is pending.',
+      refunded: 'Credit was refunded against the original usage.',
       retry: 'Retry the current request',
       checkStatus: 'Check status again',
       uncertain: 'We cannot confirm whether this request has started. Keep this run and retry safely; once a run ID is available, only check its status.',
@@ -81,8 +84,8 @@ export const optimization = {
     title: 'Keep pinned packages',
     switch: { one: 'Keep {count} pinned package in place', other: 'Keep {count} pinned packages in place' },
     on: {
-      plan: 'Plan {revision} has {count} pinned packages. This run keeps their exact position and orientation and the mock packs only the other packages around them. Still three plans A · B · C, still one credit.',
-      loaded: 'The warehouse had loaded {count} packages before it met the damaged one. This run keeps their place and orientation and packs only the other packages around them — they do not have to be unloaded. Still three plans A · B · C, still one credit.',
+      plan: 'Plan {revision} has {count} pinned packages. This run keeps their exact position and orientation and the mock packs only the other packages around them. Still three plans A · B · C, still counted as one run.',
+      loaded: 'The warehouse had loaded {count} packages before it met the damaged one. This run keeps their place and orientation and packs only the other packages around them — they do not have to be unloaded. Still three plans A · B · C, still counted as one run.',
     },
     off: 'Normal run: every package is packed again from scratch.',
     blocked: {
@@ -100,13 +103,15 @@ export const optimization = {
     },
     usageUnlimited: 'This run uses 0 credits · Unlimited',
     tier: 'Algorithm tier of the {plan} plan',
+    tierNow: 'Algorithm tier right now',
+    expiredBasic: 'The plan has expired, so only the Basic tier (EP + DBLF) applies. The credit balance can still be used.',
     tiers: { EP_DBLF: 'EP + DBLF', EP_DBLF_GA: 'EP + DBLF + GA/SA', EP_DBLF_GA_AI: 'EP + DBLF + GA/SA' },
     aiOptimizer: 'AI Optimizer — not available yet',
     tierNote: 'The system picks the algorithm within your plan tier. The demo runs EP + DBLF (mock) for every tier.',
     noPlan: 'The company has no plan.',
     blocked: {
-      INSUFFICIENT_CREDITS: 'Out of credits — contact your company administrator',
-      SUBSCRIPTION_EXPIRED: 'The plan has expired — contact your company administrator',
+      INSUFFICIENT_CREDITS: 'Not enough credits for this run — contact your company administrator',
+      SUBSCRIPTION_EXPIRED: 'The company has no plan — contact your company administrator',
     },
   },
   limits: {

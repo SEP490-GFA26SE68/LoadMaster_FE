@@ -29,17 +29,17 @@ test('what the screen shows: nothing typed, searching, not found, one package, s
 
 const actionsOf = (role: Role, overrides: Partial<Package> = {}) => lookupActions(pkg(overrides), (permission: Permission) => can(role, permission))
 
-// Ma trận quyền của nhánh nhóm: `packages.manage` là của nhân viên kho, không còn của điều phối viên
-test('the dispatcher reprints and opens the package in the pool and its trip; it clears no flag and never "found again"', () => {
+// Như máy chủ: chỉ điều phối viên gỡ cờ; "đã tìm thấy" chỉ của nhân viên kho
+test('the dispatcher reprints, opens the package in the pool and its trip and clears every flag; it never reports "found again"', () => {
   expect(actionsOf('dispatcher', { flags: ['NOT_FOUND', 'DAMAGED'], tripId: 'TRIP-014' })).toStrictEqual({
-    reprint: true, openInPool: true, openTrip: true, clearFlags: [], confirmFound: false,
+    reprint: true, openInPool: true, openTrip: true, clearFlags: ['NOT_FOUND', 'DAMAGED'], confirmFound: false,
   })
   expect(actionsOf('dispatcher')).toStrictEqual({ reprint: true, openInPool: true, openTrip: false, clearFlags: [], confirmFound: false })
 })
 
-test('the warehouse reprints, opens the package in the pool, clears its flags and reports a "not found" package found; it opens no trip', () => {
+test('the warehouse reprints, opens the package in the pool and reports a "not found" package found; it clears no flag and opens no trip', () => {
   expect(actionsOf('warehouse', { flags: ['NOT_FOUND'], tripId: 'TRIP-014' })).toStrictEqual({
-    reprint: true, openInPool: true, openTrip: false, clearFlags: ['NOT_FOUND'], confirmFound: true,
+    reprint: true, openInPool: true, openTrip: false, clearFlags: [], confirmFound: true,
   })
-  expect(actionsOf('warehouse', { flags: ['DAMAGED'] })).toStrictEqual({ reprint: true, openInPool: true, openTrip: false, clearFlags: ['DAMAGED'], confirmFound: false })
+  expect(actionsOf('warehouse', { flags: ['DAMAGED'] })).toStrictEqual({ reprint: true, openInPool: true, openTrip: false, clearFlags: [], confirmFound: false })
 })

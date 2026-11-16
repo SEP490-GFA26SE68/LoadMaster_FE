@@ -28,6 +28,8 @@ export type DbState = {
   vehicleCompany: Map<string, string>
   /** Xe đang bảo dưỡng (D-53) — lưu ngoài `VehicleConfig` vì type Spec không thêm trường (D-04). */
   maintenance: Map<string, { note: string; since: string }>
+  /** Xe đã Ngừng sử dụng → thời điểm chuyển (xoá xe từng chạy chuyến); xe trong đây chỉ đọc. */
+  retiredVehicles: Map<string, string>
   trips: Map<string, Trip>
   revisions: Map<string, Revision>
   users: Map<string, User>

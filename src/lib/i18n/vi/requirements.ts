@@ -57,6 +57,7 @@ export const requirements = {
     onlyPending: 'Chỉ làm được khi yêu cầu còn chờ xếp chuyến',
     closed: 'Yêu cầu đã giao xong nên không sửa được nữa',
     tripLocked: 'Chỉ gỡ được khi chuyến chưa bắt đầu xếp hàng',
+    hasPackages: 'Yêu cầu đang giữ kiện: bỏ hết kiện ở form sửa rồi mới xoá được',
     viewTrip: 'Xem chuyến đã gán',
   },
   customer: {
@@ -83,7 +84,8 @@ export const requirements = {
     coordinatesSaved: 'Đã bổ sung tọa độ điểm đến',
     customer: 'Khách hàng / Chủ hàng',
     expectedPackageCount: 'Số kiện dự kiến',
-    packagesAfterReceiving: 'Nhân viên kho sẽ tiếp nhận và liên kết kiện sau khi tạo yêu cầu.',
+    packagesAfterReceiving: 'Có thể để trống: kho nhập kiện kèm yêu cầu khi tiếp nhận hàng.',
+    packagesLoading: 'Đang tải kiện ở kho kiện',
     receivingProgress: 'Tiến độ nhận kiện',
 
 
@@ -210,6 +212,5 @@ export const requirements = {
     assignDescription: 'Máy chủ chỉ nhận yêu cầu vào chuyến Nháp và tự sinh hoặc gộp điểm giao theo địa chỉ của yêu cầu.',
     linkedForAssignment: 'Đã liên kết {linkedCount}/{expectedCount} kiện. Máy chủ sẽ kiểm tra lại số kiện và điều kiện phân chuyến; số liên kết chưa bảo đảm mọi kiện đủ điều kiện.',
     noDraftTrips: 'Không có chuyến Nháp nào để nhận yêu cầu.',
-    manageUnavailable: 'Máy chủ chưa cho sửa yêu cầu giao: ở đây chỉ thêm được toạ độ còn thiếu.',
   },
 } as const

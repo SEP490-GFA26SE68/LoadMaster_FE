@@ -17,6 +17,11 @@ vi.mock('@/lib/backend-config', () => ({
   backendConfig: { authSource: 'keycloak', apiUrl: 'http://be.test', features: new Set(['billing']), keycloak: { url: '', realm: '', clientId: '' } },
   usesBackend: (feature: string) => feature === 'billing',
 }))
+// Người xem là quản trị công ty: chỉ vai trò này đọc thoả thuận dịch vụ của công ty mình
+vi.mock('@/features/auth/AuthProvider', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/features/auth/AuthProvider')>()),
+  useAuthSafe: () => ({ user: { role: 'companyAdmin' } }),
+}))
 
 const backend = useFakeBackend()
 const SLOW = { timeout: 5000 }
@@ -65,8 +70,20 @@ function renderBilling() {
   )
 }
 
-function serve(current: CurrentSubscriptionDto, balance: number) {
+/** Gia hạn của máy chủ: mặc định gói còn hạn ngoài kỳ gia hạn, không thanh toán nào chờ. */
+const RENEWAL_NOT_DUE = {
+  planId: 2, planName: 'Pro', tier: 'PRO', planActive: true, status: 'ACTIVE', expiresAt: '2026-11-01T08:00:00', amountVnd: 1490000,
+  renewable: false, reason: 'NOT_DUE', renewalWindowDays: 3, pendingPayment: null,
+}
+
+function serve(current: CurrentSubscriptionDto, balance: number, renewal: unknown = RENEWAL_NOT_DUE) {
   backend.routes['GET /api/subscription/current'] = envelope(current)
+  backend.routes['GET /api/subscription/renewal'] = envelope(renewal)
+  backend.routes['GET /api/credits/pricing'] = envelope({
+    tier: current.tier ?? 'BASIC', pricePerCreditVnd: current.tier === 'PRO' ? 326 : 400, tierPrices: { BASIC: 400, PRO: 326, ULTIMATE: 263 },
+    optimizationCost: 2, rerunCost: 1, minTopUpCredits: 1, maxTopUpCredits: null, unlimited: false, topUpAllowed: current.status === 'ACTIVE' || current.status === null,
+    lowBalanceThreshold: 10,
+  })
   backend.routes['GET /api/subscription/plans/2'] = PRO
   backend.routes['GET /api/subscription/plans'] = [PRO, BASIC]
   backend.routes['GET /api/credits/balance'] = envelope({ companyId: 1, balance, isUnlimited: false })
@@ -96,7 +113,7 @@ test('the plan and balance of the backend; credit and invoice history, no paymen
   expect(plan.queryByText('Giá trị tạm — chờ chốt')).toBeNull()
   expect(plan.queryByText('Tự gia hạn')).toBeNull()
   expect(within(screen.getByRole('group', { name: 'Số dư' })).getByText('1.200')).toBeInTheDocument()
-  expect(within(screen.getByRole('group', { name: 'Số dư' })).getByText('Mỗi lần tối ưu xài 2 credit, chạy lại tốn 1 credit.')).toBeInTheDocument()
+  expect(within(screen.getByRole('group', { name: 'Số dư' })).getByText('Mỗi lần chạy tối ưu dùng 2 credit, kể cả chạy lại giữ kiện đã ghim.')).toBeInTheDocument()
   expect(screen.queryByRole('region', { name: 'Chọn gói' })).toBeNull()
 
   await waitFor(() => expect(rowsOf()).toHaveLength(2), SLOW)
@@ -136,6 +153,41 @@ test('topping up at the backend price shows monthly reset warning without cap an
   expect(backend.calls.find((call) => call.method === 'POST')).toMatchObject({ url: 'http://be.test/api/credits/topup', body: { credits: 50, gateway: 'MOCK' } })
 })
 
+test('the plan expires while the top-up dialog is open: the server refuses with SUBSCRIPTION_EXPIRED, the dialog says why and stays open', async () => {
+  const user = userEvent.setup()
+  serve(ACTIVE, 1200)
+  backend.routes['POST /api/credits/topup'] = () => {
+    // Máy chủ đã thấy gói hết hạn: đọc lại gói và điều kiện nạp cũng theo đó
+    serve({ ...ACTIVE, status: 'EXPIRED' }, 1200)
+    return new Response(JSON.stringify({ success: false, code: 'SUBSCRIPTION_EXPIRED', message: 'het han', data: null }), { status: 409 })
+  }
+  renderBilling()
+  await user.click(await screen.findByRole('button', { name: 'Nạp credit' }, SLOW))
+  const dialog = await screen.findByRole('dialog')
+  await user.click(await within(dialog).findByRole('button', { name: 'Tiếp tục thanh toán' }))
+  expect(await within(dialog).findByText('Gói cước đã hết hạn nên chưa nạp được credit. Gia hạn hoặc chọn gói mới trước.', {}, SLOW)).toBeInTheDocument()
+  await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Tiếp tục thanh toán' })).toBeDisabled(), SLOW)
+  expect(screen.queryByText('Đang ở', { exact: false })).toBeNull()
+})
+
+test('the server refuses a top-up with its code: the dialog shows the sentence of that code, then reopening clears it', async () => {
+  const user = userEvent.setup()
+  serve(ACTIVE, 1200)
+  backend.routes['POST /api/credits/topup'] = () =>
+    new Response(JSON.stringify({ success: false, code: 'SUBSCRIPTION_EXPIRED', message: 'het han', data: null }), { status: 409 })
+  renderBilling()
+  await user.click(await screen.findByRole('button', { name: 'Nạp credit' }, SLOW))
+  let dialog = await screen.findByRole('dialog')
+  await user.click(await within(dialog).findByRole('button', { name: 'Tiếp tục thanh toán' }))
+  // Điều kiện nạp vẫn cho nạp nên câu lỗi của mã (apiErrors.SUBSCRIPTION_EXPIRED) hiện trong hộp
+  expect(await within(dialog).findByText('Gói cước đã hết hạn hoặc đã huỷ nên chưa nạp được credit. Gia hạn hoặc chọn gói mới trước.', {}, SLOW)).toBeInTheDocument()
+  await user.click(within(dialog).getByRole('button', { name: 'Huỷ' }))
+  await user.click(screen.getByRole('button', { name: 'Nạp credit' }))
+  dialog = await screen.findByRole('dialog')
+  await within(dialog).findByRole('button', { name: 'Tiếp tục thanh toán' })
+  expect(within(dialog).queryByText(/hết hạn hoặc đã huỷ/)).toBeNull()
+})
+
 test('an expired plan the backend no longer names: says so, offers the plans and subscribes through the gateway', async () => {
   const user = userEvent.setup()
   serve({ ...ACTIVE, subscriptionId: null, planId: null, planName: null, tier: null, status: 'EXPIRED', startedAt: null, expiresAt: null, autoRenew: null }, 0)
@@ -146,6 +198,36 @@ test('an expired plan the backend no longer names: says so, offers the plans and
   await user.click(choose.getByRole('button', { name: 'Đăng ký gói Basic' }))
   expect(await screen.findByText('Đang ở /thanh-toan/ket-qua?ma=MOCK_SUB1&loai=goi', {}, SLOW)).toBeInTheDocument()
   expect(backend.calls.find((call) => call.method === 'POST')).toMatchObject({ body: { planId: 1, gateway: 'MOCK' } })
+})
+
+test('an expired plan the server can renew: renews that same plan (even off sale) through the gateway; credits cannot be topped up', async () => {
+  const user = userEvent.setup()
+  serve({ ...ACTIVE, subscriptionId: null, planId: null, planName: null, tier: null, status: 'EXPIRED', startedAt: null, expiresAt: null, autoRenew: null }, 40, {
+    ...RENEWAL_NOT_DUE, planActive: false, status: 'EXPIRED', expiresAt: '2026-10-10T08:00:00', renewable: true, reason: null,
+  })
+  backend.routes['POST /api/subscription/renew'] = envelope({ id: 13, transactionId: 'MOCK_RENEW1', paymentUrl: '/api/payment/mock-checkout?txnRef=MOCK_RENEW1', status: 'PENDING', amountVnd: 1490000 })
+  renderBilling()
+  expect(await screen.findByText(/Gói Pro đã hết hạn ngày 10\/10\/2026\. Gia hạn đúng gói này \(1\.490\.000 ₫ một kỳ\).*Gói Pro đã ngừng bán/, {}, SLOW)).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: 'Nạp credit' }))
+  const dialog = await screen.findByRole('dialog')
+  expect(await within(dialog).findByText('Gói cước đã hết hạn nên chưa nạp được credit. Gia hạn hoặc chọn gói mới trước.')).toBeInTheDocument()
+  expect(within(dialog).getByRole('button', { name: 'Tiếp tục thanh toán' })).toBeDisabled()
+  await user.click(within(dialog).getByRole('button', { name: 'Huỷ' }))
+  await user.click(screen.getByRole('button', { name: 'Gia hạn gói Pro' }))
+  expect(await screen.findByText('Đang ở /thanh-toan/ket-qua?ma=MOCK_RENEW1&loai=goi', {}, SLOW)).toBeInTheDocument()
+  expect(backend.calls.find((call) => call.method === 'POST')).toMatchObject({ url: 'http://be.test/api/subscription/renew', body: { gateway: 'MOCK' } })
+})
+
+test('a waiting plan payment of the server has a banner whose Pay opens its confirmation page', async () => {
+  const user = userEvent.setup()
+  serve(ACTIVE, 1200, {
+    ...RENEWAL_NOT_DUE,
+    pendingPayment: { id: 14, transactionId: 'MOCK_WAIT1', paymentUrl: '/api/payment/mock-checkout?txnRef=MOCK_WAIT1', orderType: 'SUBSCRIPTION_RENEWAL', planId: 2, amountVnd: 1490000, createdAt: '2026-10-16T08:00:00' },
+  })
+  renderBilling()
+  expect(await screen.findByText('Thanh toán gia hạn gói Pro (1.490.000 ₫) đang chờ. Gói hết hạn ngày 01/11/2026 nếu chưa trả.', {}, SLOW)).toBeInTheDocument()
+  await user.click(screen.getByRole('link', { name: 'Trả' }))
+  expect(await screen.findByText('Đang ở /thanh-toan/ket-qua?ma=MOCK_WAIT1&loai=goi', {}, SLOW)).toBeInTheDocument()
 })
 
 test('a plan still running renews itself; upgrading to a higher tier warns about credit reset to 0 and subscribes directly', async () => {

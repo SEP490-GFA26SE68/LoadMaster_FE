@@ -11,6 +11,7 @@
 
 import { createServerUser, fetchServerUsers } from '@/features/admin/users-api'
 import { api, ApiError, isApiError } from '@/lib/api-client'
+import { isoFromBackend } from '@/lib/backend-time'
 import { fetchAllPages } from '@/lib/api-page'
 import { usesBackend } from '@/lib/backend-config'
 import { PLAN_TIERS, type PlanTier, type TemporaryPassword } from '@/lib/mock-db'
@@ -110,7 +111,7 @@ export function companyOf(dto: CompanyDto): ServerCompany {
 /** Mốc giờ của hợp đồng là `LocalDateTime` không mang múi giờ; máy chủ chạy giờ Việt Nam (`TimeZone.setDefault` lúc khởi động). */
 function vietnamInstant(value: string | null): string | null {
   if (value === null || value.trim() === '') return null
-  return /(?:Z|[+-]\d{2}:\d{2})$/i.test(value) ? value : `${value}+07:00`
+  return isoFromBackend(value)
 }
 
 /** Mỗi công ty một hợp đồng (khoá duy nhất theo công ty ở backend); vẫn lấy bản bắt đầu muộn nhất nếu có nhiều hơn. */

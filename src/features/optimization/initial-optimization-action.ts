@@ -5,7 +5,7 @@ export type OptimizationActionScope = { userId: string; companyId: string; tripI
 
 const actionSchema = z.object({
   key: z.uuid(),
-  request: z.object({ tripId: z.string().regex(/^[1-9]\d*$/) }).strict(),
+  request: z.object({ tripId: z.string().regex(/^[1-9]\d*$/), keepPinsFromPlanId: z.string().regex(/^[1-9]\d*$/).optional() }).strict(),
   jobId: z.string().min(1).optional(),
   dispatchStatus: z.enum(['ACCEPTED', 'UNKNOWN', 'ALREADY_ACCEPTED']).optional(),
 }).strict()

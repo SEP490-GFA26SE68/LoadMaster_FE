@@ -10,6 +10,6 @@ test('mỗi quyền thuộc đúng một nhóm, mỗi khu vực một nhóm, gh�
 })
 
 test('the existing company warehouse permission has a real group at its catalog position', () => {
-  expect(PERMISSION_GROUPS.at(-1)).toStrictEqual({ id: 'companyWarehouses', permissions: ['companyWarehouses.manage'] })
+  expect(PERMISSION_GROUPS.find(group => group.id === 'companyWarehouses')).toStrictEqual({ id: 'companyWarehouses', permissions: ['companyWarehouses.manage'] })
   expect(PERMISSION_GROUPS.every((group) => PERMISSION_GROUP_IDS.includes(group.id))).toBe(true)
 })

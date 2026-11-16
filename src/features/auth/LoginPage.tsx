@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils'
 import { AuthError, type AuthErrorCode } from './auth-api'
 import { DemoAccounts } from './DemoAccounts'
 import { landingPath, passwordResetPath, PUBLIC_HOME } from './landing'
+import { LoginSignUp } from './LoginSignUp'
 import { useAuth } from './AuthProvider'
 
 /**
@@ -88,7 +89,7 @@ const HIGHLIGHTS = [
  */
 export function LoginPage() {
   const t = useT()
-  const { user, status, source, sessionError, signIn } = useAuth()
+  const { user, status, source, sessionError, sessionRetryable, retrySession, signIn } = useAuth()
   const viaKeycloak = source === 'keycloak'
   const navigate = useNavigate()
   const location = useLocation()
@@ -179,6 +180,12 @@ export function LoginPage() {
                       {t('auth.login.setNewPassword')}
                     </Link>
                   ) : null}
+                  {/* Phiên Keycloak còn, chỉ máy chủ chưa trả hồ sơ (mạng, 5xx): đọc lại, không phải nhập mật khẩu */}
+                  {serverError === null && sessionRetryable ? (
+                    <Button type="button" variant="secondary" size="sm" className={cn('self-start', TOUCH_CONTROL)} onClick={() => void retrySession()}>
+                      {t('auth.login.retrySession')}
+                    </Button>
+                  ) : null}
                 </ServerError>
               ) : null}
 
@@ -206,6 +213,8 @@ export function LoginPage() {
                 </div>
               ) : null}
             </form>
+
+            <LoginSignUp controlClassName={TOUCH_CONTROL} />
           </div>
 
           {/* Tài khoản dùng thử là của kho mẫu: không có ý nghĩa khi đăng nhập bằng backend */}

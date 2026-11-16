@@ -3,9 +3,11 @@
  * credit của công ty, thẻ Credit của Thiết lập tối ưu và bảng giá công khai. Kiểu DTO của backend chỉ nằm ở đây và ở `-api.ts` dùng nó;
  * hàm trả kiểu của app.
  *   listPlanDtos, listActivePlans → GET /api/subscription/plans (chỉ gói đang bán, không cần đăng nhập)
+ *   listAllPlanDtos               → GET /api/subscription/plans?paged=true (mọi gói, kể cả gói đã ngừng bán; đọc theo trang)
  *   getPlanDto                    → GET /api/subscription/plans/{id}
  *   getCurrentSubscriptionDto     → GET /api/subscription/current
  *   getCreditBalanceDto           → GET /api/credits/balance
+ *   getCreditPricing              → GET /api/credits/pricing (giá nạp theo hạng, credit một lần tối ưu; quản trị, quản lý công ty, điều phối viên)
  *   listCreditTransactionDtos     → GET /api/credits/transactions (đọc theo trang)
  */
 
@@ -139,6 +141,13 @@ export async function listPlanDtos(client: ApiClient = api()): Promise<PlanDto[]
   return [...(plans ?? [])].sort(comparePlans)
 }
 
+/** Mọi gói của danh mục, kể cả gói đã ngừng bán — chỉ dạng phân trang của backend trả gói ngừng bán. */
+// GET /api/subscription/plans?paged=true
+export async function listAllPlanDtos(client: ApiClient = api()): Promise<PlanDto[]> {
+  const plans = await fetchAllPages<PlanDto>(PLANS_PATH, { query: { paged: true }, size: 100 }, client)
+  return plans.sort(comparePlans)
+}
+
 // GET /api/subscription/plans
 export async function listActivePlans(client: ApiClient = api()): Promise<SubscriptionPlan[]> {
   return (await listPlanDtos(client)).filter((plan) => plan.active !== false).map(planFromDto)
@@ -157,6 +166,51 @@ export function getCurrentSubscriptionDto(client: ApiClient = api()): Promise<Cu
 // GET /api/credits/balance
 export function getCreditBalanceDto(client: ApiClient = api()): Promise<CreditBalanceDto> {
   return client.get<CreditBalanceDto>('/api/credits/balance')
+}
+
+/** `CreditPricingResponse`: giá và luật credit của công ty đang gọi. Số là BigDecimal (số JSON). */
+type CreditPricingDto = {
+  readonly tier: PlanTier | null
+  readonly pricePerCreditVnd: number | string | null
+  readonly optimizationCost: number | null
+  readonly minTopUpCredits: number | null
+  readonly maxTopUpCredits: number | null
+  readonly unlimited: boolean | null
+  readonly topUpAllowed: boolean | null
+  readonly lowBalanceThreshold: number | null
+}
+
+/**
+ * Giá và luật credit máy chủ áp cho công ty: hạng tính giá (chưa có gói tính như Basic), giá một credit khi nạp, credit một lần tối ưu
+ * 3D, số credit nạp ít nhất, trần nạp một lần (`null`: không trần), nạp được không (gói đang hoạt động hoặc chưa có gói), ngưỡng
+ * "Sắp hết credit" (25 % credit tháng của gói, làm tròn lên; `null` khi chưa có gói hoặc gói không giới hạn) — máy chủ tự ghi sự kiện
+ * `CREDIT_LOW_BALANCE` theo ngưỡng này, app không tính lại.
+ */
+export type CreditPricing = {
+  readonly tier: PlanTier
+  readonly priceVnd: number
+  readonly optimizationCost: number
+  readonly minTopUpCredits: number
+  readonly maxTopUpCredits: number | null
+  readonly unlimited: boolean
+  readonly topUpAllowed: boolean
+  readonly lowBalanceThreshold: number | null
+}
+
+// GET /api/credits/pricing
+export async function getCreditPricing(client: ApiClient = api()): Promise<CreditPricing> {
+  const dto = await client.get<CreditPricingDto>('/api/credits/pricing')
+  if (dto.optimizationCost === null || dto.pricePerCreditVnd === null) throw new ApiError('SERVER_ERROR')
+  return {
+    tier: dto.tier !== null && PLAN_TIERS.includes(dto.tier) ? dto.tier : 'BASIC',
+    priceVnd: Math.round(Number(dto.pricePerCreditVnd)),
+    optimizationCost: dto.optimizationCost,
+    minTopUpCredits: dto.minTopUpCredits ?? 1,
+    maxTopUpCredits: dto.maxTopUpCredits,
+    unlimited: dto.unlimited === true,
+    topUpAllowed: dto.topUpAllowed !== false,
+    lowBalanceThreshold: dto.lowBalanceThreshold ?? null,
+  }
 }
 
 export function creditBalanceOf(dto: CreditBalanceDto): CreditBalance {

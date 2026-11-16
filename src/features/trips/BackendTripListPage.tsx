@@ -113,7 +113,6 @@ export function BackendTripListPage() {
   const hasActiveFilters =
     list.query.trim() !== '' ||
     Object.values(list.filters).some(Boolean)
-  const overlap = query.isPending || (query.isSuccess && hasTrips)
 
   return (
     <Tabs
@@ -122,7 +121,6 @@ export function BackendTripListPage() {
       className="flex min-w-0 flex-1 flex-col"
     >
       <PageHero
-        overlap={overlap}
         title={t('trips.list.title')}
         description={hasTrips
           ? <TripListStats total={totalRows} />
@@ -139,7 +137,7 @@ export function BackendTripListPage() {
         <TripListTabs counts={null} />
       </PageHero>
 
-      <div className={overlap ? 'sky-overlap flex min-h-0 flex-1 flex-col overflow-auto px-shell pb-7' : 'flex min-h-0 flex-1 flex-col overflow-auto px-shell py-6'}>
+      <div className="flex min-h-0 flex-1 flex-col overflow-auto px-shell py-6">
           <TabsContent value={tab} className="relative flex-none overflow-hidden rounded-lg border border-border bg-bg shadow-card outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
             <TripListToolbar
               list={list}

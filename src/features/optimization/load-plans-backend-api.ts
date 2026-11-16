@@ -1,3 +1,4 @@
+import { createBackendOptimizationJob } from './backend-optimization-api'
 /**
  * Tối ưu xếp hàng của chuyến khi nhóm `trips` nối backend. Hàm → endpoint:
  *   startLoadingOptimization → POST /api/trips/{tripId}/optimize-loading
@@ -17,26 +18,27 @@ import {
   type LoadPlanDto,
   type OptimizationJob,
   type OptimizationJobDto,
-  type OptimizationStartDto,
   type TripLoadPlans,
   type TripLoadPlansDto,
 } from './load-plan-dto'
+
+/** Kiểu của app dựng từ DTO — màn import từ đây, không từ `load-plan-dto.ts`. */
+export type { LoadPlacement, LoadPlan, OptimizationJob } from './load-plan-dto'
 
 const tripPath = (tripId: string) => `/api/trips/${encodeURIComponent(tripId)}`
 const jobPath = (jobId: string) => `/api/trips/optimization-jobs/${encodeURIComponent(jobId)}`
 
 /**
- * Gửi một lần chạy (một credit, ba phương án). Hết credit: 402 `INSUFFICIENT_CREDITS`, không tạo job nào. `keepPinsFromPlanId`: giữ nguyên
+ * Gửi một lần chạy (credit của một lần chạy, ba phương án). Hết credit: 402 `INSUFFICIENT_CREDITS`, không tạo job nào. `keepPinsFromPlanId`: giữ nguyên
  * các kiện đã ghim của phương án đó (cùng chuyến) trong cả ba phương án; bộ ghim không đứng vững là 400 `PINNED_SET_INVALID` trước khi chạy,
  * không trừ credit.
  */
 // POST /api/trips/{tripId}/optimize-loading
 export async function startLoadingOptimization(
-  tripId: string, keepPinsFromPlanId?: string,
+  tripId: string, idempotencyKey: string, keepPinsFromPlanId?: string,
 ): Promise<{ readonly jobId: string; readonly pinnedCount: number }> {
-  const body = keepPinsFromPlanId === undefined ? undefined : { keepPinsFromPlanId: Number(keepPinsFromPlanId) }
-  const started = await api().post<OptimizationStartDto>(`${tripPath(tripId)}/optimize-loading`, body === undefined ? undefined : { body })
-  return { jobId: started.jobId, pinnedCount: started.pinnedCount ?? 0 }
+  const started = await createBackendOptimizationJob(tripId, idempotencyKey, undefined, keepPinsFromPlanId)
+  return { jobId: started.job_id!, pinnedCount: 0 }
 }
 
 // GET /api/trips/optimization-jobs/{jobId}

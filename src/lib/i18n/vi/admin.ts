@@ -264,7 +264,6 @@ export const admin = {
       companyWarehouses: { manage: 'Quản lý kho của công ty' },
       warehouse: { operate: 'Xếp hàng tại kho' },
       driver: { operate: 'Giao hàng' },
-      companyWarehouses: { manage: 'Quản lý kho công ty' },
     },
   },
 } as const

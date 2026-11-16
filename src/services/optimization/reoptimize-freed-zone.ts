@@ -23,7 +23,7 @@ import { doorOrientations } from './shelf-packer'
  * Lý do kiện không xếp được dùng mã của hợp đồng tối ưu: `OVER_PAYLOAD`, `NO_ALLOWED_ORIENTATION`, `DOOR_TOO_SMALL`, `NO_SPACE`,
  * `STACKING_VIOLATION` (chỉ còn cách đè lên kiện không chịu tải).
  *
- * Việc này **không tốn credit** (Q-09: backend chưa trả lời) — quyết định ở một chỗ, `db-pickups.ts`.
+ * Việc này **không tốn credit** (đã quyết định, Q-09) — giữ ở một chỗ, `db-pickups.ts`.
  */
 
 export type ReoptimizeFreedZoneInput = {

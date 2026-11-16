@@ -26,6 +26,7 @@ export const monitoring = {
     vehicle: 'trip {trip}, {name} ({source})',
     note: 'The route and stops are those of the selected trip; vehicles of other trips show their position only.',
     noPosition: 'Trip {id} still has a stop without coordinates, so there is no vehicle position.',
+    pathFailed: 'Could not read the route of trip {id} from the server — the map joins the stops with straight lines.',
   },
   list: {
     title: 'Trips in transit',
@@ -126,6 +127,10 @@ export const monitoring = {
       list: 'Blocked packages',
       item: 'stop {number} · {name}',
       unchanged: 'The stop order stays as it is.',
+    },
+    missingCoordinates: {
+      title: 'Not changed: these stops have no coordinates',
+      list: 'Stops without coordinates',
     },
   },
   reroute: {

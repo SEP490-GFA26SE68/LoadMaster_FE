@@ -239,7 +239,6 @@ export const admin = {
       companyWarehouses: { manage: 'Manage company warehouses' },
       warehouse: { operate: 'Load at the warehouse' },
       driver: { operate: 'Deliver' },
-      companyWarehouses: { manage: 'Manage company warehouses' },
     },
   },
 } satisfies Dictionary<typeof source>

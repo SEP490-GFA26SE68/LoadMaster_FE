@@ -16,6 +16,8 @@ export const auth = {
     /** Một câu cho cả hai loại tài khoản (FE-0-08): nhân sự công ty do quản trị công ty mở khoá, tài khoản nền tảng do quản trị hệ thống. */
     accountSuspended: 'Tài khoản đã bị khoá. Liên hệ quản trị viên của bạn để mở khoá.',
     serverUnreachable: 'Không kết nối được máy chủ. Thử lại sau.',
+    /** Phiên vẫn còn, chỉ lần đọc hồ sơ hỏng tạm thời: đọc lại mà không phải nhập mật khẩu. */
+    retrySession: 'Thử lại',
     roleUnknown: 'Tài khoản mang vai trò mà ứng dụng chưa hỗ trợ. Liên hệ quản trị viên của bạn.',
     // Bốn câu sau chỉ có khi đăng nhập bằng máy chủ (`VITE_AUTH_SOURCE=keycloak`)
     /** Mật khẩu đúng nhưng là mật khẩu tạm (tài khoản mới, hoặc quản trị viên vừa đặt lại). */
@@ -30,6 +32,8 @@ export const auth = {
     forgotPassword: 'Quên mật khẩu?',
     /** Liên kết về trang giới thiệu công khai `/gioi-thieu`. */
     backToLanding: 'Về trang giới thiệu',
+    /** Lối vào hai luồng đăng ký công khai dưới form (chỉ khi nhóm `registration` nối backend); chữ của hai nút ở `landing.header`. */
+    noAccount: 'Công ty bạn chưa có tài khoản LoadMaster?',
     /** Chế độ đăng nhập bằng máy chủ (`VITE_AUTH_SOURCE=keycloak`). */
     sso: {
       sampleData: 'Tài khoản lấy từ máy chủ. Chuyến, xe và kiện hàng trên màn vẫn là dữ liệu mẫu.',

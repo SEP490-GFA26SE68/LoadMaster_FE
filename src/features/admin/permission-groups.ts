@@ -16,9 +16,9 @@ export const PERMISSION_GROUP_IDS = [
   'fleet',
   'exceptions',
   'pickups',
+  'companyWarehouses',
   'warehouse',
   'driver',
-  'companyWarehouses',
 ] as const
 
 export type PermissionGroupId = (typeof PERMISSION_GROUP_IDS)[number]
@@ -53,7 +53,6 @@ const PREFIX_GROUP: Readonly<Record<Prefix, PermissionGroupId>> = {
   exceptions: 'exceptions',
   deadlines: 'exceptions',
   pickups: 'pickups',
-  companyWarehouses: 'warehouse',
   warehouse: 'warehouse',
   driver: 'driver',
   companyWarehouses: 'companyWarehouses',

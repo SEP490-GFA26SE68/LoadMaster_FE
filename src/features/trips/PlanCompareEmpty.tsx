@@ -21,7 +21,7 @@ export function PlanCompareEmpty({ tripId, cards, canRun }: { tripId: string; ca
   const t = useT()
   const only = cards[0]
   return (
-    <div className="sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6">
+    <div className="min-h-0 flex-1 overflow-auto px-shell py-6">
       <Card className="flex flex-none flex-col overflow-hidden">
         <EmptyState
           mascot="empty"

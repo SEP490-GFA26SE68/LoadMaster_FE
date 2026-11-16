@@ -1,15 +1,14 @@
 /**
- * Hàm → endpoint backend (canonical RoutePlan / RouteLeg).
+ * Hàm → endpoint backend (RoutePlan / RouteLeg của chuyến):
  *   getActiveRoutePlan → GET /api/trips/{id}/route-plans/active
  *
- * Bật BE thật: `VITE_USE_REAL_MONITORING=true` (cùng cờ giám sát — route plan nằm trên cùng service).
- * Mock / id kiểu TRIP-012: lấy path theo đường chạy qua OSRM demo; lỗi mạng thì nối thẳng điểm.
+ * Chỉ chuyến **của máy chủ** đọc tuyến ở máy chủ (`onServer`; nơi gọi biết chuyến của nó đến từ đâu): chuyến của kho mẫu không bao giờ
+ * gửi mã hay toạ độ đi đâu. Không có tuyến đã lưu thì đường vẽ là các đoạn nối thẳng kho → điểm giao, như kho mẫu — app không gọi dịch
+ * vụ chỉ đường công khai nào (toạ độ của khách chỉ đi tới máy chủ của mình, qua `api-client`).
  */
 import { encodePolyline, pathFromEncodedPolylines } from '@/components/map/polyline'
 import type { GeoPoint } from '@/domain/routing'
-import { api } from '@/lib/api-client'
-import { getMockDb } from '@/lib/mock-db'
-import { fetchRoadPath } from './road-path'
+import { api, ApiError } from '@/lib/api-client'
 
 export type RouteGuidanceStepDto = {
   readonly instruction?: string | null
@@ -42,23 +41,22 @@ export type RoutePlanDetailDto = {
   readonly legs: readonly RouteLegDto[]
 }
 
-function useRealRoutes(): boolean {
-  return import.meta.env.VITE_USE_REAL_MONITORING === 'true'
-}
-
-/** BE nhận id số hoặc tripCode (TripLookupHelper). */
-
-/** Plan active của chuyến; `null` khi chưa có (chưa optimize / 404) hoặc id mock. */
-export async function getActiveRoutePlan(tripId: string): Promise<RoutePlanDetailDto | null> {
-  if (!useRealRoutes()) return null
+/**
+ * Tuyến đang dùng của chuyến máy chủ (máy chủ nhận mã số hoặc mã chuyến). `null` khi chuyến không phải của máy chủ hoặc chưa có tuyến
+ * (`ROUTE_PLAN_NOT_FOUND`); lỗi khác để lộ ra cho màn.
+ */
+// GET /api/trips/{id}/route-plans/active
+export async function getActiveRoutePlan(tripId: string, onServer: boolean): Promise<RoutePlanDetailDto | null> {
+  if (!onServer) return null
   try {
     return await api().get<RoutePlanDetailDto>(`/api/trips/${encodeURIComponent(tripId)}/route-plans/active`)
-  } catch {
-    return null
+  } catch (error) {
+    if (error instanceof ApiError && error.code === 'ROUTE_PLAN_NOT_FOUND') return null
+    throw error
   }
 }
 
-/** Path vẽ map từ legs của plan (polyline Goong). */
+/** Đường vẽ bản đồ từ các chặng của tuyến (polyline của máy chủ). */
 export function pathFromRoutePlan(plan: RoutePlanDetailDto | null | undefined): GeoPoint[] | undefined {
   if (!plan?.legs?.length) return undefined
   const ordered = [...plan.legs].sort((a, b) => a.legSequence - b.legSequence)
@@ -67,44 +65,17 @@ export function pathFromRoutePlan(plan: RoutePlanDetailDto | null | undefined): 
 }
 
 /**
- * Path cho `RouteMap`: ưu tiên plan BE (Goong polyline);
- * không có thì OSRM theo kho → stops; cuối cùng mới nối thẳng.
+ * Đường cho `RouteMap`: tuyến đã lưu ở máy chủ khi chuyến là của máy chủ và có tuyến; không thì các đoạn nối thẳng kho → điểm giao
+ * theo thứ tự (`fallback`). Dưới hai điểm thì không có đường.
  */
 export async function getTripRoutePath(
   tripId: string,
-  fallback?: { depot?: GeoPoint; stops: readonly GeoPoint[] },
+  fallback: { depot?: GeoPoint; stops: readonly GeoPoint[] },
+  onServer: boolean,
 ): Promise<GeoPoint[] | undefined> {
-  const fromPlan = pathFromRoutePlan(await getActiveRoutePlan(tripId))
+  const fromPlan = pathFromRoutePlan(await getActiveRoutePlan(tripId, onServer))
   if (fromPlan) return fromPlan
-
-  const points = await resolveWaypoints(tripId, fallback)
-  if (!points || points.length < 2) return undefined
-
-  const alongRoads = await fetchRoadPath(points)
-  if (alongRoads && alongRoads.length > 1) return alongRoads
-
-  return straightPath(points)
-}
-
-async function resolveWaypoints(
-  tripId: string,
-  fallback?: { depot?: GeoPoint; stops: readonly GeoPoint[] },
-): Promise<GeoPoint[] | undefined> {
-  if (fallback) {
-    const points = fallback.depot ? [fallback.depot, ...fallback.stops] : [...fallback.stops]
-    return points.length >= 2 ? points : undefined
-  }
-  try {
-    const trip = await getMockDb().getTrip(tripId)
-    const depot = { lat: trip.depot.lat, lng: trip.depot.lng }
-    const stops = trip.stops.flatMap((stop) =>
-      stop.lat === undefined || stop.lng === undefined ? [] : [{ lat: stop.lat, lng: stop.lng }],
-    )
-    const points = [depot, ...stops]
-    return points.length >= 2 ? points : undefined
-  } catch {
-    return undefined
-  }
+  return straightPath(fallback.depot ? [fallback.depot, ...fallback.stops] : [...fallback.stops])
 }
 
 function straightPath(points: readonly GeoPoint[]): GeoPoint[] | undefined {

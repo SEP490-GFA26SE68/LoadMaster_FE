@@ -18,7 +18,7 @@ export function BannersCard({ sample, rows }: { sample: SheetSample | undefined;
 
   return (
     <SheetCard title={t('designSystem.components.banners.title')}>
-      <Banner tone="info" icon={Lock}>{t('trips.create.lockedHint')}</Banner>
+      <Banner tone="info" icon={Lock}>{t('trips.detail.locked.loading')}</Banner>
       <Banner
         tone="warning"
         action={stale ? (

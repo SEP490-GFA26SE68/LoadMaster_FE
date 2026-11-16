@@ -9,7 +9,10 @@ import {
   updatePackage as updateCargoPackage,
   deletePackage as deleteCargoPackage,
   clearPackageFlag,
+  fetchLabelsPdf,
+  fetchPackageHistory,
   type CargoPackageInput,
+  type LabelsPdfSource,
 } from './packages-api'
 import {
   fetchPackageTypes,
@@ -298,13 +301,40 @@ export function useDeleteCargoPackageMutation() {
   const client = useQueryClient()
 
   return useMutation({
-    mutationFn: (id: string) =>
-      deleteCargoPackage(id),
-
-    onSuccess: async () => {
-      await client.invalidateQueries({
-        queryKey: CARGO_PACKAGES_KEY,
-      })
+    retry: false,
+    mutationFn: (id: string) => deleteCargoPackage(id),
+    onSuccess: async (_data, id) => {
+      await Promise.all([
+        client.invalidateQueries({ queryKey: [...CARGO_PACKAGES_KEY, 'list'] }),
+        // Do not refetch a deleted detail before its confirmation can close the panel.
+        client.invalidateQueries({ queryKey: [...CARGO_PACKAGES_KEY, 'detail', id], refetchType: 'none' }),
+        client.invalidateQueries({ queryKey: PACKAGE_POOL_KEY }),
+        client.invalidateQueries({ queryKey: ['requirements'] }),
+      ])
     },
+  })
+}
+
+/** Lịch sử một kiện, dưới khoá của kiện: sửa kiện, gỡ cờ làm mới cả lịch sử. */
+export function usePackageHistoryQuery(id: string) {
+  return useQuery({
+    queryKey: [...CARGO_PACKAGES_KEY, id, 'history'],
+    queryFn: () => fetchPackageHistory(id),
+    staleTime: 0,
+  })
+}
+
+/**
+ * File PDF nhãn của trang in nhãn. `null`: không có kiện nào để in, không gọi máy chủ. Mỗi lần mở trang dựng lại (`staleTime: 0`) vì
+ * kiện của chuyến đổi theo yêu cầu giao; không thử lại khi máy chủ từ chối (chuyến chưa có kiện, quá số kiện).
+ */
+export function useLabelsPdfQuery(source: LabelsPdfSource | null) {
+  return useQuery({
+    queryKey: [...PACKAGE_POOL_KEY, 'labels-pdf', source === null ? null : 'tripId' in source ? { trip: source.tripId } : { ids: source.packageIds.join(',') }],
+    queryFn: () => fetchLabelsPdf(source ?? { packageIds: [] }),
+    enabled: source !== null,
+    staleTime: 0,
+    gcTime: 0,
+    retry: false,
   })
 }

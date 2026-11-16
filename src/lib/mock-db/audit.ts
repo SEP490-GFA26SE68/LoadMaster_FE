@@ -11,6 +11,8 @@ export const AUDIT_ACTIONS = [
   'vehicle.created',
   'vehicle.updated',
   'vehicle.deleted',
+  // Xoá xe từng chạy chuyến: xe chuyển sang Ngừng sử dụng thay vì bị xoá, như máy chủ
+  'vehicle.retired',
   'vehicle.maintenanceOn',
   'vehicle.maintenanceOff',
   'trip.created',

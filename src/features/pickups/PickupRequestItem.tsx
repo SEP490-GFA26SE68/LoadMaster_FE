@@ -59,6 +59,7 @@ export function PickupRequestItem({ tripId, row, stopLabel, onApprove, onReject 
       </p>
       {request.overrideReason === undefined ? null : <p className="m-0 text-small text-ink-1">{t('pickups.card.override', { reason: request.overrideReason })}</p>}
       {request.rejectReason === undefined ? null : <p className="m-0 text-small text-ink-1">{t('pickups.card.rejected', { reason: request.rejectReason })}</p>}
+      {request.rejectCause === 'TRIP_CANCELLED' ? <p className="m-0 text-small text-ink-1">{t('pickups.card.rejectedTripCancelled')}</p> : null}
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <span className="text-small font-medium text-ink-2">

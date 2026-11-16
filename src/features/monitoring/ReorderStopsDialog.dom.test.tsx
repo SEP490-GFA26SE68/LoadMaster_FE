@@ -103,3 +103,17 @@ test('a refusal names every blocked package with its stop, in words, and leaves 
   expect(dialog.getByText('Thứ tự điểm giữ nguyên.')).toBeInTheDocument()
   expect(await orderInStore()).toStrictEqual(before)
 })
+
+test('a refusal for missing coordinates names every stop that has none, in words', async () => {
+  vi.spyOn(getMockDb(), 'reorderRunningStops').mockRejectedValueOnce(
+    new MockDbError('MISSING_STOP_COORDINATES', { tripId: TRIP, stopIds: ['STOP-05'], stopNumbers: [4] }),
+  )
+  const dialog = await openDialog()
+  const stops = within(dialog.getByRole('list', { name: 'Thứ tự các điểm' })).getAllByRole('listitem')
+  await userEvent.click(within(stops[4]!).getByRole('button', { name: /^Dời .+ lên$/ }))
+  await userEvent.click(dialog.getByRole('button', { name: 'Áp dụng thứ tự mới' }))
+
+  const missing = within(await dialog.findByRole('list', { name: 'Điểm chưa có toạ độ' }, SLOW)).getAllByRole('listitem')
+  expect(missing.map((item) => item.textContent)).toStrictEqual([expect.stringMatching(/^điểm \d · Kho Dĩ An$/)])
+  expect(dialog.getByText('Không đổi được: các điểm sau chưa có toạ độ')).toBeInTheDocument()
+})

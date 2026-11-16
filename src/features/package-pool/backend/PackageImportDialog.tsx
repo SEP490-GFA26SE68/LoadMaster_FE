@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader } from '@/components/ui/Dialog'
 import { Spinner } from '@/components/ui/Spinner'
 import { dataErrorMessage, useFormat, useT, type TFunction } from '@/lib/i18n'
-import { backendRowErrorOf, backendRowWarningOf } from '../package-pool-dto'
+import { backendRowErrorOf, backendRowWarningOf } from './package-import-api'
 import { rowIssueText } from '../PackageImportPreview'
 import { MAX_IMPORT_FILE_MB, MAX_IMPORT_ROWS } from './package-pool-import'
 import {
@@ -14,8 +14,7 @@ import {
   usePreviewPackageImportMutation,
 } from './usePackagePoolQuery'
 
-import { useQuery } from '@tanstack/react-query'
-import { listDeliveryRequirements } from '@/features/requirements/backend/requirements-api'
+import { useRequirementsQuery } from '@/features/requirements/backend/useRequirementsQuery'
 import { SelectField } from '@/components/ui/SelectField'
 import { useForm, useWatch } from 'react-hook-form'
 
@@ -52,10 +51,7 @@ export function PackageImportDialog({
     },
   })
 
-  const requirementsQuery = useQuery({
-    queryKey: ['requirements'],
-    queryFn: listDeliveryRequirements,
-  })
+  const requirementsQuery = useRequirementsQuery()
 
   const deliveryRequirementId = useWatch({ control: requirementForm.control, name: 'deliveryRequirementId' })
 

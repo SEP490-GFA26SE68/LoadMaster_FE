@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils'
 import { BackendTripDetailPage } from './BackendTripDetailPage'
 import { PackageFormPanel } from './PackageFormPanel'
 import { PackageImportDialog } from './PackageImportDialog'
+import { isLiveTripStatus } from './live-trip-refresh'
 import { ManualConfirmCard } from './ManualConfirmCard'
 import { MissingPackagesCard } from './MissingPackagesCard'
 import { emptyPackage } from './package-defaults'
@@ -42,7 +43,7 @@ import {
 
 /**
  * Chi tiết chuyến hàng (LM-043 → LM-046, LM-088, LM-093, LM-095, LM-097; V2.3 LM-103): dải trời có tên chuyến, tiến trình và banner
- * theo pha; card sơ đồ tuyến đè lên đáy dải (thứ tự điểm giao kéo ngang được, bấm một điểm để lọc bảng kiện); dưới là bảng kiện và cột
+ * theo pha; card sơ đồ tuyến ngay dưới dải (thứ tự điểm giao kéo ngang được, bấm một điểm để lọc bảng kiện); dưới là bảng kiện và cột
  * phải (tóm tắt hàng, phương tiện, sự cố). Chọn một kiện thì cột phải thành panel kiện và sơ đồ tuyến thu về cột trái
  * (`ChiTietChuyenKien.jpg`).
  * Dữ liệu đọc từ mock repository qua Query. Chỉ sửa được khi có quyền và chuyến còn lập kế hoạch (D-41, D-45); từ lúc kho bắt đầu
@@ -84,6 +85,7 @@ function StoreTripDetailPage() {
   const [stopFilter, setStopFilter] = useState<number | null>(null)
 
   const trip = query.data?.trip
+  const live = isLiveTripStatus(query.data?.status)
   const vehicle = query.data?.vehicle
   // Quản lý xem chuyến chỉ đọc (D-41); từ lúc kho bắt đầu xếp, xe, điểm giao và kiện bị khoá (D-45)
   const editable = can('trips.edit') && trip?.phase === 'planning'
@@ -138,8 +140,8 @@ function StoreTripDetailPage() {
           <Button variant="secondary" asChild><Link to="/chuyen">{t('common.backToTrips')}</Link></Button>
         </div>
       ) : (
-        // V2.3: vùng cuộn đè lên đáy dải trời (`sky-overlap`), card sơ đồ tuyến nằm nửa trên dải
-        <div className="sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-8">
+        // Vùng cuộn bắt đầu dưới dải trời, không đè lên dải
+        <div className="min-h-0 flex-1 overflow-auto px-shell pt-6 pb-8">
           {/*
             Không chọn kiện: sơ đồ tuyến chiếm cả hàng, dưới là bảng kiện và cột phải 360 px. Chọn một kiện: panel kiện chiếm cột phải
             452 px từ đỉnh vùng, sơ đồ tuyến thu về cột trái (`ChiTietChuyenKien.jpg`). Hẹp hơn 1.280 px thì xếp chồng một cột.
@@ -166,8 +168,8 @@ function StoreTripDetailPage() {
 
             <div className="flex min-w-0 flex-col gap-3 xl:[grid-area:main]">
               {/* Việc chờ điều phối viên đứng trước bảng kiện: còn dòng ở đây thì kho / tài xế chưa đi tiếp được (FE-6-04) */}
-              <MissingPackagesCard tripId={tripId} />
-              <ManualConfirmCard tripId={tripId} />
+              <MissingPackagesCard tripId={tripId} live={live} />
+              <ManualConfirmCard tripId={tripId} live={live} />
               <PickupRequestsCard tripId={tripId} phase={trip.phase} stops={trip.stops} />
               <PackagesTable
                 packages={trip.packages}

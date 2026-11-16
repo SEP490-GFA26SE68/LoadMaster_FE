@@ -17,8 +17,8 @@ const addDaysIso = (iso: string, days: number) => new Date(Date.parse(iso) + day
 
 /**
  * Nền của kho gói cước (FE-8-01): sổ cái, thanh toán và việc tới hạn của vòng đời gói, chạy lười theo đồng hồ của kho. Sổ cái là nguồn của
- * số dư: `appendTransaction` là nơi duy nhất đổi `CreditAccount.balance`, nên số dư luôn bằng tổng sổ cái và không bao giờ âm. Các hàm công
- * khai của kho nằm ở `db-billing.ts`.
+ * số dư: `appendTransaction` là nơi duy nhất đổi `CreditAccount.balance`, nên số dư luôn bằng tổng sổ cái kể từ lần cấp credit tháng gần
+ * nhất (cấp credit tháng đặt lại số dư, như máy chủ) và không bao giờ âm. Các hàm công khai của kho nằm ở `db-billing.ts`.
  */
 export function billingCore(ctx: DbContext) {
   const { subscriptions, creditAccounts, creditTransactions, payments, users } = ctx.state
@@ -56,7 +56,8 @@ export function billingCore(ctx: DbContext) {
     entry: Pick<CreditTransaction, 'type' | 'amount' | 'reference'> & Partial<Pick<CreditTransaction, 'usageStatus' | 'tripId'>>,
   ): CreditTransaction {
     const account = accountOf(companyId)
-    const balance = account.balance + entry.amount
+    // Như máy chủ (Q-27): mỗi kỳ bắt đầu lại từ đúng credit của kỳ, credit còn thừa của kỳ trước không cộng dồn
+    const balance = entry.type === 'MONTHLY_GRANT' ? entry.amount : account.balance + entry.amount
     if (balance < 0) throw new MockDbError('INSUFFICIENT_CREDITS', { balance: account.balance })
     account.balance = balance
     return put(creditTransactions, {
@@ -81,7 +82,7 @@ export function billingCore(ctx: DbContext) {
     payment.updatedAt = at
   }
 
-  /** Cấp credit của một kỳ đã trả; gói không giới hạn không cấp gì. */
+  /** Cấp credit của một kỳ đã trả — số dư đặt lại về đúng số đó; gói không giới hạn không cấp gì. */
   function grantMonthly(companyId: string, credits: number | null | undefined, reference: string) {
     if (credits === null || credits === undefined) return
     appendTransaction(companyId, { type: 'MONTHLY_GRANT', amount: credits, reference })

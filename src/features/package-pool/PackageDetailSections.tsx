@@ -25,10 +25,10 @@ function eventText(entry: PackageHistoryLine, t: TFunction): string {
   }
 }
 
-/** Cờ của kiện ở panel chi tiết (D-92); điều phối viên (`packages.manage`) gỡ được từng cờ. */
+/** Cờ của kiện ở panel chi tiết (D-92); điều phối viên (`trips.edit`) gỡ được từng cờ, như máy chủ. */
 export function PackageFlagsSection({ titleId, pkg }: { titleId: string; pkg: Package }) {
   const t = useT()
-  const canManage = useCan()('packages.manage')
+  const canManage = useCan()('trips.edit')
   const clear = useClearPackageFlagMutation()
 
   function handleClear(flag: PackageFlag) {

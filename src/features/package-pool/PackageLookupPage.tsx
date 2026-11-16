@@ -42,7 +42,7 @@ export function PackageLookupPage() {
   const touch = can('warehouse.operate')
   const blocked = !can('packages.lookup')
   const [search, setSearch] = useSearchParams()
-  const code = blocked ? '' : (search.get(CODE_PARAM)?.trim() ?? '')
+  const code = search.get(CODE_PARAM)?.trim() ?? ''
   const [scanning, setScanning] = useState(false)
   const [scanError, setScanError] = useState<string | null>(null)
   const [foundId, setFoundId] = useState<string | null>(null)
@@ -64,8 +64,8 @@ export function PackageLookupPage() {
     setScanError(null)
     try {
       const item = await scan.mutateAsync(token)
-      if (touch && PACKAGE_POOL_SUPPORT.flags && item.package.flags.includes('NOT_FOUND')) {
-        await found.mutateAsync(item.package.qrToken)
+      if (touch && item.package.flags.includes('NOT_FOUND')) {
+        await found.mutateAsync(item.package)
         setFoundId(item.package.id)
       }
       setScanning(false)
@@ -78,7 +78,6 @@ export function PackageLookupPage() {
   return (
     <div className="flex min-w-0 flex-1 flex-col">
       <PageHero
-        overlap
         title={t('lookup.title')}
         description={t('pageHero.lookup')}
         actions={touch ? (
@@ -87,10 +86,10 @@ export function PackageLookupPage() {
           </Button>
         ) : null}
       />
-      <main className={cn('sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6', touch && 'text-body-lg')}>
+      <main className={cn('min-h-0 flex-1 overflow-auto px-shell py-6', touch && 'text-body-lg')}>
         <div className="flex max-w-220 flex-col gap-4">
           {blocked ? (
-            <Card className="p-5"><Banner tone="info">{t('sourcing.backend.lookupDispatcherOnly')}</Banner></Card>
+            <Card className="p-5"><Banner tone="info">{t('notFound.forbiddenTitle')}</Banner></Card>
           ) : (
             <Card className="flex flex-wrap items-start gap-3 p-5">
               <form noValidate className="flex min-w-64 flex-1 flex-wrap items-start gap-3" onSubmit={form.handleSubmit((values) => { setFoundId(null); show(values.code) })}>
@@ -118,7 +117,7 @@ export function PackageLookupPage() {
             </Card>
           )}
 
-          {blocked ? null : view.kind === 'idle' ? (
+          {view.kind === 'idle' ? (
             <EmptyState icon={ScanLine} className={touch ? '[&_span]:text-body-lg' : undefined} title={t('lookup.idle.title')} description={t('lookup.idle.description')} />
           ) : query.isError && !isUnknownPackage(query.error) ? (
             <Banner tone="danger">{dataErrorMessage(query.error, t)}</Banner>

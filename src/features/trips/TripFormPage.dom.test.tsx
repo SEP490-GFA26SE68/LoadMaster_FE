@@ -173,19 +173,10 @@ test('editing renames the trip, moves the departure time, edits a stop contact a
   expect(saved.stops.map(({ contactName: _contact, ...stop }) => stop)).toStrictEqual(trip!.stops.map(({ contactName: _contact, ...stop }) => stop))
 })
 
-test('while the warehouse loads, only name, departure and driver can change (D-45)', async () => {
-  const before = await getMockDb().getTrip('TRIP-011')
-  const { user } = renderForm('/chuyen/TRIP-011/sua')
-  expect(await screen.findByText(/xe, kho xuất phát và điểm giao đã khoá/, {}, SLOW)).toBeInTheDocument()
-  expect(screen.getByRole('combobox', { name: 'Xe' })).toBeDisabled()
-  expect(screen.getByRole('textbox', { name: 'Tên kho' })).toBeDisabled()
-  expect(screen.queryByRole('combobox', { name: 'Tìm địa danh' })).toBeNull()
-  expect(screen.getByLabelText('Tên điểm giao 1')).toBeDisabled()
-  await choose(user, 'Tài xế', 'Ngô Văn Bảo')
-  await user.click(screen.getByRole('button', { name: 'Lưu thay đổi' }))
-  expect(await screen.findByText('Chi tiết chuyến', {}, SLOW)).toBeInTheDocument()
-  const saved = await getMockDb().getTrip('TRIP-011')
-  expect(saved).toMatchObject({ driverId: 'US-0006', vehicleId: before.vehicleId, phase: 'loading' })
+test('a trip the warehouse is loading opens no form, like on the server (D-45)', async () => {
+  renderForm('/chuyen/TRIP-011/sua')
+  expect(await screen.findByRole('alert', {}, SLOW)).toHaveTextContent('Chuyến TRIP-011 không sửa được nữa: kho đã bắt đầu xếp hàng hoặc chuyến đã kết thúc.')
+  expect(screen.queryByRole('button', { name: 'Lưu thay đổi' })).not.toBeInTheDocument()
 })
 
 test('leaving with unsaved changes asks first; staying keeps the input, confirming leaves (LM-100)', async () => {
@@ -214,6 +205,6 @@ test('an untouched form leaves without asking', async () => {
 
 test('a trip that has left the warehouse opens no form', async () => {
   renderForm('/chuyen/TRIP-009/sua')
-  expect(await screen.findByRole('alert', {}, SLOW)).toHaveTextContent('Chuyến TRIP-009 đã rời kho hoặc đã kết thúc nên không sửa được nữa.')
+  expect(await screen.findByRole('alert', {}, SLOW)).toHaveTextContent('Chuyến TRIP-009 không sửa được nữa: kho đã bắt đầu xếp hàng hoặc chuyến đã kết thúc.')
   expect(screen.queryByRole('button', { name: 'Lưu thay đổi' })).not.toBeInTheDocument()
 })

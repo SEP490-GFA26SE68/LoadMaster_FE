@@ -1,6 +1,6 @@
 import { QueryClientContext } from '@tanstack/react-query'
 import { createContext, use, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { connectApiAuth } from '@/lib/api-client'
+import { connectApiAuth, isTransientApiError } from '@/lib/api-client'
 import { backendConfig, type AuthSource } from '@/lib/backend-config'
 import type { User } from '@/types/user'
 import * as authApi from './auth-api'
@@ -25,11 +25,20 @@ type AuthValue = {
   source: AuthSource
   /** Lỗi của lần mở lại phiên hoặc đọc hồ sơ ở backend (chỉ chế độ Keycloak); màn đăng nhập hiện câu tương ứng. */
   sessionError: unknown
+  /**
+   * Phiên Keycloak còn nhưng lần đọc hồ sơ vừa rồi hỏng tạm thời (mất mạng, máy chủ 5xx): màn đăng nhập có nút "Thử lại" gọi
+   * `retrySession` để đọc lại hồ sơ mà không phải nhập lại mật khẩu.
+   */
+  sessionRetryable: boolean
+  retrySession: () => Promise<void>
   /** Đăng nhập bằng email và mật khẩu — ở kho mẫu, hoặc ở Keycloak rồi đọc hồ sơ ở backend. Lỗi có mã là `AuthError`. */
   signIn: (email: string, password: string) => Promise<User>
   signOut: () => Promise<void>
-  /** Đọc lại người dùng của phiên, ví dụ sau khi sửa hồ sơ (LM-096). */
-  refreshUser: () => void
+  /**
+   * Đọc lại người dùng của phiên, ví dụ sau khi sửa hồ sơ (LM-096). Đọc hỏng thì lời hứa bị từ chối kèm lỗi để nơi gọi báo ra — người
+   * dùng đang đứng giữ nguyên, không bị coi là đã đăng xuất.
+   */
+  refreshUser: () => Promise<User | null>
 }
 
 const AuthContext = createContext<AuthValue | null>(null)
@@ -61,14 +70,15 @@ function writeStoredUser(user: User | null) {
 }
 
 /**
- * Hồ sơ ở backend sau khi Keycloak đã cấp phiên. Backend không nhận người này thì đóng luôn phiên Keycloak: để lại thì tab giữ một phiên
- * không dùng được, và lần mở trang sau lại vấp đúng lỗi đó.
+ * Hồ sơ ở backend sau khi Keycloak đã cấp phiên. Backend không nhận người này (401 `session-rejected`, 404 `account-not-linked`, vai
+ * trò lạ, tài khoản bị khoá) thì đóng luôn phiên Keycloak: để lại thì tab giữ một phiên không dùng được, và lần mở trang sau lại vấp đúng
+ * lỗi đó. Lỗi tạm thời (mất mạng, quá giờ, máy chủ 5xx) thì **giữ** phiên để đọc lại sau (`retrySession`).
  */
 async function backendUserOf(session: KeycloakSession): Promise<User> {
   try {
     return await authApi.fetchBackendUser()
   } catch (error) {
-    await session.logout()
+    if (!isTransientApiError(error)) await session.logout()
     throw error
   }
 }
@@ -89,6 +99,7 @@ export function AuthProvider({ children, source = backendConfig.authSource, keyc
   const [user, setUser] = useState<User | null>(() => (viaKeycloak ? null : restoreUser()))
   const [status, setStatus] = useState<AuthValue['status']>(viaKeycloak ? 'restoring' : 'ready')
   const [sessionError, setSessionError] = useState<unknown>(null)
+  const sessionRetryable = session !== null && isTransientApiError(sessionError)
   // Vắng khi cây không có `QueryClientProvider` (vài test chỉ dựng phiên): khi đó không có cache nào để xoá
   const queryClient = use(QueryClientContext)
 
@@ -96,7 +107,8 @@ export function AuthProvider({ children, source = backendConfig.authSource, keyc
   useEffect(() => {
     if (session === null) return
     let cancelled = false
-    connectApiAuth(() => session.token())
+    // Máy chủ trả 401: làm mới token một lần rồi gửi lại; vẫn 401 thì đóng phiên (`onEnded` dưới đây đưa về màn đăng nhập)
+    connectApiAuth(() => session.token(), { refreshToken: () => session.refreshToken(), onUnauthorized: () => session.reject() })
     // Phiên hết giữa chừng (không làm mới được, tab khác đăng xuất): về màn đăng nhập, bỏ dữ liệu của người vừa thoát
     const stopListening = session.onEnded(() => {
       authApi.forgetBackendUser()
@@ -151,20 +163,38 @@ export function AuthProvider({ children, source = backendConfig.authSource, keyc
     if (session !== null) await session.logout()
   }, [queryClient, session])
 
-  const refreshUser = useCallback(() => {
+  /** Đọc lại hồ sơ của phiên Keycloak còn mở sau một lần hỏng tạm thời. Hỏng nữa thì lỗi mới hiện ở màn đăng nhập. */
+  const retrySession = useCallback(async () => {
+    if (session === null) return
+    setStatus('restoring')
+    try {
+      const signedIn = await backendUserOf(session)
+      setSessionError(null)
+      queryClient?.clear()
+      setUser(signedIn)
+    } catch (error) {
+      setSessionError(error)
+    } finally {
+      setStatus('ready')
+    }
+  }, [queryClient, session])
+
+  const refreshUser = useCallback(async () => {
     if (session !== null) {
-      // Danh tính nằm ở backend: đọc lại từ đó, không lấy tài khoản mẫu đang đứng thay
-      void authApi.fetchBackendUser().then(setUser, () => undefined)
-      return
+      // Danh tính nằm ở backend: đọc lại từ đó, không lấy tài khoản mẫu đang đứng thay. Lỗi ném tiếp cho nơi gọi
+      const fresh = await authApi.fetchBackendUser()
+      setUser(fresh)
+      return fresh
     }
     const current = authApi.currentSessionUser()
     writeStoredUser(current)
     setUser(current)
+    return current
   }, [session])
 
   const value = useMemo<AuthValue>(
-    () => ({ user, status, source, sessionError, signIn, signOut, refreshUser }),
-    [user, status, source, sessionError, signIn, signOut, refreshUser],
+    () => ({ user, status, source, sessionError, sessionRetryable, retrySession, signIn, signOut, refreshUser }),
+    [user, status, source, sessionError, sessionRetryable, retrySession, signIn, signOut, refreshUser],
   )
 
   return <AuthContext value={value}>{children}</AuthContext>

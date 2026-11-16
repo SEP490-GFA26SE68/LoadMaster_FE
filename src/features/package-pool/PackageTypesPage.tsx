@@ -17,7 +17,7 @@ import { matchesQuery } from '@/lib/list-filter'
 import { PackageTypeActionsContext, packageTypeColumns, type PackageTypeRow } from './package-type-columns'
 import { PackageTypeFormDialog } from './PackageTypeFormDialog'
 import {
-  PACKAGE_POOL_SUPPORT, useDeletePackageTypeMutation, usePackagesQuery, usePackageTypesQuery, useSavePackageTypeMutation,
+  useDeletePackageTypeMutation, usePackagesQuery, usePackageTypesQuery, useSavePackageTypeMutation,
 } from './usePackagePoolQuery'
 import { PackageTypesPage as BackendPackageTypesPage } from './backend/PackageTypesPage'
 import { usesBackend } from '@/lib/backend-config'
@@ -25,31 +25,12 @@ import { usesBackend } from '@/lib/backend-config'
 type Editing = { kind: 'create' } | { kind: 'edit'; row: PackageTypeRow } | null
 
 /**
- * Danh mục loại kiện `/loai-kien` (LM-104; màn của điều phối viên, mở từ màn Kho kiện). Nối backend thì máy chủ chưa mở danh mục
- * loại kiện cho điều phối viên: màn Kho kiện không có lối vào, mở thẳng đường dẫn thì chỉ thấy câu lý do — không gọi máy chủ.
- */
-function StorePackageTypesPage() {
-  return PACKAGE_POOL_SUPPORT.packageTypes ? <PackageTypesCatalog /> : <PackageTypesUnavailable />
-}
-
-function PackageTypesUnavailable() {
-  const t = useT()
-  return (
-    <div className="flex min-w-0 flex-1 flex-col">
-      <PageHero title={t('sourcing.packageTypes.title')} description={t('pageHero.packageTypes')} back={{ to: '/kien-hang', label: t('sourcing.labels.back') }} />
-      <main className="min-h-0 flex-1 overflow-auto px-shell py-6">
-        <Banner tone="info">{t('sourcing.backend.packageTypes')}</Banner>
-      </main>
-    </div>
-  )
-}
-
-/**
+ * Danh mục loại kiện `/loai-kien` của kho mẫu (LM-104; mở từ màn Kho kiện); nối backend thì `backend/PackageTypesPage`.
  * Bảng loại kiện (kích thước, khối lượng, dễ vỡ, hướng đặt, xếp chồng, số kiện đang dùng) trong một thẻ đè lên dải trời; thêm / sửa
  * trong hộp thoại, xoá qua hộp thoại xác nhận — loại còn kiện của kho kiện dùng thì nút xoá nói lý do thay vì xoá (kho cũng từ chối
  * `PACKAGE_TYPE_IN_USE`).
  */
-function PackageTypesCatalog() {
+function StorePackageTypesPage() {
   const t = useT()
   const canEdit = useCan()('packages.manage')
   const typesQuery = usePackageTypesQuery()
@@ -74,7 +55,6 @@ function PackageTypesCatalog() {
   const pending = typesQuery.isPending || packagesQuery.isPending
   const error = typesQuery.error ?? packagesQuery.error
   const hasRows = rows.length > 0
-  const overlap = pending || (!error && hasRows)
 
   async function handleSubmit(input: PackageTypeInput) {
     const id = editing?.kind === 'edit' ? editing.row.id : undefined
@@ -103,14 +83,13 @@ function PackageTypesCatalog() {
   return (
     <div className="flex min-w-0 flex-1 flex-col">
       <PageHero
-        overlap={overlap}
         title={t('sourcing.packageTypes.title')}
         meta={typesQuery.isSuccess ? t('sourcing.packageTypes.count', { count: rows.length }) : undefined}
         description={t('pageHero.packageTypes')}
         back={{ to: '/kien-hang', label: t('sourcing.labels.back') }}
         actions={hasRows ? addButton : null}
       />
-      <main className={overlap ? 'sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6' : 'min-h-0 flex-1 overflow-auto px-shell py-6'}>
+      <main className="min-h-0 flex-1 overflow-auto px-shell py-6">
         {pending ? (
           <div className="flex justify-center rounded-lg border border-border bg-bg py-16 shadow-card"><Spinner /></div>
         ) : error ? (

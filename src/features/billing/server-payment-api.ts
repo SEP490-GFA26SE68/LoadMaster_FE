@@ -82,7 +82,7 @@ export type ServerPaymentResult =
 type MockCheckoutDto = { readonly txnRef?: string; readonly callbackResult?: { readonly RspCode?: string; readonly Message?: string } | null }
 
 /** Giao dịch nạp credit mới nhất nằm ở trang đầu (backend xếp mới nhất trước). */
-const LEDGER_HEAD = { size: 50, maxPages: 1 } as const
+const LEDGER_HEAD = { size: 50, maxPages: 1, truncate: true } as const
 
 /**
  * Xác nhận thanh toán ở cổng thử rồi đọc lại kết quả. Nạp credit: thành công khi sổ cái có lượt `PURCHASE` mang đúng mã giao dịch (backend

@@ -19,7 +19,7 @@ export type ReorderDb = {
    * số điểm, tiến độ, sự cố, dòng kiện… theo điểm sang số mới, `routePlan` tính lại (giờ đến, mức hạn), xe mô phỏng đi tiếp từ chỗ nó
    * đang đứng tới điểm kế tiếp mới, nhật ký `trip.stopsReordered` và chuông của tài xế. Phương án đã duyệt không đổi, không lỗi thời.
    *
-   * Lỗi: vai trò khác điều phối viên `ROLE_NOT_ALLOWED`; chuyến không Đang vận chuyển `TRIP_PHASE_INVALID`; điểm chưa có toạ độ
+   * Lỗi: vai trò khác điều phối viên `ROLE_NOT_ALLOWED`; chuyến không Đang vận chuyển `TRIP_NOT_IN_TRANSIT` (như máy chủ); điểm chưa có toạ độ
    * `MISSING_STOP_COORDINATES`; `STOP_ORDER_INVALID`, `STOP_NOT_MOVABLE`, `PICKUP_AFTER_DELIVERY`; `STOP_ORDER_BLOCKS_CARGO`.
    */
   reorderRunningStops(tripId: string, orderedStopIds: string[]): Promise<StopReorder>

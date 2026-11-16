@@ -36,7 +36,7 @@ export function CandidateComparison({ tripId, runId, data }: { tripId: string; r
 
   if (!run || cards.length === 0) {
     return (
-      <div className="sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6">
+      <div className="min-h-0 flex-1 overflow-auto px-shell py-6">
         <Card className="flex flex-none flex-col">
           <EmptyState mascot="notFound" wide className="py-10" title={t('trips.compare.candidates.notFoundTitle')}
             description={t('trips.compare.candidates.notFoundDescription', { run: runId })} action={allRevisions} />
@@ -48,7 +48,7 @@ export function CandidateComparison({ tripId, runId, data }: { tripId: string; r
   // Chạy lại chỉ khi chuyến còn lập kế hoạch và người xem được chạy tối ưu (D-45, LM-088)
   const canRun = trip.phase === 'planning' && can('optimization.run')
   return (
-    <div className="sky-overlap flex min-h-0 flex-1 flex-col gap-4 overflow-auto px-shell pb-6">
+    <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto px-shell py-6">
       <RunCard run={run} first={cards[0]?.revision} runnerName={data.runnerName} trip={trip} eta={eta} />
       {cards.some((card) => card.stale) ? <Banner tone="warning" className="flex-none">{t('trips.compare.candidates.stale')}</Banner> : null}
       <p className="flex-none px-1 text-small text-ink-3">{t('trips.compare.candidates.bestHint')}</p>

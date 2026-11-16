@@ -1,7 +1,3 @@
-import { LngLatBounds, Map as MapLibreMap, Marker, setWorkerUrl, type GeoJSONSource } from 'maplibre-gl'
-import 'maplibre-gl/dist/maplibre-gl.css'
-// Worker của MapLibre đóng gói cùng app (không CDN): Vite dựng nó thành file riêng và trả URL.
-import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
 import { Maximize2, Minus, Plus } from 'lucide-react'
 import { useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
@@ -9,10 +5,9 @@ import { Button } from '@/components/ui/Button'
 import type { GeoPoint } from '@/domain/routing'
 import { useT } from '@/lib/i18n'
 import { baseStyle, emptyStyle, goongMapTilesKey } from './map-style'
+import { LngLatBounds, MapLibreMap, Marker, type GeoJSONSource } from './maplibre-runtime'
 import { routeExtent, routeLine, routePins, staticExtent, type RouteMapData, type RouteMapPin } from './route-map-model'
 import { DepotMarker, StopMarker, VehicleMarker } from './RouteMapMarker'
-
-setWorkerUrl(workerUrl)
 
 const ROUTE = 'route-line'
 /** Lề canh khung nhìn: hai bên và phía dưới rộng hơn để nhãn dưới mốc xe (mã chuyến, nguồn vị trí) không bị mép bản đồ cắt. */

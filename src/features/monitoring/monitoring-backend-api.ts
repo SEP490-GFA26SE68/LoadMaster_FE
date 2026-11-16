@@ -14,12 +14,13 @@
  *   confirmReroute    → POST /api/trips/{id}/reroute/{routeIndex}/confirm
  *   renegotiate       → POST /api/trips/{id}/exceptions/{eid}/renegotiate
  *   renegotiableRequirements → GET /api/delivery-requirements (lọc theo mã chuyến ở FE) · GET /api/trips/{id}/detail
+ *   reorderStops      → POST /api/trips/{id}/stops/reorder
  */
 import { api, ApiError } from '@/lib/api-client'
 import { fetchAllPages } from '@/lib/api-page'
 import { backendLocalDateTime } from '@/lib/backend-time'
 import { withBusinessCode } from '@/lib/billing-backend-api'
-import type { DeadlineRenegotiationInput, LocationPoint, TripException, TripExceptionInput, TripReroute } from '@/lib/mock-db'
+import type { DeadlineRenegotiationInput, LocationPoint, StopReorderWarning, TripException, TripExceptionInput, TripReroute } from '@/lib/mock-db'
 import type { LiveRerouteProposal, RenegotiableRequirement } from './exceptions-api'
 import type { LiveMonitoring, MonitoringBoard } from './monitoring-api'
 import { boardOf, liveOf, locationOf, type LocationPointDto, type MonitoringBoardDto, type TripMonitoringDto } from './monitoring-dto'
@@ -148,4 +149,18 @@ export async function reportDriverException(tripId: string, input: TripException
   const body = { type: input.type, description: input.description, delayMinutes: input.delayMinutes }
   const request = api().post<TripExceptionDto>(`/api/driver/trips/${encodeURIComponent(tripId)}/exceptions`, { body })
   return exceptionOf(await withBusinessCode(request, { BAD_REQUEST: 'GPS_TRIP_NOT_IN_TRANSIT' }))
+}
+
+type ReorderStopsDto = { readonly partial?: readonly { readonly packageCode?: string | null; readonly stopId?: number | string | null }[] | null }
+
+/**
+ * Điều phối viên đổi thứ tự các điểm chưa giao khi xe đang chạy (`tripId` là mã chuyến, `orderedStopIds` là mã số điểm của máy chủ).
+ * Máy chủ kiểm lại khả năng dỡ: kiện bị che kín theo thứ tự mới là 409 `STOP_ORDER_BLOCKS_CARGO` kèm `packages` (mã in trên nhãn) và
+ * `stopIds` (chuỗi mã số điểm) song song — cùng dạng với lỗi của kho mẫu; kiện bị che một phần trả ở `partial`.
+ */
+// POST /api/trips/{id}/stops/reorder
+export async function reorderStops(tripId: string, orderedStopIds: readonly string[]): Promise<{ partial: StopReorderWarning[] }> {
+  const body = { stopIds: orderedStopIds.map(Number) }
+  const dto = await api().post<ReorderStopsDto>(`${tripPath(tripId)}/stops/reorder`, { body })
+  return { partial: (dto.partial ?? []).map((item) => ({ packageId: item.packageCode ?? '', stopId: String(item.stopId ?? '') })) }
 }

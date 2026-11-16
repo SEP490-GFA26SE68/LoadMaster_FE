@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { fieldLabelClass } from '@/components/ui/field-styles'
 import { Input } from '@/components/ui/Input'
 import { useLocale, useT, type TFunction } from '@/lib/i18n'
-import type { ResolvedAddress } from './places-api'
+import { addressSearchAvailable, type ResolvedAddress } from './places-api'
 import { cn } from '@/lib/utils'
 import { EMPTY_COORDINATES, formatCoordinate, parseCoordinates, type CoordinateText, type ParsedCoordinates } from './coordinates'
 import { goongMapTilesKey } from './map-style'
@@ -27,8 +27,8 @@ function errorOf(parsed: ParsedCoordinates, field: 'lat' | 'lng', t: TFunction):
 
 /**
  * Ô chọn toạ độ dùng chung (FE-4b-03, D-72) — yêu cầu giao, điểm giao thêm tay, kho xuất phát. Ba lối, cùng ghi vào hai ô vĩ độ / kinh
- * độ (mono): chọn từ danh sách địa danh mẫu (`PlaceSearchBox`), gõ tay, và — chỉ khi có khoá map tiles của Goong và có WebGL — bấm lên
- * bản đồ. Không có khoá thì chỉ còn danh sách và hai ô gõ. Giá trị sai báo lỗi **tại ô** sau khi con trỏ rời nhóm ô, hoặc ngay khi
+ * độ (mono): tìm địa chỉ (`PlaceSearchBox` — địa danh mẫu, hoặc máy chủ khi vai trò được tìm: `addressSearchAvailable`), gõ tay,
+ * và — chỉ khi có khoá map tiles của Goong và có WebGL — bấm lên bản đồ. Không có khoá thì chỉ còn ô tìm và hai ô gõ. Giá trị sai báo lỗi **tại ô** sau khi con trỏ rời nhóm ô, hoặc ngay khi
  * form đã bấm lưu (`showErrors`); form chặn lưu bằng cùng `parseCoordinates`. `disabled`: chỉ xem toạ độ đang có.
  */
 export function CoordinatePicker({ label, value, onChange, onPlacePicked, disabled = false, showErrors = false, hint, className }: {
@@ -74,7 +74,7 @@ function handlePick(place: ResolvedAddress) {
   return (
     <fieldset aria-labelledby={legendId} onBlur={handleBlur} className={cn('m-0 flex min-w-0 flex-col gap-2 border-0 p-0', className)}>
       <legend id={legendId} className={cn(fieldLabelClass, 'mb-1.5 p-0')}>{label}</legend>
-      {disabled ? null : <PlaceSearchBox onPick={handlePick} />}
+      {disabled || !addressSearchAvailable() ? null : <PlaceSearchBox onPick={handlePick} />}
       <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-start gap-2">
         <Input
           label={t('map.picker.lat')}

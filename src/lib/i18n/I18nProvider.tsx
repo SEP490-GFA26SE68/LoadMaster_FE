@@ -1,7 +1,7 @@
-import { createContext, use, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { createContext, use, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { createFormatter, type Formatter } from '@/lib/format'
 import { INTL_LOCALES, readInitialLocale, storeLocale, type Locale } from './locale'
-import { createTranslator } from './translate'
+import { createTranslator, isLocaleLoaded, loadLocale } from './translate'
 import type { TFunction } from './types'
 
 type I18nValue = {
@@ -17,10 +17,21 @@ const I18nContext = createContext<I18nValue | null>(null)
  * Bọc toàn app (trong `Providers`). Ngôn ngữ đầu tiên lấy theo `readInitialLocale`.
  * Đổi ngôn ngữ chỉ render lại chữ và số: không tải lại trang, không remount route,
  * form đang nhập giữ nguyên. Mỗi lần đổi, kể cả lựa chọn đến từ `?lang`, được ghi
- * vào `sessionStorage` và `<html lang>`.
+ * vào `sessionStorage` và `<html lang>`. Từ điển chưa tải (`en` tải lười) thì tải xong mới đổi; tải hỏng thì giữ ngôn ngữ đang
+ * dùng. `main.tsx` tải sẵn ngôn ngữ đầu tiên trước khi vẽ app.
  */
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocale] = useState<Locale>(readInitialLocale)
+  const [locale, setShownLocale] = useState<Locale>(() => {
+    const initial = readInitialLocale()
+    return isLocaleLoaded(initial) ? initial : 'vi'
+  })
+  const setLocale = useCallback((next: Locale) => {
+    if (isLocaleLoaded(next)) {
+      setShownLocale(next)
+      return
+    }
+    loadLocale(next).then(() => setShownLocale(next), () => undefined)
+  }, [])
 
   useEffect(() => {
     document.documentElement.lang = locale
@@ -34,7 +45,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       t: createTranslator(locale),
       format: createFormatter(INTL_LOCALES[locale]),
     }),
-    [locale],
+    [locale, setLocale],
   )
 
   return <I18nContext value={value}>{children}</I18nContext>

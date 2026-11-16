@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest'
 import { pinnedIssues } from '@/domain/constraints'
 import { SPEC_CARTON_A, SPEC_CARTON_A_PLACEMENT } from '@/domain/fixtures/spec-samples'
 import type { OptimizationRequest } from '@/domain/models'
-import { createMockDb, type MockDb } from '@/lib/mock-db'
+import { BILLING_CONSTANTS, createMockDb, type MockDb } from '@/lib/mock-db'
 import { keptLoaded } from '@/lib/mock-db/db-replan'
 import { runMockCandidates } from '@/services/optimization'
 import { twoCartonRequest, twoCartonResult, twoCartonTrip } from '@/test/mock-db-samples'
@@ -44,7 +44,7 @@ describe('pins live in the plan', () => {
     await expect(db.approveRevision(approved.id, [], { pinned: ['PKG-404-01'] })).rejects.toMatchObject({ code: 'PATCH_UNKNOWN_INSTANCE' })
   })
 
-  test('running again with pins saves one run of three revisions that record the pins, costs one credit, and keeps the pinned packages in place', async () => {
+  test('running again with pins saves one run of three revisions that record the pins, costs the credits of one run, and keeps the pinned packages in place', async () => {
     const { db, trip, vehicle, source } = await openTrip012()
     const approved = await db.approveRevision(source.id, [], { pinned: source.result.placements.slice(0, 2).map(({ packageInstanceId }) => packageInstanceId) })
     const pinnedPlacements = approved.result.placements.filter(({ pinned }) => pinned === true)
@@ -55,7 +55,7 @@ describe('pins live in the plan', () => {
     const balance = (await db.getCreditBalance()).balance
 
     const saved = await db.saveOptimizationRun({ tripId: trip.id, request, jobId: job.jobId, plans: job.plans })
-    expect((await db.getCreditBalance()).balance).toBe(balance - 1)
+    expect((await db.getCreditBalance()).balance).toBe(balance - BILLING_CONSTANTS.optimizationCost)
     expect((await db.listOptimizationRuns(trip.id)).length).toBe(runsBefore + 1)
     expect(saved.run).toMatchObject({ status: 'COMPLETED', pinnedCount: 2 })
     expect(saved.revisions).toHaveLength(3)

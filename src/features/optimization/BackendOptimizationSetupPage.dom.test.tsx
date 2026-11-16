@@ -1,3 +1,4 @@
+import { connectApiAuth } from '@/lib/api-client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
@@ -12,9 +13,7 @@ vi.mock('@/features/auth/AuthProvider', async importOriginal => ({
   ...await importOriginal<typeof import('@/features/auth/AuthProvider')>(),
   useCurrentUser: () => identity.user,
 }))
-vi.mock('@/features/auth/keycloak', () => ({ keycloak: {
-  authenticated: true, token: 'TEST_ONLY_TOKEN', updateToken: () => Promise.resolve(false),
-} }))
+vi.mock('@/lib/backend-config', () => ({ backendConfig: { authSource: 'keycloak', apiUrl: 'http://be.test' }, usesBackend: () => false }))
 
 const KEY_A = '11111111-1111-4111-8111-111111111111'
 const KEY_B = '22222222-2222-4222-8222-222222222222'
@@ -41,6 +40,7 @@ function mount(tripId = '7', client = new QueryClient({ defaultOptions: { querie
   return { ...view, change: (id = tripId) => view.rerender(tree(id)), client }
 }
 beforeEach(() => {
+  connectApiAuth(() => Promise.resolve('TEST_ONLY_TOKEN'))
   sessionStorage.clear(); posts.length = 0; polls = []; status = 'RUNNING'; plans = []; planReads = 0
   identity.user = { id: '1', companyId: '10' }
   vi.spyOn(crypto, 'randomUUID').mockReturnValueOnce(KEY_A).mockReturnValueOnce(KEY_B)

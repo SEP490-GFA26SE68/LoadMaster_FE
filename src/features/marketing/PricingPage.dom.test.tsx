@@ -50,8 +50,8 @@ test('only the plans on sale are listed, each with its provisional tag, price, c
 
   const pro = screen.getByRole('group', { name: 'Pro' })
   expect(within(pro).getByText('Giá trị tạm — chờ chốt')).toBeInTheDocument()
-  expect(pro).toHaveTextContent(/1\.490\.000\s₫\s*\/ tháng/)
-  expect(within(pro).getByText('Credit mỗi tháng').nextElementSibling).toHaveTextContent('500')
+  expect(pro).toHaveTextContent(/3.500.000\s₫\s*\/ tháng/)
+  expect(within(pro).getByText('Credit mỗi tháng').nextElementSibling).toHaveTextContent('10.000')
   expect(within(pro).getByText('Hạng thuật toán').nextElementSibling).toHaveTextContent('Nâng cao')
   expect(within(pro).getAllByRole('listitem').map((item) => item.textContent)).toStrictEqual([
     'Tối ưu xếp hàng 3D, ba phương án mỗi lần chạy', 'Tối ưu tuyến giao hàng', 'Hạng thuật toán nâng cao',

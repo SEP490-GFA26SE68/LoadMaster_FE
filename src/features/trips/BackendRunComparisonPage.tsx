@@ -1,4 +1,3 @@
-import { useQuery } from '@tanstack/react-query'
 import { Box, Pin } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
@@ -7,11 +6,11 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Spinner } from '@/components/ui/Spinner'
-import type { LoadPlan } from '@/features/optimization/load-plan-dto'
+import type { LoadPlan } from '@/features/optimization/load-plans-backend-api'
 import { planAlgorithmLabel, runAlgorithmLabel } from '@/features/optimization/server-algorithms'
 import { useJobPlansQuery, useTripLoadPlansQuery } from '@/features/optimization/useLoadPlansQuery'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
-import { resolveBackendTripId } from './trips-api'
+import { useBackendTripIdQuery } from './useBackendTripQuery'
 
 type BestKey = 'volume' | 'payload' | 'rehandling' | 'unplaced'
 
@@ -46,7 +45,7 @@ export function BackendRunComparisonPage() {
   const [searchParams] = useSearchParams()
   const runId = searchParams.get('lan-chay')
   const t = useT()
-  const resolved = useQuery({ queryKey: ['trips', tripParam, 'backend-id'], queryFn: () => resolveBackendTripId(tripParam), staleTime: Infinity, enabled: runId === null })
+  const resolved = useBackendTripIdQuery(tripParam, runId === null)
   const latest = useTripLoadPlansQuery(runId === null ? (resolved.data ?? '') : '')
   const jobId = runId ?? latest.data?.plans.findLast((plan) => plan.jobId !== null)?.jobId ?? ''
   const plans = useJobPlansQuery(tripParam, jobId)

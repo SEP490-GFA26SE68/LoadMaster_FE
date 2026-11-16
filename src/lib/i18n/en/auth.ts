@@ -16,6 +16,7 @@ export const auth = {
     invalidCredentials: 'Incorrect email or password',
     accountSuspended: 'This account is locked. Contact your administrator to unlock it.',
     serverUnreachable: 'Cannot reach the server. Try again later.',
+    retrySession: 'Try again',
     roleUnknown: 'This account has a role the app does not support yet. Contact your administrator.',
     passwordChangeRequired: 'This account has a temporary password. Set a new password before signing in.',
     setNewPassword: 'Set a new password',
@@ -24,6 +25,7 @@ export const auth = {
     sessionRejected: 'The server did not accept this sign-in session. Tell your system administrator.',
     forgotPassword: 'Forgot password?',
     backToLanding: 'Back to the home page',
+    noAccount: 'Your company has no LoadMaster account yet?',
     sso: {
       sampleData: 'Your account comes from the server. Trips, vehicles and packages on screen are still sample data.',
     },

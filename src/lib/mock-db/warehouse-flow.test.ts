@@ -25,7 +25,7 @@ async function plan(db: MockDb, stacked: boolean) {
 }
 
 /** Chuyến đã duyệt, kho vừa bắt đầu (bước Soạn hàng), phiên của nhân viên kho. */
-async function staging({ stacked = false } = {}) {
+async function staging({ stacked = false, driverId }: { stacked?: boolean; driverId?: string } = {}) {
   const db = createMockDb({ now: () => new Date(NOW) })
   db.restoreSession('US-0001')
   const first = await db.createPackage({ ...CARTON, packageCode: 'KH-101' })
@@ -34,7 +34,7 @@ async function staging({ stacked = false } = {}) {
     destinationName: 'Nhà hàng Hương Việt', address: '203 Lê Văn Sỹ, P. 13, Q.3', lat: 10.7869, lng: 106.6803, deadline: '2026-09-16T10:00:00.000Z',
     priority: 'NORMAL', packageIds: [first.id, second.id],
   })
-  const { id } = await db.createTrip({ ...twoCartonTrip(), packages: [], stops: [] })
+  const { id } = await db.createTrip({ ...twoCartonTrip(), ...(driverId ? { driverId } : {}), packages: [], stops: [] })
   await db.assignDeliveryRequirement(requirement.id, id)
   // Tối ưu tuyến: chuyến Đã lập kế hoạch trước khi có phương án
   await db.optimizeTripRoute(id)
@@ -180,7 +180,8 @@ test('shortage: dropping the package flags it, marks its requirement partial and
 })
 
 test('damaged while loading: with nothing resting on it in the plan the package is left out, flagged, and loading goes on', async () => {
-  const { db, first, second, requirementId } = await staging()
+  // Tài xế gán từ lúc lập kế hoạch: kho đã bắt đầu xếp thì chuyến khoá, không đổi tài xế được nữa
+  const { db, first, second, requirementId } = await staging({ driverId: 'US-0004' })
   // Chưa soạn đủ thì chưa ở bước xếp
   await expect(db.reportDamagedPackage(TRIP, 'PKG-001-01')).rejects.toMatchObject({ code: 'STAGING_INCOMPLETE', params: { remaining: 2 } })
   await stageAll(db, TRIP)
@@ -195,8 +196,6 @@ test('damaged while loading: with nothing resting on it in the plan the package 
   expect((await db.listEvents({ targetId: TRIP }))[0]).toMatchObject({ action: 'loading.completed', params: { loaded: 1, damaged: 1 } })
   expect(await statusOf(db, first.id)).toStrictEqual(['LOADED'])
   // Kiện hỏng không có trên xe: tài xế không dỡ được nó
-  db.restoreSession('US-0001')
-  await db.updateTrip(TRIP, { driverId: 'US-0004' })
   db.restoreSession('US-0004')
   await db.startDelivery(TRIP)
   await db.arriveAtStop(TRIP, 1)

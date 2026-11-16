@@ -10,10 +10,10 @@ afterEach(() => {
 
 const VEHICLE_STATUSES = [
   ['available', 'Sẵn sàng', 'Available'],
-  ['in_use', 'Đang chạy chuyến', 'In trip'],
+  ['in_use', 'Đang phục vụ chuyến', 'On a trip'],
   ['maintenance', 'Bảo dưỡng', 'Maintenance'],
   ['AVAILABLE', 'Sẵn sàng', 'Available'],
-  ['IN_TRIP', 'Đang chạy chuyến', 'In trip'],
+  ['IN_TRIP', 'Đang phục vụ chuyến', 'On a trip'],
   ['MAINTENANCE', 'Bảo dưỡng', 'Maintenance'],
   ['RETIRED', 'Ngừng sử dụng', 'Retired'],
 ] as const

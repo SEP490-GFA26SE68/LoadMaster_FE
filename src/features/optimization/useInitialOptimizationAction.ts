@@ -7,7 +7,7 @@ import {
   type InitialOptimizationAction, type OptimizationActionScope,
 } from './initial-optimization-action'
 
-type Notice = 'uncertain' | 'conflict' | 'storage' | null
+type Notice = 'uncertain' | 'conflict' | 'storage' | 'rejected' | null
 
 /** One mounted instance belongs to exactly one user/company/trip (the screen keys that boundary). */
 export function useInitialOptimizationAction(scope: OptimizationActionScope) {
@@ -28,7 +28,7 @@ export function useInitialOptimizationAction(scope: OptimizationActionScope) {
   const mutation = useMutation({
     retry: false, // A retry is an explicit action using the immutable snapshot below.
     mutationFn: ({ snapshot, controller }: { snapshot: InitialOptimizationAction; controller: AbortController }) =>
-      createBackendOptimizationJob(snapshot.request.tripId, snapshot.key, controller.signal),
+      createBackendOptimizationJob(snapshot.request.tripId, snapshot.key, controller.signal, snapshot.request.keepPinsFromPlanId),
     onSuccess: (job, { snapshot, controller }) => {
       if (controller.signal.aborted || active.current?.key !== snapshot.key) return
       const acknowledged = { ...snapshot, jobId: job.job_id, dispatchStatus: job.dispatch_status }
@@ -39,8 +39,20 @@ export function useInitialOptimizationAction(scope: OptimizationActionScope) {
         setNotice(job.dispatch_status === 'UNKNOWN' ? 'uncertain' : null)
       } catch { setNotice('storage') }
     },
-    onError: (error, { controller }) => {
-      if (controller.signal.aborted) return
+    onError: (error, { controller, snapshot }) => {
+      if (controller.signal.aborted || active.current?.key !== snapshot.key) return
+      if (isApiError(error) && error.status === 400 && error.code === 'PACKING_PROFILE_ORIENTATION_INVALID') {
+        const id = error.params.job_id
+        if (typeof id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+          && String(error.params.trip_id) === scope.tripId) {
+          const rejected = { ...snapshot, jobId: id }
+          active.current = rejected
+          setAction(rejected)
+          try { saveOptimizationAction(scope, rejected); setNotice('rejected') }
+          catch { setNotice('storage') }
+          return // Known reserved job: GET, never POST a replacement.
+        }
+      }
       setNotice(isApiError(error) && error.status === 409 ? 'conflict' : 'uncertain')
     },
     onSettled: () => { locked.current = false },
@@ -53,12 +65,12 @@ export function useInitialOptimizationAction(scope: OptimizationActionScope) {
     mutation.mutate({ snapshot, controller })
   }
 
-  function handleStartNew(resolvedJobId: string | null) {
+  function handleStartNew(resolvedJobId: string | null, keepPinsFromPlanId?: string) {
     if (locked.current || notice === 'storage') return
     const previous = active.current
     if (previous && (!previous.jobId || previous.jobId !== resolvedJobId)) return
     try {
-      const next: InitialOptimizationAction = { key: crypto.randomUUID(), request: { tripId: scope.tripId } }
+      const next: InitialOptimizationAction = { key: crypto.randomUUID(), request: { tripId: scope.tripId, ...(keepPinsFromPlanId ? { keepPinsFromPlanId } : {}) } }
       saveOptimizationAction(scope, next) // Persist BEFORE POST, even if the response will be lost.
       active.current = next
       setAction(next)

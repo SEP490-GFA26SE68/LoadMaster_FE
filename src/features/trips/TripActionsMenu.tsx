@@ -3,13 +3,10 @@ import { useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { Button } from '@/components/ui/Button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/DropdownMenu'
-import { isCancellablePhase, tripStatus, type Trip, type TripPhase } from '@/lib/mock-db'
+import { isCancellablePhase, tripStatus, type Trip } from '@/lib/mock-db'
 import { useT } from '@/lib/i18n'
 import { CancelTripDialog } from './CancelTripDialog'
 import { ChangeVehicleDialog } from './ChangeVehicleDialog'
-
-/** Kho còn cho sửa tên, ngày chạy, tài xế ở các pha này (D-45); xe, điểm giao, kiện chỉ sửa được ở `planning`. */
-const FRAME_EDITABLE: readonly TripPhase[] = ['planning', 'loading', 'loaded']
 
 /**
  * Menu thao tác phụ ở header Chi tiết chuyến (LM-088): sửa thông tin chuyến, đổi xe của chuyến Đã lập kế hoạch (FE-5b-08, D-80), huỷ
@@ -24,7 +21,8 @@ export function TripActionsMenu({ trip, canEdit }: { trip: Pick<Trip, 'id' | 'ph
   const [cancelOpen, setCancelOpen] = useState(false)
   const [vehicleOpen, setVehicleOpen] = useState(false)
   const triggerRef = useRef<HTMLButtonElement>(null)
-  const canEditFrame = canEdit && FRAME_EDITABLE.includes(trip.phase)
+  // Như máy chủ: chỉ chuyến còn lập kế hoạch mở form sửa
+  const canEditFrame = canEdit && trip.phase === 'planning'
   const canCancel = canEdit && (isCancellablePhase(trip.phase) || trip.phase === 'delivering')
   // Chuyến Nháp đổi xe ở form sửa chuyến; đã lập kế hoạch thì đổi qua hộp thoại có kiểm xe (kho từ chối `TRIP_NOT_PLANNED` nếu khác)
   const canChangeVehicle = canEdit && tripStatus(trip) === 'PLANNED'

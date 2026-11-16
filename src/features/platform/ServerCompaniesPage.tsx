@@ -120,15 +120,12 @@ export function ServerCompaniesPage() {
       {t('companies.add')}
     </Button>
   )
-  const showTable = query.isSuccess && rows.length > 0
   const partial = list !== undefined && (!list.plansLoaded || !list.usersLoaded)
   const statusCopy = dialog?.kind === 'status' ? (dialog.next === 'SUSPENDED' ? 'suspend' : 'reactivate') : null
-  const overlap = tab === 'companies' && showTable && !partial
 
   return (
     <Tabs value={tab} onValueChange={handleTab} className="flex min-w-0 flex-1 flex-col">
       <PageHero
-        overlap={overlap}
         title={t('companies.title')}
         meta={query.isSuccess ? t('companies.count', { count: rows.length }) : undefined}
         description={t('pageHero.companiesServer')}
@@ -142,7 +139,7 @@ export function ServerCompaniesPage() {
       <TabsContent value="admins" className="min-h-0 flex-1 overflow-auto px-shell py-6">
         <CompanyAdminsTab />
       </TabsContent>
-      <TabsContent value="companies" className={overlap ? 'sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6' : 'min-h-0 flex-1 overflow-auto px-shell py-6'}>
+      <TabsContent value="companies" className="min-h-0 flex-1 overflow-auto px-shell py-6">
         {query.isPending ? (
           <div role="status" aria-label={t('companies.loading')} className="flex justify-center py-16"><Spinner /></div>
         ) : query.isError ? (

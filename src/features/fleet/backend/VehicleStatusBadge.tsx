@@ -6,7 +6,9 @@ import {
 
 import { useT } from '@/lib/i18n'
 
-import type { VehicleStatus } from './vehicles-api'
+import { VehicleStatusCell as StoreVehicleStatusCell } from '../VehicleStatusBadge'
+import { fleetStateOf } from './vehicle-status'
+import type { Vehicle, VehicleStatus } from './vehicles-api'
 
 const STATUS_KEYS = ['AVAILABLE', 'IN_TRIP', 'MAINTENANCE', 'RETIRED', 'available', 'in_use', 'maintenance', 'retired'] as const
 const isStatusKey = (status: string): status is (typeof STATUS_KEYS)[number] => (STATUS_KEYS as readonly string[]).includes(status)
@@ -81,21 +83,7 @@ export function VehicleStatusBadge({
   )
 }
 
-/**
- * Ô trạng thái trong bảng đội xe.
- *
- * Hiện BE chỉ trả trạng thái xe,
- * chưa trả mã chuyến đang chạy hoặc
- * chi tiết lịch sử bảo dưỡng.
- */
-export function VehicleStatusCell({
-  status,
-}: {
-  status: VehicleStatus
-}) {
-  return (
-    <span className="flex min-w-0 flex-col items-start gap-1 whitespace-normal">
-      <VehicleStatusBadge status={status} />
-    </span>
-  )
+/** Ô trạng thái trong bảng đội xe: dùng chung ô của màn kho mẫu — chip, chuyến đang dùng xe hoặc ngày và ghi chú bảo dưỡng. */
+export function VehicleStatusCell({ vehicle }: { vehicle: Vehicle }) {
+  return <StoreVehicleStatusCell state={fleetStateOf(vehicle)} serverSource />
 }

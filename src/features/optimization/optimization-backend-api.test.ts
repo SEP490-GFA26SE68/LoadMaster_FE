@@ -1,14 +1,13 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
-import { keycloak } from '@/features/auth/keycloak'
+import { connectApiAuth } from '@/lib/api-client'
 import { createBackendOptimizationJob } from './optimization-api'
 
-vi.mock('@/features/auth/keycloak', () => ({ keycloak: {
-  authenticated: true, token: 'TEST_ONLY', updateToken: vi.fn(() => Promise.resolve(false)),
-} }))
+vi.mock('@/lib/backend-config', () => ({ backendConfig: { authSource: 'keycloak', apiUrl: 'http://be.test' }, usesBackend: () => false }))
 const KEY = '11111111-1111-4111-8111-111111111111'
 const fetchMock = vi.fn<typeof fetch>()
 const response = (data: unknown) => new Response(JSON.stringify({ success: true, data }))
 beforeEach(() => {
+  connectApiAuth(() => Promise.resolve('TEST_ONLY'))
   vi.stubGlobal('fetch', fetchMock)
   fetchMock.mockReset().mockResolvedValue(response({ job_id: 'job-1', dispatch_status: 'ACCEPTED' }))
 })
@@ -47,12 +46,12 @@ test('a blank action key is rejected before making any request', async () => {
 })
 
 test('account switch cancellation during token refresh prevents the old POST', async () => {
-  let completeRefresh!: (value: boolean) => void
-  vi.mocked(keycloak.updateToken).mockImplementationOnce(() => new Promise(resolve => { completeRefresh = resolve }))
+  let completeRefresh!: (value: string | null) => void
+  connectApiAuth(() => new Promise(resolve => { completeRefresh = resolve }))
   const controller = new AbortController()
   const pending = createBackendOptimizationJob('7', KEY, controller.signal)
   controller.abort()
-  completeRefresh(false)
+  completeRefresh('TEST_ONLY')
   await expect(pending).rejects.toMatchObject({ name: 'AbortError' })
   expect(fetchMock).not.toHaveBeenCalled()
 })

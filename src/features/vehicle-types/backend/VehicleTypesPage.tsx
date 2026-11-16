@@ -3,6 +3,7 @@ import { Plus, RotateCcw } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { DataTable } from '@/components/DataTable'
 import { useListUrlState } from '@/components/useListUrlState'
 import { EmptyState } from '@/components/EmptyState'
@@ -15,6 +16,7 @@ import { useCan } from '@/features/auth/useCan'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 
 import type {
+  VehicleType,
   VehicleTypeInput,
 } from './vehicle-types-api'
 
@@ -27,6 +29,7 @@ import {
 import { VehicleTypeDialog } from './VehicleTypeDialog'
 
 import {
+  useDeleteVehicleTypeMutation,
   useSaveVehicleTypeMutation,
   useVehicleTypeCatalogQuery,
 } from './useVehicleTypesQuery'
@@ -39,6 +42,9 @@ import {
  *
  * Vehicle được gán loại ngay khi tạo xe,
  * không thực hiện gán bằng bảng mock.
+ *
+ * Sửa loại xe (PUT) đổi lòng thùng, cửa, tải trọng, vật cản: máy chủ làm phương án của chuyến chưa rời kho dùng loại đó lỗi thời.
+ * Loại còn gắn xe không xoá được (mục Xoá mờ kèm lý do).
  */
 export function VehicleTypesPage() {
   const t = useT()
@@ -47,8 +53,11 @@ export function VehicleTypesPage() {
   const typesQuery = useVehicleTypeCatalogQuery()
   const list = useListUrlState({ defaultSort: { id: 'name', desc: false } })
   const save = useSaveVehicleTypeMutation()
+  const remove = useDeleteVehicleTypeMutation()
 
   const [creating, setCreating] = useState(false)
+  const [editing, setEditing] = useState<VehicleType | null>(null)
+  const [deleting, setDeleting] = useState<VehicleType | null>(null)
 
   const types = typesQuery.data ?? []
 
@@ -58,14 +67,16 @@ export function VehicleTypesPage() {
   )
 
   function handleSave(input: VehicleTypeInput) {
+    const id = editing?.id
     save.mutate(
-      { input },
+      { input, id },
       {
         onSuccess: (type) => {
           setCreating(false)
+          setEditing(null)
 
           toast.success(
-            t('vehicleTypes.created', {
+            t(id === undefined ? 'vehicleTypes.created' : 'vehicleTypes.saved', {
               name: type.name,
             }),
           )
@@ -80,12 +91,24 @@ export function VehicleTypesPage() {
     )
   }
 
+  function handleDelete() {
+    if (!deleting) return
+    const type = deleting
+    remove.mutate(type.id, {
+      onSuccess: () => {
+        setDeleting(null)
+        toast.success(t('vehicleTypes.deleted', { name: type.name }))
+      },
+      onError: (error) => toast.error(dataErrorMessage(error, t)),
+    })
+  }
+
   const context: VehicleTypesTableValue = {
     canEdit,
-    canUpdate: false,
-    canDelete: false,
-    onEdit: () => { },
-    onDelete: () => { },
+    canUpdate: canEdit,
+    canDelete: canEdit,
+    onEdit: setEditing,
+    onDelete: setDeleting,
   }
 
   const addButton = canEdit ? (
@@ -103,7 +126,6 @@ export function VehicleTypesPage() {
   return (
     <div className="flex min-w-0 flex-1 flex-col">
       <PageHero
-        overlap={typesQuery.isSuccess && hasTypes}
         title={t('vehicleTypes.title')}
         meta={
           typesQuery.isSuccess
@@ -119,11 +141,7 @@ export function VehicleTypesPage() {
       />
 
       <div
-        className={
-          typesQuery.isSuccess && hasTypes
-            ? 'sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6'
-            : 'min-h-0 flex-1 overflow-auto px-shell py-6'
-        }
+        className="min-h-0 flex-1 overflow-auto px-shell py-6"
       >
         {typesQuery.isPending ? (
           <div
@@ -177,11 +195,29 @@ export function VehicleTypesPage() {
       </div>
 
       <VehicleTypeDialog
-        open={creating}
-        onOpenChange={setCreating}
-        type={null}
+        open={creating || editing !== null}
+        onOpenChange={(open) => {
+          if (open) return
+          setCreating(false)
+          setEditing(null)
+        }}
+        type={editing}
         pending={save.isPending}
         onSubmit={handleSave}
+      />
+
+      <ConfirmDialog
+        open={deleting !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleting(null)
+        }}
+        title={t('vehicleTypes.deleteDialog.title', { name: deleting?.name ?? '' })}
+        description={t('vehicleTypes.deleteDialog.description', { id: deleting?.id ?? '' })}
+        cancelLabel={t('vehicleTypes.deleteDialog.cancel')}
+        confirmLabel={t('vehicleTypes.deleteDialog.confirm')}
+        danger
+        pending={remove.isPending}
+        onConfirm={handleDelete}
       />
     </div>
   )

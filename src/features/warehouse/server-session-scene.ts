@@ -1,5 +1,5 @@
 import type { VehicleConfig } from '@/domain/models'
-import type { LoadPlan } from '@/features/optimization/load-plan-dto'
+import type { LoadPlan } from '@/features/optimization/load-plans-backend-api'
 import { backendPlacementIds, backendPlanScene, type BackendSceneStop } from '@/features/viewer3d/backend-plan-scene'
 import type { ViewerSceneModel } from '@/features/viewer3d/scene-types'
 import type { ServerLoadingSession } from './warehouse-server-api'
