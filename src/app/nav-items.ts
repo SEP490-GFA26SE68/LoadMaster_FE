@@ -73,7 +73,7 @@ export type NavScreenId = keyof typeof NAV_SCREENS
  *   Quản lý nền tảng: Gói cước (FE-8-02) · Lịch sử gói · Công ty · Đơn dùng thử. Hỗ trợ khách hàng: Hỗ trợ (FE-8-07) · Liên hệ của khách.
  */
 export const NAV_ITEMS: Readonly<Record<Role, readonly NavScreenId[]>> = {
-  systemAdmin: ['companies', 'users', 'audit', 'trialRequests'],
+  systemAdmin: ['companies', 'users', 'audit', 'contacts', 'trialRequests'],
   systemManager: ['plans', 'subscriptionHistory', 'companies', 'trialRequests'],
   systemSupporter: ['support', 'contacts'],
   companyAdmin: ['users', 'audit', 'billing', 'payroll', 'companyProfile'],

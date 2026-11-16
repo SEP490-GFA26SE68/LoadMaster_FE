@@ -66,7 +66,7 @@ export function PayrollPage() {
       <PageHero title={t('payroll.title')} description={t('pageHero.payroll')} />
       {!PAYROLL_CAPABILITIES.server ? (
         <main className="flex min-h-0 flex-1 items-center justify-center overflow-auto px-shell py-6">
-          <EmptyState mascot="info" title={t('payroll.unavailableTitle')} description={t('payroll.unavailableDescription')} />
+          <EmptyState mascot="empty" title={t('payroll.unavailableTitle')} description={t('payroll.unavailableDescription')} />
         </main>
       ) : (
         <main className="flex min-h-0 flex-1 flex-col gap-5 overflow-auto px-shell py-6 max-sm:px-4">

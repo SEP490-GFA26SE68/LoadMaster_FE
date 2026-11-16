@@ -1143,12 +1143,8 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
 - **Nhóm chức năng** (`BACKEND_FEATURES`): `VITE_API_FEATURES` là `all` (mặc định), `none` hoặc danh sách tên nhóm, chỉ có hiệu lực khi đăng
   nhập bằng Keycloak (kho mẫu luôn tắt hết). Mỗi `-api.ts` hỏi `usesBackend('<nhóm>')` một lần ở đầu file (`ON_BACKEND`); nhóm tắt chạy đúng
   như kho mẫu, nên CI, E2E và test cũ không đổi. Đã nối: `users`, `companies`, `billing`, `contacts`, `support`, `packages`, `driver`,
-<<<<<<< Updated upstream
-  `monitoring`, `trips`, `fleet`, `warehouse`, `notifications`. `platformOps` chưa có thân hàm nào — cờ bật vẫn là kho mẫu — nên không dựa vào `usesBackend`
-=======
   `monitoring`, `trips`, `fleet`, `warehouse`, `notifications`, `registration`, `payroll`. Nhóm `payroll` cấu hình phiên bản đơn giá công ty,
   tính và chốt bảng lương theo tháng, đọc phiếu lương tài xế và gán tài xế cho chuyến. `platformOps` chưa có thân hàm nào — cờ bật vẫn là kho mẫu — nên không dựa vào `usesBackend`
->>>>>>> Stashed changes
   của nhóm đó cho tới khi nối. Nhóm `notifications` tắt thì chuông đọc nhật ký kho mẫu nên chỉ hiện khi mọi nhóm mà thông báo của vai trò
   nói về còn là kho mẫu (`notificationsReachable`, `notifications-api.ts`; bật thì mục "Chuông thông báo" dưới); tìm nhanh bỏ nhóm loại kiện khi `packages` nối backend. Mã chuyến chỉ là liên kết khi màn đọc chuyến cùng nguồn với màn chuyến (`tripLinkable` ở
   `trips-capabilities.ts`): chuyến nối backend thì bảng điều khiển (khi còn kho mẫu), yêu cầu giao, đội xe, kho kiện, nhật ký, chuông và tab sự cố của Giám sát
