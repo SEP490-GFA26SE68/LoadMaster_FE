@@ -208,9 +208,12 @@ export const routes: RouteObject[] = [
                   // Gói cước và credit của công ty, thanh toán giả lập (FE-8-03, FE-8-04): quản trị công ty
                   guarded('billing.manage', [
                     { path: '/goi-cuoc', element: <BillingPage />, handle: titled((t) => t('titles.billing')) },
-                    { path: '/bang-luong', element: <PayrollPage />, handle: titled((t) => t('titles.payroll')) },
                     { path: '/thanh-toan/gia-lap', element: <PaymentSimulationPage />, handle: titled((t) => t('titles.payment')) },
                     { path: '/thanh-toan/ket-qua', element: <PaymentResultPage />, handle: titled((t) => t('titles.paymentResult')) },
+                  ]),
+                  // Bảng lương tài xế: quản lý công ty
+                  guarded('payroll.manage', [
+                    { path: '/bang-luong', element: <PayrollPage />, handle: titled((t) => t('titles.payroll')) },
                   ]),
                   // Hồ sơ cá nhân (LM-096): mọi người đã đăng nhập, không cần quyền riêng.
                   { path: '/ho-so', element: <ProfilePage />, handle: titled((t) => t('titles.profile')) },

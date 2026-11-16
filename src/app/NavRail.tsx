@@ -67,7 +67,7 @@ export function NavRail() {
   }
 
   return (
-    <header className="sky flex h-15 flex-none items-center gap-5 px-4 xl:gap-6 xl:px-shell">
+    <header className="sky flex h-15 flex-none items-center gap-4 px-4 xl:gap-5 xl:px-shell">
       <Link
         to={logoPath(user?.role)}
         aria-label={t('nav.home')}
@@ -84,7 +84,7 @@ export function NavRail() {
         <nav
           ref={navRef}
           aria-label={t('nav.label')}
-          className="glass-nav relative flex min-w-0 flex-1 gap-0.5 overflow-x-auto rounded-lg p-1 min-[1400px]:flex-none"
+          className="glass-nav relative flex min-w-0 flex-initial max-w-fit gap-0.5 overflow-x-auto rounded-lg p-1"
         >
           <span ref={followRef} aria-hidden className="glass-follow" />
           {items.map(({ to, labelKey, icon: Icon }) => {
@@ -97,7 +97,7 @@ export function NavRail() {
                 aria-label={t(actualLabelKey)}
                 className={({ isActive }) =>
                   cn(
-                    'relative z-1 flex h-9 items-center gap-2 rounded-md px-2.5 text-body whitespace-nowrap xl:px-3.5',
+                    'relative z-1 flex h-9 items-center gap-1.5 rounded-md px-2 text-body whitespace-nowrap xl:gap-2 xl:px-2.5 2xl:px-3.5',
                     'transition-colors duration-(--dur-fast) ease-standard',
                     'outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-cyan-300',
                     isActive ? 'font-semibold text-sky-text' : 'font-medium text-sky-text-2 hover:text-sky-text',

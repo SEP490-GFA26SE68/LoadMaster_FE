@@ -59,9 +59,9 @@ export function QuickSearch() {
           label={t('search.button')}
           aria-keyshortcuts="Control+K Meta+K"
           // Màn rộng: ô kính 176px "Tìm nhanh · Ctrl K" (V2.3 `.glass-search.compact`); hẹp hơn thì chỉ còn icon 36px
-          className="w-9 px-0 min-[1440px]:w-44 min-[1440px]:justify-start min-[1440px]:px-3"
+          className="w-9 px-0 min-[1536px]:w-44 min-[1536px]:justify-start min-[1536px]:px-3"
           text={
-            <span className="hidden min-[1440px]:contents">
+            <span className="hidden min-[1536px]:contents">
               <span className="text-small whitespace-nowrap">{t('search.button')}</span>
               <kbd className="ml-auto rounded-sm border border-sky-glass-border px-1.5 py-0.75 font-sans text-micro leading-none font-medium whitespace-nowrap">
                 {SHORTCUT_KEYS}

@@ -19,7 +19,7 @@ export const nav = {
   subscriptionHistory: 'Subscription History',
   trialRequests: 'Trial requests',
   billing: 'Plan and credits',
-  payroll: 'Driver payroll',
+  payroll: 'Payroll',
   companies: 'Companies',
   companyProfile: 'Company details',
   support: 'Support',

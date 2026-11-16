@@ -20,9 +20,11 @@ type PayrollRateSettingsProps = {
   rates: readonly PayrollRate[]
   loading: boolean
   loadError: string | null
+  minMonth?: string
+  onSelectRate?: (rate: PayrollRate) => void
 }
 
-export function PayrollRateSettings({ form, onSubmit, pending, error, rates, loading, loadError }: PayrollRateSettingsProps) {
+export function PayrollRateSettings({ form, onSubmit, pending, error, rates, loading, loadError, minMonth, onSelectRate }: PayrollRateSettingsProps) {
   const t = useT()
   const format = useFormat()
   const { register, formState: { errors, isDirty } } = form
@@ -35,7 +37,7 @@ export function PayrollRateSettings({ form, onSubmit, pending, error, rates, loa
       </CardHeader>
       <CardBody className="flex flex-col gap-5">
         <form noValidate onSubmit={onSubmit} className="flex flex-col gap-4">
-          <Input label={t('payroll.rate.effectiveFrom')} type="month" required error={errors.effectiveFrom ? t('payroll.rate.invalidMonth') : undefined} {...register('effectiveFrom')} />
+          <Input label={t('payroll.rate.effectiveFrom')} type="month" min={minMonth} required error={errors.effectiveFrom ? t('payroll.rate.invalidMonth') : undefined} {...register('effectiveFrom')} />
           <Input label={t('payroll.rate.baseSalary')} type="number" min="0" step="1" inputMode="decimal" required suffix={t('payroll.vnd')} error={errors.baseSalaryVnd ? amountError : undefined} {...register('baseSalaryVnd')} />
           <Input label={t('payroll.rate.perKg')} type="number" min="0" step="0.01" inputMode="decimal" required suffix={t('payroll.rate.perKgUnit')} error={errors.rateVndPerKg ? amountError : undefined} {...register('rateVndPerKg')} />
           <Input label={t('payroll.rate.perKm')} type="number" min="0" step="0.01" inputMode="decimal" required suffix={t('payroll.rate.perKmUnit')} error={errors.rateVndPerKm ? amountError : undefined} {...register('rateVndPerKm')} />
@@ -54,11 +56,18 @@ export function PayrollRateSettings({ form, onSubmit, pending, error, rates, loa
           ) : (
             <ul className="flex flex-col divide-y divide-line-soft">
               {rates.map((rate) => (
-                <li key={rate.id} className="grid grid-cols-2 gap-2 py-2 text-small sm:grid-cols-4">
-                  <span>{rate.effectiveFrom.slice(0, 7)}</span>
-                  <span>{t('payroll.rate.baseShort')}: {format.currency(rate.baseSalaryVnd)}</span>
-                  <span>{format.currency(rate.rateVndPerKg)} {t('payroll.rate.perKgUnit')}</span>
-                  <span>{format.currency(rate.rateVndPerKm)} {t('payroll.rate.perKmUnit')}</span>
+                <li key={rate.id} className="py-1">
+                  <button
+                    type="button"
+                    onClick={() => onSelectRate?.(rate)}
+                    className="grid w-full grid-cols-2 gap-2 rounded-md p-2 text-left text-small transition-colors hover:bg-surface-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:grid-cols-4"
+                    title={t('payroll.rate.clickToEdit')}
+                  >
+                    <span className="font-semibold text-ink-strong">{rate.effectiveFrom.slice(0, 7)}</span>
+                    <span>{t('payroll.rate.baseShort')}: {format.currency(rate.baseSalaryVnd)}</span>
+                    <span>{format.currency(rate.rateVndPerKg)} {t('payroll.rate.perKgUnit')}</span>
+                    <span>{format.currency(rate.rateVndPerKm)} {t('payroll.rate.perKmUnit')}</span>
+                  </button>
                 </li>
               ))}
             </ul>

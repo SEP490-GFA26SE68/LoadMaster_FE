@@ -72,6 +72,20 @@ export type TripPayrollDriver = {
   readonly sharePercent: number
 }
 
+export type SetDriverBaseSalaryInput = {
+  readonly driverId: number
+  readonly effectiveFrom: string
+  readonly baseSalaryVnd: number
+}
+
+export type DriverBaseSalaryResponse = {
+  readonly id: number
+  readonly driverId: number
+  readonly driverName: string
+  readonly effectiveFrom: string
+  readonly baseSalaryVnd: number
+}
+
 export type PayrollRateInput = Omit<PayrollRate, 'id'>
 
 // GET /api/company/payroll/settings
@@ -118,3 +132,20 @@ export function fetchTripPayrollDrivers(tripId: number): Promise<TripPayrollDriv
 export function setTripPayrollDrivers(tripId: number, driverIds: readonly number[]): Promise<TripPayrollDriver[]> {
   return api().put(`/api/company/payroll/trips/${tripId}/drivers`, { body: { driverIds } })
 }
+
+// PUT /api/company/payroll/drivers/{driverId}/base-salary
+export function setDriverBaseSalary(input: SetDriverBaseSalaryInput): Promise<DriverBaseSalaryResponse> {
+  return api().put(`/api/company/payroll/drivers/${input.driverId}/base-salary`, {
+    body: {
+      effectiveFrom: input.effectiveFrom,
+      baseSalaryVnd: input.baseSalaryVnd,
+    },
+  })
+}
+
+export function nextMonthPeriod(from: Date = new Date()): string {
+  const year = from.getMonth() === 11 ? from.getFullYear() + 1 : from.getFullYear()
+  const month = from.getMonth() === 11 ? 1 : from.getMonth() + 2
+  return `${year}-${String(month).padStart(2, '0')}`
+}
+

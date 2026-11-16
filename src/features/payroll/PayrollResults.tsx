@@ -1,12 +1,14 @@
-import { useState } from 'react'
+import { useState, type FormEvent } from 'react'
+import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/Button'
 import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Input } from '@/components/ui/Input'
 import { Spinner } from '@/components/ui/Spinner'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 
-import type { PayrollDriverStatement, PayrollPeriod } from './payroll-api'
-import { useSetTripPayrollDriversMutation, useTripPayrollDriversQuery } from './usePayrollQueries'
+import { nextMonthPeriod, type PayrollDriverStatement, type PayrollPeriod } from './payroll-api'
+import { useSetDriverBaseSalaryMutation, useSetTripPayrollDriversMutation, useTripPayrollDriversQuery } from './usePayrollQueries'
 
 type PayrollResultsProps = {
   period: PayrollPeriod
@@ -60,7 +62,7 @@ export function PayrollResults({ period, statement, statementLoading, statementE
                       </td>
                       <td className="px-3 py-2 text-right">{format.currency(driver.baseSalaryVnd)}</td>
                       <td className="px-3 py-2 text-right">{format.weight(driver.totalKg)}</td>
-                      <td className="px-3 py-2 text-right">{format.ratio(driver.totalKm)} {t('payroll.rate.perKmUnit')}</td>
+                      <td className="px-3 py-2 text-right">{t('payroll.statement.kmValue', { value: format.ratio(driver.totalKm) })}</td>
                       <td className="px-3 py-2 text-right font-semibold">{format.currency(driver.totalSalaryVnd)}</td>
                     </tr>
                   ))}
@@ -87,6 +89,7 @@ export function PayrollResults({ period, statement, statementLoading, statementE
               <Metric label={t('payroll.statement.kmAmount')} value={format.currency(statement.kmAmountVnd)} />
               <Metric label={t('payroll.statement.totalSalary')} value={format.currency(statement.totalSalaryVnd)} />
             </div>
+            <DriverBaseSalaryAdjustment driverId={statement.driverId} currentBaseSalary={statement.baseSalaryVnd} />
             {statement.trips.map((trip) => (
               <TripPayrollAssignment key={trip.tripId} trip={trip} drivers={period.drivers} locked={period.status === 'LOCKED'} />
             ))}
@@ -136,8 +139,8 @@ function TripPayrollAssignment({
         </span>
       </div>
       <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        <Metric label={t('payroll.statement.planKg')} value={t('payroll.statement.kgValue', { value: format.weight(trip.planKg) })} />
-        <Metric label={t('payroll.statement.allocatedKg')} value={t('payroll.statement.kgValue', { value: format.weight(trip.allocatedKg) })} />
+        <Metric label={t('payroll.statement.planKg')} value={format.weight(trip.planKg)} />
+        <Metric label={t('payroll.statement.allocatedKg')} value={format.weight(trip.allocatedKg)} />
         <Metric label={t('payroll.statement.kgAmount')} value={format.currency(trip.kgAmountVnd)} />
         <Metric label={t('payroll.statement.planKm')} value={t('payroll.statement.kmValue', { value: format.ratio(trip.planKm) })} />
         <Metric label={t('payroll.statement.allocatedKm')} value={t('payroll.statement.kmValue', { value: format.ratio(trip.allocatedKm) })} />
@@ -171,6 +174,77 @@ function TripPayrollAssignment({
       ) : null}
       {saved ? <p className="mt-2 text-small text-cyan-800">{t('payroll.statement.recalculateAfterChange')}</p> : null}
       {update.error ? <p role="alert" className="mt-2 text-small text-danger">{dataErrorMessage(update.error, t)}</p> : null}
+    </section>
+  )
+}
+
+function DriverBaseSalaryAdjustment({
+  driverId,
+  currentBaseSalary,
+}: {
+  driverId: number
+  currentBaseSalary: number
+}) {
+  const t = useT()
+  const nextMonth = nextMonthPeriod()
+  const [amount, setAmount] = useState('')
+  const [saved, setSaved] = useState(false)
+  const mutation = useSetDriverBaseSalaryMutation()
+
+  function handleSave(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const numericAmount = Number(amount)
+    if (isNaN(numericAmount) || numericAmount < 0) return
+    mutation.mutate(
+      {
+        driverId,
+        effectiveFrom: `${nextMonth}-01`,
+        baseSalaryVnd: numericAmount,
+      },
+      {
+        onSuccess: () => {
+          setSaved(true)
+          toast.success(t('payroll.statement.baseSalarySaved'))
+        },
+      },
+    )
+  }
+
+  return (
+    <section className="rounded-md border border-line-soft p-4" aria-label={t('payroll.statement.editBaseSalary')}>
+      <h3 className="font-semibold">{t('payroll.statement.editBaseSalary')}</h3>
+      <p className="mt-1 text-small text-ink-2">
+        {t('payroll.statement.baseSalaryOverrideHelp')} ({t('payroll.statement.effectiveFromNextMonth', { month: nextMonth })})
+      </p>
+      <form onSubmit={handleSave} className="mt-3 flex flex-wrap items-end gap-3">
+        <div className="w-56">
+          <Input
+            label={t('payroll.statement.newBaseSalary')}
+            type="number"
+            min="0"
+            step="1"
+            placeholder={String(currentBaseSalary)}
+            value={amount}
+            onChange={(e) => {
+              setSaved(false)
+              setAmount(e.currentTarget.value)
+            }}
+            required
+            suffix={t('payroll.vnd')}
+          />
+        </div>
+        <Button
+          type="submit"
+          variant="secondary"
+          size="sm"
+          loading={mutation.isPending}
+          disabled={!amount || isNaN(Number(amount)) || Number(amount) < 0 || mutation.isPending}
+        >
+          {t('payroll.statement.saveBaseSalary')}
+        </Button>
+      </form>
+      {saved ? <p className="mt-2 text-small text-cyan-800">{t('payroll.statement.baseSalarySaved')}</p> : null}
+      {mutation.error ? <p role="alert" className="mt-2 text-small text-danger">{dataErrorMessage(mutation.error, t)}</p> : null}
     </section>
   )
 }

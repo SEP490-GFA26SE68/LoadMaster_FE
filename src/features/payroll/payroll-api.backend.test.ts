@@ -10,6 +10,7 @@ import {
   fetchPayrollRates,
   fetchTripPayrollDrivers,
   lockPayrollPeriod,
+  setDriverBaseSalary,
   setTripPayrollDrivers,
 } from './payroll-api'
 
@@ -102,4 +103,21 @@ test('loads and saves equal productivity shares for the drivers on one trip', as
   await expect(fetchTripPayrollDrivers(42)).resolves.toMatchObject(shareRows)
   await expect(setTripPayrollDrivers(42, [21, 22])).resolves.toMatchObject(shareRows)
   expect(calls[1]?.body).toStrictEqual({ driverIds: [21, 22] })
+})
+
+test('saves driver base salary override for next month', async () => {
+  const { calls } = stubBackend({
+    'PUT /api/company/payroll/drivers/21/base-salary': reply({
+      id: 1,
+      driverId: 21,
+      driverName: 'Nguyễn Văn An',
+      effectiveFrom: '2026-12-01',
+      baseSalaryVnd: 9_000_000,
+    }),
+  })
+
+  const result = await setDriverBaseSalary({ driverId: 21, effectiveFrom: '2026-12-01', baseSalaryVnd: 9_000_000 })
+  expect(result).toMatchObject({ driverId: 21, baseSalaryVnd: 9_000_000, effectiveFrom: '2026-12-01' })
+  expect(calls[0]?.path).toBe('/api/company/payroll/drivers/21/base-salary')
+  expect(calls[0]?.body).toStrictEqual({ effectiveFrom: '2026-12-01', baseSalaryVnd: 9_000_000 })
 })

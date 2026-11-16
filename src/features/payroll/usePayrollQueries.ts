@@ -9,8 +9,10 @@ import {
   fetchPayrollRates,
   fetchTripPayrollDrivers,
   lockPayrollPeriod,
+  setDriverBaseSalary,
   setTripPayrollDrivers,
   type PayrollRateInput,
+  type SetDriverBaseSalaryInput,
 } from './payroll-api'
 
 const KEY = ['payroll'] as const
@@ -84,5 +86,13 @@ export function useSetTripPayrollDriversMutation() {
       void client.invalidateQueries({ queryKey: tripDriversKey(tripId) })
       return client.invalidateQueries({ queryKey: KEY })
     },
+  })
+}
+
+export function useSetDriverBaseSalaryMutation() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (input: SetDriverBaseSalaryInput) => setDriverBaseSalary(input),
+    onSuccess: () => client.invalidateQueries({ queryKey: KEY }),
   })
 }
