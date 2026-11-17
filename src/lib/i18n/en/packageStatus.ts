@@ -7,5 +7,6 @@ export const packageStatus = {
   PLANNED: 'Planned',
   LOADED: 'Loaded',
   DELIVERED: 'Delivered',
+  RETURNED: 'Returned',
   CANCELLED: 'Cancelled',
 } satisfies Dictionary<typeof source>

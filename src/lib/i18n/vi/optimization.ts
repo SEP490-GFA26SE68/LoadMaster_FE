@@ -31,6 +31,54 @@ export const optimization = {
   history: {
     description: 'Mọi lần chạy của chuyến, kể cả lần không ra kết quả.',
   },
+
+  "backend": {
+    /** INITIAL action: retry never rotates the request key. */
+    action: {
+      rejected: 'Yêu cầu bị từ chối do cấu hình hướng xoay. Kiểm tra lại kiện; theo dõi trạng thái lần chạy này.',
+      refundPending: 'Đang xử lý hoàn Credit.',
+      refunded: 'Đã hoàn Credit theo giao dịch gốc.',
+      retry: 'Thử lại yêu cầu hiện tại',
+      checkStatus: 'Kiểm tra lại trạng thái',
+      uncertain: 'Chưa xác nhận được yêu cầu đã bắt đầu hay chưa. Giữ lần chạy này và thử lại an toàn; nếu đã có mã lần chạy, chỉ kiểm tra trạng thái.',
+      conflict: 'Yêu cầu này chưa khớp với lần chạy đã lưu. Không tạo lần chạy mới. Bạn có thể thử lại yêu cầu hiện tại hoặc liên hệ người quản trị để kiểm tra.',
+      storage: 'Chưa thể lưu hoặc khôi phục yêu cầu an toàn trên trình duyệt này. Hãy kiểm tra quyền lưu trữ và tải lại trang trước khi tiếp tục.',
+      accountRequired: 'Cần đăng nhập tài khoản thuộc công ty để chạy tối ưu.',
+    },
+
+    "runNew": "Chạy tối ưu xếp hàng mới",
+    "missingJobId": "Không nhận được mã job tối ưu",
+    "jobCreated": "Đã tạo job tối ưu mới",
+    "createFailed": "Không thể tạo job tối ưu",
+    "status": "Trạng thái",
+    "starting": "Đang khởi tạo...",
+    "noJobSelected": "Chuyến #{tripId}: Chưa chọn job tối ưu",
+    "statusFailed": "Không thể lấy trạng thái job tối ưu",
+    "jobFailed": "Job tối ưu thất bại hoặc đã bị hủy",
+    "running": "Đang xử lý tối ưu xếp hàng...",
+    "plansFailed": "Không thể tải phương án tối ưu",
+    "sceneFailed": "Không thể hiển thị mô hình 3D",
+    "noPlans": "Chưa có phương án xếp hàng",
+    "jobId": "Mã job",
+    "loadPlanId": "Mã phương án",
+    "packages": "Số kiện hàng",
+    "volumeUtilization": "Tỷ lệ sử dụng thể tích",
+    "weightUtilization": "Tỷ lệ sử dụng tải trọng",
+    "placementsReturned": "Số vị trí xếp trả về",
+    "jobStatus": {
+      "SUCCESS": "Đã kết thúc (trạng thái cũ)",
+      "PARTIAL": "Xếp được một phần",
+      "NO_SOLUTION": "Không có phương án hợp lệ",
+      "TIMEOUT": "Hết thời gian xử lý",
+      "PENDING": "Đang chờ",
+      "QUEUED": "Trong hàng đợi",
+      "RUNNING": "Đang tính toán",
+      "COMPLETED": "Hoàn thành",
+      "FAILED": "Thất bại",
+      "CANCELLED": "Đã hủy",
+      "UNKNOWN": "Không xác định"
+    }
+  },
   /**
    * Credit và hạng thuật toán của gói (FE-8-05, D-89): dòng "Lần chạy này dùng N credit · còn M", trạng thái chặn trước khi bấm Tối ưu
    * (câu cho điều phối viên và cho quản trị công ty khác nhau) và tên hạng thuật toán. Tên hạng là từ vựng thuật toán — chỉ ở màn

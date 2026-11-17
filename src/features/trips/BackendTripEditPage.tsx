@@ -20,13 +20,14 @@ import { TripFormLeaveDialog } from './TripFormLeaveDialog'
 import { TripFormShell } from './TripFormShell'
 import type { TripDetailApiResponse } from './trips-api'
 import { useBackendTripDetailQuery, useBackendTripIdQuery, useUpdateBackendTripMutation } from './useTripEditBackendQuery'
-import { useTripFormOptionsQuery } from './useTripsQuery'
+import { useDepartureVehicles } from './useDepartureVehicles'
+import { DepartureVehicleState } from './DepartureVehicleState'
 
 /**
  * Sửa chuyến khi nhóm `trips` nối backend (`/chuyen/:id/sua`, `PATCH /api/trips/{id}`): tên, ngày và giờ xuất phát (giờ Việt Nam), xe,
  * tài xế, kho xuất phát — chỉ gửi trường đã đổi (`backendTripChanges`). Máy chủ chỉ sửa chuyến Nháp và Đã lập kế hoạch, và sửa được mọi
- * trường ở hai trạng thái đó; trạng thái khác thấy một dòng lý do, không có form. Máy chủ không trả mã kho của chuyến: ô kho mặc định
- * "Giữ kho hiện tại", chọn kho khác mới gửi. Điểm giao và kiện không sửa ở đây (điểm giao sinh từ yêu cầu giao). Lỗi của máy chủ (xe
+ * trường ở hai trạng thái đó; trạng thái khác thấy một dòng lý do, không có form. Máy chủ trả originWarehouseId để tải xe đúng kho; ô kho mặc định
+ * "Giữ kho hiện tại", chọn kho khác phải xác nhận lại xe đủ điều kiện. Điểm giao và kiện không sửa ở đây (điểm giao sinh từ yêu cầu giao). Lỗi của máy chủ (xe
  * không chở được hàng…) hiện bằng toast, dữ liệu đang nhập giữ nguyên; còn thay đổi chưa lưu mà rời trang thì hỏi lại.
  */
 export function BackendTripEditPage() {
@@ -74,7 +75,6 @@ function EditForm({ trip }: { trip: TripDetailApiResponse }) {
   const formId = useId()
   const navigate = useNavigate()
   const runDate = useRunDateText()
-  const options = useTripFormOptionsQuery()
   const warehousesQuery = useCompanyWarehousesQuery(true)
   const update = useUpdateBackendTripMutation(String(trip.id))
   const schema = useMemo(() => backendTripEditSchema(t), [t])
@@ -82,11 +82,16 @@ function EditForm({ trip }: { trip: TripDetailApiResponse }) {
   const form = useForm<TripFormValues>({ resolver: zodResolver(schema), defaultValues: initial, mode: 'onTouched' })
   // Rỗng: giữ kho hiện tại
   const [warehouseId, setWarehouseId] = useState('')
+  const effectiveWarehouse = warehouseId || (trip.originWarehouseId == null ? '' : String(trip.originWarehouseId))
+  const options = useDepartureVehicles(effectiveWarehouse, String(trip.id))
   const [unchanged, setUnchanged] = useState(false)
   const [saved, setSaved] = useState(false)
   const vehicleId = useWatch({ control: form.control, name: 'vehicleId' })
   const current = useMemo(() => ({ vehicleId: initial.vehicleId, driverId: driverIdOf(initial.driverId) }), [initial])
   const choices = useMemo(() => tripFormChoices(options.data, current, t), [options.data, current, t])
+  useEffect(() => {
+    if (vehicleId && options.isSuccess && !options.data.vehicles.some(({ vehicle }) => vehicle.id === vehicleId)) form.setValue('vehicleId', '', { shouldDirty: true, shouldValidate: true })
+  }, [vehicleId, options.isSuccess, options.data, form])
   const selected = options.data?.vehicles.find((option) => option.vehicle.id === vehicleId)
   const warehouses = useMemo(() => warehousesQuery.data ?? [], [warehousesQuery.data])
   const detailPath = `/chuyen/${encodeURIComponent(trip.tripCode)}`
@@ -99,6 +104,7 @@ function EditForm({ trip }: { trip: TripDetailApiResponse }) {
   }, [saved, navigate, detailPath])
 
   function handleWarehouseChange(id: string) {
+    form.setValue('vehicleId', '', { shouldDirty: true, shouldValidate: false })
     if (id === '') {
       form.setValue('depot', initial.depot)
       setWarehouseId('')
@@ -111,6 +117,7 @@ function EditForm({ trip }: { trip: TripDetailApiResponse }) {
   }
 
   function handleSubmit(values: TripFormValues) {
+    if (!effectiveWarehouse || !options.isSuccess || options.isFetching || !options.data.vehicles.some(({ vehicle }) => vehicle.id === values.vehicleId)) { toast.error(t('trips.presence.invalid')); void options.refetch(); return }
     const changes = backendTripChanges(initial, values, warehouseId)
     setUnchanged(changes === null)
     if (changes === null) return
@@ -119,7 +126,7 @@ function EditForm({ trip }: { trip: TripDetailApiResponse }) {
         toast.success(t('serverPlans.edit.saved', { code: trip.tripCode }))
         setSaved(true)
       },
-      onError: (error) => toast.error(t('trips.create.failed'), { description: dataErrorMessage(error, t) }),
+      onError: (error) => { toast.error(t('trips.create.failed'), { description: dataErrorMessage(error, t) }); void options.refetch() },
     })
   }
 
@@ -142,7 +149,8 @@ function EditForm({ trip }: { trip: TripDetailApiResponse }) {
         <form id={formId} noValidate onSubmit={form.handleSubmit(handleSubmit)}>
           <Banner tone="info" className="mx-7 mt-5.5 max-sm:mx-4">{t('serverPlans.edit.description')}</Banner>
           {unchanged ? <Banner tone="neutral" className="mx-7 mt-3 max-sm:mx-4">{t('serverPlans.edit.noChanges')}</Banner> : null}
-          <TripFormInfoSection form={form} vehicles={choices.vehicles} drivers={choices.drivers} selected={selected} locked={false} />
+          <TripFormInfoSection form={form} vehicles={choices.vehicles} drivers={choices.drivers} selected={selected} locked={false} vehicleLocked={!effectiveWarehouse || !options.isSuccess || options.isFetching} />
+          <div className="px-7 pb-3"><DepartureVehicleState warehouse={effectiveWarehouse} loading={options.isFetching} error={options.error} empty={options.isSuccess && options.data.vehicles.length === 0} retry={() => void options.refetch()} /></div>
           <BackendTripFormDepotSection
             form={form}
             locked={false}

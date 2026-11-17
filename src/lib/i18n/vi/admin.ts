@@ -231,6 +231,7 @@ export const admin = {
       pickups: 'Nhận hàng dọc đường',
       warehouse: 'Kho',
       driver: 'Tài xế',
+      companyWarehouses: 'Kho công ty',
     },
     labels: {
       companies: { manage: 'Tạo và quản lý công ty khách hàng' },

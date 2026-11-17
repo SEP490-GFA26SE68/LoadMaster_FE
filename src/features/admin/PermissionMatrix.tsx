@@ -39,6 +39,7 @@ const GROUP_ICON: Readonly<Record<PermissionGroupId, LucideIcon>> = {
   pickups: PackagePlus,
   warehouse: Warehouse,
   driver: Navigation,
+  companyWarehouses: Warehouse,
 }
 
 /**

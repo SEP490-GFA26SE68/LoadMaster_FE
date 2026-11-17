@@ -1,5 +1,6 @@
 /** Màn chuyến hàng: danh sách, form, chi tiết, điểm giao, bảng kiện (LM-043 → LM-046, LM-088). */
 export const trips = {
+  presence: {"chooseWarehouse": "Chọn kho xuất phát trước khi chọn xe.", "loading": "Đang tải xe đủ điều kiện tại kho…", "retry": "Thử lại", "empty": "Không có xe đủ điều kiện đã được xác nhận tại kho này.", "invalid": "Xe không còn đủ điều kiện tại kho đã chọn. Vui lòng tải lại và chọn xe."},
   assign: {
     title: 'Gán yêu cầu giao vào chuyến',
     description: 'Chọn một yêu cầu đã tiếp nhận đủ kiện để đưa vào chuyến.',

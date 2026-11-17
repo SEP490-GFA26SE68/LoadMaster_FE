@@ -206,6 +206,7 @@ export const admin = {
       pickups: 'Pickups along the route',
       warehouse: 'Warehouse',
       driver: 'Driver',
+      companyWarehouses: 'Company warehouses',
     },
     labels: {
       companies: { manage: 'Create and manage customer companies' },

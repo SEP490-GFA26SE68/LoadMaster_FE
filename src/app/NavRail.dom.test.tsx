@@ -53,7 +53,7 @@ test('nav rail đánh dấu mục đang mở và hiện nhãn chữ cho từng m
 test.each<[Role, string[]]>([
   ['dispatcher', ['Chuyến hàng', 'Giám sát', 'Kho kiện', 'Yêu cầu giao', 'Đội xe', 'Bảng điều khiển']],
   ['companyManager', ['Bảng điều khiển', 'Yêu cầu giao', 'Kho kiện', 'Chuyến hàng', 'Giám sát', 'Đội xe', 'Kho bãi', 'Bảng lương']],
-  ['warehouse', ['Kho', 'Kho kiện', 'Khách hàng']],
+  ['warehouse', ['Kho', 'Xe trong kho', 'Kho kiện', 'Khách hàng']],
   ['driver', ['Tài xế']],
   ['systemManager', ['Gói cước', 'Lịch sử gói cước', 'Công ty', 'Đơn dùng thử']],
   ['systemSupporter', ['Hỗ trợ', 'Liên hệ của khách']],
@@ -146,4 +146,11 @@ test('menu tài khoản của quản trị hệ thống không có kho', async (
   await user.click(screen.getByRole('button', { name: 'Tài khoản Võ Minh Khoa' }))
   await screen.findAllByRole('menuitem')
   expect(screen.getByRole('menu')).toHaveTextContent(/Võ Minh Khoaquantri@loadmaster\.vnQuản trị hệ thốngHồ sơ cá nhânĐăng xuất$/)
+})
+
+test('warehouse vehicles navigation selects the vehicle screen independently of loading tasks', () => {
+  renderRail('warehouse', '/kho/xe')
+  expect(screen.getByRole('link', { name: 'Xe trong kho' })).toHaveAttribute('href', '/kho/xe')
+  expect(screen.getByRole('link', { name: 'Xe trong kho' })).toHaveAttribute('aria-current', 'page')
+  expect(screen.getByRole('link', { name: /^Kho$/ })).not.toHaveAttribute('aria-current')
 })

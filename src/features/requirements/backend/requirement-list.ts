@@ -50,7 +50,7 @@ export function filterRequirementRows(rows: readonly RequirementRow[], query: st
   return rows.filter((row) => (status === null || row.status === status)
     && (priority === null || row.requirement.priority === priority)
     && isWithinDateRange(vnDate(new Date(row.requirement.deadline)), filters[DUE_FROM_FILTER], filters[DUE_TO_FILTER])
-    && matchesQuery([row.requirement.id, row.requirement.destinationName, row.requirement.address, row.requirement.note, row.trip?.id, row.trip?.name], query))
+    && matchesQuery([row.requirement.id, row.requirement.destinationName, row.requirement.address, row.requirement.note, row.requirement.customerName, row.requirement.tripCode], query))
 }
 
 export type PackageGroup = { readonly key: string; readonly name: string; readonly items: readonly RequirementPackage[] }

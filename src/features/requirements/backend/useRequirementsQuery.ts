@@ -7,6 +7,8 @@ import {
   fetchAssignableTrips,
   getDeliveryRequirement,
   listDeliveryRequirements,
+  fetchRequirementsPage,
+  type RequirementListParams,
   unassignRequirementFromTrip,
   updateDeliveryRequirement,
   type AssignRequirementInput,
@@ -29,6 +31,10 @@ export const REQUIREMENTS_LIST_KEY = ['requirements', 'list'] as const
 /** `enabled`: hộp thoại chỉ đọc khi mở. */
 export function useRequirementsQuery({ enabled = true }: { enabled?: boolean } = {}) {
   return useQuery({ queryKey: REQUIREMENTS_LIST_KEY, queryFn: listDeliveryRequirements, staleTime: 0, enabled })
+}
+
+export function useRequirementsPageQuery(params: RequirementListParams) {
+  return useQuery({ queryKey: ['requirements', 'list', 'paged', params], queryFn: ({ signal }) => fetchRequirementsPage(params, signal), staleTime: 0 })
 }
 
 export function useRequirementQuery(id: string) {

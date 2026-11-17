@@ -29,7 +29,7 @@ test('tám cột vai trò theo thứ tự nền tảng → công ty, 37 dòng qu
     'Nhân viên kho', 'Tài xế',
   ])
   // Một dòng tiêu đề, 13 dòng khu vực, 37 dòng quyền, một dòng tổng
-  expect(within(matrix).getAllByRole('row')).toHaveLength(52)
+  expect(within(matrix).getAllByRole('row')).toHaveLength(53)
   // Dòng quyền có chín ô (tên + tám vai trò); dòng khu vực chỉ một ô, dòng tổng tám ô
   const permissionRows = within(matrix).getAllByRole('row').filter((row) => within(row).queryAllByRole('cell').length === 9)
   expect(permissionRows).toHaveLength(37)

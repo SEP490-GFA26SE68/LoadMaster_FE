@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { connectApiAuth } from '@/lib/api-client'
@@ -24,7 +24,7 @@ let outcomes: Record<number, string> = {}
 let calls: FakeCall[] = []
 
 const step = (placementId: number, sequence: number, barcode: string) => ({
-  placementId, packageId: placementId * 10, packageName: `Thùng nước ${sequence}`, packageCode: null, trackingBarcode: barcode, qrToken: `qr-${placementId}`,
+  placementId, packageId: placementId * 10, packageName: `Thùng nước ${sequence}`, packageCode: barcode, trackingBarcode: barcode, qrToken: `qr-${placementId}`,
   posX: 0, posY: 0, posZ: 0, packedLength: 60, packedWidth: 40, packedHeight: 30, rotation: 0, weightKg: 12.5, sequence,
   stopId: 31, stopSequence: 1, stopName: 'Co.opmart Biên Hoà', status: outcomes[placementId] ?? 'PENDING',
 })
@@ -86,6 +86,9 @@ test('danh sách: chờ xếp có nút bắt đầu; chuyến bắt đầu xếp
   await screen.findByRole('heading', { level: 2, name: 'Chờ xếp' }, LOAD)
   expect(screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent)).toStrictEqual(['Đang xếp hàng', 'Chờ xếp'])
   expect(screen.queryByRole('button', { name: /Thông báo/ })).not.toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'Xác nhận xe có mặt tại kho' })).not.toBeInTheDocument()
+  expect(screen.getByRole('link', { name: 'Xe trong kho' })).toHaveAttribute('href', '/kho/xe')
+  expect(calls.some(call => call.path.includes('/vehicle-presence'))).toBe(false)
   const other = within(screen.getByRole('heading', { level: 3, name: OTHER.tripCode }).closest('li') as HTMLElement)
   await user.click(other.getByRole('link', { name: 'Tiếp tục soạn / xếp' }))
   const card = await screen.findByRole('region', { name: 'Kiện cần xếp — bước 1 / 1' }, LOAD)
@@ -119,8 +122,8 @@ test('bắt đầu → đối chiếu từng kiện theo thứ tự bằng mã g
   await user.click(wrong.getByRole('button', { name: 'Đóng' }))
   await screen.findByRole('region', { name: 'Kiện cần xếp — bước 2 / 2' }, LOAD)
 
-  // Kiện cuối gõ mã QR in trên nhãn: hộp đóng, màn nói đã xếp mọi kiện
-  await verify(user, 'QR-102')
+  // Kiện cuối nhập Package Code; QR vẫn có đường quét riêng.
+  await verify(user, 'LB-0002')
   expect(await screen.findByText(/Đã xếp mọi kiện/, undefined, LOAD)).toBeInTheDocument()
   await user.click(await screen.findByRole('button', { name: 'Hoàn tất xếp hàng' }, LOAD))
   expect(await screen.findByText(`Đã xếp xong chuyến ${TASK.tripCode}`, undefined, LOAD)).toBeInTheDocument()
@@ -143,4 +146,36 @@ test('danh sách: chuyến quay về lập kế hoạch vì thiếu kiện nằm
   expect(card.queryByRole('button')).not.toBeInTheDocument()
   expect(card.queryByRole('link')).not.toBeInTheDocument()
   expect(calls.find((call) => call.path === '/api/warehouse/tasks')?.query).toEqual({ includeAwaitingReplan: 'true' })
+})
+
+test.each([
+  { name: 'network before commit', committed: false, network: true },
+  { name: 'ACK lost after commit', committed: true, network: true },
+  { name: 'conflict', committed: false, network: false },
+])('$name: reconcile by GET without inventing confirmation', async ({ committed, network }) => {
+  const user = userEvent.setup()
+  let reads = 0
+  let written = false
+  const intercepted = stubBackend({
+    'GET /api/warehouse/tasks/7': () => {
+      reads++
+      return { body: envelope(session(7, TASK.tripCode, [
+        step(101, 1, 'LB-0001'), step(102, 2, 'LB-0002'),
+      ].map((row) => written && row.placementId === 101 ? { ...row, status: 'CONFIRMED' } : row))) }
+    },
+    'POST /api/warehouse/placements/101/confirm': (call) => {
+      expect(call.body).toEqual({ tripId: '7', method: 'CODE', code: 'lb-0001' })
+      written = committed
+      if (network) throw new TypeError('Fixture lost connection')
+      return { status: 409, body: { success: false, code: 'CONFLICT' } }
+    },
+  })
+  renderWarehouse('/kho?chuyen=7')
+  await screen.findByRole('region', { name: 'Kiện cần xếp — bước 1 / 2' }, LOAD)
+  const dialog = await verify(user, 'lb-0001')
+  await waitFor(() => expect(reads).toBeGreaterThanOrEqual(2), LOAD)
+  expect(dialog.queryByText('Đã xếp Thùng nước 1.')).not.toBeInTheDocument()
+  await user.click(dialog.getByRole('button', { name: 'Đóng' }))
+  await screen.findByRole('region', { name: committed ? 'Kiện cần xếp — bước 2 / 2' : 'Kiện cần xếp — bước 1 / 2' }, LOAD)
+  expect(intercepted.calls.filter((call) => call.method === 'POST')).toHaveLength(1)
 })

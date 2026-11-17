@@ -13,6 +13,7 @@ export const lookup = {
   /** Khi kho kiện đọc từ máy chủ: mã QR là chuỗi dài của máy chủ, không theo mẫu `LM-…`. */
   codePlaceholderBackend: 'VD: mã in dưới hình QR, hoặc HK-DNG-2609-01',
   codeHint: 'Gõ đủ cả mã như in trên nhãn; chữ hoa hay thường đều được.',
+  codeHintBackend: 'Nhập đúng mã kiện hoặc mã QR; giữ khoảng trắng bên trong. Tra ID nội bộ bằng id:123.',
   codeRequired: 'Nhập mã trước khi tra cứu.',
   submit: 'Tra cứu',
   loading: 'Đang tra cứu',
@@ -21,7 +22,7 @@ export const lookup = {
     description: 'Mã QR và mã của bên gửi đều in trên nhãn dán ở kiện.',
   },
   notFound: {
-    title: 'Không tìm thấy',
+    title: 'Không tìm thấy kiện hàng phù hợp',
     description: 'Không có kiện nào của công ty bạn mang mã {code}. Xem lại mã in trên nhãn.',
   },
   many: {

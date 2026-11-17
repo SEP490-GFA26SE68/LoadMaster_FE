@@ -66,10 +66,10 @@ test('soạn bằng nhãn, xác nhận tay, báo thiếu: đúng endpoint và th
     'POST /api/warehouse/tasks/7/staging/packages/1010/confirm': { body: envelope({ packageId: 1010, alreadyStaged: true, stagingComplete: false }) },
     'POST /api/warehouse/tasks/7/staging/packages/1020/manual': { body: envelope({ packageId: 1020, method: 'MANUAL' }) },
     'POST /api/warehouse/tasks/7/staging/packages/1020/shortage': { body: envelope({ id: 5, status: 'OPEN' }) },
-    'GET /api/warehouse/tasks/7': { body: envelope(SESSION) },
+    'GET /api/warehouse/tasks/7': { body: envelope({ ...SESSION, placements: [step(101, 1, { staged: true }), step(102, 2)] }) },
   })
   const backend = createWarehouseBackend()
-  expect((await backend.stage('7', '1010', 'CODE')).alreadyStaged).toBe(true)
+  expect((await backend.stage('7', '1010', 'CODE', 'PK-101')).alreadyStaged).toBe(true)
   await backend.stageManually('7', '1020', { reason: 'OTHER', note: '  nhãn rách  ' })
   await backend.reportShortage('7', '1020')
   expect(calls.map((call) => `${call.method} ${call.path}`)).toEqual([
@@ -77,7 +77,7 @@ test('soạn bằng nhãn, xác nhận tay, báo thiếu: đúng endpoint và th
     'POST /api/warehouse/tasks/7/staging/packages/1020/manual', 'GET /api/warehouse/tasks/7',
     'POST /api/warehouse/tasks/7/staging/packages/1020/shortage', 'GET /api/warehouse/tasks/7',
   ])
-  expect(calls[0]?.body).toEqual({ method: 'CODE' })
+  expect(calls[0]?.body).toEqual({ method: 'CODE', code: 'PK-101' })
   expect(calls[2]?.body).toEqual({ reason: 'OTHER', note: 'nhãn rách' })
 })
 

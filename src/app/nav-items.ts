@@ -58,6 +58,7 @@ export const NAV_SCREENS = {
   billing: { to: '/goi-cuoc', labelKey: 'nav.billing', icon: CreditCard, permission: 'billing.manage' },
   payroll: { to: '/bang-luong', labelKey: 'nav.payroll', icon: Banknote, permission: 'payroll.manage' },
   audit: { to: '/nhat-ky', labelKey: 'nav.audit', icon: ScrollText, permission: 'audit.view' },
+  warehouseVehicles: { to: '/kho/xe', labelKey: 'nav.warehouseVehicles', icon: Truck, permission: 'warehouse.operate' },
   warehouse: { to: '/kho', labelKey: 'nav.warehouse', icon: Tablet, permission: 'warehouse.operate' },
   driver: { to: '/tai-xe', labelKey: 'nav.driver', icon: Box, permission: 'driver.operate' },
 } as const satisfies Record<string, NavScreen>
@@ -79,7 +80,7 @@ export const NAV_ITEMS: Readonly<Record<Role, readonly NavScreenId[]>> = {
   companyAdmin: ['users', 'audit', 'billing', 'companyProfile'],
   companyManager: ['dashboard', 'requirements', 'packages', 'trips', 'monitoring', 'fleet', 'companyWarehouses', 'payroll'],
   dispatcher: ['trips', 'monitoring', 'packages', 'requirements', 'fleet', 'dashboard'],
-  warehouse: ['warehouse', 'packages', 'warehouseCustomers'],
+  warehouse: ['warehouse', 'warehouseVehicles', 'packages', 'warehouseCustomers'],
   driver: ['driver'],
 }
 

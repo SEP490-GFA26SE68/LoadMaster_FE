@@ -113,15 +113,34 @@ export type RequirementRow = {
 export async function listDeliveryRequirements(): Promise<RequirementRow[]> {
   // Màn khách hàng của kho (`WarehouseCustomersPage`) mở cả khi chưa nối máy chủ: không gọi mạng
   if (!usesBackend('trips')) throw new ApiError('NOT_SUPPORTED')
-  const size = 100
-  const first = await apiFetch<RequirementPageApi>(`/api/delivery-requirements?page=0&size=${size}`)
-  // Biết số trang sau trang đầu: đọc các trang còn lại cùng lúc, giữ đúng thứ tự trang
-  const rest = await Promise.all(
-    Array.from({ length: Math.max(0, first.totalPages - 1) }, (_, index) =>
-      apiFetch<RequirementPageApi>(`/api/delivery-requirements?page=${index + 1}&size=${size}`),
-    ),
-  )
-  return [first, ...rest].flatMap((response) => response.data).map(requirementRowFromApi)
+  const rows = await fetchAllPages<DeliveryRequirementApi>('/api/delivery-requirements', { size: 100 })
+  return rows.map(requirementRowFromApi)
+}
+
+export type RequirementListParams = {
+  page: number; size: number; search?: string; status?: string; priority?: string
+  deadlineFrom?: string; deadlineTo?: string; sortBy?: string; sortDir?: 'ASC' | 'DESC'
+}
+export type RequirementListPage = Omit<RequirementPageApi, 'data'> & { data: RequirementRow[] }
+
+/** URL dates are business-local calendar days; an exclusive next midnight preserves microseconds. */
+export async function fetchRequirementsPage(input: RequirementListParams, signal?: AbortSignal): Promise<RequirementListPage> {
+  const params = new URLSearchParams({ page: String(input.page), size: String(input.size) })
+  for (const key of ['search', 'status', 'priority', 'sortBy', 'sortDir'] as const) {
+    if (input[key]) params.set(key, input[key])
+  }
+  if (input.deadlineFrom) params.set('deadlineFrom', input.deadlineFrom + 'T00:00:00')
+  if (input.deadlineTo) {
+    const next = new Date(input.deadlineTo + 'T00:00:00Z')
+    if (!Number.isFinite(next.getTime())) throw new ApiError('BAD_REQUEST')
+    next.setUTCDate(next.getUTCDate() + 1)
+    params.set('deadlineTo', next.toISOString().slice(0, 10) + 'T00:00:00')
+    params.set('deadlineToExclusive', 'true')
+  }
+  const response = await apiFetch<RequirementPageApi>('/api/delivery-requirements?' + params, { signal })
+  if (response.success !== true || !Array.isArray(response.data) || !Number.isSafeInteger(response.totalElements))
+    throw new ApiError('INVALID_PAGE_RESPONSE')
+  return { ...response, data: response.data.map(requirementRowFromApi) }
 }
 
 // GET /api/delivery-requirements/{id}
@@ -160,5 +179,11 @@ export type AssignRequirementInput = { readonly requirementId: string; readonly 
  */
 // POST /api/trips/{tripId}/delivery-requirements/{requirementId}
 export function assignRequirementToTrip({ requirementId, tripId }: AssignRequirementInput): Promise<TripStopApiResponse> {
-  return assignBackendRequirementToTrip(tripId, requirementId)
+  return assignBackendRequirementToTrip(tripId, requirementId).catch((error: unknown) => {
+    // Older servers used INVALID_INPUT for several assignment failures, not just missing packages.
+    if (error instanceof ApiError && error.code === 'INVALID_INPUT') {
+      throw new ApiError('BAD_REQUEST', { status: error.status })
+    }
+    throw error
+  })
 }

@@ -20,6 +20,7 @@ vi.mock('@/lib/backend-config', () => ({
   backendConfig: { authSource: 'keycloak', apiUrl: 'http://be.test', features: new Set(['trips']), keycloak: { url: '', realm: '', clientId: '' } },
   usesBackend: (feature: string) => feature === 'trips',
 }))
+vi.mock('@/features/auth/AuthProvider', async original => ({ ...await original<typeof import('@/features/auth/AuthProvider')>(), useCurrentUser: () => ({ id: 'test-user', companyId: 'test-company' }) }))
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), warning: vi.fn(), success: vi.fn(), info: vi.fn() } }))
 
 const plan = (id: number, label: string | null, objective: string, algorithmName: string, runAlgorithm: string | null) => ({
@@ -34,6 +35,7 @@ const RUN = [
 ]
 
 beforeEach(() => {
+  sessionStorage.clear()
   connectApiAuth(() => Promise.resolve('token-1'))
 })
 
@@ -106,7 +108,7 @@ test('hộp chạy của Thiết lập tối ưu ghi hạng của gói máy ch�
   })
   renderAt('/chuyen/42/toi-uu', '/chuyen/:tripId/toi-uu', <BackendOptimizationSetupRoute />)
 
-  await userEvent.click(await screen.findByRole('button', { name: 'Chạy tối ưu' }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Chạy tối ưu xếp hàng mới' }))
   const dialog = await screen.findByRole('dialog')
   expect(await within(dialog).findByText('EP + DBLF + GA/SA')).toBeInTheDocument()
   expect(within(dialog).getByText('Thuật toán của gói')).toBeInTheDocument()

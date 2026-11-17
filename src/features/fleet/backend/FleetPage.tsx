@@ -15,12 +15,13 @@ import { FleetHeroSummary } from './FleetHeroSummary'
 import { FleetSummary } from './FleetSummary'
 import { useVehiclesQuery } from './useVehiclesQuery'
 import {
-  filterVehicleRows,
+  statusFromSlug,
   VEHICLE_STATUSES,
   VEHICLE_STATUS_SLUGS,
 } from './vehicle-status'
 
 const STATUS_FILTER = 'trang-thai'
+const TYPE_FILTER = 'loai-xe'
 
 /** Chân thẻ danh sách (V2.3): trạng thái lấy từ đâu và cách đọc hình lòng thùng — màu vật cản, cạnh cửa sau. */
 function FleetLegend() {
@@ -46,7 +47,7 @@ function FleetLegend() {
 }
 
 /**
- * Đội xe — danh sách xe và trạng thái (LM-040, LM-089) đọc qua TanStack Query từ kho mock dùng chung (D-06), bố cục V2:
+ * Đội xe — danh sách xe và trạng thái (LM-040, LM-089) đọc server-side qua TanStack Query, bố cục V2:
  * bốn ô số liệu (ba ô trạng thái bấm để lọc), rồi một thẻ gồm thanh tìm/lọc và bảng.
  * Tìm bỏ dấu, lọc trạng thái, sắp xếp, phân trang; trạng thái lọc giữ trên URL (`?q=…&trang-thai=bao-duong`, D-52).
  * Bấm một dòng mở trang cấu hình xe.
@@ -56,7 +57,7 @@ export function FleetPage() {
   const navigate = useNavigate()
   const canEdit = useCan()('fleet.edit')
   const list = useListUrlState({
-    filters: [STATUS_FILTER],
+    filters: [STATUS_FILTER, TYPE_FILTER],
     defaultSort: {
       id: 'name',
       desc: false,
@@ -67,9 +68,12 @@ export function FleetPage() {
     list.pageIndex,
     list.pageSize,
     list.query,
+    list.filters[TYPE_FILTER] || undefined,
+    { status: statusFromSlug(list.filters[STATUS_FILTER]) ?? undefined,
+      sortBy: list.sorting[0]?.id ?? 'name',
+      sortDir: list.sorting[0]?.desc ? 'DESC' : 'ASC' },
   )
 
-  const statusSlug = list.filters[STATUS_FILTER]
 
   const columns = useMemo(
     () => createFleetColumns(t),
@@ -78,17 +82,14 @@ export function FleetPage() {
 
   const vehicles = useMemo(() => vehiclesQuery.data?.data ?? [], [vehiclesQuery.data])
 
-  const rows = useMemo(
-    () => filterVehicleRows(vehicles, '', statusSlug),
-    [vehicles, statusSlug],
-  )
+  const rows = vehicles
 
   const statusOptions = VEHICLE_STATUSES.map((status) => ({
     value: VEHICLE_STATUS_SLUGS[status],
     label: t(`fleet.status.${status}`),
   }))
 
-  const isPending = vehiclesQuery.isPending
+  const isPending = vehiclesQuery.isFetching
   const isError = vehiclesQuery.isError
 
   function handleRetry() {
@@ -100,7 +101,7 @@ export function FleetPage() {
       <PageHero
         title={t('fleet.title')}
         description={
-          vehiclesQuery.isSuccess
+          vehiclesQuery.isSuccess && !isPending
             ? (
               <FleetHeroSummary
                 vehicles={vehicles}
@@ -130,45 +131,11 @@ export function FleetPage() {
         }
       />
 
-      <div className="min-h-0 flex-1 overflow-auto px-shell py-6">
-        {isPending ? (
-          <div className="flex items-center justify-center py-16" role="status" aria-label={t('fleet.loading')}>
-            <Spinner />
-          </div>
-        ) : isError ? (
-          <EmptyState
-            mascot="error"
-            title={t('fleet.error.title')}
-            description={t('fleet.error.description')}
-            action={
-              <Button variant="secondary" onClick={handleRetry} loading={vehiclesQuery.isFetching}>
-                <RotateCcw strokeWidth={1.5} />
-                {t('fleet.error.retry')}
-              </Button>
-            }
-          />
-        ) : vehicles.length === 0 ? (
-          <EmptyState
-            mascot="empty"
-            title={t('fleet.empty.title')}
-            description={t('fleet.empty.description')}
-            action={canEdit ? (
-              <Button variant="primary" asChild>
-                <Link to="/doi-xe/moi">
-                  <Plus strokeWidth={1.5} />
-                  {t('fleet.empty.action')}
-                </Link>
-              </Button>
-            ) : undefined}
-          />
-        ) : (
-          <div className="flex flex-col gap-4">
-            <FleetSummary
-              totalElements={
-                vehiclesQuery.data?.totalElements ?? 0
-              }
-            />
-            {/* Một thẻ: thanh tìm/lọc là đầu thẻ, bảng ngay dưới (V2). flex-none: con overflow-hidden của cột flex không được co. */}
+      <div className="sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6">
+        <div className="flex flex-col gap-4">
+          {vehiclesQuery.isSuccess && !isPending ? (
+            <FleetSummary totalElements={vehiclesQuery.data.totalElements} />
+          ) : null}
             <section className="relative flex-none overflow-hidden rounded-lg border border-border bg-bg">
               <FilterBar
                 layout="toolbar"
@@ -181,13 +148,25 @@ export function FleetPage() {
                 onValueChange={list.setFilter}
                 onClear={list.clearAll}
               />
-              <DataTable
+              {list.filters[TYPE_FILTER] ? (
+                <p className="px-4 py-2 text-small text-ink-3">{t('fleet.columns.vehicleType')}: #{list.filters[TYPE_FILTER]}</p>
+              ) : null}
+              {isPending ? (
+                <div className="flex items-center justify-center py-16" role="status" aria-label={t('fleet.loading')}><Spinner /></div>
+              ) : isError ? (
+                <EmptyState mascot="error" title={t('fleet.error.title')} description={t('fleet.error.description')}
+                  action={<Button variant="secondary" onClick={handleRetry} loading={vehiclesQuery.isFetching}><RotateCcw strokeWidth={1.5} />{t('fleet.error.retry')}</Button>} />
+              ) : vehicles.length === 0 && !list.isFiltering ? (
+                <EmptyState mascot="empty" title={t('fleet.empty.title')} description={t('fleet.empty.description')}
+                  action={canEdit ? <Button variant="primary" asChild><Link to="/doi-xe/moi"><Plus strokeWidth={1.5} />{t('fleet.empty.action')}</Link></Button> : undefined} />
+              ) : <DataTable
                 data={rows}
                 columns={columns}
                 getRowId={(row) => row.id}
                 density="spacious"
                 appearance="paper"
                 serverPagination
+                serverSorting
                 totalRows={vehiclesQuery.data?.totalElements ?? 0}
                 sorting={list.sorting}
                 onSortingChange={list.setSorting}
@@ -202,11 +181,10 @@ export function FleetPage() {
                 onRowClick={(vehicle) =>
                   void navigate(`/doi-xe/${vehicle.id}`)
                 }
-              />
+              />}
               <FleetLegend />
             </section>
           </div>
-        )}
       </div>
     </div>
   )

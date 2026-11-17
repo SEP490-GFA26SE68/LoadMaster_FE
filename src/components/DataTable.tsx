@@ -97,6 +97,8 @@ type DataTableProps<TData extends RowData> = SortingProps & {
  * rowCount là tổng số bản ghi BE trả về.
  */
   serverPagination?: boolean
+  /** Explicit opt-in only when the caller sends sorting to the server. Never sorts the supplied page locally. */
+  serverSorting?: boolean
   totalRows?: number
   /** Màn đang tìm/lọc (`list.isFiltering`): bảng rỗng thì nói không có kết quả khớp, kèm nút xoá lọc. */
   isFiltering?: boolean
@@ -122,6 +124,7 @@ export function DataTable<TData extends RowData>({
   pagination,
 
   serverPagination = false,
+  serverSorting = false,
   totalRows,
 
   isFiltering = false,
@@ -129,6 +132,7 @@ export function DataTable<TData extends RowData>({
   noMatchMessage,
 }: DataTableProps<TData>) {
   const t = useT()
+  const serverSortEnabled = serverSorting && sorting !== undefined && onSortingChange !== undefined
   // Số dòng thực tế của trang hiện tại
   const visibleRowCount = data.length
 
@@ -165,6 +169,8 @@ export function DataTable<TData extends RowData>({
     data,
     defaultColumn: SORTING_OFF_BY_DEFAULT,
 
+    manualSorting: serverPagination,
+    enableSorting: !serverPagination || serverSortEnabled,
     enableMultiSort: false,
     enableSortingRemoval: false,
     autoResetPageIndex: false,
@@ -202,6 +208,9 @@ export function DataTable<TData extends RowData>({
 
   return (
     <>
+      {serverPagination && !serverSortEnabled ? (
+        <p role="status" className="px-3 py-2 text-caption text-text-2">{t('common.serverOrderOnly')}</p>
+      ) : null}
       <table className="w-full table-fixed border-collapse">
         <thead>
           {table.getHeaderGroups().map((headerGroup) => (

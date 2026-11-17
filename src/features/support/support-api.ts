@@ -12,7 +12,7 @@
 
 import { fetchBackendMe } from '@/features/auth/me-api'
 import { api, ApiError, isApiError } from '@/lib/api-client'
-import { fetchAllPages } from '@/lib/api-page'
+import { fetchFirstPage } from '@/lib/api-page'
 import { usesBackend } from '@/lib/backend-config'
 import {
   CREDIT_TRANSACTIONS_PATH,
@@ -152,7 +152,7 @@ export async function getSupportCompanyPanel(companyId: string, companyName?: st
   const [contracts, balance, transactions] = await Promise.all([
     api().get<ContractDto[] | null>('/api/contracts', { query }),
     orNull(api().get<CreditBalanceDto>('/api/credits/balance', { query })),
-    orNull(fetchAllPages<CreditTransactionDto>(CREDIT_TRANSACTIONS_PATH, { query, size: SUPPORT_PANEL_TRANSACTIONS, maxPages: 1, truncate: true })),
+    orNull(fetchFirstPage<CreditTransactionDto>(CREDIT_TRANSACTIONS_PATH, { query, size: SUPPORT_PANEL_TRANSACTIONS }).then(page => page.rows)),
   ])
   const dto = latestContracts((contracts ?? []).filter((item) => String(item.companyId) === companyId))[0]
   const contract = dto === undefined ? null : contractOf(dto, new Date().toISOString())

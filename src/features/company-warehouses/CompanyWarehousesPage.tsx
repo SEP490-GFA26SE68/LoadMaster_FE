@@ -10,47 +10,37 @@ import {
   RefreshCw,
 } from 'lucide-react'
 import { toast } from 'sonner'
-
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { dataErrorMessage, useT } from '@/lib/i18n'
-
 import type { CompanyWarehouse } from './company-warehouses-api'
+import { WarehouseStaffAssignments } from './WarehouseStaffAssignments'
 import { CompanyWarehouseFormDialog } from './CompanyWarehouseFormDialog'
 import {
   useCompanyWarehousesQuery,
   useSetDefaultCompanyWarehouseMutation,
   useSetCompanyWarehouseActiveMutation,
 } from './useCompanyWarehousesQuery'
-
 export function CompanyWarehousesPage() {
   const t = useT()
-
   const warehousesQuery = useCompanyWarehousesQuery()
   const setDefault = useSetDefaultCompanyWarehouseMutation()
   const setActive = useSetCompanyWarehouseActiveMutation()
-
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] =
     useState<CompanyWarehouse | null>(null)
-
   const warehouses = warehousesQuery.data ?? []
-
   const busy = setDefault.isPending || setActive.isPending
-
   function openCreate() {
     setEditing(null)
     setFormOpen(true)
   }
-
   function openEdit(warehouse: CompanyWarehouse) {
     setEditing(warehouse)
     setFormOpen(true)
   }
-
   async function handleSetDefault(warehouse: CompanyWarehouse) {
     if (warehouse.isDefault || busy) return
-
     try {
       await setDefault.mutateAsync(warehouse.id)
       toast.success(t('companyWarehouses.defaultUpdated'))
@@ -58,7 +48,6 @@ export function CompanyWarehousesPage() {
       toast.error(dataErrorMessage(error, t))
     }
   }
-
   async function handleSetActive(warehouse: CompanyWarehouse) {
     if (busy) return
 
@@ -83,7 +72,7 @@ export function CompanyWarehousesPage() {
   }
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col px-shell py-6">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto px-shell py-6">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">
@@ -240,6 +229,7 @@ export function CompanyWarehousesPage() {
                     </Button>
                   ) : null}
                 </div>
+                <WarehouseStaffAssignments warehouse={warehouse} />
               </section>
             )
           })}

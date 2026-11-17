@@ -1,4 +1,5 @@
 import { queryOptions, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
 import { pollInterval } from '@/lib/polling'
 import { useAuth } from '@/features/auth/AuthProvider'
 import type { StopRef } from '@/features/pickups/pickup-stops'
@@ -33,8 +34,14 @@ export function useDriverCapabilities(): DriverCapabilities {
  */
 export function useMyTripsQuery() {
   const { user } = useAuth()
+  const [openedAt] = useState(() => Date.now())
   // Người đăng nhập nằm trong khoá: đổi tài khoản không dùng lại danh sách của người trước
-  return useQuery({ queryKey: ['trips', 'driver', 'mine', user?.id ?? null], queryFn: fetchMyTrips, staleTime: 0 })
+  return useQuery({
+    queryKey: ['trips', 'driver', 'mine', user?.id ?? null], queryFn: fetchMyTrips, staleTime: 0, retry: false,
+    refetchIntervalInBackground: false,
+    refetchInterval: query => DRIVER_CAPABILITIES.backend && query.state.status !== 'error' &&
+      Date.now() - openedAt < 20 * 60_000 && (query.state.data?.preparing.length ?? 0) > 0 ? 10_000 : false,
+  })
 }
 
 function tripKey(tripId: string) {

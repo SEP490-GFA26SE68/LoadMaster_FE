@@ -11,8 +11,17 @@ import { apiErrors } from './vi/apiErrors'
  */
 export function dataErrorMessage(error: unknown, t: TFunction): string {
   if (isApiError(error)) {
+    if (error.code === 'REQUIREMENT_PACKAGES_INCOMPLETE') {
+      const { expectedCount, receivedCount, missingCount } = error.params
+      if (typeof expectedCount === 'number' && Number.isSafeInteger(expectedCount) && expectedCount > 0
+          && typeof receivedCount === 'number' && Number.isSafeInteger(receivedCount) && receivedCount >= 0
+          && typeof missingCount === 'number' && missingCount > 0 && expectedCount - receivedCount === missingCount) {
+        return t('apiErrors.REQUIREMENT_PACKAGES_INCOMPLETE', { expectedCount, receivedCount, missingCount })
+      }
+      return t('apiErrors.REQUIREMENT_PACKAGES_INELIGIBLE')
+    }
     const code = error.code in apiErrors ? error.code : codeOfStatus(error.status)
-    return t(`apiErrors.${code as keyof typeof apiErrors}`)
+    return t(`apiErrors.${code as Exclude<keyof typeof apiErrors, 'REQUIREMENT_PACKAGES_INCOMPLETE'>}`)
   }
   if (!isMockDbError(error)) return t('dataErrors.UNKNOWN')
   const params = Object.fromEntries(

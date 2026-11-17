@@ -266,6 +266,6 @@ test('tab Ma trận quyền mở bảng chỉ đọc dựng từ ROLE_PERMISSION
   await user.click(screen.getByRole('tab', { name: 'Ma trận quyền' }))
   const matrix = await screen.findByRole('table')
   // Một dòng tiêu đề, 13 dòng khu vực, 37 quyền và một dòng tổng; cột đầu là tên quyền, tám cột còn lại là vai trò (FE-0-06)
-  expect(within(matrix).getAllByRole('row')).toHaveLength(52)
+  expect(within(matrix).getAllByRole('row')).toHaveLength(53)
   expect(within(matrix).getAllByRole('columnheader')).toHaveLength(9)
 })

@@ -275,6 +275,7 @@ function rawFetch(path: string, init: RequestInit, accept: string): Promise<Resp
 }
 
 async function rawFetchOnce(path: string, init: RequestInit, accept: string, token: string | null): Promise<Response> {
+  init.signal?.throwIfAborted()
   const headers = new Headers(init.headers)
   if (token !== null) headers.set('Authorization', `Bearer ${token}`)
   if (!headers.has('Accept')) headers.set('Accept', accept)

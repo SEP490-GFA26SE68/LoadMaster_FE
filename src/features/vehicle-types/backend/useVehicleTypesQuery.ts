@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tansta
 import {
   deleteVehicleType,
   fetchVehicleTypes,
+  fetchAllVehicleTypes,
   saveVehicleType,
   type VehicleTypeInput,
 } from './vehicle-types-api'
@@ -19,6 +20,10 @@ function refreshLimits(client: QueryClient) {
 }
 
 /** `staleTime: 0`: tên xe và danh sách xe đổi ở màn Đội xe, mở màn là đọc lại. */
+export function useVehicleTypeCatalogQuery() {
+  return useQuery({ queryKey: [...KEY, 'catalog'], queryFn: fetchAllVehicleTypes, staleTime: 0 })
+}
+
 export function useVehicleTypesQuery(
   page = 0,
   size = 20,

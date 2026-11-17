@@ -4,6 +4,13 @@
  * dùng (lỗi do FE tự chặn trước khi gọi) đứng cuối.
  */
 export const apiErrors = {
+DRIVER_VEHICLE_PRESENCE_UNVERIFIED: 'Chưa xác minh xe tại kho xuất phát. Vui lòng nhờ nhân viên được phân công tại kho xác nhận xe thực tế trước khi xuất phát.',
+DRIVER_VEHICLE_DEPARTURE_BLOCKED: 'Chưa thể xuất phát do trạng thái xe hoặc kho chưa phù hợp. Vui lòng liên hệ nhân viên kho hoặc điều phối viên để kiểm tra.',
+VEHICLE_DEPARTURE_INELIGIBLE: "Xe không còn đủ điều kiện tại kho xuất phát. Vui lòng chọn lại xe.",
+WAREHOUSE_ASSIGNMENT_INVALID: "Chỉ phân công nhân viên kho đang hoạt động vào kho đang hoạt động.",
+    VEHICLE_WAREHOUSE_FORBIDDEN: "Bạn không được phân công xác nhận xe tại kho này.",
+VEHICLE_PRESENCE_CONFLICT: "Trạng thái xe hoặc mã xác nhận xung đột. Vui lòng kiểm tra lại.",
+
   // Đường truyền và mã suy từ HTTP khi phong bì không có `code`
   NETWORK_ERROR: 'Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.',
   TIMEOUT: 'Máy chủ phản hồi quá lâu. Thử lại sau.',
@@ -14,12 +21,19 @@ export const apiErrors = {
   NOT_FOUND: 'Không tìm thấy dữ liệu này trên máy chủ — có thể đã bị xoá.',
   CONFLICT: 'Dữ liệu bị trùng hoặc đã thay đổi trên máy chủ. Tải lại rồi thử lại.',
   SERVER_ERROR: 'Máy chủ gặp lỗi. Thử lại sau.',
+  DATASET_INCOMPLETE: 'Danh sách vượt giới hạn tải đầy đủ. Chưa thể hiển thị kết quả đầy đủ; hãy thu hẹp phạm vi hoặc liên hệ quản trị viên.',
+  INVALID_PAGE_RESPONSE: 'Dữ liệu phân trang không hợp lệ hoặc đã thay đổi khi tải. Hãy tải lại; chưa thể xác nhận danh sách đầy đủ.',
   // FE tự dừng: danh sách máy chủ quá dài để đọc hết một lần (`fetchAllPages`)
   LIST_TOO_LONG: 'Danh sách trên máy chủ quá dài để tải hết một lần. Thu hẹp bộ lọc hoặc báo đội hỗ trợ.',
 
   // Chung
   UNCATEGORIZED_EXCEPTION: 'Máy chủ gặp lỗi chưa xác định. Thử lại sau.',
   INTERNAL_SERVER_ERROR: 'Máy chủ gặp lỗi. Thử lại sau.',
+  REQUIREMENT_PACKAGES_INCOMPLETE: 'Chưa đủ kiện hàng để đưa vào chuyến. Đã nhận {receivedCount}/{expectedCount} kiện, còn thiếu {missingCount} kiện.',
+  REQUIREMENT_PACKAGE_COUNT_INVALID: 'Số kiện dự kiến của yêu cầu chưa hợp lệ. Kiểm tra lại yêu cầu trước khi phân chuyến.',
+  REQUIREMENT_PACKAGES_INELIGIBLE: 'Có kiện liên kết chưa đủ điều kiện phân chuyến. Kiểm tra trạng thái kiện.',
+  REQUIREMENT_PACKAGE_COMPANY_MISMATCH: 'Có kiện không thuộc công ty của yêu cầu giao.',
+  REQUIREMENT_PACKAGE_ALREADY_ASSIGNED: 'Có kiện đã được gán vào chuyến khác.',
   INVALID_INPUT: 'Máy chủ không nhận thao tác này: dữ liệu không hợp lệ, hoặc bạn đang thao tác trên chính tài khoản của mình.',
   VALIDATION_ERROR: 'Dữ liệu chưa hợp lệ, kiểm tra lại các ô.',
   RESOURCE_NOT_FOUND: 'Không tìm thấy dữ liệu yêu cầu.',
@@ -128,6 +142,8 @@ export const apiErrors = {
   TRIP_NOT_READY_FOR_LOADING: 'Chỉ bắt đầu xếp được chuyến Đã lập kế hoạch.',
   LOADING_NOT_COMPLETED: 'Kho chưa xếp xong hàng cho chuyến này, chưa xuất phát được.',
   LOADING_EXECUTION_NOT_FOUND: 'Không tìm thấy phiên xếp hàng của chuyến.',
+  WAREHOUSE_GEOMETRY_INVALID: 'Dữ liệu vị trí hoặc kích thước phương án thiếu/không hợp lệ. Không thể dựng hướng dẫn chính xác; hãy làm mới hoặc báo điều phối viên.',
+  PACKAGE_CODE_MISMATCH: 'Mã không khớp kiện cần xác nhận trong phiên xếp này. Hãy kiểm tra Package Code trên nhãn.',
   PLACEMENT_ALREADY_CONFIRMED: 'Kiện này đã được xác nhận xếp.',
   DEVIATION_ALREADY_RECORDED: 'Sai lệch của kiện này đã được ghi.',
   INVALID_SEQUENCE_ORDER: 'Chưa tới lượt kiện này — xếp theo đúng thứ tự.',

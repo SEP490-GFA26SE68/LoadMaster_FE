@@ -12,6 +12,7 @@ import { useCan } from '@/features/auth/useCan'
 import { PackageFlagSection } from './PackageFlagSection'
 import { PackageFormDialog } from './PackageFormDialog'
 import { PackageHistorySection } from './PackageHistorySection'
+import { PackageDeleteAction } from '../PackageDeleteAction'
 
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 
@@ -328,6 +329,7 @@ export function PackageDetailPanel({
             </dl>
           </section>
 
+          <PackageDeleteAction key={pkg.id} pkg={pkg} onDeleted={onClose} />
           <PackageHistorySection titleId={titleId} packageId={pkg.id} />
 
         </div>

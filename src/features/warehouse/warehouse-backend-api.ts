@@ -31,6 +31,8 @@ export type {
 export { codeMatches } from './warehouse-dto'
 
 /** Vị trí kiện thật sự đặt, cm, và lý do lệch khỏi phương án. */
+export type LabelInput = { readonly method: 'QR' | 'CODE'; readonly code: string }
+
 export type DeviationInput = { readonly x: number; readonly y: number; readonly z: number; readonly reason: string }
 
 /** Xác nhận tay khi nhãn không đọc được: lý do (`OTHER` bắt buộc ghi chú). */
@@ -81,27 +83,31 @@ export function createWarehouseBackend(client: () => ApiClient = api) {
     }
   }
 
-  // POST /api/warehouse/placements/{id}/confirm — `method`: quét QR hay gõ mã, máy chủ ghi vào lần đối chiếu (báo cáo chuyến tách hai cách)
-  async function confirm(tripId: string, placementId: string, method: 'QR' | 'CODE'): Promise<ServerLoadingSession> {
+  // POST /api/warehouse/placements/{id}/confirm
+  async function confirm(tripId: string, placementId: string, input: LabelInput): Promise<ServerLoadingSession> {
     try {
-      await client().post(`${placementPath(placementId)}/confirm`, { body: { method } })
+      await client().post(`${placementPath(placementId)}/confirm`, { body: { tripId, ...input } })
     } catch (error) {
       // Đã xác nhận từ trước (lượt gọi trước mất phản hồi): đọc lại phiên, không báo lỗi
       if (!hasCode(error, 'PLACEMENT_ALREADY_CONFIRMED')) throw error
     }
-    return fetchSession(tripId)
+    const session = await fetchSession(tripId)
+    if (session.outcomes[placementId] !== 'confirmed') throw new ApiError('CONFLICT', { status: 409 })
+    return session
   }
 
   // POST /api/warehouse/placements/{id}/deviation
   async function deviation(tripId: string, placementId: string, input: DeviationInput): Promise<ServerLoadingSession> {
     try {
       await client().post(`${placementPath(placementId)}/deviation`, {
-        body: { actualPosX: Math.round(input.x), actualPosY: Math.round(input.y), actualPosZ: Math.round(input.z), reason: input.reason.trim() },
+        body: { tripId, actualPosX: Math.round(input.x), actualPosY: Math.round(input.y), actualPosZ: Math.round(input.z), reason: input.reason.trim() },
       })
     } catch (error) {
       if (!hasCode(error, 'DEVIATION_ALREADY_RECORDED')) throw error
     }
-    return fetchSession(tripId)
+    const session = await fetchSession(tripId)
+    if (session.outcomes[placementId] !== 'deviation') throw new ApiError('CONFLICT', { status: 409 })
+    return session
   }
 
   // POST /api/warehouse/tasks/{tripId}/complete — 400 `INCOMPLETE_LOADING` khi còn kiện chưa xử lý
@@ -117,9 +123,12 @@ export function createWarehouseBackend(client: () => ApiClient = api) {
   }
 
   // POST /api/warehouse/tasks/{tripId}/staging/packages/{packageId}/confirm — quét lại kiện đã soạn trả `alreadyStaged`, không ghi
-  async function stage(tripId: string, packageId: string, method: 'QR' | 'CODE'): Promise<StagingResult> {
-    const result = await client().post<StagingDto | null>(`${stagingPath(tripId, packageId)}/confirm`, { body: { method } })
-    return { session: await fetchSession(tripId), alreadyStaged: result?.alreadyStaged === true }
+  async function stage(tripId: string, packageId: string, method: 'QR' | 'CODE', code: string): Promise<StagingResult> {
+    const result = await client().post<StagingDto | null>(`${stagingPath(tripId, packageId)}/confirm`, { body: { method, code } })
+    const session = await fetchSession(tripId)
+    const placement = session.placements.find((entry) => entry.packageId === packageId)
+    if (!placement || session.staging[placement.id]?.staged !== true) throw new ApiError('CONFLICT', { status: 409 })
+    return { session, alreadyStaged: result?.alreadyStaged === true }
   }
 
   // POST /api/warehouse/tasks/{tripId}/staging/packages/{packageId}/manual — chưa tính là đã soạn tới khi điều phối viên duyệt
@@ -136,13 +145,13 @@ export function createWarehouseBackend(client: () => ApiClient = api) {
 
   // POST /api/warehouse/placements/{id}/manual — kiện tính là đã xếp, xác nhận chờ điều phối viên duyệt
   async function confirmManually(tripId: string, placementId: string, input: ServerManualInput): Promise<ServerLoadingSession> {
-    await client().post(`${placementPath(placementId)}/manual`, { body: manualBody(input) })
+    await client().post(`${placementPath(placementId)}/manual`, { query: { tripId }, body: manualBody(input) })
     return fetchSession(tripId)
   }
 
   // POST /api/warehouse/placements/{id}/damaged
   async function damaged(tripId: string, placementId: string): Promise<DamageResult> {
-    const result = await client().post<DamageDto>(`${placementPath(placementId)}/damaged`)
+    const result = await client().post<DamageDto>(`${placementPath(placementId)}/damaged`, { query: { tripId } })
     if (result.outcome === 'REPLANNED') return { outcome: 'replanned', resting: result.restingCount ?? 0 }
     return { outcome: 'leftOut', session: await fetchSession(tripId) }
   }
@@ -153,7 +162,23 @@ export function createWarehouseBackend(client: () => ApiClient = api) {
     return fetchSession(tripId)
   }
 
-  return { fetchTrips, fetchSession, start, confirm, deviation, complete, stage, stageManually, reportShortage, confirmManually, damaged, seal }
+  /** Read-only approved plan, available before an execution exists. Never fall back to start(). */
+  async function fetchApprovedPlan(tripId: string): Promise<ServerLoadingSession> {
+    const dto = await client().get<StartLoadingDto>(tripPath(tripId) + '/plan')
+    if (!dto || typeof dto !== 'object') throw new ApiError('SERVER_ERROR')
+    if (dto.stale === true || dto.approved === false) throw new ApiError('PLAN_STALE', { status: 409 })
+    if (String(dto.tripId) !== tripId || !Number.isSafeInteger(dto.loadPlanId) || (dto.loadPlanId ?? 0) <= 0 ||
+        !['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED'].includes(dto.status ?? '') ||
+        (dto.status === 'NOT_STARTED' ? dto.executionId != null : !Number.isSafeInteger(dto.executionId) || (dto.executionId ?? 0) <= 0))
+      throw new ApiError('SERVER_ERROR')
+    try { return sessionOf(dto) }
+    catch (error) {
+      if (hasCode(error, 'SERVER_ERROR')) throw new ApiError('WAREHOUSE_GEOMETRY_INVALID')
+      throw error
+    }
+  }
+
+  return { fetchApprovedPlan, fetchTrips, fetchSession, start, confirm, deviation, complete, stage, stageManually, reportShortage, confirmManually, damaged, seal }
 }
 
 export type WarehouseBackend = ReturnType<typeof createWarehouseBackend>
