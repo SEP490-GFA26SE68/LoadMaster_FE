@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { afterEach, expect, test, vi } from 'vitest'
@@ -40,7 +40,7 @@ test('loads company pay rates, calculates a monthly payroll, and shows the drive
   const period = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
   const { calls } = stubBackend({
     'GET /api/company/payroll/settings': reply([
-      { id: 4, effectiveFrom: '2026-11-01', baseSalaryVnd: 8_000_000, rateVndPerKg: 100, rateVndPerKm: 2_000 },
+      { id: 4, effectiveFrom: '2026-11-01', baseSalaryVnd: 8_000_000, rateVndPerKg: 100, commissionPercent: 15, handlingFeeVndPerKg: 150, handlingDriverPercent: 85 },
     ]),
     [`GET /api/company/payroll/periods/${period}`]: {
       status: 404,
@@ -49,7 +49,7 @@ test('loads company pay rates, calculates a monthly payroll, and shows the drive
     [`POST /api/company/payroll/periods/${period}/calculate`]: reply({
       period,
       status: 'DRAFT',
-      drivers: [{ driverId: 21, driverName: 'Nguyen Van An', baseSalaryVnd: 8_000_000, totalKg: 500, kgAmountVnd: 50_000, totalKm: 60, kmAmountVnd: 120_000, totalSalaryVnd: 8_170_000 }],
+      drivers: [{ driverId: 21, driverName: 'Nguyen Van An', baseSalaryVnd: 8_000_000, totalKg: 500, kgAmountVnd: 50_000, handlingAmountVnd: 120_000, totalSalaryVnd: 8_170_000 }],
     }),
     [`GET /api/company/payroll/periods/${period}/drivers/21`]: reply({
       calculated: true,
@@ -61,11 +61,12 @@ test('loads company pay rates, calculates a monthly payroll, and shows the drive
       totalKg: 500,
       rateVndPerKg: 100,
       kgAmountVnd: 50_000,
-      totalKm: 60,
-      rateVndPerKm: 2_000,
-      kmAmountVnd: 120_000,
+      commissionPercent: 15,
+      handlingFeeVndPerKg: 150,
+      handlingDriverPercent: 85,
+      handlingAmountVnd: 120_000,
       totalSalaryVnd: 8_170_000,
-      trips: [{ tripId: 42, tripCode: 'TRIP-0042', planKg: 1_000, planKm: 120, sharePercent: 50, allocatedKg: 500, allocatedKm: 60, kgAmountVnd: 50_000, kmAmountVnd: 120_000, totalAmountVnd: 170_000 }],
+      trips: [{ tripId: 42, tripCode: 'TRIP-0042', planKg: 1_000, sharePercent: 50, allocatedKg: 500, kgAmountVnd: 50_000, handlingAmountVnd: 120_000, totalAmountVnd: 170_000 }],
     }),
     'GET /api/company/payroll/trips/42/drivers': reply([{ driverId: 21, driverName: 'Nguyen Van An', sharePercent: 50 }]),
   })
@@ -79,7 +80,7 @@ test('loads company pay rates, calculates a monthly payroll, and shows the drive
   await user.click(screen.getByRole('button', { name: 'Nguyen Van An' }))
   expect(await screen.findByText('TRIP-0042')).toBeInTheDocument()
   expect(await screen.findByText('Khối lượng phương án')).toBeInTheDocument()
-  expect(screen.getAllByText('Tiền theo quãng đường').length).toBeGreaterThan(0)
+  expect(screen.getAllByText('Tiền bốc dỡ').length).toBeGreaterThan(0)
   expect(calls.map(({ method, path }) => `${method} ${path}`)).toContain(`POST /api/company/payroll/periods/${period}/calculate`)
   await waitFor(() => expect(calls.map(({ method, path }) => `${method} ${path}`)).toContain('GET /api/company/payroll/trips/42/drivers'))
 })
@@ -91,12 +92,12 @@ test('allows company manager to adjust driver base salary starting next month', 
   const nextMonth = nextMonthPeriod(date)
   const { calls } = stubBackend({
     'GET /api/company/payroll/settings': reply([
-      { id: 4, effectiveFrom: '2026-11-01', baseSalaryVnd: 8_000_000, rateVndPerKg: 100, rateVndPerKm: 2_000 },
+      { id: 4, effectiveFrom: '2026-11-01', baseSalaryVnd: 8_000_000, rateVndPerKg: 100, commissionPercent: 15, handlingFeeVndPerKg: 150, handlingDriverPercent: 85 },
     ]),
     [`GET /api/company/payroll/periods/${period}`]: reply({
       period,
       status: 'DRAFT',
-      drivers: [{ driverId: 21, driverName: 'Nguyen Van An', baseSalaryVnd: 8_000_000, totalKg: 500, kgAmountVnd: 50_000, totalKm: 60, kmAmountVnd: 120_000, totalSalaryVnd: 8_170_000 }],
+      drivers: [{ driverId: 21, driverName: 'Nguyen Van An', baseSalaryVnd: 8_000_000, totalKg: 500, kgAmountVnd: 50_000, handlingAmountVnd: 120_000, totalSalaryVnd: 8_170_000 }],
     }),
     [`GET /api/company/payroll/periods/${period}/drivers/21`]: reply({
       calculated: true,
@@ -108,9 +109,10 @@ test('allows company manager to adjust driver base salary starting next month', 
       totalKg: 500,
       rateVndPerKg: 100,
       kgAmountVnd: 50_000,
-      totalKm: 60,
-      rateVndPerKm: 2_000,
-      kmAmountVnd: 120_000,
+      commissionPercent: 15,
+      handlingFeeVndPerKg: 150,
+      handlingDriverPercent: 85,
+      handlingAmountVnd: 120_000,
       totalSalaryVnd: 8_170_000,
       trips: [],
     }),
@@ -158,7 +160,7 @@ test('effectiveFrom input sets min month to current month when company has no ra
 
   stubBackend({
     'GET /api/company/payroll/settings': reply([
-      { id: 4, effectiveFrom: `${currentMonth}-01`, baseSalaryVnd: 8_000_000, rateVndPerKg: 100, rateVndPerKm: 2_000 },
+      { id: 4, effectiveFrom: `${currentMonth}-01`, baseSalaryVnd: 8_000_000, rateVndPerKg: 100, commissionPercent: 15, handlingFeeVndPerKg: 150, handlingDriverPercent: 85 },
     ]),
     [`GET /api/company/payroll/periods/${currentMonth}`]: {
       status: 404,
@@ -191,12 +193,10 @@ test('displays translated error message when createPayrollRate fails because eff
 
   renderPayroll()
   const baseSalaryInput = await screen.findByLabelText(/Lương cứng mỗi tài xế/)
-  const perKgInput = screen.getByLabelText(/Đơn giá theo khối lượng/)
-  const perKmInput = screen.getByLabelText(/Đơn giá theo quãng đường/)
+  const perKgInput = screen.getByLabelText(/Cước theo khối lượng/)
 
   await user.type(baseSalaryInput, '8000000')
   await user.type(perKgInput, '100')
-  await user.type(perKmInput, '2000')
   await user.click(screen.getByRole('button', { name: 'Lưu phiên bản mức lương' }))
 
   expect(await screen.findByText('Mức lương mới chỉ được áp dụng từ tháng sau (hoặc từ tháng này đối với công ty mới).')).toBeInTheDocument()
@@ -210,7 +210,7 @@ test('clicking a saved rate version populates form for editing and allows updati
 
   const { calls } = stubBackend({
     'GET /api/company/payroll/settings': reply([
-      { id: 4, effectiveFrom: `${nextMonth}-01`, baseSalaryVnd: 8_000_000, rateVndPerKg: 100, rateVndPerKm: 2_000 },
+      { id: 4, effectiveFrom: `${nextMonth}-01`, baseSalaryVnd: 8_000_000, rateVndPerKg: 100, commissionPercent: 15, handlingFeeVndPerKg: 150, handlingDriverPercent: 85 },
     ]),
     [`GET /api/company/payroll/periods/${currentMonth}`]: {
       status: 404,
@@ -221,7 +221,7 @@ test('clicking a saved rate version populates form for editing and allows updati
       effectiveFrom: `${nextMonth}-01`,
       baseSalaryVnd: 9_000_000,
       rateVndPerKg: 100,
-      rateVndPerKm: 2_000,
+      commissionPercent: 15, handlingFeeVndPerKg: 150, handlingDriverPercent: 85,
     }),
   })
 
@@ -251,12 +251,12 @@ test('clicking lock period opens confirmation dialog warning that the month cann
     [`GET /api/company/payroll/periods/${period}`]: reply({
       period,
       status: 'DRAFT',
-      drivers: [{ driverId: 21, driverName: 'Nguyen Van An', baseSalaryVnd: 8_000_000, totalKg: 500, kgAmountVnd: 50_000, totalKm: 60, kmAmountVnd: 120_000, totalSalaryVnd: 8_170_000 }],
+      drivers: [{ driverId: 21, driverName: 'Nguyen Van An', baseSalaryVnd: 8_000_000, totalKg: 500, kgAmountVnd: 50_000, handlingAmountVnd: 120_000, totalSalaryVnd: 8_170_000 }],
     }),
     [`POST /api/company/payroll/periods/${period}/lock`]: reply({
       period,
       status: 'LOCKED',
-      drivers: [{ driverId: 21, driverName: 'Nguyen Van An', baseSalaryVnd: 8_000_000, totalKg: 500, kgAmountVnd: 50_000, totalKm: 60, kmAmountVnd: 120_000, totalSalaryVnd: 8_170_000 }],
+      drivers: [{ driverId: 21, driverName: 'Nguyen Van An', baseSalaryVnd: 8_000_000, totalKg: 500, kgAmountVnd: 50_000, handlingAmountVnd: 120_000, totalSalaryVnd: 8_170_000 }],
     }),
   })
 
@@ -273,5 +273,87 @@ test('clicking lock period opens confirmation dialog warning that the month cann
   await user.click(confirmButton)
 
   await waitFor(() => expect(calls.map(({ method, path }) => `${method} ${path}`)).toContain(`POST /api/company/payroll/periods/${period}/lock`))
+})
+
+test('deletes a draft before editing its saved rate and calculating again', async () => {
+  const user = userEvent.setup()
+  const date = new Date()
+  const period = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+  const draft = {
+    period,
+    status: 'DRAFT',
+    drivers: [{ driverId: 21, driverName: 'Nguyen Van An', baseSalaryVnd: 8_000_000, totalKg: 0, kgAmountVnd: 0, handlingAmountVnd: 0, totalSalaryVnd: 8_000_000 }],
+  }
+  let deleted = false
+  const { calls } = stubBackend({
+    'GET /api/company/payroll/settings': reply([
+      { id: 4, effectiveFrom: `${period}-01`, baseSalaryVnd: 8_000_000, rateVndPerKg: 100, commissionPercent: 15, handlingFeeVndPerKg: 150, handlingDriverPercent: 85 },
+    ]),
+    [`GET /api/company/payroll/periods/${period}`]: () => deleted
+      ? { status: 404, body: { success: false, code: 'PAYROLL_PERIOD_NOT_FOUND', message: 'not found' } }
+      : reply(draft),
+    [`DELETE /api/company/payroll/periods/${period}`]: () => {
+      deleted = true
+      return reply(null)
+    },
+    'PUT /api/company/payroll/settings': ({ body }) => reply({ id: 4, ...(body as object) }),
+    [`POST /api/company/payroll/periods/${period}/calculate`]: reply(draft),
+  })
+
+  renderPayroll()
+  const deleteButton = await screen.findByRole('button', { name: 'Xóa bản nháp' })
+  await user.click(deleteButton)
+  expect(calls.map(({ method, path }) => `${method} ${path}`)).not.toContain(`DELETE /api/company/payroll/periods/${period}`)
+  await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Xóa bản nháp' }))
+  await waitFor(() => expect(calls.map(({ method, path }) => `${method} ${path}`)).toContain(`DELETE /api/company/payroll/periods/${period}`))
+  expect(await screen.findByText('Chưa có bảng lương cho tháng này')).toBeInTheDocument()
+
+  await user.click(screen.getByRole('button', { name: new RegExp(period) }))
+  const salary = screen.getByRole('spinbutton', { name: /Lương cứng mỗi tài xế/ })
+  await user.clear(salary)
+  await user.type(salary, '9000000')
+  await user.click(screen.getByRole('button', { name: 'Lưu phiên bản mức lương' }))
+  await waitFor(() => expect(calls.map(({ method, path }) => `${method} ${path}`)).toContain('PUT /api/company/payroll/settings'))
+  await user.click(screen.getByRole('button', { name: 'Tính bảng lương' }))
+  await waitFor(() => expect(calls.map(({ method, path }) => `${method} ${path}`)).toContain(`POST /api/company/payroll/periods/${period}/calculate`))
+})
+
+test('refreshes a later draft after its saved company rate changes', async () => {
+  const user = userEvent.setup()
+  const date = new Date()
+  const currentMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+  const nextMonth = nextMonthPeriod(date)
+  let salary = 20_000
+  const { calls } = stubBackend({
+    'GET /api/company/payroll/settings': () => reply([
+      { id: 4, effectiveFrom: `${currentMonth}-01`, baseSalaryVnd: salary, rateVndPerKg: 100, commissionPercent: 15, handlingFeeVndPerKg: 150, handlingDriverPercent: 85 },
+    ]),
+    [`GET /api/company/payroll/periods/${currentMonth}`]: {
+      status: 404,
+      body: { success: false, code: 'PAYROLL_PERIOD_NOT_FOUND', message: 'not found' },
+    },
+    [`GET /api/company/payroll/periods/${nextMonth}`]: () => reply({
+      period: nextMonth,
+      status: 'DRAFT',
+      drivers: [{ driverId: 21, driverName: 'Nguyen Van An', baseSalaryVnd: salary, totalKg: 0, kgAmountVnd: 0, handlingAmountVnd: 0, totalSalaryVnd: salary }],
+    }),
+    'PUT /api/company/payroll/settings': ({ body }) => {
+      salary = (body as { baseSalaryVnd: number }).baseSalaryVnd
+      return reply({ id: 4, ...(body as object) })
+    },
+  })
+
+  renderPayroll()
+  await screen.findByRole('button', { name: new RegExp(currentMonth) })
+  fireEvent.change(screen.getByLabelText('Kỳ lương'), { target: { value: nextMonth } })
+  expect((await screen.findAllByText('20.000 ₫')).length).toBeGreaterThan(0)
+  await user.click(screen.getByRole('button', { name: new RegExp(currentMonth) }))
+  const salaryInput = screen.getByRole('spinbutton', { name: /Lương cứng mỗi tài xế/ })
+  await user.clear(salaryInput)
+  await user.type(salaryInput, '30000')
+  await user.click(screen.getByRole('button', { name: 'Lưu phiên bản mức lương' }))
+
+  await waitFor(() => expect(calls.filter((call) => call.method === 'GET' && call.path === `/api/company/payroll/periods/${nextMonth}`).length).toBeGreaterThan(1))
+  expect((await screen.findAllByText('30.000 ₫')).length).toBeGreaterThan(0)
 })
 

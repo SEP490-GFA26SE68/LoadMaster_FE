@@ -4,6 +4,7 @@ import { PAYROLL_CAPABILITIES } from './payroll-api'
 import {
   calculatePayrollPeriod,
   createPayrollRate,
+  deleteDraftPayrollPeriod,
   fetchPayrollDriverStatement,
   fetchPayrollPeriod,
   fetchPayrollRates,
@@ -51,7 +52,7 @@ export function useCreatePayrollRateMutation() {
   const client = useQueryClient()
   return useMutation({
     mutationFn: (input: PayrollRateInput) => createPayrollRate(input),
-    onSuccess: () => client.invalidateQueries({ queryKey: RATES_KEY }),
+    onSuccess: () => client.invalidateQueries({ queryKey: KEY }),
   })
 }
 
@@ -73,6 +74,18 @@ export function useLockPayrollPeriodMutation() {
     onSuccess: (period) => {
       client.setQueryData(periodKey(period.period), period)
       return client.invalidateQueries({ queryKey: [...KEY, 'statement', period.period] })
+    },
+  })
+}
+
+export function useDeleteDraftPayrollPeriodMutation() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: deleteDraftPayrollPeriod,
+    onSuccess: async (_result, period) => {
+      await client.cancelQueries({ queryKey: periodKey(period) })
+      client.setQueryData(periodKey(period), null)
+      await client.invalidateQueries({ queryKey: [...KEY, 'statement', period] })
     },
   })
 }
