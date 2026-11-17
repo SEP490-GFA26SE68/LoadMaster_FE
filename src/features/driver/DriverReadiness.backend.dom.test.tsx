@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, afterEach, expect, test, vi } from 'vitest'
 import { toast } from 'sonner'
@@ -56,4 +56,22 @@ test('empty driver list offers GET refresh without a start action', async () => 
   expect(calls.filter(c => c.path === '/api/driver/trips')).toHaveLength(2)
   expect(calls.every(c => c.method === 'GET')).toBe(true)
   expect(screen.queryByRole('button', { name: 'Xuất phát' })).not.toBeInTheDocument()
+})
+
+
+test.each([
+ ['DRIVER_VEHICLE_PRESENCE_UNVERIFIED','Chưa xác minh xe tại kho xuất phát. Vui lòng nhờ nhân viên được phân công tại kho xác nhận xe thực tế trước khi xuất phát.'],
+ ['DRIVER_VEHICLE_DEPARTURE_BLOCKED','Chưa thể xuất phát do trạng thái xe hoặc kho chưa phù hợp. Vui lòng liên hệ nhân viên kho hoặc điều phối viên để kiểm tra.'],
+])('driver presence rejection %s stays LOADING and explains the warehouse action',async(code,message)=>{
+ const {calls}=stubBackend({
+  'GET /api/users/me':{body:envelope({id:8})},
+  'GET /api/driver/trips':{body:envelope([{tripId:10,tripCode:'FIXTURE-LOADING',status:'LOADING',loadingCompleted:true}])},
+  'GET /api/driver/trips/10/stops':{body:envelope({stops:[]})},
+  'POST /api/driver/trips/10/start':{status:409,body:{success:false,code}},
+ })
+ renderDriver('/tai-xe');await userEvent.click(await screen.findByRole('button',{name:'Xuất phát'}))
+ await waitFor(()=>expect(toast.error).toHaveBeenCalledWith(message))
+ expect(message).not.toMatch(/chọn lại xe/i)
+ expect(screen.getByRole('heading',{level:2,name:'Xếp xong — chờ xuất phát'})).toBeInTheDocument()
+ expect(screen.getByRole('button',{name:'Xuất phát'})).toBeInTheDocument();expect(calls.filter(c=>c.method==='POST')).toHaveLength(1)
 })

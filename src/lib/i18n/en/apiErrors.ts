@@ -2,6 +2,13 @@ import type { Dictionary } from '../types'
 import type { apiErrors as source } from '../vi/apiErrors'
 
 export const apiErrors = {
+DRIVER_VEHICLE_PRESENCE_UNVERIFIED: 'Vehicle presence at the departure warehouse is unverified. Ask assigned warehouse staff to physically verify the vehicle before departure.',
+DRIVER_VEHICLE_DEPARTURE_BLOCKED: 'Departure is blocked by the vehicle or warehouse state. Contact warehouse staff or your dispatcher to check.',
+VEHICLE_DEPARTURE_INELIGIBLE: "The vehicle is no longer eligible at this warehouse. Select a vehicle again.",
+WAREHOUSE_ASSIGNMENT_INVALID: "Only active warehouse workers can be assigned to active warehouses.",
+    VEHICLE_WAREHOUSE_FORBIDDEN: "You are not assigned to check in vehicles at this warehouse.",
+VEHICLE_PRESENCE_CONFLICT: "Vehicle state or confirmation key conflict. Check the current state.",
+
   NETWORK_ERROR: 'Cannot reach the server. Check the network and try again.',
   TIMEOUT: 'The server took too long to respond. Try again later.',
   UNAUTHENTICATED: 'Your session has ended. Sign in again.',

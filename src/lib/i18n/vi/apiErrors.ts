@@ -4,6 +4,13 @@
  * dùng (lỗi do FE tự chặn trước khi gọi) đứng cuối.
  */
 export const apiErrors = {
+DRIVER_VEHICLE_PRESENCE_UNVERIFIED: 'Chưa xác minh xe tại kho xuất phát. Vui lòng nhờ nhân viên được phân công tại kho xác nhận xe thực tế trước khi xuất phát.',
+DRIVER_VEHICLE_DEPARTURE_BLOCKED: 'Chưa thể xuất phát do trạng thái xe hoặc kho chưa phù hợp. Vui lòng liên hệ nhân viên kho hoặc điều phối viên để kiểm tra.',
+VEHICLE_DEPARTURE_INELIGIBLE: "Xe không còn đủ điều kiện tại kho xuất phát. Vui lòng chọn lại xe.",
+WAREHOUSE_ASSIGNMENT_INVALID: "Chỉ phân công nhân viên kho đang hoạt động vào kho đang hoạt động.",
+    VEHICLE_WAREHOUSE_FORBIDDEN: "Bạn không được phân công xác nhận xe tại kho này.",
+VEHICLE_PRESENCE_CONFLICT: "Trạng thái xe hoặc mã xác nhận xung đột. Vui lòng kiểm tra lại.",
+
   // Đường truyền và mã suy từ HTTP khi phong bì không có `code`
   NETWORK_ERROR: 'Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.',
   TIMEOUT: 'Máy chủ phản hồi quá lâu. Thử lại sau.',

@@ -22,12 +22,13 @@ const VEHICLE_STATUS: Record<VehicleOption['status'], { tone: BadgeTone; dot: Ba
  * tài xế một hàng (8/4 cột), rồi ô thông số xe đang chọn. Ngày và giờ theo giờ Việt Nam. Ngày chạy có gợi ý thứ và "hôm nay / ngày mai". Kho đã bắt đầu xếp thì ô xe khoá kèm lý do; ô thông số
  * chuyển xám, không còn chip trạng thái. Ô nhập mang `aria-label` bằng đúng chữ nhãn để dấu * không lọt vào tên truy cập.
  */
-export function TripFormInfoSection({ form, vehicles, drivers, selected, locked }: {
+export function TripFormInfoSection({ form, vehicles, drivers, selected, locked, vehicleLocked = false }: {
   form: UseFormReturn<TripFormValues>
   vehicles: readonly SelectOption[]
   drivers: readonly SelectOption[]
   selected: VehicleOption | undefined
   locked: boolean
+  vehicleLocked?: boolean
 }) {
   const t = useT()
   const format = useFormat()
@@ -76,7 +77,7 @@ export function TripFormInfoSection({ form, vehicles, drivers, selected, locked 
             {...form.register('departureTime')}
           />
         </div>
-        <fieldset disabled={locked} className="m-0 min-w-0 border-0 p-0 md:col-span-8">
+        <fieldset disabled={locked || vehicleLocked} className="m-0 min-w-0 border-0 p-0 md:col-span-8">
           <SelectField
             control={form.control}
             name="vehicleId"

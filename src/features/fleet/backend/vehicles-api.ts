@@ -133,6 +133,11 @@ export type VehicleListOptions = {
   sortDir?: 'ASC' | 'DESC'
 }
 
+/** Only current-presence eligible vehicles; all pages, no fallback to the company fleet. */
+export async function fetchDepartureVehicles(warehouseId: string, tripId?: string): Promise<Vehicle[]> {
+  return (await fetchAllPages<VehicleApi>('/api/vehicles/departure-choices', { size: 100, query: { warehouseId, ...(tripId ? { tripId } : {}) } })).map(mapVehicle)
+}
+
 export async function fetchAllVehicles(): Promise<Vehicle[]> {
   return (await fetchAllPages<VehicleApi>('/api/vehicles', { size: 100 })).map(mapVehicle)
 }

@@ -1,3 +1,4 @@
+import { fetchDepartureVehicles } from '@/features/fleet/backend/vehicles-api'
 /**
  * Hàm → endpoint backend của danh sách và Chi tiết chuyến khi nhóm `trips` nối backend (`usesBackend('trips')`):
  *   listTrips  → GET /api/trips (đọc hết mọi trang, tối đa 100 dòng mỗi trang)
@@ -266,6 +267,7 @@ export type BackendActiveRoutePlan = {
 
 
 export type TripDetailApiResponse = {
+  originWarehouseId?: number | null
   id: number
   tripCode: string
   tripName: string
@@ -495,9 +497,9 @@ async function defaultServerDepot(): Promise<CompanyDepot | null> {
 }
 
 // GET /api/vehicles · GET /api/vehicle-types · GET /api/trips/driver-options · GET /api/company-warehouses?activeOnly=true
-export async function fetchBackendTripFormOptions(): Promise<TripFormOptions> {
+export async function fetchBackendTripFormOptions(warehouseId?: string, tripId?: string): Promise<TripFormOptions> {
   const [vehicles, vehicleTypes, drivers, depot] = await Promise.all([
-    fetchAllVehicles(),
+    warehouseId ? fetchDepartureVehicles(warehouseId, tripId) : fetchAllVehicles(),
     fetchAllVehicleTypes(),
     fetchDriverOptions(),
     defaultServerDepot(),

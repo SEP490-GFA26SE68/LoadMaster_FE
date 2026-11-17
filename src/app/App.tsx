@@ -26,6 +26,7 @@ const TripDetailPage = lazy(() => import('@/features/trips/TripDetailPage').then
 const OptimizationSetupPage = lazy(() => import('@/features/optimization/OptimizationSetupPage').then((m) => ({ default: m.OptimizationSetupPage })))
 const PlanComparisonPage = lazy(() => import('@/features/trips/PlanComparisonPage').then((m) => ({ default: m.PlanComparisonPage })))
 const ViewerPage = lazy(() => import('@/features/viewer3d/ViewerPage').then((m) => ({ default: m.ViewerPage })))
+const WarehouseVehiclesPage = lazy(() => import('@/features/warehouse/WarehouseVehiclesPage').then((m) => ({ default: m.WarehouseVehiclesPage })))
 const WarehousePage = lazy(() => import('@/features/warehouse/WarehousePage').then((m) => ({ default: m.WarehousePage })))
 const CompanyWarehousesPage = lazy(() =>
   import('@/features/company-warehouses/CompanyWarehousesPage')
@@ -257,7 +258,7 @@ export const routes: RouteObject[] = [
                 path: '/kho',
                 element: <WarehousePage />,
                 handle: titled((t, s) => withSearchId(s, 'chuyen', (id) => t('titles.loading', { id }), t('titles.warehouse'))),
-              }]),
+              }, { path: '/kho/xe', element: <WarehouseVehiclesPage />, handle: titled((t) => t('warehouse.presence.pageTitle')) }]),
               // `/tai-xe` là "Chuyến của tôi"; `/tai-xe/diem-giao?chuyen=<mã>` là một chuyến; đường dẫn lạ về danh sách (LM-087).
               guarded('driver.operate', [
                 { path: '/tai-xe', element: <MyTripsPage />, handle: titled((t) => t('titles.driverTrips')) },
