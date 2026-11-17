@@ -29,8 +29,7 @@ const payroll = {
       baseSalaryVnd: 8_000_000,
       totalKg: 500,
       kgAmountVnd: 50_000,
-      totalKm: 60,
-      kmAmountVnd: 120_000,
+      handlingAmountVnd: 120_000,
       totalSalaryVnd: 8_170_000,
     },
   ],
@@ -43,7 +42,7 @@ afterEach(() => vi.unstubAllGlobals())
 test('reads company payroll settings and a monthly payroll with the server API', async () => {
   const { calls } = stubBackend({
     'GET /api/company/payroll/settings': reply([
-      { id: 4, effectiveFrom: '2026-11-01', baseSalaryVnd: 8_000_000, rateVndPerKg: 100, rateVndPerKm: 2_000 },
+      { id: 4, effectiveFrom: '2026-11-01', baseSalaryVnd: 8_000_000, rateVndPerKg: 100, commissionPercent: 15, handlingFeeVndPerKg: 150, handlingDriverPercent: 85 },
     ]),
     'GET /api/company/payroll/periods/2026-11': reply(payroll),
     'GET /api/company/payroll/periods/2026-11/drivers/21': reply({
@@ -56,9 +55,10 @@ test('reads company payroll settings and a monthly payroll with the server API',
       totalKg: 500,
       rateVndPerKg: 100,
       kgAmountVnd: 50_000,
-      totalKm: 60,
-      rateVndPerKm: 2_000,
-      kmAmountVnd: 120_000,
+      commissionPercent: 15,
+      handlingFeeVndPerKg: 150,
+      handlingDriverPercent: 85,
+      handlingAmountVnd: 120_000,
       totalSalaryVnd: 8_170_000,
       trips: [],
     }),
@@ -81,7 +81,7 @@ test('creates an immutable company rate version, calculates the month, then lock
     'POST /api/company/payroll/periods/2026-11/lock': reply({ ...payroll, status: 'LOCKED' }),
   })
 
-  await createPayrollRate({ effectiveFrom: '2026-11-01', baseSalaryVnd: 8_000_000, rateVndPerKg: 100, rateVndPerKm: 2_000 })
+  await createPayrollRate({ effectiveFrom: '2026-11-01', baseSalaryVnd: 8_000_000, rateVndPerKg: 100, commissionPercent: 15, handlingFeeVndPerKg: 150, handlingDriverPercent: 85 })
   await calculatePayrollPeriod('2026-11')
   await lockPayrollPeriod('2026-11')
 
@@ -90,7 +90,7 @@ test('creates an immutable company rate version, calculates the month, then lock
     'POST /api/company/payroll/periods/2026-11/calculate',
     'POST /api/company/payroll/periods/2026-11/lock',
   ])
-  expect(calls[0]?.body).toStrictEqual({ effectiveFrom: '2026-11-01', baseSalaryVnd: 8_000_000, rateVndPerKg: 100, rateVndPerKm: 2_000 })
+  expect(calls[0]?.body).toStrictEqual({ effectiveFrom: '2026-11-01', baseSalaryVnd: 8_000_000, rateVndPerKg: 100, commissionPercent: 15, handlingFeeVndPerKg: 150, handlingDriverPercent: 85 })
 })
 
 test('loads and saves equal productivity shares for the drivers on one trip', async () => {

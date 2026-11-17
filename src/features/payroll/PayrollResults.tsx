@@ -45,7 +45,7 @@ export function PayrollResults({ period, statement, statementLoading, statementE
                   <th className="px-3 py-2">{t('payroll.results.driver')}</th>
                   <th className="px-3 py-2 text-right">{t('payroll.rate.baseShort')}</th>
                   <th className="px-3 py-2 text-right">{t('payroll.results.totalKg')}</th>
-                  <th className="px-3 py-2 text-right">{t('payroll.results.totalKm')}</th>
+                  <th className="px-3 py-2 text-right">{t('payroll.results.handling')}</th>
                   <th className="px-3 py-2 text-right">{t('payroll.results.total')}</th>
                 </tr></thead>
                 <tbody>
@@ -62,7 +62,7 @@ export function PayrollResults({ period, statement, statementLoading, statementE
                       </td>
                       <td className="px-3 py-2 text-right">{format.currency(driver.baseSalaryVnd)}</td>
                       <td className="px-3 py-2 text-right">{format.weight(driver.totalKg)}</td>
-                      <td className="px-3 py-2 text-right">{t('payroll.statement.kmValue', { value: format.ratio(driver.totalKm) })}</td>
+                      <td className="px-3 py-2 text-right">{format.currency(driver.handlingAmountVnd)}</td>
                       <td className="px-3 py-2 text-right font-semibold">{format.currency(driver.totalSalaryVnd)}</td>
                     </tr>
                   ))}
@@ -85,8 +85,9 @@ export function PayrollResults({ period, statement, statementLoading, statementE
               <Metric label={t('payroll.statement.baseSalary')} value={format.currency(statement.baseSalaryVnd)} />
               <Metric label={t('payroll.statement.kgRate')} value={`${format.currency(statement.rateVndPerKg)} ${t('payroll.rate.perKgUnit')}`} />
               <Metric label={t('payroll.statement.kgAmount')} value={format.currency(statement.kgAmountVnd)} />
-              <Metric label={t('payroll.statement.kmRate')} value={`${format.currency(statement.rateVndPerKm)} ${t('payroll.rate.perKmUnit')}`} />
-              <Metric label={t('payroll.statement.kmAmount')} value={format.currency(statement.kmAmountVnd)} />
+              <Metric label={t('payroll.statement.commissionRate')} value={`${statement.commissionPercent}%`} />
+              <Metric label={t('payroll.statement.handlingRate')} value={`${format.currency(statement.handlingFeeVndPerKg)} ${t('payroll.rate.perKgUnit')} · ${statement.handlingDriverPercent}%`} />
+              <Metric label={t('payroll.statement.handlingAmount')} value={format.currency(statement.handlingAmountVnd)} />
               <Metric label={t('payroll.statement.totalSalary')} value={format.currency(statement.totalSalaryVnd)} />
             </div>
             <DriverBaseSalaryAdjustment driverId={statement.driverId} currentBaseSalary={statement.baseSalaryVnd} />
@@ -142,9 +143,7 @@ function TripPayrollAssignment({
         <Metric label={t('payroll.statement.planKg')} value={format.weight(trip.planKg)} />
         <Metric label={t('payroll.statement.allocatedKg')} value={format.weight(trip.allocatedKg)} />
         <Metric label={t('payroll.statement.kgAmount')} value={format.currency(trip.kgAmountVnd)} />
-        <Metric label={t('payroll.statement.planKm')} value={t('payroll.statement.kmValue', { value: format.ratio(trip.planKm) })} />
-        <Metric label={t('payroll.statement.allocatedKm')} value={t('payroll.statement.kmValue', { value: format.ratio(trip.allocatedKm) })} />
-        <Metric label={t('payroll.statement.kmAmount')} value={format.currency(trip.kmAmountVnd)} />
+        <Metric label={t('payroll.statement.handlingAmount')} value={format.currency(trip.handlingAmountVnd)} />
         <Metric label={t('payroll.statement.tripTotal')} value={format.currency(trip.totalAmountVnd)} />
       </div>
       {query.isError ? <p role="alert" className="mt-2 text-small text-danger">{dataErrorMessage(query.error, t)}</p> : null}

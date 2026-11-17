@@ -29,6 +29,7 @@ export function PayrollRateSettings({ form, onSubmit, pending, error, rates, loa
   const format = useFormat()
   const { register, formState: { errors, isDirty } } = form
   const amountError = t('payroll.rate.invalidAmount')
+  const percentError = t('payroll.rate.invalidPercent')
 
   return (
     <Card>
@@ -40,7 +41,9 @@ export function PayrollRateSettings({ form, onSubmit, pending, error, rates, loa
           <Input label={t('payroll.rate.effectiveFrom')} type="month" min={minMonth} required error={errors.effectiveFrom ? t('payroll.rate.invalidMonth') : undefined} {...register('effectiveFrom')} />
           <Input label={t('payroll.rate.baseSalary')} type="number" min="0" step="1" inputMode="decimal" required suffix={t('payroll.vnd')} error={errors.baseSalaryVnd ? amountError : undefined} {...register('baseSalaryVnd')} />
           <Input label={t('payroll.rate.perKg')} type="number" min="0" step="0.01" inputMode="decimal" required suffix={t('payroll.rate.perKgUnit')} error={errors.rateVndPerKg ? amountError : undefined} {...register('rateVndPerKg')} />
-          <Input label={t('payroll.rate.perKm')} type="number" min="0" step="0.01" inputMode="decimal" required suffix={t('payroll.rate.perKmUnit')} error={errors.rateVndPerKm ? amountError : undefined} {...register('rateVndPerKm')} />
+          <Input label={t('payroll.rate.commissionPercent')} type="number" min="0" max="100" step="0.01" inputMode="decimal" required readOnly suffix="%" error={errors.commissionPercent ? percentError : undefined} {...register('commissionPercent')} />
+          <Input label={t('payroll.rate.handlingFee')} readOnly type="number" min="0" step="0.01" inputMode="decimal" required suffix={t('payroll.rate.perKgUnit')} error={errors.handlingFeeVndPerKg ? amountError : undefined} {...register('handlingFeeVndPerKg')} />
+          <Input label={t('payroll.rate.handlingDriverPercent')} type="number" min="0" max="100" step="0.01" inputMode="decimal" required readOnly suffix="%" error={errors.handlingDriverPercent ? percentError : undefined} {...register('handlingDriverPercent')} />
           {error ? <p role="alert" className="text-small text-danger">{error}</p> : null}
           <Button type="submit" loading={pending} disabled={!isDirty || pending}>{t('payroll.rate.save')}</Button>
         </form>
@@ -66,7 +69,7 @@ export function PayrollRateSettings({ form, onSubmit, pending, error, rates, loa
                     <span className="font-semibold text-ink-strong">{rate.effectiveFrom.slice(0, 7)}</span>
                     <span>{t('payroll.rate.baseShort')}: {format.currency(rate.baseSalaryVnd)}</span>
                     <span>{format.currency(rate.rateVndPerKg)} {t('payroll.rate.perKgUnit')}</span>
-                    <span>{format.currency(rate.rateVndPerKm)} {t('payroll.rate.perKmUnit')}</span>
+                    <span>{t('payroll.rate.commissionShort')}: {rate.commissionPercent}%</span>
                   </button>
                 </li>
               ))}
