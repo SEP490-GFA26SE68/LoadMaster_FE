@@ -194,12 +194,43 @@ test('displays translated error message when createPayrollRate fails because eff
   renderPayroll()
   const baseSalaryInput = await screen.findByLabelText(/Lương cứng mỗi tài xế/)
   const perKgInput = screen.getByLabelText(/Cước theo khối lượng/)
+  const commissionInput = screen.getByLabelText(/Hoa hồng tài xế trên cước/)
+  const handlingFeeInput = screen.getByLabelText(/Phí bốc dỡ/)
+  const handlingPercentInput = screen.getByLabelText(/Tài xế hưởng phí bốc dỡ/)
 
   await user.type(baseSalaryInput, '8000000')
   await user.type(perKgInput, '100')
+  await user.type(commissionInput, '15')
+  await user.type(handlingFeeInput, '150')
+  await user.type(handlingPercentInput, '85')
   await user.click(screen.getByRole('button', { name: 'Lưu phiên bản mức lương' }))
 
   expect(await screen.findByText('Mức lương mới chỉ được áp dụng từ tháng sau (hoặc từ tháng này đối với công ty mới).')).toBeInTheDocument()
+})
+
+test('rate form says what is wrong: required, too many decimals, above 100', async () => {
+  const user = userEvent.setup()
+  const date = new Date()
+  const currentMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+
+  stubBackend({
+    'GET /api/company/payroll/settings': reply([]),
+    [`GET /api/company/payroll/periods/${currentMonth}`]: {
+      status: 404,
+      body: { success: false, code: 'PAYROLL_PERIOD_NOT_FOUND', message: 'not found' },
+    },
+  })
+
+  renderPayroll()
+  await user.type(await screen.findByLabelText(/Lương cứng mỗi tài xế/), '15000000')
+  await user.type(screen.getByLabelText(/Cước theo khối lượng/), '40000')
+  await user.type(screen.getByLabelText(/Hoa hồng tài xế trên cước/), '0.2222')
+  await user.type(screen.getByLabelText(/Tài xế hưởng phí bốc dỡ/), '101')
+  await user.click(screen.getByRole('button', { name: 'Lưu phiên bản mức lương' }))
+
+  expect(await screen.findAllByText('Vui lòng nhập giá trị.')).toHaveLength(1) // phí bốc dỡ để trống
+  expect(screen.getByText('Phần trăm tối đa hai chữ số thập phân, ví dụ 15 hoặc 15,25.')).toBeInTheDocument()
+  expect(screen.getByText('Phần trăm phải từ 0 đến 100.')).toBeInTheDocument()
 })
 
 test('clicking a saved rate version populates form for editing and allows updating it', async () => {

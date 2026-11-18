@@ -12,7 +12,7 @@ import { Spinner } from '@/components/ui/Spinner'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 
 import { nextMonthPeriod, PAYROLL_CAPABILITIES, type PayrollRate } from './payroll-api'
-import { FIXED_PAYROLL_POLICY, payrollRateFormSchema, type PayrollRateFormInput, type PayrollRateFormValues } from './payroll-rate-form'
+import { payrollRateFormSchema, type PayrollRateFormInput, type PayrollRateFormValues } from './payroll-rate-form'
 import { PayrollRateSettings } from './PayrollRateSettings'
 import { PayrollResults } from './PayrollResults'
 import {
@@ -47,7 +47,7 @@ export function PayrollPage() {
   const minMonth = hasRates ? nextMonthPeriod() : currentMonth()
   const rateForm = useForm<PayrollRateFormInput, unknown, PayrollRateFormValues>({
     resolver: zodResolver(payrollRateFormSchema),
-    defaultValues: { effectiveFrom: minMonth, baseSalaryVnd: '15000000', rateVndPerKg: '', ...FIXED_PAYROLL_POLICY },
+    defaultValues: { effectiveFrom: minMonth, baseSalaryVnd: '', rateVndPerKg: '', commissionPercent: '', handlingFeeVndPerKg: '', handlingDriverPercent: '' },
   })
   const { isDirty } = rateForm.formState
 
@@ -66,7 +66,9 @@ export function PayrollPage() {
       effectiveFrom: rate.effectiveFrom.slice(0, 7),
       baseSalaryVnd: String(rate.baseSalaryVnd),
       rateVndPerKg: String(rate.rateVndPerKg),
-      ...FIXED_PAYROLL_POLICY,
+      commissionPercent: String(rate.commissionPercent),
+      handlingFeeVndPerKg: String(rate.handlingFeeVndPerKg),
+      handlingDriverPercent: String(rate.handlingDriverPercent),
     })
   }
 
@@ -80,7 +82,9 @@ export function PayrollPage() {
             effectiveFrom: values.effectiveFrom,
             baseSalaryVnd: String(values.baseSalaryVnd),
             rateVndPerKg: String(values.rateVndPerKg),
-            ...FIXED_PAYROLL_POLICY,
+            commissionPercent: String(values.commissionPercent),
+            handlingFeeVndPerKg: String(values.handlingFeeVndPerKg),
+            handlingDriverPercent: String(values.handlingDriverPercent),
           })
         },
       },

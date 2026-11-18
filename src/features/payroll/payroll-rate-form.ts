@@ -21,9 +21,11 @@ export const payrollRateFormSchema = z.object({
 export type PayrollRateFormInput = z.input<typeof payrollRateFormSchema>
 export type PayrollRateFormValues = z.output<typeof payrollRateFormSchema>
 
-/** Chính sách cố định của hệ thống: công ty không chỉnh ba khoản này trong form mức lương. */
-export const FIXED_PAYROLL_POLICY = {
-  commissionPercent: '15',
-  handlingFeeVndPerKg: '150',
-  handlingDriverPercent: '85',
-} as const
+/** Phân loại lỗi của ô phần trăm để báo đúng điều người dùng cần sửa. */
+export function percentIssue(raw: string): 'required' | 'range' | 'decimals' {
+  const value = raw.trim()
+  if (value === '') return 'required'
+  const number = Number(value)
+  if (!Number.isFinite(number) || number < 0 || number > 100) return 'range'
+  return 'decimals'
+}
