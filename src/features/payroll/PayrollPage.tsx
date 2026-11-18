@@ -18,6 +18,7 @@ import { PayrollResults } from './PayrollResults'
 import {
   useCalculatePayrollPeriodMutation,
   useCreatePayrollRateMutation,
+  useDeleteDraftPayrollPeriodMutation,
   useLockPayrollPeriodMutation,
   usePayrollDriverStatementQuery,
   usePayrollPeriodQuery,
@@ -34,17 +35,19 @@ export function PayrollPage() {
   const [period, setPeriod] = useState(currentMonth)
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null)
   const [confirmLockOpen, setConfirmLockOpen] = useState(false)
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
   const rates = usePayrollRatesQuery()
   const payroll = usePayrollPeriodQuery(period)
   const statement = usePayrollDriverStatementQuery(period, selectedDriverId)
   const createRate = useCreatePayrollRateMutation()
   const calculate = useCalculatePayrollPeriodMutation()
   const lock = useLockPayrollPeriodMutation()
+  const deleteDraft = useDeleteDraftPayrollPeriodMutation()
   const hasRates = (rates.data?.length ?? 0) > 0
   const minMonth = hasRates ? nextMonthPeriod() : currentMonth()
   const rateForm = useForm<PayrollRateFormInput, unknown, PayrollRateFormValues>({
     resolver: zodResolver(payrollRateFormSchema),
-    defaultValues: { effectiveFrom: minMonth, baseSalaryVnd: '', rateVndPerKg: '', rateVndPerKm: '' },
+    defaultValues: { effectiveFrom: minMonth, baseSalaryVnd: '', rateVndPerKg: '', commissionPercent: '', handlingFeeVndPerKg: '', handlingDriverPercent: '' },
   })
   const { isDirty } = rateForm.formState
 
@@ -63,7 +66,9 @@ export function PayrollPage() {
       effectiveFrom: rate.effectiveFrom.slice(0, 7),
       baseSalaryVnd: String(rate.baseSalaryVnd),
       rateVndPerKg: String(rate.rateVndPerKg),
-      rateVndPerKm: String(rate.rateVndPerKm),
+      commissionPercent: String(rate.commissionPercent),
+      handlingFeeVndPerKg: String(rate.handlingFeeVndPerKg),
+      handlingDriverPercent: String(rate.handlingDriverPercent),
     })
   }
 
@@ -77,7 +82,9 @@ export function PayrollPage() {
             effectiveFrom: values.effectiveFrom,
             baseSalaryVnd: String(values.baseSalaryVnd),
             rateVndPerKg: String(values.rateVndPerKg),
-            rateVndPerKm: String(values.rateVndPerKm),
+            commissionPercent: String(values.commissionPercent),
+            handlingFeeVndPerKg: String(values.handlingFeeVndPerKg),
+            handlingDriverPercent: String(values.handlingDriverPercent),
           })
         },
       },
@@ -123,24 +130,33 @@ export function PayrollPage() {
                   <Button
                     variant="secondary"
                     loading={calculate.isPending}
-                    disabled={period.length !== 7 || payroll.data?.status === 'LOCKED' || calculate.isPending || lock.isPending}
+                    disabled={period.length !== 7 || payroll.data?.status === 'LOCKED' || calculate.isPending || createRate.isPending || lock.isPending || deleteDraft.isPending}
                     onClick={() => calculate.mutate(period, { onSuccess: () => toast.success(t('payroll.calculated')) })}>
                     {t(payroll.data ? 'payroll.recalculate' : 'payroll.calculate')}
                   </Button>
                   {payroll.data?.status === 'DRAFT' ? (
-                    <Button
-                      variant="primary"
-                      loading={lock.isPending}
-                      disabled={calculate.isPending || lock.isPending}
-                      onClick={() => setConfirmLockOpen(true)}>
-                      {t('payroll.lockPeriod')}
-                    </Button>
+                    <>
+                      <Button
+                        variant="danger"
+                        loading={deleteDraft.isPending}
+                        disabled={calculate.isPending || lock.isPending || deleteDraft.isPending}
+                        onClick={() => setConfirmDeleteOpen(true)}>
+                        {t('payroll.deleteDraft')}
+                      </Button>
+                      <Button
+                        variant="primary"
+                        loading={lock.isPending}
+                        disabled={calculate.isPending || lock.isPending || deleteDraft.isPending}
+                        onClick={() => setConfirmLockOpen(true)}>
+                        {t('payroll.lockPeriod')}
+                      </Button>
+                    </>
                   ) : null}
                 </div>
               </div>
 
-              {calculate.error || lock.error ? (
-                <p role="alert" className="text-small text-danger">{dataErrorMessage(calculate.error ?? lock.error, t)}</p>
+              {calculate.error || lock.error || deleteDraft.error ? (
+                <p role="alert" className="text-small text-danger">{dataErrorMessage(calculate.error ?? lock.error ?? deleteDraft.error, t)}</p>
               ) : null}
               {payroll.isPending ? (
                 <div role="status" aria-label={t('payroll.loading')} className="flex justify-center py-16"><Spinner /></div>
@@ -166,6 +182,26 @@ export function PayrollPage() {
             </section>
           </div>
 
+          <ConfirmDialog
+            open={confirmDeleteOpen}
+            onOpenChange={setConfirmDeleteOpen}
+            title={t('payroll.deleteConfirmTitle', { period })}
+            description={t('payroll.deleteConfirmDescription')}
+            danger
+            pending={deleteDraft.isPending}
+            confirmLabel={t('payroll.deleteDraft')}
+            cancelLabel={t('payroll.cancel')}
+            onConfirm={() => {
+              deleteDraft.mutate(period, {
+                onSuccess: () => {
+                  toast.success(t('payroll.deleted'))
+                  setConfirmDeleteOpen(false)
+                  setSelectedDriverId(null)
+                  createRate.reset()
+                },
+              })
+            }}
+          />
           <ConfirmDialog
             open={confirmLockOpen}
             onOpenChange={setConfirmLockOpen}

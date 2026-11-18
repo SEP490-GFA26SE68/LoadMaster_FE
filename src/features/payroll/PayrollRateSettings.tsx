@@ -8,7 +8,7 @@ import { Spinner } from '@/components/ui/Spinner'
 import { useFormat, useT } from '@/lib/i18n'
 
 import type { PayrollRate } from './payroll-api'
-import type { PayrollRateFormInput, PayrollRateFormValues } from './payroll-rate-form'
+import { percentIssue, type PayrollRateFormInput, type PayrollRateFormValues } from './payroll-rate-form'
 
 type PayrollRateForm = ReturnType<typeof useForm<PayrollRateFormInput, unknown, PayrollRateFormValues>>
 
@@ -28,7 +28,14 @@ export function PayrollRateSettings({ form, onSubmit, pending, error, rates, loa
   const t = useT()
   const format = useFormat()
   const { register, formState: { errors, isDirty } } = form
-  const amountError = t('payroll.rate.invalidAmount')
+  const values = form.watch()
+  const amountMessage = (name: 'baseSalaryVnd' | 'rateVndPerKg' | 'handlingFeeVndPerKg'): string | undefined =>
+    !errors[name] ? undefined : String(values[name] ?? '').trim() === '' ? t('payroll.rate.required') : t('payroll.rate.invalidAmount')
+  const percentMessage = (name: 'commissionPercent' | 'handlingDriverPercent'): string | undefined => {
+    if (!errors[name]) return undefined
+    const issue = percentIssue(String(values[name] ?? ''))
+    return issue === 'required' ? t('payroll.rate.required') : issue === 'range' ? t('payroll.rate.percentRange') : t('payroll.rate.percentDecimals')
+  }
 
   return (
     <Card>
@@ -38,9 +45,11 @@ export function PayrollRateSettings({ form, onSubmit, pending, error, rates, loa
       <CardBody className="flex flex-col gap-5">
         <form noValidate onSubmit={onSubmit} className="flex flex-col gap-4">
           <Input label={t('payroll.rate.effectiveFrom')} type="month" min={minMonth} required error={errors.effectiveFrom ? t('payroll.rate.invalidMonth') : undefined} {...register('effectiveFrom')} />
-          <Input label={t('payroll.rate.baseSalary')} type="number" min="0" step="1" inputMode="decimal" required suffix={t('payroll.vnd')} error={errors.baseSalaryVnd ? amountError : undefined} {...register('baseSalaryVnd')} />
-          <Input label={t('payroll.rate.perKg')} type="number" min="0" step="0.01" inputMode="decimal" required suffix={t('payroll.rate.perKgUnit')} error={errors.rateVndPerKg ? amountError : undefined} {...register('rateVndPerKg')} />
-          <Input label={t('payroll.rate.perKm')} type="number" min="0" step="0.01" inputMode="decimal" required suffix={t('payroll.rate.perKmUnit')} error={errors.rateVndPerKm ? amountError : undefined} {...register('rateVndPerKm')} />
+          <Input label={t('payroll.rate.baseSalary')} type="number" min="0" step="1" inputMode="decimal" required suffix={t('payroll.vnd')} error={amountMessage('baseSalaryVnd')} {...register('baseSalaryVnd')} />
+          <Input label={t('payroll.rate.perKg')} type="number" min="0" step="0.01" inputMode="decimal" required suffix={t('payroll.rate.perKgUnit')} error={amountMessage('rateVndPerKg')} {...register('rateVndPerKg')} />
+          <Input label={t('payroll.rate.commissionPercent')} type="number" min="0" max="100" step="0.01" inputMode="decimal" required suffix="%" error={percentMessage('commissionPercent')} {...register('commissionPercent')} />
+          <Input label={t('payroll.rate.handlingFee')} type="number" min="0" step="0.01" inputMode="decimal" required suffix={t('payroll.rate.perKgUnit')} error={amountMessage('handlingFeeVndPerKg')} {...register('handlingFeeVndPerKg')} />
+          <Input label={t('payroll.rate.handlingDriverPercent')} type="number" min="0" max="100" step="0.01" inputMode="decimal" required suffix="%" error={percentMessage('handlingDriverPercent')} {...register('handlingDriverPercent')} />
           {error ? <p role="alert" className="text-small text-danger">{error}</p> : null}
           <Button type="submit" loading={pending} disabled={!isDirty || pending}>{t('payroll.rate.save')}</Button>
         </form>
@@ -66,7 +75,7 @@ export function PayrollRateSettings({ form, onSubmit, pending, error, rates, loa
                     <span className="font-semibold text-ink-strong">{rate.effectiveFrom.slice(0, 7)}</span>
                     <span>{t('payroll.rate.baseShort')}: {format.currency(rate.baseSalaryVnd)}</span>
                     <span>{format.currency(rate.rateVndPerKg)} {t('payroll.rate.perKgUnit')}</span>
-                    <span>{format.currency(rate.rateVndPerKm)} {t('payroll.rate.perKmUnit')}</span>
+                    <span>{t('payroll.rate.commissionShort')}: {rate.commissionPercent}%</span>
                   </button>
                 </li>
               ))}

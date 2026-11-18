@@ -8,7 +8,9 @@ export type PayrollRate = {
   readonly effectiveFrom: string
   readonly baseSalaryVnd: number
   readonly rateVndPerKg: number
-  readonly rateVndPerKm: number
+  readonly commissionPercent: number
+  readonly handlingFeeVndPerKg: number
+  readonly handlingDriverPercent: number
 }
 
 export type PayrollDriverSummary = {
@@ -17,8 +19,7 @@ export type PayrollDriverSummary = {
   readonly baseSalaryVnd: number
   readonly totalKg: number
   readonly kgAmountVnd: number
-  readonly totalKm: number
-  readonly kmAmountVnd: number
+  readonly handlingAmountVnd: number
   readonly totalSalaryVnd: number
 }
 
@@ -32,12 +33,10 @@ export type PayrollTripLine = {
   readonly tripId: number
   readonly tripCode: string
   readonly planKg: number
-  readonly planKm: number
   readonly sharePercent: number
   readonly allocatedKg: number
-  readonly allocatedKm: number
   readonly kgAmountVnd: number
-  readonly kmAmountVnd: number
+  readonly handlingAmountVnd: number
   readonly totalAmountVnd: number
 }
 
@@ -56,9 +55,10 @@ export type PayrollDriverStatement =
       readonly totalKg: number
       readonly rateVndPerKg: number
       readonly kgAmountVnd: number
-      readonly totalKm: number
-      readonly rateVndPerKm: number
-      readonly kmAmountVnd: number
+      readonly commissionPercent: number
+      readonly handlingFeeVndPerKg: number
+      readonly handlingDriverPercent: number
+      readonly handlingAmountVnd: number
       readonly totalSalaryVnd: number
     })
   | (PayrollDriverStatementBase & {
@@ -116,6 +116,11 @@ export function calculatePayrollPeriod(period: string): Promise<PayrollPeriod> {
 // POST /api/company/payroll/periods/{period}/lock
 export function lockPayrollPeriod(period: string): Promise<PayrollPeriod> {
   return api().post(`/api/company/payroll/periods/${encodeURIComponent(period)}/lock`)
+}
+
+// DELETE /api/company/payroll/periods/{period}
+export function deleteDraftPayrollPeriod(period: string): Promise<void> {
+  return api().delete(`/api/company/payroll/periods/${encodeURIComponent(period)}`)
 }
 
 // GET /api/company/payroll/periods/{period}/drivers/{driverId}
