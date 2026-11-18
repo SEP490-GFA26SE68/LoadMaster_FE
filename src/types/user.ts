@@ -29,6 +29,15 @@ export const COMPANY_ROLES = [
   'driver',
 ] as const satisfies readonly Role[]
 
+/** Các vai trò được phép đăng nhập trên thiết bị di động. */
+export const MOBILE_ROLES = ['driver', 'warehouse'] as const satisfies readonly Role[]
+
+export type MobileRole = (typeof MOBILE_ROLES)[number]
+
+export function isMobileRole(role: string | null | undefined): role is MobileRole {
+  return role === 'driver' || role === 'warehouse'
+}
+
 export const BACKEND_ROLE_CODES = {
   systemAdmin: 'SYSTEM_ADMIN',
   systemManager: 'SYSTEM_MANAGER',
@@ -81,6 +90,10 @@ export type User = {
 
   companyId?: string
   companyName?: string
+  companyCode?: string
+  companyTaxCode?: string
+  companyBillingEmail?: string
+  companyStatus?: string
   userType?: 'TRIAL' | 'OFFICIAL'
   subscriptionExpired?: boolean
 }

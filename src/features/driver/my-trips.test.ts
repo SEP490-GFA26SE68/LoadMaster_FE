@@ -70,8 +70,11 @@ test('another driver sees none of the demo driver trips', async () => {
 })
 
 test('the Phương Nam driver sees their trip once the Phú Thuận warehouse starts staging it, never a Long Bình trip (FE-0-02)', async () => {
-  // TRIP-PN-001 (30 thùng linh kiện + 12 kiện vải cuộn, 2 điểm) đã duyệt nhưng kho chưa bắt đầu: chưa hiện
-  expect(await tripsFor('US-PN-04')).toStrictEqual({ inTransit: [], loaded: [], preparing: [], recent: [] })
+  // TRIP-PN-001 (30 thùng linh kiện + 12 kiện vải cuộn, 2 điểm) đã duyệt nhưng kho chưa bắt đầu: chỉ nằm ở "Chuyến sắp tới" (`upcoming`,
+  // app mobile hiện; web bỏ nhóm này)
+  const before = await tripsFor('US-PN-04')
+  expect([before.inTransit, before.loaded, before.preparing, before.upcoming, before.recent].map((rows) => rows.map((row) => [row.id, row.status])))
+    .toStrictEqual([[], [], [], [['TRIP-PN-001', 'PLANNED']], []])
   const db = createMockDb()
   db.restoreSession('US-0015')
   await db.startLoading('TRIP-PN-001')
@@ -90,5 +93,5 @@ test('visibility fails closed: only the driver a trip is assigned to sees it —
   // Người không phải tài xế của chuyến nào (điều phối viên) không thấy gì, dù kho trả cho họ mọi chuyến của công ty
   expect(isVisibleTo({ driverId: null }, { id: 'US-0001' })).toBe(false)
   const groups = await tripsFor('US-0001')
-  expect(groups).toStrictEqual({ inTransit: [], loaded: [], preparing: [], recent: [] })
+  expect(groups).toStrictEqual({ inTransit: [], loaded: [], preparing: [], upcoming: [], recent: [] })
 })
