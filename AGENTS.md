@@ -19,8 +19,8 @@ tảng, năm vai trò của công ty logistics (khách hàng của app); `ROLES`
 | Quản trị hệ thống (`systemAdmin` · `SYSTEM_ADMIN`) | Desktop | Nền tảng: công ty `/nen-tang/cong-ty` (FE-8-06), người dùng, nhật ký, ma trận quyền, liên hệ của khách `/lien-he-khach`; không có quyền vận hành |
 | Quản lý nền tảng (`systemManager` · `SYSTEM_MANAGER`) | Desktop | Nền tảng: danh mục gói cước `/nen-tang/goi` (FE-8-02), lịch sử gói `/nen-tang/lich-su-goi`, công ty, yêu cầu dùng thử |
 | Hỗ trợ khách hàng (`systemSupporter` · `SYSTEM_SUPPORTER`) | Desktop | Nền tảng: yêu cầu hỗ trợ của mọi công ty `/ho-tro` (FE-8-07), liên hệ của khách `/lien-he-khach` |
-| Quản trị công ty (`companyAdmin` · `COMPANY_ADMIN`) | Desktop | Người dùng, nhật ký, gói cước và credit `/goi-cuoc` (FE-8-03), bảng lương tài xế `/bang-luong`, thông tin công ty `/cong-ty` |
-| Quản lý công ty (`companyManager` · `MANAGER`) | Desktop / tablet | Dashboard `/tong-quan`, biểu đồ, xuất báo cáo; kho của công ty `/quan-ly-kho`; xem yêu cầu giao, chuyến và phương án chỉ đọc |
+| Quản trị công ty (`companyAdmin` · `COMPANY_ADMIN`) | Desktop | Người dùng, nhật ký, gói cước và credit `/goi-cuoc` (FE-8-03), thông tin công ty `/cong-ty` |
+| Quản lý công ty (`companyManager` · `MANAGER`) | Desktop / tablet | Dashboard `/tong-quan`, biểu đồ, xuất báo cáo; kho của công ty `/quan-ly-kho`; bảng lương tài xế `/bang-luong`; xem yêu cầu giao, chuyến và phương án chỉ đọc |
 | Điều phối viên (`dispatcher` · `DISPATCHER`) | Desktop | Dữ liệu dày, phiên làm việc dài, bảng nhiều cột; lập yêu cầu giao, lập chuyến, tối ưu, duyệt phương án, in nhãn QR |
 | Nhân viên kho (`warehouse` · `WAREHOUSE_WORKER`) | Tablet tại kho | Sáng, đeo găng, nhìn xa, một thao tác mỗi màn; quản lý kho kiện (thêm kiện, nhập file), loại kiện, khách gửi hàng |
 | Tài xế (`driver` · `DRIVER`) | Điện thoại ngoài trời | Nắng, một tay, mạng yếu |
@@ -38,11 +38,11 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
 
 **Phân quyền**
 
-- Ma trận `features/auth/permissions.ts`: **một bảng** `ROLE_PERMISSIONS` theo PRD v2 mục 5.2 cộng `contacts.handle`, `companyProfile.manage`, `trialRequests.manage`, `companyWarehouses.manage`, đúng 37 quyền; đọc quyền qua
+- Ma trận `features/auth/permissions.ts`: **một bảng** `ROLE_PERMISSIONS` theo PRD v2 mục 5.2 cộng `contacts.handle`, `companyProfile.manage`, `trialRequests.manage`, `companyWarehouses.manage`, `payroll.manage`, đúng 38 quyền; đọc quyền qua
   `can`/`permissionsOf`; thứ tự `PERMISSIONS` là thứ tự dòng của Ma trận quyền. Ba vai trò nền tảng **không có quyền vận hành**: quản trị hệ
   thống có `companies.manage`, `users.manage`, `audit.view`, `contacts.handle`, `trialRequests.manage`; quản lý nền tảng `subscriptionPlans.manage`,
   `companies.manage`, `trialRequests.manage`; hỗ trợ khách hàng `support.handle`, `contacts.handle`. Quản trị công ty có `companyProfile.manage`,
-  `users.manage`, `audit.view`, `billing.manage`, `support.create`. Quản lý công ty thêm `companyWarehouses.manage` (`/quan-ly-kho`).
+  `users.manage`, `audit.view`, `billing.manage`, `support.create`. Quản lý công ty thêm `companyWarehouses.manage` (`/quan-ly-kho`) và `payroll.manage` (`/bang-luong`).
 - Mỗi nhóm route bọc `RequirePermission` trong `app/App.tsx`, thiếu quyền là màn 403 (`app/ForbiddenPage.tsx`) có nút về màn chính; thanh
   điều hướng chỉ hiện mục có quyền; nút ghi ẩn qua `useCan()`. Backend thật phải kiểm lại ở server. Màn mới thêm route vào đúng nhóm quyền.
 - **Quyền theo màn:** `requirements.view` mở `/yeu-cau-giao` (quản lý công ty, điều phối viên; `/don-hang` chuyển hướng sang đó), tạo, sửa, xoá theo
@@ -56,7 +56,7 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   `routes.optimize`: nút "Tối ưu tuyến" ở Chi tiết chuyến (điều phối viên, FE-4b-09). `manualConfirm.approve`: Duyệt / Từ chối ở thẻ "Xác nhận
   tay chờ duyệt" (điều phối viên, FE-6-04). `pickups.create`: nút "Nhận hàng dọc đường" ở Chi tiết chuyến và `/giam-sat` (điều phối viên) và ở
   màn điểm giao (tài xế, FE-7-03); `pickups.approve`: Từ chối / Duyệt (điều phối viên, FE-7-04). `subscriptionPlans.manage`: `/nen-tang/goi`
-  (FE-8-02). `billing.manage`: `/goi-cuoc`, `/bang-luong`, `/thanh-toan/gia-lap` và `/thanh-toan/ket-qua` (FE-8-03, FE-8-04). `companies.manage`: `/nen-tang/cong-ty`
+  (FE-8-02). `payroll.manage`: `/bang-luong` (quản lý công ty). `billing.manage`: `/goi-cuoc`, `/thanh-toan/gia-lap` và `/thanh-toan/ket-qua` (FE-8-03, FE-8-04). `companies.manage`: `/nen-tang/cong-ty`
   (FE-8-06). `companyProfile.manage`: `/cong-ty` (quản trị công ty).
   `support.create`: mục "Yêu cầu hỗ trợ" của menu tài khoản (năm vai trò công ty); `support.handle`: `/ho-tro` (FE-8-07). `contacts.handle`:
   `/lien-he-khach` (quản trị hệ thống, hỗ trợ khách hàng; gửi yêu cầu liên hệ không cần quyền). Giám sát (FE-6-10 → FE-6-12):
@@ -162,7 +162,7 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
 - Mục điều hướng khai **theo vai trò** ở `app/nav-items.ts` (FE-0-04): `NAV_SCREENS` là các màn có mục — chỉ màn đang có route (D-20) — và
   `NAV_ITEMS` là danh sách của từng vai trò theo thứ tự của vai trò đó, màn chính đứng đầu; quyền vẫn là cổng (`navItemsFor` bỏ mục thiếu quyền).
   Quản trị hệ thống: Công ty · Người dùng · Nhật ký · Liên hệ của khách · Đơn dùng thử. Quản trị công ty: Người dùng · Nhật ký · Gói và credit ·
-  Thông tin công ty. Quản lý công ty: Bảng điều khiển · Yêu cầu giao · Kho kiện (chỉ đọc) · Chuyến hàng · Giám sát · Đội xe · Kho bãi (`/quan-ly-kho`; nhãn ngắn `nav.companyWarehouses` để thanh vừa 1.366 px ở cả hai ngôn ngữ). Điều phối
+  Thông tin công ty. Quản lý công ty: Bảng điều khiển · Yêu cầu giao · Kho kiện (chỉ đọc) · Chuyến hàng · Giám sát · Đội xe · Kho bãi (`/quan-ly-kho`; nhãn ngắn `nav.companyWarehouses` để thanh vừa 1.366 px ở cả hai ngôn ngữ) · Bảng lương (`/bang-luong`). Tám mục chỉ vừa 1.366 px khi lề mục là 8 px tới dưới 1.536 px (`2xl:px-3.5` từ 1.536 px). Điều phối
   viên: Chuyến hàng · Giám sát · Kho kiện (chỉ đọc) · Yêu cầu giao · Đội xe · Bảng điều khiển. Nhân viên kho: Kho · Kho kiện · Khách hàng. Tài xế: một
   mục về màn của mình (thanh chỉ hiện ở màn hồ sơ). Quản lý nền tảng: Gói cước · Lịch sử gói cước · Công ty (chỉ xem danh sách; tạo, sửa công ty là của quản trị hệ thống) · Đơn dùng thử. Hỗ trợ khách hàng: Hỗ trợ ·
   Liên hệ của khách; nút "Đổi gói khách hàng" trên thanh. Màn chính của ba vai trò nền tảng vẫn là màn riêng của từng vai trò. Màn mới
@@ -2304,7 +2304,7 @@ cuối mục này. Chữ trong mockup không phải chuẩn — chuẩn là `lib
 | Tổng kết chuyến: Lumo thay dấu kiểm | Giữ Lumo nhỏ ở đầu thẻ, dấu kiểm ở từng điểm | Mục "Thương hiệu": tư thế xong việc |
 | Card đè lên dải trời (mọi màn có `PageHero`, màn Xếp xong, chờ duyệt lại) | Card nằm dưới dải, không đè | Quyết định của chủ sản phẩm: card che tiến trình và tab khi cuộn |
 | Đội xe: tab trạng thái trên dải trời; bảng vật cản một dòng 10 cột; nhãn "Chưa dùng trong tính toán" ở Trục xe | Giữ ô số làm công tắc lọc; bảng vật cản hai dòng; bỏ nhãn | Quyết định của chủ sản phẩm; trục xe đã dùng để tính tải trục |
-| Ma trận quyền 13 quyền × 5 vai trò | 37 quyền × 8 vai trò | Ma trận thật của sản phẩm |
+| Ma trận quyền 13 quyền × 5 vai trò | 38 quyền × 8 vai trò | Ma trận thật của sản phẩm |
 | Nhật ký nhóm theo ngày, có đường thời gian | Giữ bảng có sắp xếp, phân trang | Quyết định của chủ sản phẩm |
 | Đăng nhập có ảnh xe tải 3D; màn lỗi dùng ô icon và khối "Chi tiết kỹ thuật" | Hình đẳng cự từ `lib/isometric.ts`; Lumo; không hiện chi tiết kỹ thuật | Không mượn ảnh ngoài; mục "Thương hiệu"; không lộ stack cho người dùng cuối |
 | Ảnh đại diện tròn ở thẻ Hồ sơ | Ô vuông bo góc | Luật ảnh đại diện trong nội dung |
