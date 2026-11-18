@@ -104,7 +104,7 @@ export function NavRail() {
                 aria-label={t(actualLabelKey)}
                 className={({ isActive }) =>
                   cn(
-                    'relative z-1 flex h-9 items-center gap-1.5 rounded-md px-2 text-body whitespace-nowrap xl:gap-2 xl:px-2.5 2xl:px-3.5',
+                    'relative z-1 flex h-9 items-center gap-1.5 rounded-md px-2 text-body whitespace-nowrap 2xl:gap-2 2xl:px-3.5',
                     'transition-colors duration-(--dur-fast) ease-standard',
                     'outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-cyan-300',
                     isActive ? 'font-semibold text-sky-text' : 'font-medium text-sky-text-2 hover:text-sky-text',
