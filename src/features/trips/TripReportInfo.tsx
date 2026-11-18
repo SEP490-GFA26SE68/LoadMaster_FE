@@ -5,7 +5,7 @@ import { useFormat, useT } from '@/lib/i18n'
 import type { TripReportData } from './trip-extras-api'
 
 /**
- * Thông tin chuyến trong báo cáo (LM-104, FE-6-14): tuyến, ngày, xe, tài xế, số seal kho ghi khi xếp xong, lý do chở chung khác loại
+ * Thông tin chuyến trong báo cáo (LM-104, FE-6-14): tuyến, ngày, xe, tài xế, lý do chở chung khác loại
  * hàng (nếu chuyến vượt luật phân tách), số kiện theo phương án / đã soạn / hỏng / xếp bằng QR / hoàn trả, khối lượng đã giao và bốn
  * mốc giờ. Mốc chưa ghi thì "Chưa có".
  */
@@ -13,7 +13,7 @@ export function TripReportInfo({ data }: { data: TripReportData }) {
   const t = useT()
   const format = useFormat()
   const { trip, vehicle, driver, report } = data
-  const { packages, times, seal, weight } = report
+  const { packages, times, weight } = report
   const moment = (value: string | null) => (value === null ? t('tripReport.info.notYet') : `${format.time(value)} · ${format.date(value)}`)
 
   return (
@@ -32,11 +32,6 @@ export function TripReportInfo({ data }: { data: TripReportData }) {
         </Fact>
         <Fact label={t('tripReport.info.driver')}>
           {driver ? <>{driver.fullName} <span className="font-mono text-caption text-ink-3">{driver.phone}</span></> : t('tripReport.info.noDriver')}
-        </Fact>
-        <Fact label={t('tripReport.info.seal')}>
-          {seal
-            ? <span className="font-mono">{t('tripReport.info.sealValue', { number: seal.number, time: format.time(seal.at) })}</span>
-            : t('tripReport.info.noSeal')}
         </Fact>
         {report.overrideReason === null ? null : <Fact label={t('tripReport.info.override')}>{report.overrideReason}</Fact>}
         <Fact label={t('tripReport.info.planned')} mono>{format.integer(packages.planned)}</Fact>

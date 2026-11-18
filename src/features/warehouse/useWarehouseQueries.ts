@@ -9,7 +9,6 @@ import {
   fetchTripLabels,
   fetchWarehouseTrip,
   fetchWarehouseTrips,
-  recordSeal,
   reportDamagedPackage,
   reportStagingShortage,
   startLoading,
@@ -97,7 +96,3 @@ export function useConfirmLoadingManuallyMutation(tripId: string) {
   return useMutation({ mutationFn: (input: ManualConfirmInput) => confirmLoadingManually(tripId, input), onSettled: () => refreshAfterWrite(client) })
 }
 
-export function useRecordSealMutation(tripId: string) {
-  const client = useQueryClient()
-  return useMutation({ mutationFn: (sealNumber: string) => recordSeal(tripId, sealNumber), onSettled: () => refreshAfterWrite(client) })
-}

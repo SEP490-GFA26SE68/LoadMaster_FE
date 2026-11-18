@@ -12,10 +12,7 @@ import type { TripLabel } from './source-types'
 import type { Revision, StopProgress, Trip } from './types'
 import { resolveVerifyCode, withVerification, type LabelVerifyMethod, type PackageVerification } from './verify-model'
 
-type ScanMethods = Pick<Review1Db, 'listTripLabels' | 'getTripReadiness' | 'confirmLoadingByQr' | 'recordSeal' | 'confirmUnloadByQr'>
-
-/** Số seal dài tối đa (ký tự). */
-export const MAX_SEAL_LENGTH = 32
+type ScanMethods = Pick<Review1Db, 'listTripLabels' | 'getTripReadiness' | 'confirmLoadingByQr' | 'confirmUnloadByQr'>
 
 export function assertPhase(trip: Trip, phase: Trip['phase']) {
   if (trip.phase !== phase) throw new MockDbError('TRIP_PHASE_INVALID', { tripId: trip.id, phase: trip.phase })
@@ -85,7 +82,7 @@ export function scannedLabel(ctx: DbContext, trip: Trip, code: string, method: L
 }
 
 /**
- * Nhãn QR, "Sẵn sàng tối ưu", đối chiếu kiện bằng nhãn khi xếp / dỡ và seal (luồng 2 + 5, LM-104; FE-6-03). Mọi hàm nhận một chuyến
+ * Nhãn QR, "Sẵn sàng tối ưu", đối chiếu kiện bằng nhãn khi xếp / dỡ (luồng 2 + 5, LM-104; FE-6-03). Mọi hàm nhận một chuyến
  * của công ty của phiên (D-64); mã chỉ khớp trong nhãn của chính chuyến đó, nên kiện của công ty khác luôn là `PACKAGE_NOT_IN_TRIP`.
  * Mỗi lần đối chiếu ghi cách, người, thời điểm vào `Trip.verifications`.
  */
@@ -121,17 +118,6 @@ export function scanMethods(ctx: DbContext): ScanMethods {
         const steps = [...loading.steps, { packageInstanceId: id, outcome: 'loaded' as const, at: ctx.nowIso(), via: 'qr' as const }]
         const verifications = withVerification(trip.verifications, verificationBy(ctx, { context: 'LOADING', packageInstanceId: id, method }))
         return { trip: put(trips, { ...trip, loading: { ...loading, steps }, verifications }), packageInstanceId: id }
-      }),
-    recordSeal: (tripId, sealNumber) =>
-      ctx.respond(() => {
-        const trip = ctx.scope.trips.own(tripId)
-        assertPhase(trip, 'loaded')
-        const number = sealNumber.trim()
-        if (number === '' || number.length > MAX_SEAL_LENGTH) throw new MockDbError('SEAL_INVALID', { max: MAX_SEAL_LENGTH })
-        const loading = trip.loading
-        if (!loading) throw new Error(`Chuyến ${tripId} đã xếp xong nhưng không có tiến độ xếp`)
-        ctx.log('loading.sealed', { type: 'trip', id: tripId }, { sealNumber: number })
-        return put(trips, { ...trip, loading: { ...loading, seal: { number, at: ctx.nowIso(), by: ctx.state.session.userId } } })
       }),
     confirmUnloadByQr: (tripId, stopNumber, code, method = 'QR') =>
       ctx.respond(() => {

@@ -13,7 +13,7 @@ export const audit = {
     revision: { approved: 'Duyệt phương án' },
     loading: {
       started: 'Bắt đầu soạn hàng', shortageReported: 'Kho báo thiếu kiện khi soạn hàng', shortageKept: 'Điều phối chọn tìm tiếp kiện thiếu',
-      shortageDropped: 'Bỏ kiện thiếu khỏi chuyến', damaged: 'Kho báo kiện hỏng khi xếp', completed: 'Xếp xong', sealed: 'Ghi số seal niêm phong',
+      shortageDropped: 'Bỏ kiện thiếu khỏi chuyến', damaged: 'Kho báo kiện hỏng khi xếp', completed: 'Xếp xong',
     },
     delivery: { started: 'Xuất phát giao hàng', arrived: 'Tài xế đã đến điểm giao', issue: 'Báo sự cố giao hàng', stopCompleted: 'Hoàn tất điểm giao', completed: 'Hoàn thành chuyến', etaRisk: 'Nguy cơ trễ hạn giao' },
     user: {
@@ -159,7 +159,6 @@ export const audit = {
       algorithm: 'Thuật toán',
       reasonCode: 'Lý do',
       vehicleTypeId: 'Loại xe',
-      sealNumber: 'Số seal',
       // Phân tách hàng, tối ưu tuyến (FE-4b-06, FE-4b-09)
       handlingClass: 'Loại hàng của chuyến',
       conflictCount: 'Kiện khác loại',

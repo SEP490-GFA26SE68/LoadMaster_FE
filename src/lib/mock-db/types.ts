@@ -82,8 +82,6 @@ export type LoadingProgress = {
    * cách, người và thời điểm của từng lần đối chiếu nằm ở `Trip.verifications` (FE-6-03).
    */
   steps: { packageInstanceId: string; outcome: LoadingOutcome; at: string; via?: 'qr' }[]
-  /** Số seal niêm phong thùng, ghi khi xếp xong (LM-104). */
-  seal?: { number: string; at: string; by: string | null }
 }
 
 export const DELIVERY_ISSUE_KINDS = ['damaged', 'missing', 'refused', 'other'] as const

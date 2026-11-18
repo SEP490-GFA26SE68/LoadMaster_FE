@@ -72,7 +72,8 @@ test('the report shows only what the server counted, without MOCK RESULT', async
   expect(screen.queryByText('MOCK RESULT')).toBeNull()
   const late = screen.getByRole('row', { name: /Siêu thị Quận 7/ })
   expect(within(late).getByText('Đến trễ hạn')).toBeInTheDocument()
-  expect(screen.getByText('SEAL-0091 · ghi lúc 06:50')).toBeInTheDocument()
+  // Máy chủ còn trả số seal của chuyến cũ, nhưng báo cáo không còn mục đó
+  expect(screen.queryByText(/SEAL-0091/)).toBeNull()
   expect(screen.getByRole('rowheader', { name: 'Xếp hàng' }).closest('tr')).toHaveTextContent('91')
   expect(screen.getByText('Số liệu máy chủ đếm từ dữ liệu kho và tài xế đã ghi.')).toBeInTheDocument()
 })

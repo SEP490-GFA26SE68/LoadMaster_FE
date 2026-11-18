@@ -10,7 +10,6 @@ import { calendarDate } from '@/lib/calendar-date'
 import { useFormat, useT } from '@/lib/i18n'
 import type { Revision, Trip } from '@/lib/mock-db'
 import { loadingProgress, stopTallies } from './loading-session'
-import { SealCard } from './SealCard'
 import { StopDot } from '@/components/StopChip'
 import { useSessionModel } from './useSessionModel'
 import { useWarehouseTripsQuery } from './useWarehouseQueries'
@@ -18,9 +17,9 @@ import { loadingSessionPath } from './warehouse-trips'
 
 /**
  * Màn "Xếp xong — chờ xuất phát" (LM-086, FE-6-05; V2.3 đợt 6, `KhoXepXong.jpg`): Lumo nhỏ và tiêu đề, hai ô số (đã xếp trên tổng, bỏ lại
- * kho), danh sách kiện hỏng bỏ lại kho, bảng "Theo điểm giao", thông tin chuyến, ô niêm phong và nút về danh sách chuyến. Mọi số đọc từ
+ * kho), danh sách kiện hỏng bỏ lại kho, bảng "Theo điểm giao", thông tin chuyến và nút về danh sách chuyến (nút chính duy nhất). Mọi số đọc từ
  * phương án và tiến độ trong kho (D-47) — không số nào nghĩ ra; tên tài xế không có ở màn này nên không hiện. Mở lại chuyến đã xếp xong
- * (kể cả khi xe đã đi giao) cũng ra màn này. Review 1 (LM-104): số kiện xác nhận bằng quét QR và ô niêm phong thùng (số seal, không bắt buộc).
+ * (kể cả khi xe đã đi giao) cũng ra màn này. Review 1 (LM-104): số kiện xác nhận bằng quét QR.
  */
 export function LoadingFinished({ trip, plan }: { trip: Trip; plan: Revision }) {
   const t = useT()
@@ -124,9 +123,7 @@ export function LoadingFinished({ trip, plan }: { trip: Trip; plan: Revision }) 
               {vehicleName ? <Info label={t('warehouse.list.vehicle')}><VehicleName name={vehicleName} /></Info> : null}
               <Info label={t('warehouse.list.date')}>{format.date(calendarDate(trip.scheduledDate))}</Info>
             </dl>
-            <SealCard trip={trip} />
-            {/* Chưa ghi seal khi xe còn ở kho: nút ghi seal là nút chính, lối về danh sách là nút phụ (một nút chính mỗi màn) */}
-            <Button asChild variant={trip.phase === 'loaded' && !trip.loading?.seal ? 'secondary' : 'primary'} size="touch" className="w-full">
+            <Button asChild size="touch" className="w-full">
               <Link to="/kho">{t('warehouse.backToList')}</Link>
             </Button>
           </div>

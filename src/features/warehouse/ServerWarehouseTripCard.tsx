@@ -12,7 +12,7 @@ import { loadingSessionPath } from './warehouse-trips'
 /**
  * Một chuyến ở danh sách kho bản máy chủ: mã chuyến, trạng thái, giờ xuất phát, xe, số kiện và một nút 56 px theo nhóm — "Bắt đầu xếp hàng"
  * (chờ xếp: máy chủ chuyển chuyến sang Đang xếp hàng và trả danh sách kiện), "Tiếp tục xếp" (mở lại phiên của máy chủ, ở
- * thiết bị nào cũng được), "Xem chuyến đã xếp"; chuyến chờ điều phối tối ưu lại chỉ có một dòng lý do, không nút. Máy chủ không trả tên tuyến, tiến độ, seal: không vẽ.
+ * thiết bị nào cũng được), "Xem chuyến đã xếp"; chuyến chờ điều phối tối ưu lại chỉ có một dòng lý do, không nút. Máy chủ không trả tên tuyến, tiến độ: không vẽ.
  */
 export function ServerWarehouseTripCard({ row, primary }: { row: ServerWarehouseTrip; primary: boolean }) {
   const t = useT()

@@ -48,7 +48,6 @@ export const dataErrors = {
   PACKAGE_NOT_IN_TRIP: 'Code {token} is not part of trip {tripId}.',
   WRONG_PACKAGE_SCANNED: 'Scanned package {scanned}; this step needs package {expected}.',
   QR_WRONG_STOP: 'Package {packageInstanceId} belongs to stop {stopNumber}.',
-  SEAL_INVALID: 'The seal number needs 1 to {max} characters.',
   PACKAGE_INVALID: 'The package is not valid: dimensions and weight must be above 0, and it needs a handling class and a destination.',
   INVALID_PACKAGE_STATUS_TRANSITION: 'Package {packageId} cannot move to that status from its current one.',
   PACKAGE_FLAGGED: 'Package {packageId} carries a flag, so it cannot go into a delivery requirement or a trip yet. Clear the flag first.',

@@ -48,8 +48,6 @@ export const warehouse = {
     start: 'Bắt đầu soạn hàng',
     resume: { staging: 'Tiếp tục soạn ({done}/{total})', loading: 'Tiếp tục xếp ({done}/{total})' },
     openLoaded: 'Xem chuyến đã xếp',
-    seal: 'Số seal {number}',
-    noSeal: 'Chưa ghi số seal.',
     recheck: {
       one: 'Điều phối viên từ chối {count} xác nhận tay: mở chuyến để kiểm lại kiện.',
       other: 'Điều phối viên từ chối {count} xác nhận tay: mở chuyến để kiểm lại kiện.',
@@ -155,20 +153,6 @@ export const warehouse = {
     overlayWaiting: 'Chờ điều phối viên duyệt xác nhận tay rồi mới hoàn tất xếp hàng.',
     rejected: 'Điều phối viên từ chối xác nhận tay kiện {id}. Kiểm lại kiện này rồi đối chiếu lại.',
     rejectReason: 'Lý do: {reason}',
-  },
-  /** Số seal niêm phong thùng khi xếp xong (luồng 5 Review 1, LM-104): không bắt buộc, có thì ghi vào chuyến. */
-  seal: {
-    title: 'Niêm phong thùng',
-    description: 'Ghi số seal trên niêm phong cửa thùng để tài xế và người nhận đối chiếu. Không có seal thì bỏ qua.',
-    label: 'Số seal',
-    hint: 'Tối đa {max} ký tự, ví dụ SEAL-240914.',
-    required: 'Nhập số seal trước khi ghi.',
-    tooLong: 'Số seal tối đa {max} ký tự.',
-    submit: 'Ghi số seal',
-    change: 'Đổi số seal',
-    recorded: 'Số seal {number} · ghi lúc {time}',
-    none: 'Chuyến này không ghi số seal.',
-    locked: 'Xe đã rời kho: không đổi số seal được nữa.',
   },
   tiles: {
     position: 'Vị trí',

@@ -40,11 +40,10 @@ test('trips grouped by status (FE-6-01): loading with Continue (110/280), waitin
   expect(approved.getByText('0/132')).toBeInTheDocument()
   expect(approved.getByRole('link', { name: 'Bắt đầu soạn hàng' })).toHaveAttribute('href', '/kho?chuyen=TRIP-2026-0914')
 
-  // Xếp xong chờ tài xế xuất phát: kho còn mở lại được để ghi số seal
+  // Xếp xong chờ tài xế xuất phát: kho vẫn mở lại được chuyến đã xếp
   const loaded = cardOf('TRIP-010')
   expect(loaded.getByText('Xếp xong — chờ xuất phát')).toBeInTheDocument()
   expect(loaded.getByText('210/210')).toBeInTheDocument()
-  expect(loaded.getByText('Chưa ghi số seal.')).toBeInTheDocument()
   expect(loaded.getByRole('link', { name: 'Xem chuyến đã xếp' })).toHaveAttribute('href', '/kho?chuyen=TRIP-010')
   expect(loaded.getByRole('link', { name: 'Xem chuyến đã xếp' })).toHaveClass('h-14')
 
