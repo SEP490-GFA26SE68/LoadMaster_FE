@@ -62,9 +62,10 @@ export type MyTripRow = {
  * - `inTransit`: Đang vận chuyển — giao tiếp;
  * - `loaded`: Đang xếp hàng, dòng phụ "Xếp xong — chờ xuất phát" — mở chuyến để xuất phát;
  * - `preparing`: Đang xếp hàng, kho đang soạn / xếp — chỉ xem;
+ * - `upcoming`: Đã lên kế hoạch (chuyến sắp tới) — chỉ xem;
  * - `recent`: Đã giao, `RECENT_LIMIT` chuyến gần nhất.
  */
-export const MY_TRIP_GROUPS = ['inTransit', 'loaded', 'preparing', 'recent'] as const
+export const MY_TRIP_GROUPS = ['inTransit', 'loaded', 'preparing', 'upcoming', 'recent'] as const
 export type MyTripGroup = (typeof MY_TRIP_GROUPS)[number]
 
 export type MyTrips = Readonly<Record<MyTripGroup, readonly MyTripRow[]>>
@@ -93,6 +94,7 @@ export function driverPlan<R extends Pick<Revision, 'id' | 'approvedAt'>>(trip: 
 export function myTripGroup(row: Pick<MyTripRow, 'status' | 'sub'>): MyTripGroup | null {
   if (row.status === 'IN_TRANSIT') return 'inTransit'
   if (row.status === 'DELIVERED') return 'recent'
+  if (row.status === 'PLANNED') return 'upcoming'
   if (row.status !== 'LOADING') return null
   return row.sub?.kind === 'loaded' ? 'loaded' : 'preparing'
 }
@@ -152,7 +154,7 @@ function byDate(a: MyTripRow, b: MyTripRow): number {
  * mới nhất trước, tối đa `RECENT_LIMIT`.
  */
 export function myTrips(entries: readonly TripRevisions[], vehicleNames: ReadonlyMap<string, string>, viewer: Pick<User, 'id'>): MyTrips {
-  const groups: Record<MyTripGroup, MyTripRow[]> = { inTransit: [], loaded: [], preparing: [], recent: [] }
+  const groups: Record<MyTripGroup, MyTripRow[]> = { inTransit: [], loaded: [], preparing: [], upcoming: [], recent: [] }
   for (const { trip, revisions } of entries) {
     if (!isVisibleTo(trip, viewer)) continue
     const plan = driverPlan(trip, revisions)
@@ -165,6 +167,7 @@ export function myTrips(entries: readonly TripRevisions[], vehicleNames: Readonl
     inTransit: groups.inTransit.toSorted(byDate),
     loaded: groups.loaded.toSorted(byDate),
     preparing: groups.preparing.toSorted(byDate),
+    upcoming: groups.upcoming.toSorted(byDate),
     recent: groups.recent.toSorted((a, b) => (b.completedAt ?? '').localeCompare(a.completedAt ?? '')).slice(0, RECENT_LIMIT),
   }
 }

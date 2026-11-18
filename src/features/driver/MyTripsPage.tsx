@@ -9,9 +9,15 @@ import { AccountMenu } from '@/features/auth/AccountMenu'
 import { ExitIconButton } from '@/features/auth/ExitControl'
 import { NotificationBell } from '@/features/notifications/NotificationBell'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
-import { MY_TRIP_GROUPS } from './my-trips'
+import { type MyTripGroup } from './my-trips'
 import { MyTripCard } from './MyTripCard'
 import { useDriverCapabilities, useMyTripsQuery } from './useDriverQueries'
+
+/**
+ * Nhóm của bản web. `upcoming` (chuyến Đã lập kế hoạch, "Chuyến sắp tới") chỉ app mobile hiện; trên web tài xế không xem chuyến còn
+ * lập kế hoạch (mục 7 "Foundation engine").
+ */
+const WEB_TRIP_GROUPS = ['inTransit', 'loaded', 'preparing', 'recent'] as const satisfies readonly MyTripGroup[]
 
 /**
  * "Chuyến của tôi" `/tai-xe` (LM-087, D-46) — màn chính của tài xế: chuyến gán cho mình (từ FE-0-01 chỉ tài xế mở được) chia nhóm theo
@@ -72,7 +78,7 @@ function TripGroups() {
     )
   }
   const trips = query.data
-  if (MY_TRIP_GROUPS.every((group) => trips[group].length === 0)) {
+  if (WEB_TRIP_GROUPS.every((group) => trips[group].length === 0)) {
     return (
       <Card>
         <EmptyState
@@ -89,7 +95,7 @@ function TripGroups() {
   return (
     <div className="flex flex-col gap-6">
       {primaryId === undefined ? <p className="m-0 text-ink-2">{t('driver.list.noReady')}</p> : null}
-      {MY_TRIP_GROUPS.map((group) => (trips[group].length === 0 ? null : (
+      {WEB_TRIP_GROUPS.map((group) => (trips[group].length === 0 ? null : (
         <Group key={group} title={t(`driver.list.groups.${group}`)}>
           {trips[group].map((row) => <MyTripCard key={row.id} row={row} primary={row.id === primaryId} />)}
         </Group>
