@@ -111,7 +111,7 @@ test('the company manager lands on the dashboard and sees its own nav items: req
   const nav = page.getByRole('navigation', { name: 'Điều hướng chính' })
   await login('/', 'companyManager')
   await page.waitForURL((url) => url.pathname === '/tong-quan')
-  await expect(nav.getByRole('link')).toHaveText(['Bảng điều khiển', 'Yêu cầu giao', 'Kho kiện', 'Chuyến hàng', 'Giám sát', 'Đội xe', 'Kho bãi'])
+  await expect(nav.getByRole('link')).toHaveText(['Bảng điều khiển', 'Yêu cầu giao', 'Kho kiện', 'Chuyến hàng', 'Giám sát', 'Đội xe', 'Kho bãi', 'Bảng lương'])
   // Yêu cầu giao: điều phối viên lập (như backend), quản lý công ty chỉ xem
   await nav.getByRole('link', { name: 'Yêu cầu giao', exact: true }).click()
   await page.waitForURL((url) => url.pathname === '/yeu-cau-giao')

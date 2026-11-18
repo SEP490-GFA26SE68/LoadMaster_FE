@@ -1,8 +1,9 @@
 import type { Page } from '@playwright/test'
 import { DEMO_EMAILS, DEMO_PASSWORD, expect, test } from './fixtures'
+import { MOCK_DB } from './spec-flow-helpers'
 
 /**
- * Quản trị người dùng (LM-092, D-42): tài khoản quản trị công ty tạo đăng nhập được bằng mật khẩu tạm hiện một lần và mở đúng màn
+ * Quản trị người dùng (LM-092, D-42): tài khoản quản trị công ty tạo đăng nhập được bằng mật khẩu tạm (gửi qua email) và mở đúng màn
  * của vai trò; khoá rồi thì đăng nhập báo khoá. Kho in-memory: đổi người dùng bằng đăng xuất/đăng nhập trong app, không `page.goto`.
  * FE-0-08: một màn, hai phạm vi — quản trị công ty tạo, sửa, khoá người của công ty mình (tạo tài xế là việc của họ); quản trị hệ thống
  * thấy mọi công ty, chỉ tạo tài khoản nền tảng, và với nhân sự công ty chỉ khoá, mở khoá, đặt lại mật khẩu.
@@ -35,12 +36,18 @@ test('a driver account the company administrator creates signs in with its one-t
   await page.getByRole('option', { name: 'Tài xế', exact: true }).click()
   await form.getByRole('button', { name: 'Thêm người dùng', exact: true }).click()
 
-  // Mật khẩu tạm chỉ hiện một lần, trong hộp thoại
-  const result = page.getByRole('dialog', { name: `Đã tạo tài khoản ${NEW_DRIVER.name}`, exact: true })
-  const password = await result.getByLabel('Mật khẩu tạm', { exact: true }).inputValue()
-  expect(password).toMatch(/^[A-Za-z2-9]{10}$/)
-  await result.getByRole('button', { name: 'Xong', exact: true }).click()
+  // Quản trị công ty không thấy mật khẩu tạm (gửi qua email, 14/11/2026): màn chỉ báo đã gửi. Kho mẫu không gửi email, nên test lấy
+  // mật khẩu tạm bằng một lần đặt lại ngay trong kho của trang — đúng hàm nút "Đặt lại mật khẩu" gọi.
+  await expect(page.getByText(`Đã thêm nhân viên ${NEW_DRIVER.name}.`, { exact: false })).toBeVisible()
+  await expect(page.getByRole('dialog', { name: `Đã tạo tài khoản ${NEW_DRIVER.name}`, exact: true })).toHaveCount(0)
   await expect(page.getByRole('row', { name: new RegExp(NEW_DRIVER.name) })).toContainText('Đang hoạt động')
+  const password = await page.evaluate(async ({ db, email }) => {
+    const { getMockDb } = (await import(db)) as typeof import('@/lib/mock-db')
+    const created = (await getMockDb().listUsers()).find((user) => user.email === email)
+    if (!created) throw new Error('Không thấy tài khoản vừa tạo')
+    return (await getMockDb().resetPassword(created.id)).temporaryPassword
+  }, { db: MOCK_DB, email: NEW_DRIVER.email })
+  expect(password).toMatch(/^[A-Za-z2-9]{10}$/)
 
   await signOutFromMenu(page, COMPANY_ADMIN)
   await signIn(page, NEW_DRIVER.email, password)
@@ -149,7 +156,7 @@ test('row click opens the user detail panel beside the table at 1366 px; the pho
 })
 
 /**
- * FE-0-01 (quyết định G13), FE-0-06: ma trận quyền 8 vai trò × 37 quyền vừa 1.366 px — trang, tab và bảng không cuộn ngang, tên vai trò
+ * FE-0-01 (quyết định G13), FE-0-06: ma trận quyền 8 vai trò × 38 quyền vừa 1.366 px — trang, tab và bảng không cuộn ngang, tên vai trò
  * xuống tối đa hai dòng và không tràn sang cột bên, nhãn quyền không bị cắt ở dòng cuối. Kiểm cả bản tiếng Anh (tên vai trò dài hơn).
  */
 for (const lang of ['vi', 'en'] as const) {
@@ -160,8 +167,8 @@ for (const lang of ['vi', 'en'] as const) {
     await page.getByRole('tab', { name: lang === 'vi' ? 'Ma trận quyền' : 'Permission matrix', exact: true }).click()
     const matrix = page.getByRole('table')
     await expect(matrix.getByRole('columnheader')).toHaveCount(9)
-    // Một dòng tiêu đề, 13 dòng khu vực, 37 dòng quyền, một dòng tổng
-    await expect(matrix.getByRole('row')).toHaveCount(52)
+    // Một dòng tiêu đề, 13 dòng khu vực, 38 dòng quyền, một dòng tổng
+    await expect(matrix.getByRole('row')).toHaveCount(53)
 
     const layout = await page.evaluate(() => {
       const table = document.querySelector('table')!
