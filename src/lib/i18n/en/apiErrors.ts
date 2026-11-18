@@ -128,8 +128,6 @@ export const apiErrors = {
   STAGING_SHORTAGE_NOT_FOUND: 'This shortage report was not found.',
   STAGING_SHORTAGE_NOT_OPEN: 'This shortage has already been decided, or the trip is no longer being loaded.',
   LOADING_MANUAL_CONFIRM_PENDING: 'A manual confirmation is still waiting for the dispatcher — loading cannot be completed yet.',
-  SEAL_INVALID: 'The seal number must be 1 to 32 characters.',
-  SEAL_NOT_ALLOWED: 'A seal number can only be recorded after loading is complete and before the truck departs.',
   PACKAGE_FLAGGED: 'The package is flagged as not found or damaged — clear the flag before adding it to a trip.',
   PACKAGE_NOT_FLAGGED: 'The package has no flag to clear.',
   PACKAGE_NOT_AVAILABLE: 'The package is no longer waiting in the package pool, so it cannot be added to a delivery requirement.',

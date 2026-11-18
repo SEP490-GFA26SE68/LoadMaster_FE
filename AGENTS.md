@@ -370,7 +370,7 @@ src/
                         `db-revisions.ts` + `revisions.ts` (revision bất biến, Duyệt, lần chạy tối ưu), `seed-phuong-nam.ts`, `seed-shift.ts`, `clock.ts` (đồng hồ mô phỏng), `tab-sync.ts` + `tab-sync-tables.ts` (đồng bộ
                         kho giữa các tab cùng trình duyệt; `app-db.ts` nối nó vào kho của app), `trip-stops.ts` (điểm giao tự sinh, thuần),
                         `trip-route.ts` (tuyến của chuyến), `trip-report.ts` (báo cáo chuyến, thuần), `verify-model.ts` (đối chiếu kiện ba
-                        mức), `source-types.ts` + `db-api-review1.ts` (kiểu và hàm của loại kiện, loại xe, lần chạy, nhãn QR, seal)
+                        mức), `source-types.ts` + `db-api-review1.ts` (kiểu và hàm của loại kiện, loại xe, lần chạy, nhãn QR)
   types/                type dùng từ hai feature trở lên
   domain/               logic nghiệp vụ THUẦN theo Spec — không React, không Three.js
     geometry/           số (roundCm, EPSILON), hộp, chồng lấn, biên thùng, 6 hướng đặt, lưới không gian
@@ -637,7 +637,7 @@ Mẫu: `design/v2.3/screens/web/ThanhPhan.jpg`, `TrangThaiChung.jpg`, `MenuToanC
   chân hộp thoại `sticky bottom-0`), từ 768 px vẫn ở giữa màn; focus trap, Esc, tiêu đề có nhãn không đổi, reduced-motion theo luật chung. Dùng ở màn tài xế:
   "Báo sự cố" của kiện (`ReportIssueDialog`), "Sự cố trên đường" (`ReportExceptionDialog touch`), tờ "Thêm" (`StopMoreActions`), hộp đối chiếu ba mức (`PackageVerify`, cũng dùng ở kho: máy tính bảng từ 768 px vẫn là hộp giữa màn) và hộp nhận hàng dọc đường
   (`PickupRequestDialog`, điều phối viên trên desktop vẫn là hộp giữa màn). **Toast ở màn cảm ứng của kho và tài xế**: không có toast thành công khi chính
-  màn đã cho thấy kết quả (banner giờ đến, dòng kiện đổi trạng thái, số liệu tiến độ, sang điểm giao kế tiếp, vùng kết quả trong hộp đối chiếu, số seal đã ghi);
+  màn đã cho thấy kết quả (banner giờ đến, dòng kiện đổi trạng thái, số liệu tiến độ, sang điểm giao kế tiếp, vùng kết quả trong hộp đối chiếu);
   nơi thay toast là vùng đọc được bằng trình đọc màn hình (`role="status"` / `aria-live`). Lỗi và cảnh báo (khách từ chối, xác nhận tay chờ duyệt, báo thiếu,
   kiện hỏng) luôn có toast. Toast thành công chỉ giữ khi màn không cho thấy gì khác.
 - **Toast**: bo 14, ô icon 30 px tô theo nghĩa; đặt dưới nút hành động của dải trời (`offset` 152).
@@ -999,7 +999,7 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
   pinned? }`, vị trí draft là cm. Header hiện **MOCK RESULT** khi `isMockResult`. Chế độ màu thứ hai là **theo kiện gốc** (`packageId`) vì contract
   không có đơn hàng; `packaging` của kết quả là một kiểu trung tính.
 - **Kho** (`/kho`, LM-086, FE-6-01 → FE-6-05): danh sách chuyến chia **nhóm theo trạng thái và dòng phụ** (`WAREHOUSE_STAGES`): Đang xếp hàng (tiến
-  độ) · Chờ soạn (Đã lập kế hoạch, bản duyệt còn hiệu lực) · Xếp xong — chờ xuất phát (còn ghi được số seal tới khi tài xế xuất phát) · Chờ điều
+  độ) · Chờ soạn (Đã lập kế hoạch, bản duyệt còn hiệu lực) · Xếp xong — chờ xuất phát (kho không ghi số seal: bỏ theo quyết định của chủ sản phẩm 19/11/2026) · Chờ điều
   phối tối ưu lại (bản duyệt lỗi thời, không có nút); nút chính của màn là chuyến đang xếp dở, không thì chuyến chờ soạn sớm nhất.
   `/kho?chuyen=<mã>` là phiên của chuyến theo bản duyệt chốt lúc `startLoading` — bước Soạn hàng rồi bước Xếp, tiến độ ghi vào kho qua các hàm
   đối chiếu (mục 9), mở lại tiếp tục ở kiện chưa ghi đầu tiên; bản duyệt lỗi thời **không** vào phiên (chờ điều phối duyệt lại). Scene cm đưa cho
@@ -1415,7 +1415,7 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   phương án mới thì bắt đầu phiên mới) — và `ServerLoadingSession`: "Bắt đầu soạn hàng" `POST /api/warehouse/tasks/{tripId}/start` gửi `{ staging: true }` (bước soạn
   là tuỳ chọn ở máy chủ, web và app di động đều gửi: lượt gọi không gửi thì phiên không có bước soạn — `stagingRequired` vắng là đã soạn đủ), mở lại phiên ở bất kỳ thiết
   bị nào `GET /api/warehouse/tasks/{tripId}` (cùng dạng; phiên đọc từ máy chủ, không giữ ở tab). Phiên có lòng thùng và từng kiện (kích thước,
-  vị trí, mã QR, mã kiện, điểm giao, trạng thái, đã soạn, báo thiếu, xác nhận tay), số xác nhận tay chờ và số seal. **Soạn hàng**
+  vị trí, mã QR, mã kiện, điểm giao, trạng thái, đã soạn, báo thiếu, xác nhận tay) và số xác nhận tay chờ. **Soạn hàng**
   (`ServerStagingStep`, như `StagingStepPage`): đối chiếu không cần thứ tự `POST …/tasks/{tripId}/staging/packages/{packageId}/confirm` (quét lại
   là `alreadyStaged`, không ghi), xác nhận tay `…/manual` (chỉ tính là đã soạn khi điều phối viên duyệt; còn chờ thì dòng ghi "chờ duyệt" và bước soạn chưa xong, bị từ
   chối thì về chưa soạn), "Báo thiếu" `…/shortage`; soạn đủ thì màn tự sang bước xếp (`STAGING_INCOMPLETE`).
@@ -1423,8 +1423,8 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   `POST /api/warehouse/placements/{id}/confirm` (`{ method: QR | CODE }`, như bước soạn), xác nhận tay `…/manual`, ghi sai lệch vị trí `…/deviation` (cm nguyên + lý do), "Kiện hỏng"
   `…/damaged` (không kiện nào tựa lên thì bỏ lại kho — trạng thái `DAMAGED` —, có thì chuyến về Đã lập kế hoạch; số kiện tựa lên trên hộp
   thoại đếm như máy chủ, `restingCount`), xong thì `POST /api/warehouse/tasks/{tripId}/complete` (`INCOMPLETE_LOADING`; còn xác nhận tay chờ:
-  nút mờ kèm lý do, máy chủ `LOADING_MANUAL_CONFIRM_PENDING`); xếp xong ghi / đổi số seal `POST …/tasks/{tripId}/seal` tới lúc xe rời kho
-  (`ServerLoadingFinished`). Điều phối viên quyết báo thiếu ở thẻ "Kiện kho báo thiếu" của Chi tiết chuyến máy chủ (`MissingPackagesCard server`,
+  nút mờ kèm lý do, máy chủ `LOADING_MANUAL_CONFIRM_PENDING`); xếp xong là màn `ServerLoadingFinished`, nút
+  về danh sách là nút chính duy nhất — app không gọi `POST …/tasks/{tripId}/seal` của máy chủ nữa. Điều phối viên quyết báo thiếu ở thẻ "Kiện kho báo thiếu" của Chi tiết chuyến máy chủ (`MissingPackagesCard server`,
   `shortage-backend-api.ts`: `GET /api/trips/{id}/staging-shortages`, `POST …/{shortageId}/resolve` — tìm tiếp, hoặc bỏ kiện: chuyến về Đã lập kế
   hoạch, phương án lỗi thời) và duyệt / từ chối xác nhận tay của kho ở cùng thẻ `ManualConfirmCard` với tài xế (`step` `STAGING` / `LOADING`).
   Khung 3D vị trí kiện dựng từ phiên (`server-session-scene.ts`), chỉ khi có lòng thùng và mọi kiện có điểm giao; khối lượng kiện

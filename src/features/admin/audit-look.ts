@@ -115,7 +115,6 @@ const ACTION_TONE: Record<AuditAction, KpiTone> = {
   'vehicleType.updated': 'blue',
   'vehicleType.deleted': 'slate',
   'vehicleType.assigned': 'blue',
-  'loading.sealed': 'green',
   'manualConfirm.requested': 'amber',
   'manualConfirm.approved': 'green',
   'manualConfirm.rejected': 'amber',

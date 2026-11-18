@@ -51,7 +51,6 @@ const SAMPLES: { [Code in MockDbErrorCode]: MockDbErrorParams[Code] } = {
   PACKAGE_NOT_IN_TRIP: { tripId: 'TRIP-011', token: 'LM-0000-0000-0000' },
   WRONG_PACKAGE_SCANNED: { expected: 'PKG-001-02', scanned: 'PKG-001-05' },
   QR_WRONG_STOP: { packageInstanceId: 'PKG-002-01', stopNumber: 3 },
-  SEAL_INVALID: { max: 32 },
   PACKAGE_INVALID: { field: 'destination' },
   INVALID_PACKAGE_STATUS_TRANSITION: { packageId: 'PK-0049', from: 'IMPORTED', to: 'LOADED' },
   PACKAGE_FLAGGED: { packageId: 'PK-0063', flag: 'NOT_FOUND' },

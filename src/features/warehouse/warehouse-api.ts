@@ -6,7 +6,7 @@
  *   reportDamagedPackage → POST /api/warehouse/placements/{id}/deviation
  *   completeLoading      → POST /api/trips/{id}/complete-loading
  *   chưa có ở BE: fetchWarehouseTrips, fetchWarehouseTrip, fetchTripLabels
- *   chưa có ở BE (Q-11): confirmStagingManually, reportStagingShortage, recordSeal, confirmLoadingManually
+ *   chưa có ở BE (Q-11): confirmStagingManually, reportStagingShortage, confirmLoadingManually
  *   tên sẽ đổi khi nối BE: confirmStagingByQr → verifyPackage; confirmLoadingByQr → confirmPlacement; reportDamagedPackage → reportPlacementDeviation
  */
 
@@ -107,7 +107,7 @@ export function completeLoading(tripId: string): Promise<Trip> {
   return getMockDb().completeLoading(tripId)
 }
 
-// Review 1 (LM-104): quét QR khi xếp, số seal khi xếp xong, nhãn QR của chuyến
+// Review 1 (LM-104): quét QR khi xếp, nhãn QR của chuyến
 
 /** Nhãn QR mọi kiện của chuyến: tên kiện cho câu báo sai kiện, và kiện kho kiện để in lại nhãn ở mức xác nhận tay. */
 // chưa có ở BE
@@ -139,8 +139,3 @@ export function confirmLoadingManually(tripId: string, input: ManualConfirmInput
   return getMockDb().confirmLoadingManually(tripId, input)
 }
 
-/** Ghi số seal niêm phong khi đã xếp xong (`loaded`), trước khi xe chạy. */
-// chưa có ở BE (Q-11)
-export function recordSeal(tripId: string, sealNumber: string): Promise<Trip> {
-  return getMockDb().recordSeal(tripId, sealNumber)
-}

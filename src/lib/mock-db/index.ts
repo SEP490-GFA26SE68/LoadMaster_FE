@@ -90,7 +90,6 @@ export type { TripPoolPackage, TripStopTarget } from './db-trip-pool'
 export type { TripEta, TripEtaStop } from './db-trip-route'
 export type { TripSegregation } from './db-trip-segregation'
 export { stopsWithoutCoordinates } from './trip-route'
-export { MAX_SEAL_LENGTH } from './db-scans'
 export { SHORTAGE_DECISIONS, type ShortageDecision } from './db-staging'
 export { normalizeQrToken } from './qr-token'
 export {

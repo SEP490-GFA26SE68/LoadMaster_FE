@@ -207,8 +207,6 @@ export type Review1Db = {
    * `WRONG_PACKAGE_SCANNED`; mã không thuộc chuyến: `PACKAGE_NOT_IN_TRIP`; chưa soạn đủ: `STAGING_INCOMPLETE`.
    */
   confirmLoadingByQr(tripId: string, code: string, method?: LabelVerifyMethod): Promise<ScanResult<Trip>>
-  /** Ghi số seal khi đã xếp xong (`loaded`), trước khi xe chạy. */
-  recordSeal(tripId: string, sealNumber: string): Promise<Trip>
   /**
    * Tài xế đối chiếu kiện ở điểm giao hiện tại bằng nhãn (`method` như `confirmLoadingByQr`): ghi "đã dỡ". Chưa bấm "Đã đến":
    * `STOP_NOT_ARRIVED`; kiện của điểm khác: `QR_WRONG_STOP`.

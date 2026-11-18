@@ -16,7 +16,7 @@ import type { TripStatus, TripSubStatus } from '@/types/trip'
  * Nhóm của chuyến ở danh sách kho (FE-6-01, PRD v2 mục 8.5), theo trạng thái của backend và dòng phụ:
  * - `loading`: Đang xếp hàng, kho đang soạn hoặc đang xếp (tiến độ x / y) — làm tiếp cho xong;
  * - `waiting`: Đã lập kế hoạch, phương án đã duyệt còn hiệu lực — "Chờ soạn";
- * - `loaded`: Đang xếp hàng, dòng phụ "Xếp xong — chờ xuất phát" — còn ghi được số seal tới khi tài xế xuất phát;
+ * - `loaded`: Đang xếp hàng, dòng phụ "Xếp xong — chờ xuất phát" — chờ tài xế xuất phát;
  * - `stale`: Đã lập kế hoạch, bản duyệt lỗi thời — "Chờ điều phối tối ưu lại", kho không bắt đầu được; gồm cả chuyến vừa từ Đang xếp
  *   hàng quay về vì bỏ kiện thiếu hoặc kiện hỏng (FE-6-02, FE-6-05).
  * Thứ tự ở đây là thứ tự nhóm trên màn.
@@ -54,8 +54,6 @@ export type WarehouseTripRow = {
   readonly replan: { readonly reason: ReplanReason; readonly unload: boolean } | undefined
   /** Xác nhận tay bị điều phối viên từ chối mà kiện chưa được kiểm lại (FE-6-04). */
   readonly recheck: number
-  /** Số seal đã ghi khi xếp xong; chưa ghi thì `undefined`. */
-  readonly seal: string | undefined
 }
 
 /**
@@ -118,7 +116,6 @@ export function warehouseTripRows(entries: readonly TripRevisions[], vehicleName
       shortages: trip.loading?.shortages?.length ?? 0,
       replan: trip.replan === undefined ? undefined : { reason: trip.replan.reason, unload: trip.replan.unload },
       recheck: stage === 'loading' ? rejectedConfirms(trip, 'STAGING', staged).length + rejectedConfirms(trip, 'LOADING', recorded).length : 0,
-      seal: trip.loading?.seal?.number,
     })
   }
   return rows.toSorted((a, b) =>

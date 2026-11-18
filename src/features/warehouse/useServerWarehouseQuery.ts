@@ -6,7 +6,6 @@ import {
   fetchServerWarehouseTrips,
   confirmServerPlacementManually,
   recordServerDeviation,
-  recordServerSeal,
   reportServerDamaged,
   reportServerShortage,
   stageServerPackage,
@@ -115,7 +114,3 @@ export function useReportServerDamagedMutation(tripId: string) {
   })
 }
 
-export function useRecordServerSealMutation(tripId: string) {
-  const client = useQueryClient()
-  return useMutation({ mutationFn: (sealNumber: string) => recordServerSeal(tripId, sealNumber), onSuccess: (session) => settle(client, tripId, session) })
-}

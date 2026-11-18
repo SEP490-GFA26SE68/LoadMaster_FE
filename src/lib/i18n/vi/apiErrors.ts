@@ -138,8 +138,6 @@ export const apiErrors = {
   STAGING_SHORTAGE_NOT_FOUND: 'Không tìm thấy báo thiếu này.',
   STAGING_SHORTAGE_NOT_OPEN: 'Báo thiếu này đã được quyết, hoặc chuyến không còn ở bước xếp hàng.',
   LOADING_MANUAL_CONFIRM_PENDING: 'Còn xác nhận tay chờ điều phối viên duyệt — chưa hoàn tất xếp được.',
-  SEAL_INVALID: 'Số seal cần từ 1 đến 32 ký tự.',
-  SEAL_NOT_ALLOWED: 'Chỉ ghi được số seal khi đã xếp xong và xe chưa xuất phát.',
   PACKAGE_FLAGGED: 'Kiện đang mang cờ không tìm thấy hoặc hư hỏng — gỡ cờ trước khi đưa kiện vào chuyến.',
   PACKAGE_NOT_FLAGGED: 'Kiện không mang cờ nào để gỡ.',
   PACKAGE_NOT_AVAILABLE: 'Kiện không còn chờ ở kho kiện nên không chọn được cho yêu cầu giao.',

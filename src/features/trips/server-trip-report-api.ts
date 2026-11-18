@@ -27,7 +27,7 @@ type ReportDto = {
   /** Phút từ lúc xe xuất phát tới khi hoàn tất điểm cuối; chuyến cũ không ghi giờ xuất phát thì `null`. */
   deliveryMinutes?: number | null
   cancellation?: { reason?: string | null; fromStatus?: string | null; returned?: number | null } | null
-  loading?: { startedAt?: Moment; completedAt?: Moment; sealNumber?: string | null; sealedAt?: Moment } | null
+  loading?: { startedAt?: Moment; completedAt?: Moment } | null
   overrideReason?: string | null
   stops?: StopDto[] | null
   packages?: { total: number; staged: number; loaded: number; damaged: number; delivered: number; returned: number; withIssue: number } | null
@@ -153,7 +153,7 @@ export type ServerTripReport = {
   deliveryMinutes: number | null
   /** `returned`: số kiện thành Hoàn trả lúc huỷ khi đang vận chuyển, `null` khi máy chủ không ghi. */
   cancellation: { reason: string; inTransit: boolean; returned: number | null } | null
-  loading: { startedAt: string | null; completedAt: string | null; seal: { number: string; at: string | null } | null } | null
+  loading: { startedAt: string | null; completedAt: string | null } | null
   overrideReason: string | null
   stops: ServerReportStop[]
   packages: NonNullable<ReportDto['packages']> | null
@@ -271,7 +271,6 @@ export function serverTripReportOf(dto: ReportDto): ServerTripReport {
       ? {
           startedAt: iso(loading.startedAt),
           completedAt: iso(loading.completedAt),
-          seal: loading.sealNumber ? { number: loading.sealNumber, at: iso(loading.sealedAt) } : null,
         }
       : null,
     overrideReason: dto.overrideReason?.trim() || null,
