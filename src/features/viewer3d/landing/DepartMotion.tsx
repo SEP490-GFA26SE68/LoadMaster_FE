@@ -7,7 +7,7 @@ import { containerSize } from '../scene/units'
 import { truckStandInGeometry } from './diorama-geometry'
 import { ExhaustSmoke } from './ExhaustSmoke'
 import type { StorySource } from './story-clock'
-import { departDistance, departPitch } from './story-timeline'
+import { departPitch, truckOffset } from './story-timeline'
 
 const dummy = new Object3D()
 const NO_RAYCAST = () => null
@@ -39,10 +39,11 @@ export function TruckStandIn({ vehicle }: { vehicle: VehicleConfig }) {
 }
 
 /**
- * Xe rời kho trong khung 3D trang giới thiệu: đọc thời gian chuyện trong `useFrame` và đặt thẳng nhóm xe của `SceneCanvas`
- * (`vehicleRef`) — lăn `departDistance` mét về phía đầu xe, thân chúi `departPitch` quanh điểm chạm đất của trục sau (đầu ngóc lúc
- * vừa lăn bánh) hay trục trước (đầu chúi lúc phanh) để bánh không lún xuống đường; bánh quay đúng quãng đã lăn. Chỉ ghi khi thời gian
- * đổi nên cảnh vẫn nghỉ khi chuyện đứng yên; chuyện tua về đầu thì xe về chỗ cũ. `smoke`: khói ở ống xả (`ExhaustSmoke`).
+ * Xe rời kho rồi lùi vào chỗ dỡ ở điểm 1 trong khung 3D trang giới thiệu: đọc thời gian chuyện trong `useFrame` và đặt thẳng nhóm xe
+ * của `SceneCanvas` (`vehicleRef`) — cách chỗ đứng lúc xếp `truckOffset` mét về phía đầu xe, thân chúi `departPitch` quanh điểm chạm đất
+ * của trục sau (đầu ngóc) hay trục trước (đầu chúi) để bánh không lún xuống đường; bánh quay đúng quãng đã đi (lùi thì quay ngược).
+ * Chỉ ghi khi thời gian đổi nên cảnh vẫn nghỉ khi chuyện đứng yên; chuyện tua về đầu thì xe về chỗ cũ. `smoke`: khói ở ống xả
+ * (`ExhaustSmoke`).
  */
 export function DepartMotion({ vehicleRef, story, vehicle, smoke }: {
   vehicleRef: RefObject<Group | null>
@@ -64,7 +65,7 @@ export function DepartMotion({ vehicleRef, story, vehicle, smoke }: {
     const time = story.time()
     if (time === last.current) return
     last.current = time
-    const distance = departDistance(time), pitch = departPitch(time)
+    const distance = truckOffset(time), pitch = departPitch(time)
     // Quay quanh điểm P (hệ của nhóm) rồi tịnh tiến: vị trí = P − R·P − quãng đã lăn theo x
     const pivotX = pitch < 0 ? pivots.rear : pivots.front
     const cos = Math.cos(pitch), sin = Math.sin(pitch)

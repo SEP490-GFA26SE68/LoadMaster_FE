@@ -1,6 +1,6 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { createStoryClock, type StorySource, type StoryStatus } from '@/features/viewer3d/landing/story-clock'
-import { loadedCount, phaseAt, READY_AT, STORY_MS, type StoryPhase } from '@/features/viewer3d/landing/story-timeline'
+import { loadedCount, phaseAt, READY_AT, STORY_MS, unloadedCount, type StoryPhase } from '@/features/viewer3d/landing/story-timeline'
 
 /** Trang đã mở chừng này ms thì chuyện mới bắt đầu: chữ của phần mở đầu hiện xong trước. */
 const START_AFTER_MS = 1200
@@ -90,6 +90,16 @@ function createDriver() {
       else if (status !== 'idle') clock.hold('user')
       settle()
     },
+    /**
+     * Người xem chọn phương án khác: chuyện chạy lại từ `atMs` (pha xếp) với phương án đó, kể cả khi đang tạm dừng hay đã hết. Giảm
+     * chuyển động thì `settle` đặt thẳng tới lúc xếp xong. Chuyện chưa bắt đầu thì không làm gì.
+     */
+    replayFrom(atMs: number) {
+      if (clock.status() === 'idle') return
+      clock.release('user')
+      clock.seek(atMs)
+      settle()
+    },
     /** Ref callback của khung: một IntersectionObserver giữ chuyện lại khi khung lộ dưới 20 %, chạy tiếp từ 40 %. */
     observe(el: HTMLElement | null) {
       if (!el || typeof IntersectionObserver !== 'function') return
@@ -159,4 +169,9 @@ export function useStoryPhase(driver: StoryDriver): HeroPhase {
 /** Số kiện đang nằm trong thùng theo thời gian của kênh chậm (thẻ chuyến). */
 export function useStoryLoaded(driver: StoryDriver, total: number): number {
   return useSyncExternalStore(driver.subscribe, () => loadedCount(total, driver.snapshot().time))
+}
+
+/** Số kiện đã dỡ ở điểm 1 (trong `total` kiện của điểm) theo kênh chậm. */
+export function useStoryUnloaded(driver: StoryDriver, total: number): number {
+  return useSyncExternalStore(driver.subscribe, () => unloadedCount(total, driver.snapshot().time))
 }

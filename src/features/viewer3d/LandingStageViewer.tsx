@@ -7,7 +7,8 @@ import { DIORAMA_FRAME_POINTS, HERO_INSETS, laneSlots, STAGE_CAMERA, type HeroTi
 import { DioramaScene } from './landing/DioramaScene'
 import type { StorySource } from './landing/story-clock'
 import { DepartMotion, TruckStandIn } from './landing/DepartMotion'
-import { doorsShut, loadedCount, ZONES_AT } from './landing/story-timeline'
+import { doorsShut, loadedCount, STOP_SCENE_AT, UNLOAD_STOP, unloadedCount, ZONES_AT } from './landing/story-timeline'
+import { deriveSceneSemantics } from './operations/scene-semantics'
 import { adaptResult } from './scene-input'
 import type { FramePoints } from './scene/frame-fit'
 import { SceneCanvas } from './scene/SceneCanvas'
@@ -71,12 +72,15 @@ function useRefitOnResize() {
  * Khung 3D "Sân kho kể chuyện" của trang giới thiệu (`features/marketing` tải lười): cùng `SceneCanvas` với Planner, kho và tài xế,
  * vẽ phương án mẫu mà bộ tối ưu mô phỏng vừa tính trên trình duyệt của người xem, giữa một sân kho thu nhỏ (`DioramaScene`). Không
  * thao tác (`interactive={false}`: cuộn trang đi xuyên qua khung hình). Thời gian do trang giữ (`story`): kiện vào làn chờ, mặt quét
- * lúc tối ưu, dải vùng điểm giao từ `ZONES_AT`, rồi từng kiện rời làn vào thùng đúng `loadingOrder`, cuối cùng cửa thùng đóng và xe
- * lăn bánh rời kho (`DepartMotion`: nhóm xe của `SceneCanvas`, khói ở ống xả).
+ * lúc tối ưu, dải vùng điểm giao từ `ZONES_AT`, rồi từng kiện rời làn vào thùng đúng `loadingOrder`, cửa thùng đóng và xe lăn bánh
+ * rời kho (`DepartMotion`: nhóm xe của `SceneCanvas`, khói ở ống xả). Tới điểm 1 (khung tối dần do trang vẽ, `STOP_SCENE_AT` đổi cảnh
+ * lúc tối hẳn): hàng của điểm 1 rõ, hàng các điểm sau mờ đi (`deriveSceneSemantics` dỡ hàng, như màn tài xế), xe lùi vào chỗ dỡ, cửa
+ * mở, kiện của điểm 1 rời thùng đúng `unloadingOrder` và chồng lại ở làn — cùng InstancedMesh của kiện và của làn, không draw call nào
+ * thêm.
  *
  * Ba góc nhìn: `overview` toàn sân kho canh vào phần khung không bị nút, thẻ và Lumo che (`HERO_INSETS[tier]`); `truck` cận xe;
- * `zones` nhìn từ trên, dải vùng kèm nhãn. React chỉ đọc ba giá trị suy ra từ thời gian (bước xếp, đã có dải vùng chưa, cửa đã đóng
- * chưa); hộp của làn, mặt quét, xe lăn bánh và khói đọc thời gian trong `useFrame`.
+ * `zones` nhìn từ trên, dải vùng kèm nhãn. React chỉ đọc vài giá trị suy ra từ thời gian (bước xếp, đã có dải vùng chưa, cửa đã đóng
+ * chưa, đã tới chỗ dỡ chưa, số kiện đã dỡ); hộp của làn, mặt quét, xe chạy và khói đọc thời gian trong `useFrame`.
  */
 export default function LandingStageViewer({ request, result, stopNames, view, tier, story, onReady, onFail }: {
   request: OptimizationRequest
@@ -95,12 +99,19 @@ export default function LandingStageViewer({ request, result, stopNames, view, t
     trip: { id: 'LANDING', stops: stopNames.map((name) => ({ name })) },
     revision: { request, result, ordersRecomputed: false },
   }), [request, result, stopNames])
-  const slots = useMemo(() => laneSlots(request, result), [request, result])
+  const slots = useMemo(() => laneSlots(request, result, UNLOAD_STOP), [request, result])
+  /** Kiện của điểm 1 theo thứ tự rời thùng */
+  const unloadIds = useMemo(() => slots.filter((slot) => slot.unloadRank !== null).sort((a, b) => a.unloadRank! - b.unloadRank!).map((slot) => slot.instanceId), [slots])
   const total = slots.length
   const subscribe = useCallback((listener: () => void) => story.subscribe(listener), [story])
   const step = useSyncExternalStore(subscribe, () => loadedCount(total, story.time()))
   const zonesOn = useSyncExternalStore(subscribe, () => story.time() >= ZONES_AT)
   const doorsClosed = useSyncExternalStore(subscribe, () => doorsShut(story.time()))
+  const atStop = useSyncExternalStore(subscribe, () => story.time() >= STOP_SCENE_AT)
+  const unloaded = useSyncExternalStore(subscribe, () => unloadedCount(unloadIds.length, story.time()))
+  const semantics = useMemo(() => atStop ? deriveSceneSemantics(model.placements, {
+    kind: 'unloading', step: model.placements.length, unloadedIds: new Set(unloadIds.slice(0, unloaded)), focusStop: UNLOAD_STOP,
+  }) : undefined, [atStop, unloaded, unloadIds, model.placements])
   const vehicleRef = useRef<Group>(null)
   const framePoints = useMemo<FramePoints | undefined>(
     () => view === 'overview' ? { points: DIORAMA_FRAME_POINTS, insets: HERO_INSETS[tier] } : undefined, [view, tier])
@@ -109,7 +120,7 @@ export default function LandingStageViewer({ request, result, stopNames, view, t
   return (
     <div ref={observe} className="absolute inset-0">
       <SceneCanvas experience="landing" model={model} placements={model.placements} flags={flags} preset={view === 'zones' ? 'tren' : 'goc-cheo'}
-        selectedId={null} onSelect={noop} step={step} zones={zonesOn ? model.zones : undefined} zoneLabels={view === 'zones'}
+        selectedId={null} onSelect={noop} step={step} semantics={semantics} zones={zonesOn ? model.zones : undefined} zoneLabels={view === 'zones'}
         interactive={false} fov={STAGE_CAMERA.fov} framePoints={framePoints} frameZoom={view === 'overview' ? 1 : STAGE_CAMERA.zoom} fitRequest={fitRequest}
         vehicleRef={vehicleRef} doorsClosed={doorsClosed} vehicleChildren={flags.decoration ? null : <TruckStandIn vehicle={model.vehicle} />}>
         <FirstFrame onFrame={onReady} />

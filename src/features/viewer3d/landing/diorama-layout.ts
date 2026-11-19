@@ -133,16 +133,35 @@ export type LaneSlot = {
   readonly center: Vec3
   /** Kích thước ô [x, y, z] (m) */
   readonly size: Vec3
+  /** Thứ tự rời thùng ở điểm dỡ (0 = ra đầu tiên, theo `unloadingOrder`); `null`: kiện của điểm khác, hay chưa xếp được */
+  readonly unloadRank: number | null
+  /** Chỗ trên chồng hàng đã dỡ ở làn của điểm dỡ (m); bằng `center` khi `unloadRank` là `null` */
+  readonly unloadCenter: Vec3
 }
 
 type Cell = { layer: number; ix: number; iz: number }
 
 /**
+ * Kiện có chỗ trong thùng của điểm giao `stop`, theo thứ tự rời thùng (`unloadingOrder` của phương án): mã instance, ra trước đứng trước.
+ */
+export function unloadQueue(request: OptimizationRequest, result: OptimizationResult, stop: number): string[] {
+  const stopOf = new Map(expandPackages(request.packages).instances.map((instance) => [instance.packageInstanceId, instance.deliveryStop]))
+  return result.placements
+    .filter((placement) => stopOf.get(placement.packageInstanceId) === stop)
+    .sort((a, b) => a.unloadingOrder - b.unloadingOrder || a.packageInstanceId.localeCompare(b.packageInstanceId))
+    .map((placement) => placement.packageInstanceId)
+}
+
+/**
  * Mỗi kiện của lần chạy giữ **đúng một** ô trong làn của điểm giao mình. Kiện của một điểm xếp theo `loadingOrder`, kiện chưa xếp được
  * đứng cuối. Ô có hàng là các ô thấp nhất (tầng đáy trước, nên không hộp nào lơ lửng); kiện lấy ô theo thứ tự bốc: tầng trên trước,
  * rồi x tăng từ phía cầu dẫn, rồi z tiến về phía xe — làn vơi từ trên xuống, kiện chưa xếp được nằm dưới cùng.
+ *
+ * Ở điểm dỡ (`unloadStop`), kiện rời thùng theo `unloadQueue` và chồng lại ở làn của điểm đó: kiện thứ k lấy ô thứ k theo thứ tự chất
+ * — tầng đáy trước, đầu xa xe trước rồi tiến dần về phía xe — nên chồng hàng lớn dần về phía cửa thùng, không hộp nào lơ lửng.
  */
-export function laneSlots(request: OptimizationRequest, result: OptimizationResult): LaneSlot[] {
+export function laneSlots(request: OptimizationRequest, result: OptimizationResult, unloadStop: number): LaneSlot[] {
+  const unloadRankOf = new Map(unloadQueue(request, result, unloadStop).map((id, rank) => [id, rank]))
   const orderOf = new Map(result.placements.map((p) => [p.packageInstanceId, p.loadingOrder]))
   const { instances } = expandPackages(request.packages)
   const missing = instances.find((instance) => !DIORAMA.lanes.some((lane) => lane.stop === instance.deliveryStop))
@@ -158,14 +177,18 @@ export function laneSlots(request: OptimizationRequest, result: OptimizationResu
     for (let layer = 0; layer < layers && filled.length < queue.length; layer++)
       for (let ix = 0; ix < nx && filled.length < queue.length; ix++)
         for (let iz = 0; iz < nz && filled.length < queue.length; iz++) filled.push({ layer, ix, iz })
-    const picks = filled.sort((a, b) => b.layer - a.layer || a.ix - b.ix || a.iz - b.iz)
+    const picks = [...filled].sort((a, b) => b.layer - a.layer || a.ix - b.ix || a.iz - b.iz)
+    const stack = [...filled].sort((a, b) => a.layer - b.layer || b.ix - a.ix || a.iz - b.iz)
     const [cx, cy, cz] = lane.cell
+    const centerOf = ({ layer, ix, iz }: Cell): Vec3 =>
+      [DIORAMA.laneX + (ix + 0.5) * cx, DIORAMA.dock.top + (layer + 0.5) * cy, lane.z[0] + (iz + 0.5) * cz]
     return queue.map(({ id, order }, k): LaneSlot => {
-      const { layer, ix, iz } = picks[k]!
+      const cell = picks[k]!
+      const rank = lane.stop === unloadStop ? unloadRankOf.get(id) ?? null : null
       return {
-        instanceId: id, stop: lane.stop, lane: index, layer, loadingOrder: order,
-        center: [DIORAMA.laneX + (ix + 0.5) * cx, DIORAMA.dock.top + (layer + 0.5) * cy, lane.z[0] + (iz + 0.5) * cz],
-        size: [cx, cy, cz],
+        instanceId: id, stop: lane.stop, lane: index, layer: cell.layer, loadingOrder: order,
+        center: centerOf(cell), size: [cx, cy, cz],
+        unloadRank: rank, unloadCenter: rank === null ? centerOf(cell) : centerOf(stack[rank]!),
       }
     })
   })
@@ -174,4 +197,9 @@ export function laneSlots(request: OptimizationRequest, result: OptimizationResu
 /** Hộp còn ở làn khi kiện chưa vào thùng ở bước `step` (thùng hiện kiện có `loadingOrder` ≤ `step`): mỗi kiện ở đúng một nơi. */
 export function laneVisible(slot: LaneSlot, step: number): boolean {
   return slot.loadingOrder === null || slot.loadingOrder > step
+}
+
+/** Ở chỗ dỡ của điểm dỡ: chỉ hộp của kiện đã rời thùng (`unloaded` kiện đầu của `unloadQueue`) nằm trên chồng hàng ở làn. */
+export function unloadVisible(slot: LaneSlot, unloaded: number): boolean {
+  return slot.unloadRank !== null && slot.unloadRank < unloaded
 }

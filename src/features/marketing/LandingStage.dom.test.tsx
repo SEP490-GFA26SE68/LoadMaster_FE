@@ -151,9 +151,27 @@ test('the sample trip plays once: app chips on the trip card, Lumo narrates each
   expect(within(readout).getByText('366 / 366')).toBeInTheDocument()
   expect(figure()).toHaveAttribute('data-story-status', 'playing')
 
+  // Tới điểm 1: vẫn Đang vận chuyển, nhãn "Tới điểm 1"; rồi dỡ đúng 96 kiện của điểm 1 và đã giao điểm đó
+  play(4000)
+  expect(figure()).toHaveAttribute('data-story-phase', 'arrive')
+  expect(card().getByText('Đang vận chuyển')).toBeInTheDocument()
+  expect(card().getByText('Tới điểm 1')).toBeInTheDocument()
+  expect(pose()).toBe('point')
+  expect(narration()).toContain('Tới điểm đầu tiên.')
+  play(4500)
+  expect(figure()).toHaveAttribute('data-story-phase', 'unload')
+  expect(card().getByText(/^Đang dỡ \d+ \/ 96 ở điểm 1$/)).toBeInTheDocument()
+  expect(pose()).toBe('carry')
+  expect(narration()).toContain('Chỉ hàng của điểm này rời thùng')
+
   play(4000)
   expect(figure()).toHaveAttribute('data-story-status', 'ended')
+  expect(figure()).toHaveAttribute('data-story-phase', 'delivered')
   expect(card().getByText('Đang vận chuyển')).toBeInTheDocument()
+  expect(card().getByText('Đã giao điểm 1')).toBeInTheDocument()
+  expect(pose()).toBe('done')
+  expect(narration()).toContain('Đã giao điểm đầu.')
+  expect(within(readout).getByText('Ở điểm 1 · Siêu thị')).toBeInTheDocument()
   expect(screen.queryByText('MOCK RESULT')).not.toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Xếp lại thùng xe từ đầu' })).toBe(button)
   expect(button).toHaveFocus()
@@ -165,6 +183,47 @@ test('the sample trip plays once: app chips on the trip card, Lumo narrates each
   expect(button).toHaveFocus()
   expect(card().getByText('Đã tính phương án')).toBeInTheDocument()
   expect(screen.queryByText('MOCK RESULT')).not.toBeInTheDocument()
+})
+
+test('one run, three plans: C is shown, best values carry a grey "Best" tag, picking A replays the loading with plan A', async () => {
+  media = installMatchMedia(WIDE)
+  fakeStoryClock()
+  renderStage()
+  const picker = () => screen.getByRole('region', { name: 'Một lần chạy, ba phương án' })
+  expect(within(picker()).getByText('Ba phương án hiện ra khi bộ tối ưu tính xong.')).toBeInTheDocument()
+  expect(within(picker()).queryByRole('button')).not.toBeInTheDocument()
+
+  await waitFor(() => expect(figure()).toHaveAttribute('data-story-status', 'playing'), SLOW)
+  play(4500)
+  const group = screen.getByRole('group', { name: 'Một lần chạy, ba phương án' })
+  const plans = within(group).getAllByRole('button')
+  expect(plans.map((plan) => [plan.getAttribute('aria-label'), plan.getAttribute('aria-pressed')])).toStrictEqual([
+    ['Phương án A — Tối đa thể tích', 'false'], ['Phương án B — Cân bằng tải trục', 'false'], ['Phương án C — Ít dỡ-xếp lại', 'true'],
+  ])
+  // Cùng thể tích và cùng số kiện chưa xếp ở cả ba: không đánh dấu; B cân trục nhất, C không dỡ-xếp lại kiện nào
+  expect(within(group).getAllByText('Tốt nhất')).toHaveLength(2)
+  expect(plans[0]).not.toHaveAccessibleDescription(/Tốt nhất/)
+  expect(plans[1]).toHaveAccessibleDescription(/Chênh tải hai trục.*Tốt nhất/)
+  expect(plans[2]).toHaveAccessibleDescription(/Dỡ-xếp lại\s*0\s*Tốt nhất/)
+
+  play(5000)
+  const readout = screen.getByRole('group', { name: 'Kết quả của phương án mẫu' })
+  expect(within(readout).getByText('Phương án C — Ít dỡ-xếp lại')).toBeInTheDocument()
+  expect(within(readout).getByText('96')).toBeInTheDocument()
+
+  const user = userEvent.setup()
+  await user.click(plans[0]!)
+  expect(figure()).toHaveAttribute('data-plan', 'A')
+  expect(figure()).toHaveAttribute('data-story-phase', 'loading')
+  expect(plans[0]).toHaveAttribute('aria-pressed', 'true')
+  expect(card().getByText('Đang xếp hàng')).toBeInTheDocument()
+  expect(within(readout).getByText('Số liệu của phương án mẫu hiện ra khi xếp xong.')).toBeInTheDocument()
+  play(5500)
+  expect(figure()).toHaveAttribute('data-story-phase', 'ready')
+  expect(within(readout).getByText('Phương án A — Tối đa thể tích')).toBeInTheDocument()
+  // Phương án A: 21 kiện phải dỡ-xếp lại, 16 kiện điểm khác nằm trong vùng của điểm 1
+  expect(within(readout).getByText('21')).toBeInTheDocument()
+  expect(within(readout).getByText('16')).toBeInTheDocument()
 })
 
 test('the story starts only once the frame is 40 % in view, holds below 20 % and goes on again from 40 %', async () => {
@@ -210,6 +269,12 @@ test('with reduced motion the trip is loaded at once: the run figures and the re
   expect(pose()).toBe('done')
   expect(screen.queryByRole('button', { name: /chuyến mẫu|Xếp lại/ })).not.toBeInTheDocument()
   expect(figure().querySelector('figcaption')?.textContent).not.toContain('rời kho')
+
+  // Đổi phương án thì đổi ngay sang thùng đã xếp xong của phương án đó
+  await userEvent.setup().click(screen.getByRole('button', { name: 'Phương án B — Cân bằng tải trục' }))
+  expect(figure()).toHaveAttribute('data-story-status', 'ended')
+  expect(figure()).toHaveAttribute('data-story-phase', 'ready')
+  expect(within(screen.getByRole('group', { name: 'Kết quả của phương án mẫu' })).getByText('Phương án B — Cân bằng tải trục')).toBeInTheDocument()
 })
 
 test('once the trip is loaded the 3D frame is not asked to redraw: scrolling the frame away and back or switching tabs changes nothing', async () => {

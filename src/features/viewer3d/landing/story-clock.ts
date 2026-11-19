@@ -41,6 +41,11 @@ export type StoryClock = {
    * kết thúc ở lúc xếp xong, trước pha xuất phát.
    */
   finish(atMs?: number): void
+  /**
+   * Nhảy tới `atMs` (kẹp trong 0…`durationMs`) và chạy tiếp từ đó — kể cả khi chưa bắt đầu hay đã hết —, giữ nguyên các lý do đang giữ.
+   * Trang giới thiệu dùng khi người xem chọn phương án khác: chuyện quay lại pha xếp với phương án đó.
+   */
+  seek(atMs: number): void
 }
 
 export function createStoryClock(durationMs: number): StoryClock {
@@ -86,6 +91,11 @@ export function createStoryClock(durationMs: number): StoryClock {
       started = true
       finished = true
       elapsed = Math.min(duration, Math.max(0, atMs))
+    },
+    seek(atMs) {
+      started = true
+      finished = false
+      elapsed = Math.min(duration, Math.max(0, Number.isFinite(atMs) ? atMs : 0))
     },
   }
 }

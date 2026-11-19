@@ -127,22 +127,33 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   email, số điện thoại, địa chỉ, mã số thuế đều `null` tới khi chủ sản phẩm đưa số thật, và chân trang không vẽ dòng nào cho giá trị `null`
   — không viết email hay số điện thoại chưa xác nhận vào code.
 - **Khung 3D chuyến mẫu** (`LandingStage`; Three.js chỉ ở `viewer3d/LandingStageViewer` và `viewer3d/landing/`, tải lười): bộ tối ưu mô phỏng tính
-  chuyến mẫu 366 kiện, bốn điểm giao ngay trên trình duyệt (Web Worker khi có), không backend, không credit. **Hai trang công khai không hiện nhãn MOCK RESULT** (quyết định của chủ sản phẩm 19/11/2026): dải số
-  của lần chạy nói số do bộ tối ưu mô phỏng tính. Cảnh là một sân kho thu nhỏ — xe, sàn
+  chuyến mẫu 366 kiện, bốn điểm giao ngay trên trình duyệt (Web Worker khi có), không backend, không credit: **một lần chạy ba phương án**
+  (`optimizeCandidates`, `landing-plans.ts`; xe mẫu khai hai trục theo số của xe seed để có tải trục). **Hai trang công khai không hiện nhãn MOCK RESULT** (quyết định của chủ sản phẩm 19/11/2026): dải số
+  của lần chạy nói số do bộ tối ưu mô phỏng tính. Tính xong thì có bộ chọn **"Một lần chạy, ba phương án"** (`StagePlans`): từ 1.280 px ba thẻ
+  một hàng (chữ cái, mục tiêu, ảnh `components/PlanThumbnail`, lấp đầy, chênh tải hai trục, dỡ-xếp lại, chưa xếp), hẹp hơn là ba nút 56 px kèm
+  số của phương án đang chọn; nút `aria-pressed`, tên "Phương án A — Tối đa thể tích". Giá trị tốt nhất đánh dấu trung tính như màn So sánh
+  (`bestCandidates` ở `lib/candidate-metrics.ts`: in đậm + nhãn xám "Tốt nhất"; số bằng nhau hay thiếu ở một phương án thì không đánh dấu).
+  Mặc định là C; chọn phương án khác thì xe xếp lại theo nó từ pha xếp (`replayFrom(LOADING_AT)`), giảm chuyển động thì đổi ngay sang thùng đầy.
+  Mọi số trên bộ chọn và dải số là của lần chạy. Cảnh là một sân kho thu nhỏ — xe, sàn
   dock, bốn làn chờ theo màu điểm giao, nhà kho — chỉ để minh hoạ, không chữ, không số. Mỗi kiện của lần chạy là **đúng một hộp**: chờ ở làn của điểm
-  giao mình tới bước xếp của nó thì rời làn và hiện trong thùng (`laneSlots`); kiện chưa xếp được ở lại làn. Chuyện chạy **một lần**, khoảng 15 giây
+  giao mình tới bước xếp của nó thì rời làn và hiện trong thùng (`laneSlots`); kiện chưa xếp được ở lại làn. Chuyện chạy **một lần**, khoảng 24 giây
   (`STORY_MS`, kịch bản thuần ở `viewer3d/landing/story-timeline.ts`), theo đồng hồ `story-clock` (mỗi nhịp tiến tối đa 250 ms): nhập kiện 0–2 s →
   tối ưu 2–4 s (dải vùng điểm giao hiện ra) → xếp 4–9 s (`fillStep`, `LANDING_FILL_MS`) → xếp xong, chờ xuất phát → xuất phát 11–15 s: cửa thùng
-  đóng, khói ở ống xả, xe lăn bánh 1,3 m (`DEPART_M`) về phía đầu xe, nhún một nhịp rồi đứng yên. "Xếp lại" đưa xe về chỗ cũ và chạy lại từ đầu.
+  đóng, khói ở ống xả, xe lăn bánh 1,3 m (`DEPART_M`) về phía đầu xe, nhún một nhịp → tới điểm 1 15–19 s: khung tối dần, thẻ "Tới điểm 1 ·
+  <tên>" giữa khung (`StageArrival`, DOM, `aria-hidden` — thẻ chuyến đã nói điều đó), sáng lại, xe lùi vào chỗ dỡ, cửa mở → dỡ 19–23 s: chỉ kiện
+  của điểm 1 rời thùng theo `unloadingOrder` của phương án, thành chồng ở làn của điểm 1; khung 3D dùng `deriveSceneSemantics` kiểu `unloading`
+  (kiện đã dỡ ẩn, điểm khác mờ — không thêm draw call) → đã giao điểm 1 (23–24 s). Dải số thêm hàng "Ở điểm 1" (số kiện của điểm, số kiện phải
+  dời để lấy ra theo `checkStopReorder`, số kiện nằm sai vùng theo `locateInZones` — `firstStopFacts`). "Xếp lại" đưa xe về chỗ cũ và chạy lại từ đầu.
   Bắt đầu khi khung đã vẽ, phương án đã tính, khung lộ ít nhất 40 % và trang đã mở 1,2 giây; giữ lại khi
   khung lộ dưới 20 %, khi tab ẩn, hoặc khi người xem bấm. Giữ lại chỉ dừng khung 3D: câu Lumo đang gõ vẫn gõ xong; chỉ nút tạm dừng làm chữ đứng
   lại. Một nút ba trạng thái "Tạm dừng" / "Tiếp tục" / "Xếp lại" (một phần tử, focus giữ nguyên, bề
   rộng giữ chỗ cho cả ba chữ). Ba góc nhìn: Toàn cảnh, Thùng xe (mặc định dưới 768 px), Vùng điểm giao (có nhãn vùng); camera không tự đổi khi chuyện
   chạy. Thẻ chuyến: hai chip đầu chỉ có ở trang giới thiệu, xám trung tính: "Đang tính phương án mẫu…" (chấm quay), rồi "Đã tính phương án"
   (vòng rỗng: chờ kho; không trùng chip trạng thái nào của ứng dụng). Sau đó là đúng chip của ứng dụng: `StatusBadge` Đang xếp hàng kèm
-  `TripSubStatusTag` "Đang xếp n / 366" và "Xếp xong — chờ xuất phát"; xe rời kho thì `StatusBadge` Đang vận chuyển kèm nhãn trung tính "Đã rời
-  kho" (`landingStage.departed`, chỉ trang giới thiệu dùng); không có chip Đã lập kế hoạch vì chuyến mẫu không có tuyến. Giảm chuyển
-  động: dừng ngay ở xếp xong (`READY_AT`) — xe đứng chỗ cũ, cửa mở, không lăn bánh, không khói, không nút. Lúc tải: hình `DioramaPoster` (SVG, cùng góc nhìn, không số). Không WebGL, không tạo được ngữ cảnh, bật tiết kiệm dữ liệu, lỗi tải, mất ngữ cảnh,
+  `TripSubStatusTag` "Đang xếp n / 366" và "Xếp xong — chờ xuất phát"; xe rời kho thì `StatusBadge` Đang vận chuyển kèm nhãn "Đã rời kho" →
+  "Tới điểm 1" → "Đang dỡ n / tổng ở điểm 1" → "Đã giao điểm 1" (`landingStage.*`, chỉ trang giới thiệu dùng); không có chip Đã lập kế hoạch vì chuyến mẫu không có tuyến. Giảm chuyển
+  động: dừng ngay ở xếp xong (`READY_AT`) — xe đứng chỗ cũ, cửa mở, không lăn bánh, không khói, không dỡ, không nút. Sân kho tốn tối đa ba
+  draw call; khung nghỉ ≤ 40 ở mọi tier (`e2e/landing-story.spec.ts`). Lúc tải: hình `DioramaPoster` (SVG, cùng góc nhìn, không số). Không WebGL, không tạo được ngữ cảnh, bật tiết kiệm dữ liệu, lỗi tải, mất ngữ cảnh,
   hoặc tab đang hiện 15 giây mà chưa có khung hình đầu (tab ẩn không tính giờ): `CargoArtwork` kèm Lumo `point` nói một câu, không số nào; `useStageGate` biết trước thì không tải Three.js, không chạy bộ tối ưu. Cổng chỉ mở khi khung cách khung nhìn không quá 250 px
   **và** trình duyệt rảnh: điện thoại (khung nằm dưới chữ) hay khách mở thẳng một neo bên dưới thì chưa tải Three.js.
   `useStageGate` còn chờ khung vào gần khung nhìn (IntersectionObserver, lề 250 px) rồi mới thử WebGL, tải Three.js và chạy bộ tối ưu; tiêu đề và
@@ -1148,7 +1159,7 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
 
 Ảnh nhỏ, không xoay được thì vẽ bằng SVG đẳng cự qua `lib/isometric.ts` — nhẹ hơn
 nhiều và không kéo Three.js vào chunk. Đang dùng ở: hình thùng xếp dần của hộp thoại chạy tối ưu
-(`optimization/RunFigure`, mục 6 "Không bịa số"), ảnh thu nhỏ màn so sánh phương án, hình minh hoạ hướng đặt kiện ở kho, skeleton lúc
+(`optimization/RunFigure`, mục 6 "Không bịa số"), ảnh thu nhỏ phương án (`components/PlanThumbnail`: màn so sánh phương án, bộ chọn A · B · C của trang giới thiệu), hình minh hoạ hướng đặt kiện ở kho, skeleton lúc
 đang tải Three.js, hình minh hoạ màn đăng nhập và sơ đồ tuyến ở chi tiết chuyến (`trips/RouteDiagram.tsx`, LM-097).
 Hình chỉ cần hình học thì lấy toạ độ mặt qua `boxFacePoints` / `shellFacePoints` và tô bằng class token (`fill-azure-500`), không đưa mã hex
 vào component.

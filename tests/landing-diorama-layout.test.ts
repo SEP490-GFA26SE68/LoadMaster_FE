@@ -1,12 +1,12 @@
 import { describe, expect, test } from 'vitest'
-import { runMockOptimization } from '@/services/optimization'
+import { runMockCandidates } from '@/services/optimization'
 import { LANDING_REQUEST } from '@/features/marketing/landing-sample.mock'
 import { insetFrame, type Insets } from '@/features/viewer3d/scene/frame-fit'
 import type { Vec3 } from '@/features/viewer3d/scene/units'
 import {
-  boxCorners, DIORAMA, DIORAMA_FRAME_POINTS, HERO_INSETS, laneBounds, laneSlots, laneVisible, prismCorners,
+  boxCorners, DIORAMA, DIORAMA_FRAME_POINTS, HERO_INSETS, laneBounds, laneSlots, laneVisible, prismCorners, unloadQueue, unloadVisible,
 } from '@/features/viewer3d/landing/diorama-layout'
-import { DEPART_M } from '@/features/viewer3d/landing/story-timeline'
+import { DEPART_M, UNLOAD_STOP } from '@/features/viewer3d/landing/story-timeline'
 
 /** Bán kính tán cây lớn nhất (`diorama-geometry` `addTrees`). */
 const CANOPY = 0.45
@@ -14,8 +14,10 @@ const CANOPY = 0.45
 const DEPARTED_X = [DIORAMA.truck.x[0] - DEPART_M, DIORAMA.truck.x[1] - DEPART_M] as const
 const slabX = DIORAMA.slab.footprint.map(([x]) => x)
 
-const result = runMockOptimization(LANDING_REQUEST, { clock: () => 0 })
-const slots = laneSlots(LANDING_REQUEST, result)
+const run = runMockCandidates(LANDING_REQUEST, { clock: () => 0 })
+/** Phương án C: khung 3D vẽ phương án này khi mở trang. */
+const result = run.plans[2]!.result
+const slots = laneSlots(LANDING_REQUEST, result, UNLOAD_STOP)
 
 describe('lane slots', () => {
   test('every package instance of the run has exactly one slot, in the lane of its stop', () => {
@@ -69,6 +71,38 @@ describe('lane slots', () => {
     }
     expect(slots.every((slot) => slot.loadingOrder !== null)).toBe(true)
     expect(new Set(result.placements.map((p) => p.loadingOrder))).toEqual(new Set(Array.from({ length: 366 }, (_, i) => i + 1)))
+  })
+})
+
+describe('unloading at stop 1', () => {
+  test.each(run.plans.map((plan) => [plan.objective, plan.result] as const))(
+    '%s: only stop-1 boxes leave the truck, in the plan’s unloading order, each onto its own cell of the stop-1 lane', (_, plan) => {
+      const own = laneSlots(LANDING_REQUEST, plan, UNLOAD_STOP)
+      const queue = unloadQueue(LANDING_REQUEST, plan, UNLOAD_STOP)
+      const orders = new Map(plan.placements.map((p) => [p.packageInstanceId, p.unloadingOrder]))
+      expect(queue).toHaveLength(96)
+      for (let k = 1; k < queue.length; k++) expect(orders.get(queue[k]!)!).toBeGreaterThan(orders.get(queue[k - 1]!)!)
+      const ranked = own.filter((slot) => slot.unloadRank !== null)
+      expect(ranked.every((slot) => slot.stop === UNLOAD_STOP && slot.lane === 0)).toBe(true)
+      expect(ranked.map((slot) => slot.instanceId).sort()).toEqual([...queue].sort())
+      for (const slot of ranked) expect(queue[slot.unloadRank!]).toBe(slot.instanceId)
+      expect(new Set(ranked.map((slot) => slot.unloadCenter.map((v) => v.toFixed(3)).join(','))).size).toBe(96)
+      for (const slot of own) if (slot.unloadRank === null) expect(slot.unloadCenter).toEqual(slot.center)
+    })
+
+  test('the unloaded stack grows from the bottom, never floating, and only unloaded boxes are on it', () => {
+    const lane = slots.filter((slot) => slot.lane === 0)
+    for (let unloaded = 0; unloaded <= 96; unloaded += 5) {
+      const shown = lane.filter((slot) => unloadVisible(slot, unloaded))
+      expect(shown).toHaveLength(unloaded)
+      const cellBelow = (slot: (typeof lane)[number]) => [slot.unloadCenter[0], slot.unloadCenter[1] - DIORAMA.lanes[0]!.cell[1], slot.unloadCenter[2]]
+      for (const slot of shown) {
+        if (slot.unloadCenter[1] < DIORAMA.lanes[0]!.cell[1]) continue
+        const [x, y, z] = cellBelow(slot)
+        expect(shown.some((other) => Math.abs(other.unloadCenter[0] - x!) < 1e-9 && Math.abs(other.unloadCenter[1] - y!) < 1e-9 && Math.abs(other.unloadCenter[2] - z!) < 1e-9)).toBe(true)
+      }
+    }
+    expect(slots.filter((slot) => slot.lane !== 0).some((slot) => unloadVisible(slot, 366))).toBe(false)
   })
 })
 

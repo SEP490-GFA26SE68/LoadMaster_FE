@@ -3,17 +3,18 @@ import { attachJson, expect, test } from './fixtures'
 import { drawnFrames, R3F_DEPS, waitDemandIdle, type R3FModule } from './viewer-helpers'
 
 /**
- * Khung 3D "Sân kho kể chuyện" của trang giới thiệu, chạy thật trên SwiftShader: phương án mẫu tính ngay trên trình duyệt, chuyện 15 giây
- * chạy một lần tới lúc xe rời kho (xếp xong, đóng cửa, lăn bánh); nút ba trạng thái dừng được cả số trên thẻ chuyến lẫn khung hình; giảm
- * chuyển động cho thấy ngay trạng thái xếp xong (không lăn bánh); số của "Con số kiểm được" lăn rồi dừng đúng chuỗi; neo `#lien-he` hiện
- * tiêu đề ngay; điện thoại 390 px không cuộn ngang. Scene R3F
+ * Khung 3D "Sân kho kể chuyện" của trang giới thiệu, chạy thật trên SwiftShader: một lần chạy tối ưu ngay trên trình duyệt ra ba
+ * phương án, chuyện chừng 24 giây chạy một lần tới lúc đã giao điểm 1 (xếp xong, lăn bánh, tới điểm 1, dỡ hàng của điểm đó); chọn phương án
+ * khác thì xếp lại theo nó; nút ba trạng thái dừng được cả số trên thẻ chuyến lẫn khung hình; giảm chuyển động cho thấy ngay trạng thái xếp
+ * xong (không lăn bánh); số của "Con số kiểm được" lăn rồi dừng đúng chuỗi; neo `#lien-he` hiện tiêu đề ngay; điện thoại 390 px không cuộn
+ * ngang, bộ chọn là ba nút cao 56 px. Scene R3F
  * đọc qua `_roots` như các suite viewer — trang giới thiệu không có bảng đo của `?debug` (`?debug&quality=` chỉ khoá tier), nên số draw
  * call đọc thẳng từ renderer.
  */
 test.use({ collectConsoleErrors: true })
 
 const STAGE = 'figure[data-story-status]'
-/** Chuyện dài 15 giây nhưng mỗi khung hình chỉ tiến tối đa 250 ms: SwiftShader vẽ chậm thì chuyện chạy chậm theo. */
+/** Chuyện dài chừng 24 giây nhưng mỗi khung hình chỉ tiến tối đa 250 ms: SwiftShader vẽ chậm thì chuyện chạy chậm theo. */
 const STORY_WAIT_MS = 120_000
 /**
  * Trần draw call của khung nghỉ ở góc Toàn cảnh: max(40, cảnh khi chưa có sân kho + 3). Đo ngày 20/10/2026 trên SwiftShader, chuyện đã
@@ -99,10 +100,12 @@ test.describe('landing story at 1440 × 900', () => {
     await expect(readout).toContainText('366 / 366')
     await expect(readout).not.toContainText('Số liệu của phương án mẫu hiện ra khi xếp xong.')
     expect(await layoutHeight(readout)).toBe(pendingHeight)
-    // Chuyện kết ở pha xe rời kho: thẻ chuyến là Đang vận chuyển kèm nhãn "Đã rời kho"
-    await expect(stage).toHaveAttribute('data-story-phase', 'depart')
+    // Chuyện kết ở điểm 1 đã giao: thẻ chuyến vẫn Đang vận chuyển (còn ba điểm) kèm nhãn "Đã giao điểm 1"; dải số có hàng của điểm 1
+    await expect(stage).toHaveAttribute('data-story-phase', 'delivered')
     await expect(stage.getByText('Đang vận chuyển', { exact: true })).toBeVisible()
-    await expect(stage.getByText('Đã rời kho', { exact: true })).toBeVisible()
+    await expect(stage.getByText('Đã giao điểm 1', { exact: true })).toBeVisible()
+    await expect(readout.locator('[data-stage-stop]')).toContainText('Ở điểm 1 · Siêu thị')
+    await expect(stage.locator('[data-stage-arrival]')).toBeHidden()
     await expect(stage.getByRole('button', { name: 'Xếp lại thùng xe từ đầu', exact: true })).toBeVisible()
 
     await expect(stage.locator('[data-view]')).toHaveAttribute('data-view', 'overview')
@@ -157,7 +160,28 @@ test.describe('landing story at 1440 × 900', () => {
     await expect(stage.getByRole('button', { name: 'Xếp lại thùng xe từ đầu', exact: true })).toBeFocused()
     await expect(stage.locator('[data-stage-readout]')).toContainText('366 / 366')
     await expect(stage.getByText('Đang vận chuyển', { exact: true })).toBeVisible()
-    await expect(stage.getByText('Đã rời kho', { exact: true })).toBeVisible()
+    await expect(stage.getByText('Đã giao điểm 1', { exact: true })).toBeVisible()
+    expect(browserErrors).toStrictEqual([])
+  })
+
+  test('one run gives three plans side by side; picking plan A loads the truck again with plan A and plays on to the end', async ({ page, browserErrors }) => {
+    await page.goto('/gioi-thieu')
+    const stage = page.locator(STAGE)
+    const plans = page.getByRole('group', { name: 'Một lần chạy, ba phương án', exact: true })
+    await expect(plans.getByRole('button')).toHaveCount(3, { timeout: STORY_WAIT_MS })
+    await expect(plans.getByRole('button', { name: 'Phương án C — Ít dỡ-xếp lại', exact: true })).toHaveAttribute('aria-pressed', 'true')
+    const tops = await plans.getByRole('button').evaluateAll((buttons) => buttons.map((button) => Math.round(button.getBoundingClientRect().top)))
+    expect(new Set(tops).size).toBe(1)
+    await expect(plans.getByText('Tốt nhất', { exact: true })).toHaveCount(2)
+
+    const planA = plans.getByRole('button', { name: 'Phương án A — Tối đa thể tích', exact: true })
+    await planA.click()
+    await expect(planA).toHaveAttribute('aria-pressed', 'true')
+    await expect(stage).toHaveAttribute('data-plan', 'A')
+    await expect(stage).toHaveAttribute('data-story-status', 'ended', { timeout: STORY_WAIT_MS })
+    await expect(stage).toHaveAttribute('data-story-phase', 'delivered')
+    await expect(stage.locator('[data-stage-readout]')).toContainText('Phương án A — Tối đa thể tích')
+    expect(await scrollsSideways(page)).toBe(false)
     expect(browserErrors).toStrictEqual([])
   })
 
@@ -174,6 +198,11 @@ test.describe('landing story at 1440 × 900', () => {
     await waitDemandIdle(page, 500)
     await expect(stage.getByRole('button', { name: /chuyến mẫu|Xếp lại/ })).toHaveCount(0)
     await expect(page.locator('[data-motion="on"]')).toHaveCount(0)
+    // Đổi phương án: thùng của phương án đó xếp xong ngay
+    await stage.getByRole('button', { name: 'Phương án B — Cân bằng tải trục', exact: true }).click()
+    await expect(stage).toHaveAttribute('data-plan', 'B')
+    await expect(stage).toHaveAttribute('data-story-phase', 'ready')
+    await expect(readout).toContainText('Phương án B — Cân bằng tải trục')
     expect(browserErrors).toStrictEqual([])
   })
 
@@ -215,6 +244,12 @@ test('@phone at 390 px the page never scrolls sideways, the truck view is the de
   await stage.locator('[data-view]').scrollIntoViewIfNeeded()
   await expect(stage).toHaveAttribute('data-story-status', 'ended', { timeout: STORY_WAIT_MS })
   await expect(stage.locator('[data-stage-readout]')).toContainText('366 / 366')
+  // Bộ chọn trên điện thoại: ba nút cao ít nhất 56 px, số của phương án đang chọn nằm dưới
+  const plans = page.getByRole('group', { name: 'Một lần chạy, ba phương án', exact: true })
+  const heights = await plans.getByRole('button').evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().height))
+  expect(heights).toHaveLength(3)
+  for (const height of heights) expect(height).toBeGreaterThanOrEqual(56)
+  await expect(stage.locator('[data-stage-plan-figures]')).toContainText('Dỡ-xếp lại')
   expect(await scrollsSideways(page)).toBe(false)
   expect(browserErrors).toStrictEqual([])
 })

@@ -1,19 +1,25 @@
 import { lazy, Suspense, useCallback, useEffect, useId, useMemo, useState } from 'react'
 import { CargoArtwork } from '@/components/CargoArtwork'
+import { PLAN_LABELS, type PlanLabel } from '@/domain/models'
 import type { StageView } from '@/features/viewer3d/landing/diorama-layout'
+import { LOADING_AT } from '@/features/viewer3d/landing/story-timeline'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { useFormat, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { DioramaPoster } from './DioramaPoster'
-import { StageReadout, StageRoute, StageViews, StoryButton } from './LandingStageParts'
+import { StageRoute, StageViews, StoryButton } from './LandingStageParts'
+import { StageArrival } from './StageArrival'
 import { StageBoundary } from './StageBoundary'
+import { StagePlans } from './StagePlans'
+import { StageReadout } from './StageReadout'
 import { StoryNarrator, type NarratorLine } from './StoryNarrator'
 import { StoryTripCard, StoryTripCardLive } from './StoryTripCard'
+import { DEFAULT_OBJECTIVE, landingPlans } from './landing-plans'
 import { LANDING_REQUEST, LANDING_STOP_COUNT } from './landing-sample.mock'
 import { useHeroFit } from './useHeroFit'
 import { useLandingSample } from './useLandingSample'
 import { useStageGate } from './useStageGate'
-import { useStoryDriver, useStoryPhase, useStoryStatus } from './useStoryDriver'
+import { useStoryDriver, useStoryPhase, useStoryStatus, type HeroPhase } from './useStoryDriver'
 
 const loadViewer = () => import('@/features/viewer3d/LandingStageViewer')
 const LandingStageViewer = lazy(loadViewer)
@@ -31,6 +37,10 @@ const PACKAGE_COUNT = LANDING_REQUEST.packages.reduce((count, line) => count + l
 const DOOR_CUE = 'max-sm:[&_[data-rear-door-cue]]:hidden [&:not([data-view=truck])_[data-rear-door-cue]]:hidden'
 /** Khung cao 600 px từ 1.440 px, 560 px tới 1.439 px; hẹp hơn theo tỉ lệ. */
 const BOX = { wide: 'h-140 min-[90rem]:h-150', medium: 'aspect-[16/10]', narrow: 'aspect-[4/3]' } as const
+/** Pha mà dải số có số: từ lúc xếp xong (số ở lại khi xe rời kho, tới và dỡ ở điểm 1). */
+const LOADED = new Set<HeroPhase>(['ready', 'depart', 'arrive', 'unload', 'delivered'])
+/** Pha chưa có ba phương án để chọn: bộ tối ưu chưa tính xong. */
+const COMPUTING = new Set<HeroPhase>(['preparing', 'intake', 'optimize'])
 
 /** Không có WebGL, tiết kiệm dữ liệu, tải hay tính hỏng: hình minh hoạ SVG kèm câu không nói gì về lần chạy, và Lumo nói vì sao. */
 function StageFallback() {
@@ -50,10 +60,12 @@ function StageFallback() {
 /**
  * Khung 3D "Sân kho kể chuyện" của phần mở đầu trang giới thiệu. Lần vẽ đầu là ảnh tĩnh của sân kho (`DioramaPoster`); khi trình duyệt
  * rảnh và khung đã tới gần khung nhìn (`useStageGate`), trang tải bộ máy 3D của ứng dụng và cho bộ tối ưu mô phỏng tính chuyến mẫu ngay
- * trên máy người xem, rồi khung hình thay ảnh tĩnh và chuyện 15 giây chạy một lần (`useStoryDriver`): kiện vào làn → tối ưu → xếp → xếp
- * xong → cửa thùng đóng, xe nổ máy và lăn bánh rời kho (giảm chuyển động: dừng ở xếp xong). Quanh khung: thẻ chuyến với chip của ứng
- * dụng, Lumo dẫn chuyện, nút ba trạng thái, ba góc nhìn, hàng "Thứ tự giao" và dải số của lần chạy (MOCK RESULT, chỉ khi xếp xong). Từ
- * 1.280 px thẻ, nút và Lumo nằm đè trên khung; hẹp hơn thì thẻ ở trên, Lumo ở dưới khung. Không có WebGL hay hỏng: `StageFallback`.
+ * trên máy người xem — một lần chạy, ba phương án A · B · C —, rồi khung hình thay ảnh tĩnh và chuyện chừng 24 giây chạy một lần
+ * (`useStoryDriver`): kiện vào làn → tối ưu → xếp → xếp xong → cửa thùng đóng, xe lăn bánh rời kho → tới điểm 1 (`StageArrival`) → dỡ
+ * đúng hàng của điểm 1 → đã giao điểm 1 (giảm chuyển động: dừng ở xếp xong). Khung vẽ phương án C; bộ chọn `StagePlans` đổi phương án và
+ * cho chuyện chạy lại từ pha xếp. Quanh khung: thẻ chuyến với chip của ứng dụng, Lumo dẫn chuyện, nút ba trạng thái, ba góc nhìn, hàng
+ * "Thứ tự giao", bộ chọn và dải số của phương án đang xem (chỉ khi xếp xong; không MOCK RESULT trên trang công khai). Từ 1.280 px thẻ,
+ * nút và Lumo nằm đè trên khung; hẹp hơn thì thẻ ở trên, Lumo ở dưới khung. Không có WebGL hay hỏng: `StageFallback`.
  */
 export function LandingStage() {
   const t = useT()
@@ -63,7 +75,10 @@ export function LandingStage() {
   const [figure, setFigure] = useState<HTMLElement | null>(null)
   const gate = useStageGate(figure)
   const sample = useLandingSample(gate === 'go')
-  const result = sample.data
+  const plans = useMemo(() => (sample.data ? landingPlans(LANDING_REQUEST, sample.data) : undefined), [sample.data])
+  const [picked, setPicked] = useState<PlanLabel>(PLAN_LABELS[DEFAULT_OBJECTIVE])
+  const plan = plans?.find((candidate) => candidate.id === picked)
+  const result = plan?.result
   const [failed, setFailed] = useState(false)
   const [frameReady, setFrameReady] = useState(false)
   const [chosen, setChosen] = useState<StageView | null>(null)
@@ -80,6 +95,10 @@ export function LandingStage() {
   )
   const handleReady = useCallback(() => setFrameReady(true), [])
   const handleError = useCallback(() => setFailed(true), [])
+  const handlePick = useCallback((label: PlanLabel) => {
+    setPicked(label)
+    driver.replayFrom(LOADING_AT)
+  }, [driver])
 
   // Tải phần 3D song song với lần chạy tối ưu; lỗi tải để `lazy` báo lại cho `StageBoundary`.
   useEffect(() => {
@@ -107,21 +126,22 @@ export function LandingStage() {
   const going = gate === 'go'
   const placed = result?.placements.length ?? 0
   const line: NarratorLine | null = !going ? null : phase === 'ready' && result && placed < PACKAGE_COUNT ? 'readyPartial' : phase
-  // Số của lần chạy hiện từ lúc xếp xong và ở lại khi xe rời kho
-  const loaded = phase === 'ready' || phase === 'depart'
+  // Số của phương án hiện từ lúc xếp xong và ở lại tới hết chuyện; ba phương án chọn được từ lúc bộ tối ưu tính xong
+  const loaded = LOADED.has(phase)
+  const choosable = plans && !COMPUTING.has(phase) ? plans : null
   const views = <StageViews view={view} onChange={setChosen} layout={tier === 'narrow' ? 'segmented' : 'inline'} className={tier === 'narrow' ? 'mt-3 w-full' : undefined} />
   const button = reducedMotion ? null : <StoryButton status={status} onToggle={toggle} compact={tier === 'narrow'} />
   // Chỉ nút tạm dừng làm chữ đứng lại; khung bị cuộn khuất thì câu đang gõ vẫn gõ xong (tối đa 1 giây), pha giữ nguyên nên câu không đổi
   const narrator = <StoryNarrator line={line} paused={status === 'paused'} layout={wide ? 'overlay' : 'row'} preload={going} />
   // Thẻ chuyến: từ 1.280 px nằm đè góc trên phải khung; hẹp hơn nằm trên khung — lúc chưa tải phần 3D vẫn giữ chỗ (trong suốt)
   const card = going ? (
-    <StoryTripCardLive driver={driver} resolved={result !== undefined} placed={placed} total={PACKAGE_COUNT} titleId={titleId} compact={wide}
-      className={wide ? 'absolute top-4 right-4 w-72' : 'mb-3 md:max-w-105'} />
+    <StoryTripCardLive driver={driver} resolved={result !== undefined} placed={placed} total={PACKAGE_COUNT} stopTotal={plan?.firstStop.count ?? 0}
+      titleId={titleId} compact={wide} className={wide ? 'absolute top-4 right-4 w-72' : 'mb-3 md:max-w-105'} />
   ) : wide ? null : <StoryTripCard phase="preparing" recorded={0} total={PACKAGE_COUNT} className="invisible mb-3 md:max-w-105" />
 
   return (
     <figure ref={setFigure} aria-labelledby={going ? titleId : undefined} aria-describedby={captionId} data-story-status={status} data-story-phase={phase}
-      data-paused={status === 'paused' ? '' : undefined} className="m-0 flex min-w-0 flex-col">
+      data-paused={status === 'paused' ? '' : undefined} data-plan={picked} className="m-0 flex min-w-0 flex-col">
       {wide ? null : card}
       <div className="relative">
         <span aria-hidden className="landing-stage-glow" />
@@ -140,6 +160,7 @@ export function LandingStage() {
           <DioramaPoster view={view} insets={insets}
             className={cn('pointer-events-none absolute inset-0 transition-opacity duration-(--dur-md) ease-standard motion-reduce:transition-none', frameReady && 'opacity-0')} />
           <div className="pointer-events-none absolute inset-0">
+            {going ? <StageArrival story={story} stopName={stopNames[0]!} /> : null}
             {tier === 'narrow' ? (
               <div className="pointer-events-auto absolute top-4 right-4">{button}</div>
             ) : (
@@ -158,7 +179,8 @@ export function LandingStage() {
       {tier === 'narrow' ? views : null}
       {wide ? null : <div className="mt-3">{narrator}</div>}
       <StageRoute stopNames={stopNames} className="mt-4" />
-      <StageReadout result={loaded && result ? result : null} total={PACKAGE_COUNT} className="mt-3" />
+      <StagePlans plans={choosable} selected={picked} onSelect={handlePick} layout={tier === 'narrow' ? 'segmented' : 'cards'} total={PACKAGE_COUNT} className="mt-3" />
+      <StageReadout plan={loaded && plan ? plan : null} total={PACKAGE_COUNT} stopName={stopNames[0]!} className="mt-3" />
       <figcaption id={captionId} className="sr-only">
         {t('landing.stage.caption', { count: format.integer(PACKAGE_COUNT), stops: format.integer(LANDING_STOP_COUNT) })}
         {reducedMotion ? null : ` ${t('landingStage.caption')}`}

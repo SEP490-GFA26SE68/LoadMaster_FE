@@ -10,8 +10,8 @@ import type { HeroPhase } from './useStoryDriver'
 export type NarratorLine = HeroPhase | 'readyPartial' | 'fallback'
 
 /**
- * Mỗi câu một tư thế, theo nghĩa cố định của tư thế (AGENTS "Thương hiệu"): máy tính bảng lúc tính, mang kiện lúc nhập, chỉ lúc xếp và
- * lúc xe rời kho.
+ * Mỗi câu một tư thế, theo nghĩa cố định của tư thế (AGENTS "Thương hiệu"): máy tính bảng lúc tính, mang kiện lúc nhập và lúc dỡ, chỉ
+ * lúc xếp, lúc xe rời kho và lúc tới điểm giao, xong việc khi xếp xong và khi đã giao.
  */
 const LINES = {
   preparing: ['tablet', 'landingStory.lumo.hero.preparing'],
@@ -21,10 +21,15 @@ const LINES = {
   ready: ['done', 'landingStory.lumo.hero.ready'],
   readyPartial: ['point', 'landingStory.lumo.hero.readyPartial'],
   depart: ['point', 'landingStory.lumo.hero.depart'],
+  arrive: ['point', 'landingStory.lumo.hero.arrive'],
+  unload: ['carry', 'landingStory.lumo.hero.unload'],
+  delivered: ['done', 'landingStory.lumo.hero.delivered'],
   fallback: ['point', 'landingStory.lumo.hero.fallback'],
 } as const satisfies Record<NarratorLine, readonly [LumoPose, MessageKey]>
 
-const STORY_LINES = ['preparing', 'intake', 'optimize', 'loading', 'ready', 'readyPartial', 'depart'] as const satisfies readonly NarratorLine[]
+const STORY_LINES = [
+  'preparing', 'intake', 'optimize', 'loading', 'ready', 'readyPartial', 'depart', 'arrive', 'unload', 'delivered',
+] as const satisfies readonly NarratorLine[]
 /** Tư thế của lời dẫn, tải sẵn khi khung 3D bắt đầu tải để lúc đổi pha không chờ ảnh. */
 const HERO_POSES = ['tablet', 'carry', 'point', 'done'] as const satisfies readonly LumoPose[]
 /** 96 px dưới 768 · 128 px tới 1.439 · 144 px từ 1.440 (không quá nửa cạnh ảnh 512 px). Hình dự phòng: 96 · 128. */

@@ -4,10 +4,14 @@ import { useFormat, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { LANDING_STOP_COUNT } from './landing-sample.mock'
 import { PUBLIC_TOUCH_TAG } from './public-chrome'
-import { useStoryLoaded, useStoryPhase, type StoryDriver } from './useStoryDriver'
+import { UNLOAD_STOP } from '@/features/viewer3d/landing/story-timeline'
+import { useStoryLoaded, useStoryPhase, useStoryUnloaded, type StoryDriver } from './useStoryDriver'
 
-/** Giai đoạn mà thẻ kể: đang tính · đã tính phương án · kho đang xếp · xếp xong · xe đã rời kho. */
-export type TripCardPhase = 'preparing' | 'computed' | 'loading' | 'ready' | 'depart'
+/** Giai đoạn mà thẻ kể: đang tính · đã tính phương án · kho đang xếp · xếp xong · xe đã rời kho · tới điểm 1 · đang dỡ · đã giao điểm 1. */
+export type TripCardPhase = 'preparing' | 'computed' | 'loading' | 'ready' | 'depart' | 'arrive' | 'unload' | 'delivered'
+
+/** Pha xe đang chạy: chip Đang vận chuyển. */
+const ON_ROAD = new Set<TripCardPhase>(['depart', 'arrive', 'unload', 'delivered'])
 
 type TripCardProps = {
   phase: TripCardPhase
@@ -15,6 +19,8 @@ type TripCardProps = {
   recorded: number
   /** Số kiện của yêu cầu mẫu. */
   total: number
+  /** Điểm dừng dỡ hàng của chuyện: số điểm, số kiện của điểm đã dỡ và tổng số kiện của điểm. */
+  stop?: { number: number; done: number; total: number }
   /** `id` của tên thẻ: khung 3D lấy làm tên. */
   titleId?: string
   /** Chip luôn xuống hàng riêng dưới tên: thẻ hẹp nằm đè trên khung (288 px) không đổi chiều cao khi chip đổi. */
@@ -29,19 +35,25 @@ const TOUCH = PUBLIC_TOUCH_TAG
  * Thẻ "Chuyến mẫu" nằm đè trên khung 3D (từ 1.280 px) hay ngay trên khung (hẹp hơn), nền tối đặc. Chip đầu "Đã tính phương án" chỉ có ở
  * trang giới thiệu (`landing.stage.computed`): tông trung tính, chấm vòng rỗng — chờ người kế tiếp, không trùng trạng thái nào của ứng dụng.
  * Sau đó là chip của chính ứng dụng: `StatusBadge` Đang xếp hàng kèm dòng phụ "Đang xếp n / 366" rồi "Xếp xong — chờ xuất phát"; xe rời
- * kho thì Đang vận chuyển kèm nhãn trung tính "Đã rời kho" (`landingStage.departed`, chỉ trang giới thiệu dùng). Không có
+ * kho thì Đang vận chuyển kèm nhãn trung tính "Đã rời kho", "Tới điểm 1", "Đang dỡ n / 96 ở điểm 1" rồi nhãn xanh lá "Đã giao điểm 1"
+ * (`landingStage.*`, chỉ trang giới thiệu dùng — chuyến vẫn Đang vận chuyển vì còn ba điểm). Không có
  * chip Đã lập kế hoạch: chuyến mẫu không có tuyến, cũng không được duyệt. Không số kết quả nào nên không có MOCK RESULT: số kiện, số điểm
  * giao là của yêu cầu mẫu, n là số hộp đang vẽ trong thùng.
  * Chiều cao không đổi theo giai đoạn: dưới 768 px (và khi `compact`) chip xuống hàng riêng — chip "đang tính" dài nhất không vừa cạnh tên.
  */
-export function StoryTripCard({ phase, recorded, total, titleId, compact = false, className }: TripCardProps) {
+export function StoryTripCard({ phase, recorded, total, stop, titleId, compact = false, className }: TripCardProps) {
   const t = useT()
   const format = useFormat()
   const chip =
     phase === 'preparing' ? <Badge dot="spin" className={TOUCH}>{t('landing.stage.preparing')}</Badge>
       : phase === 'computed' ? <Badge dot="ring" className={TOUCH}>{t('landing.stage.computed')}</Badge>
-        : <StatusBadge status={phase === 'depart' ? 'IN_TRANSIT' : 'LOADING'} className={TOUCH} />
+        : <StatusBadge status={ON_ROAD.has(phase) ? 'IN_TRANSIT' : 'LOADING'} className={TOUCH} />
   const sub = phase === 'loading' ? { kind: 'loading' as const, recorded, total } : phase === 'ready' ? { kind: 'loaded' as const } : null
+  const number = format.integer(stop?.number ?? 1)
+  const road = phase === 'depart' ? t('landingStage.departed')
+    : phase === 'arrive' ? t('landingStage.arrived', { number })
+      : phase === 'unload' ? t('landingStage.unloading', { number, done: format.integer(stop?.done ?? 0), total: format.integer(stop?.total ?? 0) })
+        : phase === 'delivered' ? t('landingStage.delivered', { number }) : null
   return (
     <div className={cn('rounded-lg border border-border-dark bg-panel-dark p-3.5', className)}>
       <div className={cn('flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5', compact ? 'flex-col items-start' : 'max-md:flex-col max-md:items-start')}>
@@ -56,8 +68,8 @@ export function StoryTripCard({ phase, recorded, total, titleId, compact = false
         <span className="whitespace-nowrap">{t('landing.stage.load', { count: format.integer(total), stops: format.integer(LANDING_STOP_COUNT) })}</span>
       </p>
       <div className="mt-2.5 flex min-h-5 items-center pointer-coarse:min-h-7">
-        {phase === 'depart'
-          ? <Badge shape="tag" className={TOUCH}>{t('landingStage.departed')}</Badge>
+        {road
+          ? <Badge shape="tag" tone={phase === 'delivered' ? 'success' : 'neutral'} className={cn('tabular-nums', TOUCH)}>{road}</Badge>
           : <TripSubStatusTag sub={sub} className={cn('tabular-nums', TOUCH)} />}
       </div>
     </div>
@@ -68,19 +80,23 @@ export function StoryTripCard({ phase, recorded, total, titleId, compact = false
  * Thẻ chuyến chạy theo chuyện: đọc kênh chậm của `useStoryDriver` (tối đa 10 lần mỗi giây) nên chỉ thẻ này vẽ lại theo tiến độ xếp. `n`
  * không vượt số kiện có chỗ trong phương án — đúng số hộp khung 3D đang vẽ trong thùng.
  */
-export function StoryTripCardLive({ driver, resolved, placed, total, titleId, compact, className }: {
+export function StoryTripCardLive({ driver, resolved, placed, total, stopTotal, titleId, compact, className }: {
   driver: StoryDriver
   /** Phương án mẫu đã tính xong. */
   resolved: boolean
   /** Số kiện có chỗ trong phương án (`result.placements.length`). */
   placed: number
   total: number
+  /** Số kiện của điểm 1 trong phương án đang xem (đúng số hộp khung 3D dỡ ra). */
+  stopTotal: number
   titleId?: string
   compact?: boolean
   className?: string
 }) {
   const story = useStoryPhase(driver)
   const loaded = useStoryLoaded(driver, total)
-  const phase: TripCardPhase = !resolved ? 'preparing' : story === 'loading' || story === 'ready' || story === 'depart' ? story : 'computed'
-  return <StoryTripCard phase={phase} recorded={Math.min(loaded, placed)} total={total} titleId={titleId} compact={compact} className={className} />
+  const unloaded = useStoryUnloaded(driver, stopTotal)
+  const phase: TripCardPhase = !resolved ? 'preparing' : story === 'preparing' || story === 'intake' || story === 'optimize' ? 'computed' : story
+  return <StoryTripCard phase={phase} recorded={Math.min(loaded, placed)} total={total} stop={{ number: UNLOAD_STOP, done: unloaded, total: stopTotal }}
+    titleId={titleId} compact={compact} className={className} />
 }

@@ -6,10 +6,12 @@ import { stopColor } from '@/lib/stops'
 import { readToken } from '@/lib/tokens'
 import { applyCargoSurface, createCargoSurface } from '../scene/cargo-surface'
 import { containerSize } from '../scene/units'
-import { laneVisible, type LaneSlot } from './diorama-layout'
+import { laneVisible, unloadVisible, type LaneSlot } from './diorama-layout'
 import { dioramaBaseGeometry, dioramaPalette, laneBoxGeometry } from './diorama-geometry'
 import type { StorySource } from './story-clock'
-import { LANE_DROP_MS, laneArrival, laneDrop, loadedCount, sweepFade, sweepX } from './story-timeline'
+import {
+  LANE_DROP_MS, laneArrival, laneDrop, loadedCount, STOP_SCENE_AT, sweepFade, sweepX, UNLOAD_AT, unloadArrival, unloadDrop, unloadedCount,
+} from './story-timeline'
 
 /** Khe giữa hai hộp cạnh nhau và giữa hai tầng (m): chồng hàng đọc ra từng kiện. */
 const SIDE_GAP = 0.04
@@ -20,33 +22,45 @@ const SWEEP_OPACITY = 0.22
 const matrix = new Matrix4()
 const color = new Color()
 
-type Written = { step: number; time: number; motion: boolean }
+/** Lần ghi gần nhất: `key` gộp bước xếp, đã sang chỗ dỡ chưa và số kiện đã dỡ — đổi là ghi lại. */
+type Written = { key: string; time: number; motion: boolean }
 
 /**
- * Hộp của làn chờ theo thời điểm `time` của chuyện: kiện còn ở làn khi chưa vào thùng ở bước `step` (`laneVisible`); có chuyển động
- * thì hộp chỉ hiện từ lúc tầng của nó tới làn (`laneArrival`) và rơi xuống trong `LANE_DROP_MS`. Hộp ẩn thu về kích thước 0.
+ * Hộp của làn theo thời điểm `time` của chuyện. Ở kho: kiện còn ở làn khi chưa vào thùng ở bước `step` (`laneVisible`); có chuyển động
+ * thì hộp chỉ hiện từ lúc tầng của nó tới làn (`laneArrival`) và rơi xuống trong `LANE_DROP_MS`. Từ `STOP_SCENE_AT` (khung đang tối hẳn)
+ * là chỗ dỡ của điểm 1: chỉ hộp đã rời thùng (`unloadVisible`), nằm trên chồng hàng (`unloadCenter`), rơi nhẹ lúc vừa ra. Hộp ẩn thu
+ * về kích thước 0.
  */
-function writeLanes(mesh: InstancedMesh, slots: readonly LaneSlot[], time: number, step: number, motion: boolean) {
+function writeLanes(mesh: InstancedMesh, slots: readonly LaneSlot[], time: number, step: number, unload: Unload, motion: boolean) {
+  const atStop = time >= STOP_SCENE_AT
+  const unloaded = unloadedCount(unload.total, time)
   slots.forEach((slot, index) => {
-    if (!laneVisible(slot, step) || (motion && time < laneArrival(slot.lane, slot.layer))) {
+    const shown = atStop ? unloadVisible(slot, unloaded) : laneVisible(slot, step) && !(motion && time < laneArrival(slot.lane, slot.layer))
+    if (!shown) {
       mesh.setMatrixAt(index, matrix.makeScale(0, 0, 0))
       return
     }
-    const [x, y, z] = slot.center, [sx, sy, sz] = slot.size
-    const drop = motion ? laneDrop(slot.lane, slot.layer, time) : 0
+    const [x, y, z] = atStop ? slot.unloadCenter : slot.center, [sx, sy, sz] = slot.size
+    const drop = !motion ? 0 : atStop ? unloadDrop(slot.unloadRank!, unload.total, time) : laneDrop(slot.lane, slot.layer, time)
     mesh.setMatrixAt(index, matrix.makeScale(sx - SIDE_GAP, sy - TOP_GAP, sz - SIDE_GAP).setPosition(x, y - TOP_GAP / 2 + drop, z))
   })
   mesh.instanceMatrix.needsUpdate = true
 }
+
+/** Số kiện dỡ ở điểm 1 và mốc hộp cuối chạm chồng hàng. */
+type Unload = { total: number; end: number }
+
+const writtenKey = (time: number, step: number, unload: Unload) =>
+  time >= STOP_SCENE_AT ? `stop:${unloadedCount(unload.total, time)}` : `yard:${step}`
 
 /**
  * Sân kho quanh xe của khung 3D trang giới thiệu (`DIORAMA`): đúng ba draw call thêm vào cảnh dùng chung — nền gộp một mesh tô màu
  * theo đỉnh, các hộp của bốn làn chờ (một InstancedMesh, cùng atlas bề mặt với kiện trong thùng) và mặt quét lúc tối ưu (chỉ vẽ trong
  * pha quét). Ánh sáng của cảnh không đổi.
  *
- * Mọi chuyển động đọc `story.time()` trong `useFrame`, không qua React: ma trận của làn chỉ ghi lại khi bước xếp đổi, khi hộp còn đang
- * rơi, hoặc khi chuyện quay lại từ đầu. `low` (tier thấp): vật liệu Lambert, không thả hộp, không quét — làn đầy ngay từ đầu. Khối xe
- * giản lược của tier thấp nằm ở `DepartMotion` (đi cùng xe), không ở nền.
+ * Mọi chuyển động đọc `story.time()` trong `useFrame`, không qua React: ma trận của làn chỉ ghi lại khi bước xếp hay số kiện đã dỡ đổi,
+ * khi sang chỗ dỡ, khi hộp còn đang rơi, hoặc khi chuyện tua lại. `low` (tier thấp): vật liệu Lambert, không thả hộp, không quét — làn
+ * đầy ngay từ đầu, hộp dỡ đặt thẳng lên chồng. Khối xe giản lược của tier thấp nằm ở `DepartMotion` (đi cùng xe), không ở nền.
  */
 export function DioramaScene({ slots, total, vehicle, story, low, reducedMotion }: {
   slots: readonly LaneSlot[]
@@ -61,7 +75,7 @@ export function DioramaScene({ slots, total, vehicle, story, low, reducedMotion 
   const lanes = useRef<InstancedMesh>(null)
   const sweep = useRef<Mesh>(null)
   const sweepMaterial = useRef<MeshBasicMaterial>(null)
-  const written = useRef<Written>({ step: -1, time: -1, motion })
+  const written = useRef<Written>({ key: '', time: -1, motion })
   const { length, width, height } = containerSize(vehicle)
 
   const base = useMemo(() => dioramaBaseGeometry(dioramaPalette()), [])
@@ -70,6 +84,10 @@ export function DioramaScene({ slots, total, vehicle, story, low, reducedMotion 
   const sweepColor = useMemo(() => readToken('--cyan-300'), [])
   /** Hộp cuối cùng chạm dock: sau mốc này ma trận làn chỉ đổi theo bước xếp. */
   const intakeEnd = useMemo(() => Math.max(0, ...slots.map((slot) => laneArrival(slot.lane, slot.layer))) + LANE_DROP_MS, [slots])
+  const unload = useMemo<Unload>(() => {
+    const count = slots.filter((slot) => slot.unloadRank !== null).length
+    return { total: count, end: unloadArrival(Math.max(0, count - 1), count) + LANE_DROP_MS }
+  }, [slots])
   useEffect(() => () => base.dispose(), [base])
   useEffect(() => () => boxes.dispose(), [boxes])
   useEffect(() => () => surface?.dispose(), [surface])
@@ -80,19 +98,21 @@ export function DioramaScene({ slots, total, vehicle, story, low, reducedMotion 
     slots.forEach((slot, index) => mesh.setColorAt(index, color.set(stopColor(slot.stop))))
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true
     const time = story.time(), step = loadedCount(total, time)
-    writeLanes(mesh, slots, time, step, motion)
-    written.current = { step, time, motion }
-  }, [slots, total, story, motion])
+    writeLanes(mesh, slots, time, step, unload, motion)
+    written.current = { key: writtenKey(time, step, unload), time, motion }
+  }, [slots, total, unload, story, motion])
 
   useFrame(() => {
     const time = story.time()
     const mesh = lanes.current
     if (mesh) {
-      const step = loadedCount(total, time), last = written.current
-      // Ghi lại khi bước đổi, khi chuyện tua về đầu, và tới hết lần ghi đầu tiên sau pha thả (khung hình thưa vẫn đặt hộp chạm đáy)
-      if (step !== last.step || time < last.time || (motion && last.time < intakeEnd)) {
-        writeLanes(mesh, slots, time, step, motion)
-        written.current = { step, time, motion }
+      const step = loadedCount(total, time), key = writtenKey(time, step, unload), last = written.current
+      // Ghi lại khi bước, chỗ hay số đã dỡ đổi, khi chuyện tua lại, và tới hết lần ghi đầu tiên sau mỗi pha thả hộp (khung hình thưa
+      // vẫn đặt hộp chạm đáy)
+      const dropping = motion && (last.time < intakeEnd || (time >= UNLOAD_AT && last.time < unload.end))
+      if (key !== last.key || time < last.time || dropping) {
+        writeLanes(mesh, slots, time, step, unload, motion)
+        written.current = { key, time, motion }
       }
     }
     const plane = sweep.current, material = sweepMaterial.current
