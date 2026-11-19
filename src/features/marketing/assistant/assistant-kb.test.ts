@@ -46,8 +46,8 @@ describe('assistant knowledge base', () => {
     expect(sentences(t('assistant.topics.start.answerSelf'))).toBeLessThanOrEqual(3)
   })
 
-  test('the opening message says Lumo answers from LoadMaster documents, not as a sales person', () => {
-    expect(createTranslator('vi')('assistant.panel.intro', { name: 'Lumo' })).toBe(
+  test('the line under the input says Lumo answers from LoadMaster documents, not as a sales person', () => {
+    expect(createTranslator('vi')('assistant.panel.disclaimer', { name: 'Lumo' })).toBe(
       'Lumo trả lời từ tài liệu của LoadMaster — không phải nhân viên tư vấn.',
     )
   })

@@ -59,7 +59,7 @@ afterEach(() => {
   sessionStorage.clear()
 })
 
-test('passive until asked: opens on click with the transparency line, focus in the input; Esc closes and returns focus', async () => {
+test('passive until asked: opens on click with the transparency line as its description, focus in the input; Esc closes and returns focus', async () => {
   renderLanding()
   // Không tự mở: trang vừa mở chỉ có nút
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
@@ -68,6 +68,9 @@ test('passive until asked: opens on click with the transparency line, focus in t
   const { user, launcher, panel } = await openAssistant()
   expect(launcher).toHaveAttribute('aria-expanded', 'true')
   expect(panel.getByText('Lumo trả lời từ tài liệu của LoadMaster — không phải nhân viên tư vấn.')).toBeInTheDocument()
+  expect(screen.getByRole('dialog', { name: 'Lumo', description: 'Lumo trả lời từ tài liệu của LoadMaster — không phải nhân viên tư vấn.' })).toBeInTheDocument()
+  // Màn chào: Lumo chào một câu, bốn câu hỏi gợi ý
+  expect(panel.getByRole('heading', { name: 'Chào bạn, mình là Lumo.' })).toBeInTheDocument()
   expect(panel.getByRole('log', { name: 'Cuộc trò chuyện với Lumo' })).toHaveAttribute('aria-live', 'polite')
   await waitFor(() => expect(panel.getByRole('textbox', { name: 'Câu hỏi của bạn' })).toHaveFocus())
   // Bốn câu hỏi gợi ý; chưa hỏi gì thì không có "Bắt đầu lại"
@@ -85,6 +88,9 @@ test('a suggested question gets a short answer from the catalogue, follow-ups an
   await user.click(panel.getByRole('button', { name: 'Giá các gói?' }))
   const log = within(panel.getByRole('log'))
   expect(log.getByText('Giá các gói?')).toBeInTheDocument()
+  // Màn chào nhường chỗ; nút vừa bấm biến mất nên focus vào vùng trò chuyện, không rơi ra ngoài khung
+  expect(panel.queryByRole('heading', { name: 'Chào bạn, mình là Lumo.' })).not.toBeInTheDocument()
+  expect(panel.getByRole('log')).toHaveFocus()
   expect(await log.findByText(/^Mỗi gói tính theo tháng/, {}, ANSWER)).toBeInTheDocument()
   expect(await log.findByText(/^Basic: .+ mỗi tháng, 3\.000 credit mỗi tháng$/, {}, ANSWER)).toBeInTheDocument()
   expect(log.getByRole('link', { name: 'Mở bảng giá' })).toHaveAttribute('href', '/bang-gia')
@@ -122,6 +128,29 @@ test('the advisor number field rejects what is not a whole number of runs', asyn
   await user.click(panel.getByRole('button', { name: 'Tính gói' }))
   expect(await panel.findByText('Nhập số nguyên từ 1 đến 100.000.')).toBeInTheDocument()
   expect(field).toHaveAttribute('aria-invalid', 'true')
+})
+
+test('Enter sends, Shift + Enter breaks the line and the break is sent as a space', async () => {
+  const { user, panel } = await openAssistant()
+  const input = panel.getByRole('textbox', { name: 'Câu hỏi của bạn' })
+  await user.type(input, 'Giá{Shift>}{Enter}{/Shift}các gói?')
+  expect(input).toHaveValue('Giá\ncác gói?')
+  expect(panel.getByRole('button', { name: 'Gửi câu hỏi' })).toBeEnabled()
+  await user.keyboard('{Enter}')
+  const log = within(panel.getByRole('log'))
+  expect(log.getByText('Giá các gói?', { selector: 'p' })).toBeInTheDocument()
+  expect(input).toHaveValue('')
+  expect(panel.getByRole('button', { name: 'Gửi câu hỏi' })).toBeDisabled()
+})
+
+test('while the panel is open the launcher collapses it: same name, expanded state, a second click closes', async () => {
+  const { user, launcher } = await openAssistant()
+  expect(launcher).toHaveAccessibleName('Hỏi Lumo')
+  expect(launcher).toHaveAttribute('aria-expanded', 'true')
+  await user.click(launcher)
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  expect(launcher).toHaveAttribute('aria-expanded', 'false')
+  expect(launcher).toHaveFocus()
 })
 
 test('a question outside the documents says so, and hands the questions to the contact form', async () => {

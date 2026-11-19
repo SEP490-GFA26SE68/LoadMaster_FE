@@ -2,11 +2,13 @@ import { useEffect, useRef, type ReactNode } from 'react'
 import { LUMO_NAME } from '@/components/brand/Lumo'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import { FALLBACK_TOPICS, STARTER_TOPICS, topicOf, type AssistantContext, type TopicId } from './assistant-kb'
+import { FALLBACK_TOPICS, topicOf, type AssistantContext, type TopicId } from './assistant-kb'
 import type { AssistantEntry } from './assistant-session'
 import { AdvisorAsk, AdvisorResult } from './AssistantAdvisor'
 import { TopicAnswer } from './AssistantAnswer'
+import { AssistantAvatar } from './AssistantAvatar'
 import { CHAT_TOUCH, HandoffButton, TopicChips } from './AssistantChips'
+import { AssistantWelcome } from './AssistantWelcome'
 
 /** Sau phép tính gói: tính lại, xem gói, dùng thử. */
 const ADVISOR_FOLLOW_UPS: readonly TopicId[] = ['advisor', 'plans', 'start']
@@ -21,43 +23,50 @@ type LogProps = {
   onNavigate?: () => void
 }
 
-function Bubble({ who, children, mine = false }: { who: string; children: ReactNode; mine?: boolean }) {
+/** Câu hỏi của khách: dồn phải, nền cyan nhạt. */
+function UserBubble({ who, text }: { who: string; text: string }) {
   return (
-    <div
-      data-entry={mine ? 'user' : 'lumo'}
-      className={cn(
-        'flex max-w-[92%] flex-col gap-2 rounded-lg px-3.5 py-2.5',
-        mine ? 'self-end bg-primary-bg text-ink-strong' : 'self-start border border-line-soft bg-surface text-ink-1',
-      )}
-    >
+    <div data-entry="user" className="flex max-w-[88%] flex-col self-end rounded-lg bg-primary-bg px-3.5 py-2.5 text-ink-strong">
       <span className="sr-only">{who}: </span>
-      {children}
+      <p className="m-0">{text}</p>
     </div>
   )
 }
 
+/** Câu trả lời của Lumo: ảnh Lumo nhỏ bên trái, bong bóng nền surface. */
+function LumoBubble({ who, children }: { who: string; children: ReactNode }) {
+  return (
+    <div data-entry="lumo" className="flex max-w-full items-start gap-2 self-start">
+      <AssistantAvatar pose="explain" size="xs" />
+      <div className="flex min-w-0 flex-col gap-2 rounded-lg border border-line-soft bg-surface px-3.5 py-2.5 text-ink-1">
+        <span className="sr-only">{who}: </span>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+/** "Lumo đang trả lời…": chữ ánh gradient trợ lý chạy ngang (`assistant-shimmer`); giảm chuyển động thì chữ xám đứng yên. */
 function Typing() {
   const t = useT()
   return (
-    <p className="m-0 flex items-center gap-2 self-start text-small text-ink-3">
-      <span aria-hidden className="flex gap-1 motion-reduce:hidden">
-        {[0, 1, 2].map((dot) => (
-          <span key={dot} className="size-1.5 rounded-full bg-ink-3 animate-[lm-pulse_1s_ease-in-out_infinite]" style={{ animationDelay: `${dot * 160}ms` }} />
-        ))}
-      </span>
-      {t('assistant.panel.typing', { name: LUMO_NAME })}
+    <p className="m-0 flex items-center gap-2 self-start text-small">
+      <AssistantAvatar pose="explain" size="xs" />
+      <span className="assistant-shimmer font-medium">{t('assistant.panel.typing', { name: LUMO_NAME })}</span>
     </p>
   )
 }
 
 /**
- * Cuộc trò chuyện: câu mở đầu nói Lumo trả lời từ tài liệu (không phải nhân viên), câu hỏi gợi ý, rồi từng lượt hỏi — đáp. Chỉ lượt đáp cuối
- * mang gợi ý hỏi tiếp và lối "Chưa đúng ý? Hỏi đội LoadMaster". `role="log"`: lượt mới được đọc lên lịch sự. Có lượt mới thì cuộn sao cho
- * câu hỏi mới nhất nằm đầu vùng nhìn — câu trả lời dài vẫn đọc được từ đầu.
+ * Cuộc trò chuyện. Chưa hỏi gì thì là màn chào (`AssistantWelcome`); rồi từng lượt hỏi — đáp, câu trả lời có ảnh Lumo nhỏ bên trái. Chỉ
+ * lượt đáp cuối mang gợi ý hỏi tiếp và lối "Chưa đúng ý? Hỏi đội LoadMaster". `role="log"`: lượt mới được đọc lên lịch sự. Có lượt mới thì
+ * cuộn sao cho câu hỏi mới nhất nằm đầu vùng nhìn — câu trả lời dài vẫn đọc được từ đầu. Bấm một nút gợi ý thì nút đó biến mất cùng lượt
+ * cũ: focus chuyển vào vùng trò chuyện (không mở bàn phím ảo như khi về ô gõ) để Esc vẫn đóng khung và trình đọc màn hình không lạc.
  */
 export function AssistantLog({ entries, pending, context, onAsk, onRuns, onHandoff, onNavigate }: LogProps) {
   const t = useT()
   const scroller = useRef<HTMLDivElement>(null)
+  const log = useRef<HTMLDivElement>(null)
   const name = LUMO_NAME
   const last = entries.at(-1)
 
@@ -69,11 +78,21 @@ export function AssistantLog({ entries, pending, context, onAsk, onRuns, onHando
     box.scrollTop = latest ? latest.offsetTop - 12 : 0
   }, [entries.length, pending])
 
+  function ask(question: string, topicId?: TopicId) {
+    onAsk(question, topicId)
+    log.current?.focus({ preventScroll: true })
+  }
+
+  function runs(label: string, count: number) {
+    onRuns(label, count)
+    log.current?.focus({ preventScroll: true })
+  }
+
   function followUps(topics: readonly TopicId[]) {
     return (
-      <div className="flex flex-col gap-2 self-stretch">
+      <div className="flex flex-col gap-2 self-stretch pl-9">
         <HandoffButton onHandoff={onHandoff} />
-        <TopicChips label={t('assistant.panel.followUps')} topics={topics} onAsk={onAsk} disabled={pending} />
+        <TopicChips label={t('assistant.panel.followUps')} topics={topics} onAsk={ask} disabled={pending} />
       </div>
     )
   }
@@ -82,15 +101,15 @@ export function AssistantLog({ entries, pending, context, onAsk, onRuns, onHando
     const says = t('assistant.panel.says', { name })
     switch (entry.kind) {
       case 'user':
-        return <Bubble key={entry.id} mine who={t('assistant.panel.you')}><p className="m-0">{entry.text}</p></Bubble>
+        return <UserBubble key={entry.id} who={t('assistant.panel.you')} text={entry.text} />
       case 'answer': {
         const advisorAsk = entry.topicId === 'advisor' && isLast
         return (
           <div key={entry.id} className="contents">
-            <Bubble who={says}>
+            <LumoBubble who={says}>
               <TopicAnswer topicId={entry.topicId} context={context} onNavigate={onNavigate} />
-              {advisorAsk ? <AdvisorAsk onRuns={onRuns} disabled={pending} /> : null}
-            </Bubble>
+              {advisorAsk ? <AdvisorAsk onRuns={runs} disabled={pending} /> : null}
+            </LumoBubble>
             {isLast && !pending && !advisorAsk ? followUps(topicOf(entry.topicId).followUps) : null}
           </div>
         )
@@ -98,33 +117,40 @@ export function AssistantLog({ entries, pending, context, onAsk, onRuns, onHando
       case 'advisor':
         return (
           <div key={entry.id} className="contents">
-            <Bubble who={says}><AdvisorResult runs={entry.runs} onHandoff={onHandoff} /></Bubble>
+            <LumoBubble who={says}><AdvisorResult runs={entry.runs} onHandoff={onHandoff} /></LumoBubble>
             {isLast && !pending ? followUps(ADVISOR_FOLLOW_UPS) : null}
           </div>
         )
       case 'fallback':
         return (
           <div key={entry.id} className="contents">
-            <Bubble who={says}>
+            <LumoBubble who={says}>
               <p className="m-0">{t('assistant.fallback')}</p>
               <HandoffButton strong onHandoff={onHandoff} />
-            </Bubble>
-            {isLast && !pending ? <TopicChips label={t('assistant.panel.followUps')} topics={FALLBACK_TOPICS} onAsk={onAsk} /> : null}
+            </LumoBubble>
+            {isLast && !pending ? (
+              <div className="pl-9">
+                <TopicChips label={t('assistant.panel.followUps')} topics={FALLBACK_TOPICS} onAsk={ask} />
+              </div>
+            ) : null}
           </div>
         )
       case 'error':
-        return <Bubble key={entry.id} who={says}><p className="m-0">{t('assistant.panel.error')}</p></Bubble>
+        return <LumoBubble key={entry.id} who={says}><p className="m-0">{t('assistant.panel.error')}</p></LumoBubble>
     }
   }
 
   return (
-    <div ref={scroller} className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4">
-      <div role="log" aria-live="polite" aria-label={t('assistant.panel.log', { name })} className={cn('flex flex-col gap-3 text-body', CHAT_TOUCH)}>
-        <Bubble who={t('assistant.panel.says', { name })}>
-          <p className="m-0 font-medium text-ink-strong">{t('assistant.panel.intro', { name })}</p>
-          <p className="m-0">{t('assistant.panel.introHint')}</p>
-        </Bubble>
-        {entries.length === 0 ? <TopicChips label={t('assistant.panel.starters')} topics={STARTER_TOPICS} onAsk={onAsk} disabled={pending} /> : null}
+    <div ref={scroller} className="relative flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-4 py-4">
+      {entries.length === 0 ? <AssistantWelcome onAsk={ask} disabled={pending} /> : null}
+      <div
+        ref={log}
+        tabIndex={-1}
+        role="log"
+        aria-live="polite"
+        aria-label={t('assistant.panel.log', { name })}
+        className={cn('flex flex-col gap-3 text-body outline-none', CHAT_TOUCH)}
+      >
         {entries.map((entry) => render(entry, entry === last))}
         {pending ? <Typing /> : null}
       </div>

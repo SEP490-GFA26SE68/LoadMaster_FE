@@ -204,14 +204,21 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   (`landing.stage.caption`) là `sr-only`, nối bằng `aria-describedby`; canvas `aria-hidden`.
 - **Trợ lý "Hỏi Lumo"** (`marketing/assistant/`, gắn ở `PublicPage` nên có ở cả hai trang công khai): trợ lý **thụ động** — không tự mở, không
   lời mời bật lên — trả lời từ **bộ câu trả lời soạn sẵn** (`assistant-kb.ts`, 16 chủ đề; câu ở nhánh `assistant` của từ điển), **không phải AI**
-  và không bao giờ nói mình là AI; câu mở đầu nói Lumo trả lời từ tài liệu của LoadMaster, không phải nhân viên tư vấn. Khớp câu hỏi bằng
+  và không bao giờ nói mình là AI; dòng nhỏ dưới ô gõ — cũng là mô tả của hộp thoại — nói Lumo trả lời từ tài liệu của LoadMaster, không phải nhân viên tư vấn. Khớp câu hỏi bằng
   từ khoá vi + en không dấu (`assistant-match.ts`, dưới ngưỡng thì nói thẳng là chưa có câu trả lời). Lớp mạng `assistant-api.ts`
   (`askAssistant`, `POST /api/assistant/messages` — chưa có ở BE: khớp ở trình duyệt sau 500 ms) → `useAskAssistantMutation`. Nút mở góc
   dưới phải (chữ từ 640 px, 48 px / 56 px cảm ứng, chừa vùng an toàn) có **viền gradient quay** kiểu nút trợ lý AI của AWS (`animated gradient border`: `conic-gradient` theo gradient AI của AWS Cloudscape —
   token `--genai-1…5` ở `index.css`, xanh nhạt → xanh dương → chàm → tím, ngoại lệ duy nhất của luật không tím, quyết định của chủ sản phẩm
   19/11/2026 —, viền 2 px thay viền xám + quầng màu ngoài nút; đứng yên lúc nghỉ, quay khi rê chuột / focus và khi Lumo đang trả lời
   `data-thinking`; khi trang mở quay hai vòng ~4,8 s — dưới mốc 5 s của WCAG 2.2.2; giảm chuyển động thì đứng yên); khung chat có vạch
-  gradient 2 px chạy ngang dưới đầu khung chỉ trong lúc đang trả lời (`assistant-thinking-bar`). Nút nâng lên khi chạm phần tử mang `data-assistant-avoid` (nút chính của
+  gradient 2 px chạy ngang dưới đầu khung chỉ trong lúc đang trả lời (`assistant-thinking-bar`). Khung chat: chưa hỏi gì thì là màn chào
+  (`AssistantWelcome`: Lumo `idea` chào một câu, bốn câu hỏi gợi ý thành lưới 2 × 2 có icon); câu trả lời có ảnh Lumo nhỏ bên trái; ảnh ở
+  đầu khung có vòng gradient 2 px, quay khi đang trả lời (`assistant-avatar-ring`); chữ "Lumo đang trả lời…" có dải gradient chạy ngang
+  (`assistant-shimmer`, phần lớn chữ vẫn `--ink-3`; giảm chuyển động thì chữ xám đứng yên). Ô gõ là một khung bo góc chứa ô gõ tự cao tới
+  bốn dòng (Enter gửi, Shift + Enter xuống dòng, xuống dòng gửi đi thành dấu cách) và nút gửi — nút chính của khung chat, mờ khi ô trống;
+  focus là viền khung đổi cyan và dày thêm 1 px. Bấm một nút gợi ý (nút biến mất cùng lượt cũ) thì focus vào vùng trò chuyện, không về ô
+  gõ (khỏi bật bàn phím ảo). Khung đang mở thì nút mở thành nút thu gọn (mũi tên xuống); tên truy cập vẫn là "Hỏi Lumo", trạng thái nằm ở
+  `aria-expanded`. Nút nâng lên khi chạm phần tử mang `data-assistant-avoid` (nút chính của
   phần mở đầu, nút "Tạm dừng / Tiếp tục / Xếp lại" của khung 3D, bộ chọn phương án dưới khung, "Lên đầu trang" —
   `useLauncherLift`; nâng lên chạm phần tử khác thì nâng tiếp qua nó); khung chat là chunk lười: từ 768 px thẻ trắng không modal cạnh nút, hẹp hơn tờ phủ
   cả màn modal. Mỗi câu trả lời tối đa ba câu kèm liên kết tới phần của trang hay Bảng giá; lối đăng ký chỉ khi khách tự đăng ký được. Tính
@@ -728,7 +735,8 @@ Mẫu: `design/v2.3/screens/web/ThanhPhan.jpg`, `TrangThaiChung.jpg`, `MenuToanC
   hoàn thành, đã huỷ chip đỏ trọn (không gạch chữ). Xe: sẵn sàng xanh lá, đang phục vụ chuyến xanh lam có quầng, bảo dưỡng xám. Tài khoản: đang
   hoạt động xanh lá, đã khoá xám. `shape="tag"` (20 px) cho phiên bản, "Đã chỉnh tay" (xanh lam) và **MOCK RESULT** (`tone="mock"`).
   Thang **xanh lam** `--azure-*` (khác hẳn cyan thương hiệu) cho "đang chạy"; `@theme` xoá thang `violet`/`purple` của Tailwind: không dùng tím ở
-  đâu trong app — ngoại lệ duy nhất: gradient trợ lý `--genai-*` của nút "Hỏi Lumo" (mục 1). "Đã huỷ" là chip đỏ trọn, không gạch chữ.
+  đâu trong app — ngoại lệ duy nhất: gradient trợ lý `--genai-*` của trợ lý "Hỏi Lumo" (viền nút mở, vòng ảnh đầu khung chat, vạch và chữ
+  "đang trả lời" — mục 1). "Đã huỷ" là chip đỏ trọn, không gạch chữ.
   Chuyến có **6 trạng thái của backend** (`DRAFT`, `PLANNED`, `LOADING`, `IN_TRANSIT`,
   `DELIVERED`, `CANCELLED`): nháp xám đặc · đã lập kế hoạch cyan đặc · đang xếp hàng và đang vận chuyển xanh lam có quầng · đã giao
   xanh lá đặc · đã huỷ đỏ đặc. "Đang tối ưu" là tiến trình job (hộp thoại tối ưu), không phải trạng thái. Phương án và tiến độ kho là
@@ -866,7 +874,7 @@ Nguồn: `design/brand/` (`source/` là file người dùng giao; `logo-mark*.sv
   (`compact` 96 px trong card); `ErrorScreen` bắt buộc `mascot`; `WarehouseEmpty` / `DriverNotice` mặc định tư thế chờ. Luôn `alt=""` +
   `aria-hidden`, không động — trừ trang giới thiệu, nơi Lumo đổi tư thế và bong bóng `LumoSays` gõ chữ một lần (lời trong bong bóng là
   nội dung đọc được, ảnh vẫn `aria-hidden`). Trợ lý "Hỏi Lumo" của hai trang công khai dùng Lumo bán thân làm ảnh đại diện trong ô vuông bo
-  góc (`AssistantAvatar`): `wink` ở nút mở, `explain` ở đầu khung chat — đứng yên, `aria-hidden`. **Không** ở bảng, form, Planner, bảng điều khiển (kể cả kỳ không có dữ liệu), toast, hộp thoại; ở màn kho và
+  góc (`AssistantAvatar`): `wink` ở nút mở, `explain` ở đầu khung chat và cạnh câu trả lời, `idea` ở màn chào — đứng yên, `aria-hidden`. **Không** ở bảng, form, Planner, bảng điều khiển (kể cả kỳ không có dữ liệu), toast, hộp thoại; ở màn kho và
   tài xế chỉ màn rỗng, màn lỗi và màn xong việc.
 
 ### Cấm tuyệt đối
@@ -879,7 +887,7 @@ Nguồn: `design/brand/` (`source/` là file người dùng giao; `logo-mark*.sv
 - Kính (blur nền, viền sáng) dùng **theo lớp**, không rải tuỳ ý. **Được** ở chrome điều hướng (`.glass-nav` trên dải trời) và panel điều khiển
   nổi đè lên khung 3D nền tối (`.glass-dark`): kính là kính **tối**. Ô số liệu là card nền đặc. **Không** ở bảng, form, inspector và mọi bề mặt
   người dùng đọc lâu — những chỗ đó giữ nền đặc, phân tách bằng viền 1px. Không lồng kính trong kính. Luôn có nền đặc dự phòng khi trình duyệt
-  thiếu `backdrop-filter`, và tôn trọng `prefers-reduced-transparency`. Viền phát sáng không dùng ngoài các chỗ kể trên và viền gradient quay của nút "Hỏi Lumo" (mục 1, `assistant.css`). Màn kho và tài xế dùng
+  thiếu `backdrop-filter`, và tôn trọng `prefers-reduced-transparency`. Viền phát sáng không dùng ngoài các chỗ kể trên và gradient quay của trợ lý "Hỏi Lumo" — viền nút mở, vòng ảnh đầu khung chat (mục 1, `assistant.css`). Màn kho và tài xế dùng
   điều khiển đặc (mục 1); blur ở đó (tablet trong kho sáng, đeo găng; điện thoại ngoài nắng) chưa có số đo tương phản và FPS trên thiết bị thật,
   phải đo trước khi coi kính ở hai màn đó là đã chốt.
 - Toast nằm dưới thanh tiêu đề (`offset` trên 80 px): không che nút hành động ở góc phải header — rê chuột lên toast làm nó dừng đếm giờ

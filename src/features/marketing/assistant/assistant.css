@@ -143,10 +143,80 @@
   }
 }
 
+/* Ảnh Lumo ở đầu khung chat: vòng gradient 2 px (nền conic lộ ra quanh ô ảnh), quay khi đang trả lời, dừng tại chỗ khi xong */
+.assistant-avatar-ring {
+  display: inline-flex;
+  flex: none;
+  padding: 2px;
+  border-radius: calc(var(--r-md) + 2px);
+  background: conic-gradient(from var(--lumo-turn), var(--genai-stops));
+  animation: lumo-turn 3s linear infinite;
+  animation-play-state: paused;
+}
+
+.assistant-avatar-ring[data-thinking] {
+  animation-play-state: running;
+}
+
+/*
+ * Chữ "Lumo đang trả lời…": một dải sáng của gradient trợ lý chạy ngang qua chữ xám (chữ cắt nền, `background-clip: text`). Phần lớn
+ * chữ vẫn là `--ink-3`; dải sáng đi qua trong chưa tới hai giây mỗi vòng và chỉ trong lúc chờ câu trả lời.
+ */
+.assistant-shimmer {
+  color: var(--ink-3);
+}
+
+@supports (background-clip: text) or (-webkit-background-clip: text) {
+  .assistant-shimmer {
+    background: linear-gradient(90deg, var(--ink-3) 35%, var(--genai-3) 45%, var(--genai-5) 50%, var(--genai-3) 55%, var(--ink-3) 65%);
+    background-size: 250% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: lumo-shimmer 1.8s linear infinite;
+  }
+}
+
+@keyframes lumo-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+
+/* Nút mở đổi giữa ảnh Lumo và mũi tên thu gọn: hình mới xoay nhẹ vào chỗ */
+.assistant-launcher-swap {
+  animation: lumo-swap var(--dur-md) var(--ease-decelerate);
+}
+
+@keyframes lumo-swap {
+  from {
+    opacity: 0;
+    transform: rotate(-60deg) scale(0.7);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .assistant-launcher,
-  .assistant-thinking-bar[data-on] {
+  .assistant-thinking-bar[data-on],
+  .assistant-avatar-ring,
+  .assistant-launcher-swap {
     animation: none;
+  }
+
+  .assistant-shimmer {
+    animation: none;
+    background: none;
+    color: var(--ink-3);
+  }
+}
+
+@media (forced-colors: active) {
+  .assistant-shimmer {
+    background: none;
+    color: CanvasText;
   }
 }
 

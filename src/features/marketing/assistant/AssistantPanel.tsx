@@ -27,7 +27,8 @@ const isPhone = () => hasMatchMedia() && window.matchMedia(PHONE_QUERY).matches
  * Tab ra ngoài được, bấm ra ngoài không đóng. Dưới 768 px: tờ phủ cả màn, modal (`aria-modal`, phần trang phía sau bị ẩn khỏi trình đọc
  * màn hình, bẫy focus). Mở thì focus vào ô gõ; Esc (khi focus ở khung hoặc nút mở) hay nút đóng thì focus về nút mở — trừ khi đóng để
  * điều hướng (liên kết của câu trả lời, chuyển sang form liên hệ): trang đích tự đặt focus. `skipInitialFocus`: khung dựng lại khi đã mở
- * sẵn (chuyển giữa hai trang công khai) thì không giành focus của trang.
+ * sẵn (chuyển giữa hai trang công khai) thì không giành focus của trang. Mô tả của hộp thoại là dòng nhỏ dưới ô gõ: Lumo trả lời từ tài
+ * liệu, không phải nhân viên tư vấn.
  */
 export default function AssistantPanel({ launcherRef, skipInitialFocus = false }: {
   launcherRef: RefObject<HTMLButtonElement | null>
@@ -84,12 +85,13 @@ export default function AssistantPanel({ launcherRef, skipInitialFocus = false }
           )}
         >
           <div className="flex flex-none items-center gap-3 bg-sky-end bg-(image:--sky) px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 text-sky-text md:pt-3">
-            <AssistantAvatar pose="explain" size="md" />
+            {/* Vòng gradient trợ lý quanh ảnh (assistant.css): đứng yên lúc nghỉ, quay khi Lumo đang trả lời — chỉ là hình */}
+            <span className="assistant-avatar-ring" data-thinking={pending || undefined}>
+              <AssistantAvatar pose="explain" size="md" />
+            </span>
             <div className="flex min-w-0 flex-1 flex-col">
               <DialogPrimitive.Title className="m-0 font-display text-h3 font-[650] font-stretch-108% text-sky-text">{LUMO_NAME}</DialogPrimitive.Title>
-              <DialogPrimitive.Description className="m-0 text-small text-sky-text-2 pointer-coarse:text-body-lg">
-                {t('assistant.panel.subtitle')}
-              </DialogPrimitive.Description>
+              <p className="m-0 text-small text-sky-text-2 pointer-coarse:text-body-lg">{t('assistant.panel.subtitle')}</p>
             </div>
             {entries.length > 0 ? (
               <Button
@@ -121,7 +123,12 @@ export default function AssistantPanel({ launcherRef, skipInitialFocus = false }
             onHandoff={chat.handoff}
             onNavigate={phone ? leave : undefined}
           />
-          <AssistantComposer onSend={chat.send} pending={pending} />
+          <AssistantComposer onSend={chat.send} pending={pending}>
+            {/* Mô tả của hộp thoại: trình đọc màn hình đọc câu này cùng tên "Lumo" khi khung mở */}
+            <DialogPrimitive.Description className="m-0 text-center text-fine text-ink-3 pointer-coarse:text-body-lg">
+              {t('assistant.panel.disclaimer', { name: LUMO_NAME })}
+            </DialogPrimitive.Description>
+          </AssistantComposer>
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>

@@ -1,6 +1,6 @@
 /**
  * Trợ lý "Hỏi Lumo" của hai trang công khai `/gioi-thieu`, `/bang-gia` (`features/marketing/assistant`). Lumo trả lời từ bộ câu trả lời
- * soạn sẵn (`assistant-kb.ts`), không phải AI và không phải nhân viên — câu mở đầu nói rõ điều đó. Tên Lumo là tên riêng, không vào từ
+ * soạn sẵn (`assistant-kb.ts`), không phải AI và không phải nhân viên — dòng nhỏ dưới ô gõ (`disclaimer`) nói rõ điều đó. Tên Lumo là tên riêng, không vào từ
  * điển: câu nói về Lumo nhận tham số `{name}`. Mỗi câu trả lời tối đa ba câu ngắn; số (credit, số luật, số mục tiêu) đi qua tham số từ
  * hằng của code, giá gói đọc từ danh mục gói.
  */
@@ -9,12 +9,15 @@ export const assistant = {
     label: 'Hỏi {name}',
   },
   panel: {
-    subtitle: 'Trả lời từ tài liệu của LoadMaster',
+    subtitle: 'Hỏi đáp về LoadMaster',
     close: 'Đóng trợ lý',
     restart: 'Bắt đầu lại',
     log: 'Cuộc trò chuyện với {name}',
-    intro: '{name} trả lời từ tài liệu của LoadMaster — không phải nhân viên tư vấn.',
-    introHint: 'Chọn một câu hỏi gợi ý hoặc gõ câu hỏi của bạn.',
+    /** Dòng nhỏ dưới ô gõ, cũng là mô tả của khung chat cho trình đọc màn hình. */
+    disclaimer: '{name} trả lời từ tài liệu của LoadMaster — không phải nhân viên tư vấn.',
+    /** Màn chào khi chưa hỏi gì. */
+    greeting: 'Chào bạn, mình là {name}.',
+    introHint: 'Hỏi mình về gói cước, credit, cách LoadMaster xếp hàng hay cách dùng thử.',
     starters: 'Câu hỏi gợi ý',
     followUps: 'Hỏi tiếp',
     typing: '{name} đang trả lời…',
