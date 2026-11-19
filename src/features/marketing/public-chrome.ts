@@ -4,7 +4,7 @@ import { CONTACT_ANCHOR } from './contact-form'
 import { TRY_ANCHOR } from './try/try-anchor'
 
 /**
- * Phần dùng chung của các trang công khai (`/gioi-thieu`, `/bang-gia`, `/chinh-sach-bao-mat`): cỡ chạm và mục điều hướng của đầu trang. Đầu trang hiện mục
+ * Phần dùng chung của các trang công khai (`/gioi-thieu`, `/bang-gia`, `/chinh-sach-bao-mat`, `/dieu-khoan-su-dung`): cỡ chạm và mục điều hướng của đầu trang. Đầu trang hiện mục
  * thành hàng từ 1.024 px (bốn mục vừa cả tiếng Việt lẫn tiếng Anh), hẹp hơn thì gom vào nút menu (`PublicNavMenu`).
  */
 

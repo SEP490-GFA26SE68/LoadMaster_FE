@@ -55,6 +55,8 @@ import { landingStory } from './en/landingStory'
 import { landingTry } from './en/landingTry'
 import { pricing } from './en/pricing'
 import { privacy } from './en/privacy'
+import { terms } from './en/terms'
+import { legal } from './en/legal'
 import { warehouseCustomers } from './en/warehouseCustomers'
 import { backendTripRoute } from './en/backendTripRoute'
 import { serverPlans } from './en/serverPlans'
@@ -124,6 +126,8 @@ export const en = {
   landingTry,
   pricing,
   privacy,
+  terms,
+  legal,
   warehouseCustomers,
   backendTripRoute,
   serverPlans,

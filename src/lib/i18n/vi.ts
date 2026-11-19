@@ -53,6 +53,8 @@ import { landingStory } from './vi/landingStory'
 import { landingTry } from './vi/landingTry'
 import { pricing } from './vi/pricing'
 import { privacy } from './vi/privacy'
+import { terms } from './vi/terms'
+import { legal } from './vi/legal'
 import { warehouseCustomers } from './vi/warehouseCustomers'
 import { backendTripRoute } from './vi/backendTripRoute'
 import { serverPlans } from './vi/serverPlans'
@@ -130,6 +132,8 @@ export const vi = {
   landingTry,
   pricing,
   privacy,
+  terms,
+  legal,
   warehouseCustomers,
   backendTripRoute,
   serverPlans,

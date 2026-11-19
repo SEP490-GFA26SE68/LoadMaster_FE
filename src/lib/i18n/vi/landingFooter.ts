@@ -31,6 +31,7 @@ export const landingFooter = {
     faq: 'Hỏi đáp',
     contact: 'Liên hệ tư vấn',
     privacy: 'Chính sách bảo mật',
+    terms: 'Điều khoản sử dụng',
     /** Chỉ có khi `SITE_INFO.supportEmail` có giá trị. */
     email: 'Email hỗ trợ',
     signIn: 'Đăng nhập',

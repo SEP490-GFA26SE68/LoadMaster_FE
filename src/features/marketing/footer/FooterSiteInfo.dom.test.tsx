@@ -41,6 +41,7 @@ test('email, phone, address and tax code appear once SITE_INFO has them: the pho
     ['Hỏi đáp', '/gioi-thieu#hoi-dap'],
     ['Liên hệ tư vấn', '/gioi-thieu#lien-he'],
     ['Chính sách bảo mật', '/chinh-sach-bao-mat'],
+    ['Điều khoản sử dụng', '/dieu-khoan-su-dung'],
     ['Email hỗ trợ', 'mailto:hotro@loadmaster.vn'],
   ])
   expect(within(footer).getByRole('link', { name: '028 0000 0000' })).toHaveAttribute('href', 'tel:02800000000')

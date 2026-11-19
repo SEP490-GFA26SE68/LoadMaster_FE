@@ -34,14 +34,19 @@ export function PublicPage({ children, progress = false }: { children: ReactNode
       <a
         href={`#${MAIN_ID}`}
         onClick={handleSkip}
-        className="fixed top-3 left-4 z-50 flex h-11 -translate-y-[calc(100%+2rem)] items-center rounded-md bg-bg px-4 text-body font-semibold whitespace-nowrap text-ink-strong outline-2 outline-offset-2 outline-cyan-300 focus:translate-y-0 focus:shadow-e2 pointer-coarse:h-14 pointer-coarse:text-body-lg"
+        className="fixed top-3 left-4 z-50 flex h-11 -translate-y-[calc(100%+2rem)] items-center rounded-md bg-bg px-4 text-body font-semibold whitespace-nowrap text-ink-strong outline-2 outline-offset-2 outline-cyan-300 focus:translate-y-0 focus:shadow-e2 pointer-coarse:h-14 pointer-coarse:text-body-lg print:hidden"
       >
         {t('landing.skipToContent')}
       </a>
-      <PublicHeader progress={progress} />
+      {/* Bản in chỉ giữ nội dung: đầu trang, chân trang và nút trợ lý không vào giấy (`contents` không thêm hộp nào lúc xem trên màn) */}
+      <div className="contents print:hidden">
+        <PublicHeader progress={progress} />
+      </div>
       <main id={MAIN_ID} tabIndex={-1} className="flex flex-1 flex-col outline-none">{children}</main>
-      <PublicFooter />
-      <AssistantLauncher />
+      <div className="contents print:hidden">
+        <PublicFooter />
+        <AssistantLauncher />
+      </div>
     </div>
   )
 }

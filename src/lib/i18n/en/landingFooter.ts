@@ -25,6 +25,7 @@ export const landingFooter = {
     faq: 'FAQ',
     contact: 'Ask for a consultation',
     privacy: 'Privacy policy',
+    terms: 'Terms of use',
     email: 'Support email',
     signIn: 'Sign in',
     openApp: 'Open the app',
