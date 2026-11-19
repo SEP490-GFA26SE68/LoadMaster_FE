@@ -35,7 +35,17 @@ export const landing = {
    * Mọi số ở đây là số của lần chạy đó; câu `caption` nói số do bộ tối ưu mô phỏng tính (không nhãn MOCK RESULT trên trang công khai).
    */
   stage: {
-    title: 'Thùng mẫu 6 m',
+    title: 'Thùng 6 m',
+    /**
+     * Thẻ chuyến trong khung: số kiện và số điểm giao của yêu cầu mẫu (cố định); chip "Đã tính phương án" đứng trước pha xếp — chip này chỉ
+     * có ở trang giới thiệu, không phải trạng thái chuyến của ứng dụng.
+     */
+    trip: 'Chuyến mẫu',
+    load: '{count} kiện · {stops} điểm giao',
+    computed: 'Đã tính phương án',
+    /** Hàng "Thứ tự giao" dưới khung: kho rồi các điểm giao theo thứ tự đi. */
+    route: 'Thứ tự giao',
+    depot: 'Kho',
     caption: 'Chuyến mẫu {count} kiện cho {stops} điểm giao, do bộ tối ưu mô phỏng tính ngay trên trình duyệt của bạn rồi xếp từng kiện theo thứ tự. Hàng của điểm giao cuối nằm sâu nhất, hàng của điểm đầu sát cửa.',
     /** Câu dưới hình minh hoạ khi trình duyệt không vẽ được khung 3D: không nói gì về lần chạy, vì không có lần chạy nào. */
     artworkCaption: 'Hình minh hoạ: hàng của điểm giao cuối nằm sâu nhất, hàng của điểm đầu sát cửa — tới điểm nào lấy hàng điểm đó.',
@@ -43,15 +53,24 @@ export const landing = {
     views: 'Góc nhìn',
     view: {
       overview: 'Toàn cảnh',
+      truck: 'Thùng xe',
       zones: 'Vùng điểm giao',
-      door: 'Cửa sau',
     },
     replay: 'Xếp lại',
     replayLabel: 'Xếp lại thùng xe từ đầu',
+    /** Nút ba trạng thái của chuyện trong khung (Tạm dừng · Tiếp tục · Xếp lại): chữ hiện ra là phần đầu của tên truy cập (WCAG 2.5.3). */
+    story: {
+      pause: 'Tạm dừng',
+      pauseLabel: 'Tạm dừng chuyến mẫu',
+      resume: 'Tiếp tục',
+      resumeLabel: 'Tiếp tục chuyến mẫu',
+    },
     legend: 'Màu của kiện theo điểm giao',
     stop: 'Điểm {number}',
     readout: {
-      title: 'Kết quả của lần chạy',
+      title: 'Kết quả của phương án mẫu',
+      /** Câu giữ chỗ trước khi xếp xong, cùng chiều cao với dải số: số của phương án mẫu chỉ hiện khi đã có. */
+      pending: 'Số liệu của phương án mẫu hiện ra khi xếp xong.',
       placed: 'Kiện đã xếp',
       placedValue: '{placed} / {total}',
       volume: 'Lấp đầy thể tích',

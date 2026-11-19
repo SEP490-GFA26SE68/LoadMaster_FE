@@ -126,13 +126,28 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   — và nút "Lên đầu trang". Cột chỉ chứa liên kết tới thứ **đang có**. Thông tin liên hệ của công ty ở `lib/site-info.ts` (`SITE_INFO`):
   email, số điện thoại, địa chỉ, mã số thuế đều `null` tới khi chủ sản phẩm đưa số thật, và chân trang không vẽ dòng nào cho giá trị `null`
   — không viết email hay số điện thoại chưa xác nhận vào code.
-- **Khung 3D chuyến mẫu** (`LandingStage`; Three.js chỉ ở `viewer3d/LandingStageViewer`, tải lười): bộ tối ưu mô phỏng tính chuyến mẫu 366
-  kiện, bốn điểm giao ngay trên trình duyệt (Web Worker khi có), không backend, không credit. **Hai trang công khai không hiện nhãn MOCK RESULT** (quyết định của
-  chủ sản phẩm 19/11/2026): tiêu đề "Kết quả của lần chạy" và câu dưới khung nói số do bộ tối ưu mô phỏng tính. Xếp **một lần** (khoảng 3
-  giây) rồi đứng yên; "Xếp lại" xếp từ đầu; giảm chuyển động thì đầy ngay, không có "Xếp lại". Khung không nhận thao tác, camera chỉ theo ba nút
-  góc nhìn. Không WebGL, không tạo được ngữ cảnh, bật tiết kiệm dữ liệu, lỗi tải hay mất ngữ cảnh: `CargoArtwork`, không số nào; `useStageGate`
-  biết trước thì không tải Three.js, không chạy bộ tối ưu. Cổng chỉ mở khi khung cách khung nhìn không quá 250 px **và** trình duyệt rảnh:
-  điện thoại (khung nằm dưới chữ) hay khách mở thẳng một neo bên dưới thì chưa tải Three.js.
+- **Khung 3D chuyến mẫu** (`LandingStage`; Three.js chỉ ở `viewer3d/LandingStageViewer` và `viewer3d/landing/`, tải lười): bộ tối ưu mô phỏng tính
+  chuyến mẫu 366 kiện, bốn điểm giao ngay trên trình duyệt (Web Worker khi có), không backend, không credit. **Hai trang công khai không hiện nhãn MOCK RESULT** (quyết định của chủ sản phẩm 19/11/2026): dải số
+  của lần chạy nói số do bộ tối ưu mô phỏng tính. Cảnh là một sân kho thu nhỏ — xe, sàn
+  dock, bốn làn chờ theo màu điểm giao, nhà kho — chỉ để minh hoạ, không chữ, không số. Mỗi kiện của lần chạy là **đúng một hộp**: chờ ở làn của điểm
+  giao mình tới bước xếp của nó thì rời làn và hiện trong thùng (`laneSlots`); kiện chưa xếp được ở lại làn. Chuyện chạy **một lần**, khoảng 15 giây
+  (`STORY_MS`, kịch bản thuần ở `viewer3d/landing/story-timeline.ts`), theo đồng hồ `story-clock` (mỗi nhịp tiến tối đa 250 ms): nhập kiện 0–2 s →
+  tối ưu 2–4 s (dải vùng điểm giao hiện ra) → xếp 4–9 s (`fillStep`, `LANDING_FILL_MS`) → xếp xong, chờ xuất phát → xuất phát 11–15 s: cửa thùng
+  đóng, khói ở ống xả, xe lăn bánh 1,3 m (`DEPART_M`) về phía đầu xe, nhún một nhịp rồi đứng yên. "Xếp lại" đưa xe về chỗ cũ và chạy lại từ đầu.
+  Bắt đầu khi khung đã vẽ, phương án đã tính, khung lộ ít nhất 40 % và trang đã mở 1,2 giây; giữ lại khi
+  khung lộ dưới 20 %, khi tab ẩn, hoặc khi người xem bấm. Giữ lại chỉ dừng khung 3D: câu Lumo đang gõ vẫn gõ xong; chỉ nút tạm dừng làm chữ đứng
+  lại. Một nút ba trạng thái "Tạm dừng" / "Tiếp tục" / "Xếp lại" (một phần tử, focus giữ nguyên, bề
+  rộng giữ chỗ cho cả ba chữ). Ba góc nhìn: Toàn cảnh, Thùng xe (mặc định dưới 768 px), Vùng điểm giao (có nhãn vùng); camera không tự đổi khi chuyện
+  chạy. Thẻ chuyến: hai chip đầu chỉ có ở trang giới thiệu, xám trung tính: "Đang tính phương án mẫu…" (chấm quay), rồi "Đã tính phương án"
+  (vòng rỗng: chờ kho; không trùng chip trạng thái nào của ứng dụng). Sau đó là đúng chip của ứng dụng: `StatusBadge` Đang xếp hàng kèm
+  `TripSubStatusTag` "Đang xếp n / 366" và "Xếp xong — chờ xuất phát"; xe rời kho thì `StatusBadge` Đang vận chuyển kèm nhãn trung tính "Đã rời
+  kho" (`landingStage.departed`, chỉ trang giới thiệu dùng); không có chip Đã lập kế hoạch vì chuyến mẫu không có tuyến. Giảm chuyển
+  động: dừng ngay ở xếp xong (`READY_AT`) — xe đứng chỗ cũ, cửa mở, không lăn bánh, không khói, không nút. Lúc tải: hình `DioramaPoster` (SVG, cùng góc nhìn, không số). Không WebGL, không tạo được ngữ cảnh, bật tiết kiệm dữ liệu, lỗi tải, mất ngữ cảnh,
+  hoặc tab đang hiện 15 giây mà chưa có khung hình đầu (tab ẩn không tính giờ): `CargoArtwork` kèm Lumo `point` nói một câu, không số nào; `useStageGate` biết trước thì không tải Three.js, không chạy bộ tối ưu. Cổng chỉ mở khi khung cách khung nhìn không quá 250 px
+  **và** trình duyệt rảnh: điện thoại (khung nằm dưới chữ) hay khách mở thẳng một neo bên dưới thì chưa tải Three.js.
+  `useStageGate` còn chờ khung vào gần khung nhìn (IntersectionObserver, lề 250 px) rồi mới thử WebGL, tải Three.js và chạy bộ tối ưu; tiêu đề và
+  câu mô tả vẽ ngay, không chờ phần 3D. Câu mô tả khung
+  (`landing.stage.caption`) là `sr-only`, nối bằng `aria-describedby`; canvas `aria-hidden`.
 - **Số trên trang giới thiệu** đều có nguồn: sáu số của `#con-so` đọc từ hằng của code (`LandingFacts`) — số phương án mỗi lần chạy
   (`PLAN_OBJECTIVES`), credit mỗi lần chạy (`BILLING_CONSTANTS.optimizationCost`), cổng bench 1.000 kiện dưới 1 giây, số luật nhận hàng dọc
   đường, số mức đối chiếu kiện, số vai trò công ty — mỗi số kèm câu nguồn, lăn một lần (`Odometer`) rồi đứng; giá và credit từ danh mục gói,
@@ -807,6 +822,8 @@ Nguồn: `design/brand/` (`source/` là file người dùng giao; `logo-mark*.sv
   ảnh trang trí bên ngoài, không số liệu hay lời khen của khách hàng nghĩ ra. Hai trang công khai nằm ngoài khung ứng dụng nên cuộn cả tài liệu
   (đầu trang dính trên cùng). Hình của trang giới thiệu dựng từ chính sản phẩm: khung 3D chuyến mẫu, sơ đồ đẳng cự, mã QR mẫu không thuộc kiện
   nào; lưới tính năng có một thẻ nền tối đặc `--panel-dark`.
+  Sân kho quanh xe trong khung 3D trang giới thiệu là cảnh minh hoạ dựng bằng chính bộ máy 3D: không chữ, không số, không biển hiệu; hộp trên làn chờ
+  là kiện thật của lần chạy.
 
 **Cuộn trong khung ứng dụng**: trang không bao giờ cuộn; mỗi màn tự cuộn vùng nội dung của nó. `AppShell` đặt màn
 trong một **hàng** flex `relative min-h-0` dưới thanh điều hướng. Gốc màn `flex min-w-0 flex-1 flex-col`, vùng cuộn

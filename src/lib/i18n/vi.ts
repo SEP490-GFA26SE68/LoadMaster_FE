@@ -46,6 +46,8 @@ import { contacts } from './vi/contacts'
 import { landing } from './vi/landing'
 import { landingFooter } from './vi/landingFooter'
 import { landingMotion } from './vi/landingMotion'
+import { landingStage } from './vi/landingStage'
+import { landingStory } from './vi/landingStory'
 import { pricing } from './vi/pricing'
 import { warehouseCustomers } from './vi/warehouseCustomers'
 import { backendTripRoute } from './vi/backendTripRoute'
@@ -116,6 +118,8 @@ export const vi = {
   landing,
   landingFooter,
   landingMotion,
+  landingStage,
+  landingStory,
   pricing,
   warehouseCustomers,
   backendTripRoute,

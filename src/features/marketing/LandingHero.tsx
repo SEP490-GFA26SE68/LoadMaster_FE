@@ -29,7 +29,7 @@ export function LandingHero() {
   const signUp = REGISTRATION_CAPABILITIES.publicSignUp && !user
   return (
     <section aria-labelledby="landing-title">
-      <div className="relative grid items-center gap-10 px-4 pt-10 pb-16 md:px-shell xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] xl:gap-14 xl:pt-8 xl:pb-20">
+      <div className="relative grid items-center gap-10 px-4 pt-10 pb-16 md:px-shell xl:grid-cols-[34rem_minmax(0,1fr)] xl:gap-6 xl:pt-8 xl:pb-16">
         <Reveal group className="flex min-w-0 flex-col items-start gap-6">
           <FlowHeading
             as="p"
