@@ -50,9 +50,11 @@ import { landingFaq } from './en/landingFaq'
 import { landingFooter } from './en/landingFooter'
 import { landingJourney } from './en/landingJourney'
 import { landingMotion } from './en/landingMotion'
+import { landingRoles } from './en/landingRoles'
 import { landingStage } from './en/landingStage'
 import { landingStory } from './en/landingStory'
 import { landingTry } from './en/landingTry'
+import { landingWhy } from './en/landingWhy'
 import { pricing } from './en/pricing'
 import { privacy } from './en/privacy'
 import { warehouseCustomers } from './en/warehouseCustomers'
@@ -119,9 +121,11 @@ export const en = {
   landingFooter,
   landingJourney,
   landingMotion,
+  landingRoles,
   landingStage,
   landingStory,
   landingTry,
+  landingWhy,
   pricing,
   privacy,
   warehouseCustomers,
