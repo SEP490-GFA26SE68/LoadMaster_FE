@@ -76,6 +76,20 @@ export const landing = {
     compare: 'So sánh các gói',
     loading: 'Đang tải danh sách gói',
     error: 'Chưa tải được danh sách gói. Bảng giá có đủ thông tin của từng gói.',
+    /** Thanh kéo "số lần chạy mỗi tháng" dưới các gói — cùng phép tính với trợ lý Lumo (`assistant-advisor.ts`). */
+    advisor: {
+      label: 'Mỗi tháng công ty bạn chạy tối ưu 3D khoảng bao nhiêu lần?',
+      runs: { one: '{count} lần mỗi tháng', other: '{count} lần mỗi tháng' },
+      math: {
+        one: '{count} lần × {cost} credit = {credits} credit mỗi tháng.',
+        other: '{count} lần × {cost} credit = {credits} credit mỗi tháng.',
+      },
+      pick: 'Gói rẻ nhất đủ dùng: {name}.',
+      none: 'Chưa có gói đang bán nào đủ {credits} credit mỗi tháng — để lại thông tin ở form liên hệ để được tư vấn.',
+      /** Nhãn trên thẻ gói rẻ nhất đủ dùng. */
+      fits: 'Rẻ nhất đủ dùng',
+      caveat: 'Ước tính theo số lần chạy bạn chọn.',
+    },
   },
   contact: {
     title: 'Liên hệ với LoadMaster',

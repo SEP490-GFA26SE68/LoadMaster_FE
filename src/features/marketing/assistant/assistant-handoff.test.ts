@@ -36,4 +36,12 @@ describe('launcherLift', () => {
     // Hai phần tử: nâng theo phần tử cao nhất
     expect(launcherLift(zone, [{ top: 840, bottom: 880, left: 1300, right: 1340 }, { top: 790, bottom: 830, left: 1400, right: 1420 }], 12)).toBe(70)
   })
+
+  test('lifting onto another control lifts again, above both', () => {
+    // Phần tử dưới (820–860) nâng nút 40 px, tới 760–808: chạm phần tử trên (700–770) nên nâng tiếp tới trên nó
+    const stacked = [{ top: 820, bottom: 860, left: 1300, right: 1424 }, { top: 700, bottom: 770, left: 1380, right: 1424 }]
+    expect(launcherLift(zone, stacked, 12)).toBe(848 + 12 - 700)
+    // Phần tử trên không chạm vị trí gốc và nút không nâng thì không tính
+    expect(launcherLift(zone, [stacked[1]!], 12)).toBe(0)
+  })
 })

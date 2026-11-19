@@ -58,7 +58,8 @@ export function StagePlans({ plans, selected, onSelect, total, className }: {
   const picked = figures?.get(selected)?.filter((figure) => figure.value !== null)
 
   return (
-    <section aria-labelledby={titleId} data-stage-plans={plans ? 'ready' : 'pending'} className={cn(STAGE_SURFACE, 'flex flex-col gap-3 rounded-lg px-4 py-3', className)}>
+    // Nút "Hỏi Lumo" nâng lên trên cả bộ chọn (nút phương án và dải số) khi chạm nó
+    <section aria-labelledby={titleId} data-stage-plans={plans ? 'ready' : 'pending'} data-assistant-avoid className={cn(STAGE_SURFACE, 'flex flex-col gap-3 rounded-lg px-4 py-3', className)}>
       <div className="flex flex-col gap-0.5 md:flex-row md:flex-wrap md:items-baseline md:gap-x-3">
         <p id={titleId} className="m-0 text-small font-semibold text-sky-text-2 pointer-coarse:text-body-lg">{t('landingStage.plans.title')}</p>
         <p className="m-0 text-small text-sky-text-3 pointer-coarse:text-body-lg">

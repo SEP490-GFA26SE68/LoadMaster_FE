@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
@@ -112,6 +112,19 @@ test('every number on the page has a source: code constants, the plan catalogue 
   expect(plans.getByRole('group', { name: 'Ultimate' })).toHaveTextContent('Không giới hạn')
   expect(plans.getByRole('group', { name: 'Basic' })).toHaveTextContent('Giá trị tạm — chờ chốt')
   expect(plans.getByRole('link', { name: 'So sánh các gói' })).toHaveAttribute('href', '/bang-gia')
+
+  // Thanh kéo số lần chạy: cùng phép tính với trợ lý — 300 lần × 2 credit vừa gói Basic (3.000), 2.000 lần cần Pro (10.000)
+  const slider = plans.getByRole('slider', { name: 'Mỗi tháng công ty bạn chạy tối ưu 3D khoảng bao nhiêu lần?' })
+  expect(slider).toHaveAttribute('aria-valuetext', '300 lần mỗi tháng')
+  expect(plans.getByText('300 lần × 2 credit = 600 credit mỗi tháng.')).toBeInTheDocument()
+  expect(plans.getByText('Gói rẻ nhất đủ dùng: Basic.')).toBeInTheDocument()
+  expect(plans.getByRole('group', { name: 'Basic' })).toHaveTextContent('Rẻ nhất đủ dùng')
+  fireEvent.change(slider, { target: { value: '8' } })
+  expect(slider).toHaveAttribute('aria-valuetext', '2.000 lần mỗi tháng')
+  expect(plans.getByText('Gói rẻ nhất đủ dùng: Pro.')).toBeInTheDocument()
+  expect(plans.getByRole('group', { name: 'Pro' })).toHaveTextContent('Rẻ nhất đủ dùng')
+  expect(plans.getByRole('group', { name: 'Basic' })).not.toHaveTextContent('Rẻ nhất đủ dùng')
+  expect(plans.getAllByText('Rẻ nhất đủ dùng')).toHaveLength(1)
 })
 
 test('with motion on, split text keeps every accessible name: the title, the section headings and the five legs of a trip', () => {

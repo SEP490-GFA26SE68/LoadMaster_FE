@@ -180,9 +180,12 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   từ khoá vi + en không dấu (`assistant-match.ts`, dưới ngưỡng thì nói thẳng là chưa có câu trả lời). Lớp mạng `assistant-api.ts`
   (`askAssistant`, `POST /api/assistant/messages` — chưa có ở BE: khớp ở trình duyệt sau 500 ms) → `useAskAssistantMutation`. Nút mở góc
   dưới phải (chữ từ 640 px, 48 px / 56 px cảm ứng, chừa vùng an toàn) nâng lên khi chạm phần tử mang `data-assistant-avoid` (nút chính của
-  phần mở đầu, nút "Tạm dừng / Tiếp tục / Xếp lại" của khung 3D, "Lên đầu trang" — `useLauncherLift`); khung chat là chunk lười: từ 768 px thẻ trắng không modal cạnh nút, hẹp hơn tờ phủ
+  phần mở đầu, nút "Tạm dừng / Tiếp tục / Xếp lại" của khung 3D, bộ chọn phương án dưới khung, "Lên đầu trang" —
+  `useLauncherLift`; nâng lên chạm phần tử khác thì nâng tiếp qua nó); khung chat là chunk lười: từ 768 px thẻ trắng không modal cạnh nút, hẹp hơn tờ phủ
   cả màn modal. Mỗi câu trả lời tối đa ba câu kèm liên kết tới phần của trang hay Bảng giá; lối đăng ký chỉ khi khách tự đăng ký được. Tính
   gói: số lần chạy × `BILLING_CONSTANTS.optimizationCost` → gói đang bán rẻ nhất đủ credit (`assistant-advisor.ts`), không nói tiết kiệm.
+  Phần Gói cước của trang giới thiệu dùng cùng phép tính cho thanh kéo "số lần chạy mỗi tháng" (`PlanAdvisorSlider`: thanh kéo gốc của
+  trình duyệt, 15 mức từ 50 tới 10.000, đứng sẵn ở 300); thẻ gói rẻ nhất đủ dùng có viền `--primary` kèm nhãn chữ "Rẻ nhất đủ dùng".
   "Hỏi đội LoadMaster" mở form liên hệ (Hỏi thông tin) và điền sẵn câu hỏi qua `state` của điều hướng (không lên URL;
   `ContactSection` đọc một lần mỗi lần điều hướng) — không hứa thời gian trả lời. Cuộc trò chuyện chỉ trong bộ nhớ
   (`assistant-session.ts`): giữ qua hai trang, tải lại là mất; không `localStorage`. Thêm điều sản phẩm làm được thì thêm chủ đề, chỉ nói

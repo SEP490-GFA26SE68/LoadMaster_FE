@@ -17,7 +17,7 @@ function baseZone(button: HTMLElement): Box {
 }
 
 /**
- * Nâng nút "Hỏi Lumo" khi điều khiển mang `data-assistant-avoid` (nút chính của phần mở đầu, nút "Lên đầu trang") chạm vào chỗ của nó.
+ * Nâng nút "Hỏi Lumo" khi phần tử mang `data-assistant-avoid` (xem `launcher-lift.ts`) chạm vào chỗ của nó.
  * Đo lại khi cuộn, đổi cỡ khung nhìn và khi một chuyển động CSS xong (chữ hiện ra một lần), gộp theo khung hình; ghi khoảng nâng vào biến
  * `--assistant-lift` của <html> để khung chat (desktop) đứng theo. Gỡ thì trả biến về như cũ.
  */

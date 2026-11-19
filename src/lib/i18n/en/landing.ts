@@ -60,6 +60,18 @@ export const landing = {
     compare: 'Compare the plans',
     loading: 'Loading the plans',
     error: 'The plans could not be loaded. The pricing page has the details of every plan.',
+    advisor: {
+      label: 'About how many 3D optimization runs does your company do a month?',
+      runs: { one: '{count} run a month', other: '{count} runs a month' },
+      math: {
+        one: '{count} run × {cost} credits = {credits} credits a month.',
+        other: '{count} runs × {cost} credits = {credits} credits a month.',
+      },
+      pick: 'Cheapest plan that covers it: {name}.',
+      none: 'No plan on sale covers {credits} credits a month — leave your details in the contact form for advice.',
+      fits: 'Cheapest that covers it',
+      caveat: 'An estimate from the number of runs you pick.',
+    },
   },
   contact: {
     title: 'Contact LoadMaster',
