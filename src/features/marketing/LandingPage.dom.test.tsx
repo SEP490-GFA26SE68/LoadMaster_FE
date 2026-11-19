@@ -108,8 +108,8 @@ test('every number on the page has a source: code constants, the plan catalogue 
   expect(journey.getByText(/^Trình duyệt này không chạy bộ tối ưu mẫu/)).toBeInTheDocument()
   // Hai số cố định của lần chạy, mỗi số một câu nguồn: giá trị là định nghĩa thứ nhất của từng cặp, câu nguồn là định nghĩa thứ hai
   expect(journey.getAllByRole('term').map((term) => term.textContent)).toStrictEqual([
-    'cho một lần chạy, cả ba phương án',
-    'cho 1.000 kiện, đủ ba phương án',
+    'mỗi lần chạy',
+    'cho 1.000 kiện',
   ])
   const definitions = journey.getAllByRole('definition').map((definition) => definition.textContent)
   expect(definitions.filter((_, index) => index % 2 === 0)).toStrictEqual(['2 credit', '< 1 giây'])

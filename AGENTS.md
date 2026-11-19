@@ -126,8 +126,9 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
 - **Trang giới thiệu** `/gioi-thieu`: khối mở đầu tối `.landing-cinema` (tiêu đề, nút chính "Nhận tư vấn" tới `#lien-he` — khi nối backend
   cho khách chưa đăng nhập là "Đăng ký trải nghiệm", mục "Đăng ký công khai" ở trên —, nút kính "Thử với hàng của bạn" tới `#thu-ngay`,
   khung 3D chuyến mẫu,
-  dải "Ba chuyện quen thuộc của một chuyến hàng" `LandingProblems` — ba chuyện, mỗi chuyện kèm việc ứng dụng làm thật, không số) · "Một chuyến
-  hàng trên LoadMaster" `#cach-hoat-dong` (mục dưới) · "Thử với hàng của bạn" `#thu-ngay` (mục dưới) · Gói cước `#goi-cuoc` (cùng truy vấn
+  dải "Ba chuyện quen thuộc của một chuyến hàng" `LandingProblems` — ba chuyện, mỗi chuyện kèm việc ứng dụng làm thật, không số —, dải "Vì sao
+  xếp tay không xuể" (mục dưới)) · "Một chuyến hàng trên LoadMaster" `#cach-hoat-dong` (mục dưới) · "Một chuyến, bốn màn" `#vai-tro` (mục
+  dưới) · "Thử với hàng của bạn" `#thu-ngay` (mục dưới) · Gói cước `#goi-cuoc` (cùng truy vấn
   với Bảng giá; gói mang cờ tạm được nói bằng **một câu** dưới tiêu đề kèm tên các gói đó — `landing.plans.provisional` —, không nhãn trên
   từng thẻ như Bảng giá) · Hỏi đáp `#hoi-dap` (`marketing/faq/`: sáu chủ đề của trợ lý Lumo `FAQ_TOPICS` — câu hỏi là `chip`, câu trả lời và liên kết
   là `TopicAnswer` với cùng `useAssistantContext`, không chữ riêng; mỗi câu một `<details>` gốc, dòng câu hỏi 44 px, 56 px trên máy cảm
@@ -144,12 +145,24 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   thùng xe SVG dính theo cuộn (`JourneyTruck`, `aria-hidden`; từ 1.024 px là cột phải, hẹp hơn là dải dính dưới đầu trang): 35 kiện trong vùng
   của bốn điểm giao, lên xe ở chặng kho (điểm cuối trước, từ sàn lên), xuống xe ở chặng điểm giao (điểm 1 trước, từ trên xuống) — hình học
   thuần `truckBoxes`, có test. Từ 1.024 px mỗi chặng cao ít nhất 40 % khung nhìn (chặng cuối không) để thùng xe có quãng cuộn mà không để
-  khoảng trống lớn giữa các chặng. `useJourneyProgress` (IntersectionObserver, một khung hình mỗi lần cuộn, mốc 55 % chiều cao khung nhìn) ghi
+  khoảng trống lớn giữa các chặng; dưới 640 px chặng cao theo nội dung, không vạch nối và ô icon (còn `RoleBadge`), sơ đồ tuyến chỉ còn chip
+  mức hạn, bảng so tràn hết bề ngang — cả phần không quá 2.400 px ở 390 px. `useJourneyProgress` (IntersectionObserver, một khung hình mỗi lần cuộn, mốc 55 % chiều cao khung nhìn) ghi
   thẳng vào DOM `--p`, `data-chapter`, `data-reached` — không state React theo cuộn. Không IntersectionObserver thì không ghi gì, CSS giữ thùng
   đầy (`--p` mặc định 0,5); giảm chuyển động thì hình đổi theo chặng, không theo từng điểm cuộn; chữ không bao giờ ẩn chờ cuộn. Bảng và số của
   điểm 1 đọc **cùng truy vấn** lần chạy mẫu với khung 3D (`useJourneySample`, khoá `['landing', 'sample-candidates']`); không Web Worker hay
   bật tiết kiệm dữ liệu thì không chạy — vạch giữ chỗ và một câu nói vì sao.
-- **"Thử với hàng của bạn"** (`marketing/try/`, `LandingTry`, `#thu-ngay`, ngay sau "Một chuyến hàng"): khách nhập lòng thùng (cm) và tải
+- **"Vì sao xếp tay không xuể"** (`marketing/why/`, `LandingWhy`, cuối `.landing-cinema`): khách chọn số điểm giao (thanh kéo gốc, 1–8) và
+  số kiện (nhóm radio, mốc cuối là 366 kiện của chuyến mẫu); trang đếm tại chỗ số thứ tự đi qua các điểm (n!) và số cách chọn hướng đặt (6^k)
+  — phép đếm thuần `why-count.ts`, có test, không phải số đo; số lớn viết "≈ a × 10^b" kèm số chữ số, trình đọc màn hình đọc thành lời. Không
+  nút chính. Cao tối đa 520 px ở 390 px.
+- **"Một chuyến, bốn màn"** (`marketing/roles/`, `LandingRoles`, `#vai-tro`, ngay sau "Một chuyến hàng"): bốn vai trò của một chuyến là bốn
+  tab Radix (cao 56 px, dưới 640 px lưới 2 × 2) — điều phối viên (màn Giám sát trên máy tính: sơ đồ tuyến, chip mức hạn, nguồn "Mô phỏng",
+  dòng giờ nghỉ bắt buộc, tính bằng `@/domain/routing` trên tuyến mẫu `roleRoute`), nhân viên kho (màn xếp trên máy tính bảng), tài xế (màn
+  điểm giao trên điện thoại, kèm **một câu** về ứng dụng di động — không huy hiệu, liên kết cửa hàng hay QR), quản lý công ty (KPI và biểu đồ
+  khối lượng theo điểm). Mỗi khung thiết bị dựng lại màn thật thu nhỏ theo `em` (`roles.css`), `aria-hidden` kèm bản chữ `sr-only`, không
+  nút bấm được trong hình; bốn bảng luôn dựng và chồng một ô lưới nên đổi tab không làm trang nhảy. Số tính từ chuyến mẫu (`roles-model.ts`)
+  kèm một câu nguồn, không MOCK RESULT. Cao tối đa 800 px ở 390 px.
+- **"Thử với hàng của bạn"** (`marketing/try/`, `LandingTry`, `#thu-ngay`, ngay sau "Một chuyến, bốn màn"): khách nhập lòng thùng (cm) và tải
   trọng (kg), một tới bốn loại kiện (cm, kg, số kiện, điểm giao 1–4; tổng tối đa 1.000 kiện — cổng hiệu năng của bộ tối ưu mô phỏng), form
   react-hook-form + zod, lỗi là mã (`try-form.ts`); mở ra với xe 3,5 tấn 520 × 200 × 200 cm và ba loại thùng cho ba điểm giao (48 thùng 60 × 40 × 40 cm, 60 thùng 50 × 40 × 30 cm, 16 thùng
   80 × 60 × 50 cm — 124 kiện, 1.680 kg) để chạy được ngay và lần chạy đầu đã có màu ba điểm giao, số kiện dỡ-xếp lại. Nhóm nghìn của ô số
@@ -484,7 +497,9 @@ src/
                         chủ đề `faq-topics.ts`); khung chung `PublicPage` (đầu trang `PublicHeader`, chân trang `PublicFooter` + `footer/`, cuộn tới neo
                         `useHashScroll`); khung 3D chuyến mẫu `LandingStage` (cổng `useStageGate`, phần 3D ở `viewer3d/LandingStageViewer`);
                         "Ba chuyện quen thuộc" `LandingProblems`; "Một chuyến hàng" `journey/` (`LandingJourney`, thùng xe `JourneyTruck`,
-                        hình học + tiến độ thuần `journey-model.ts`, `useJourneyProgress`, `useJourneySample`); "Thử với hàng của bạn"
+                        hình học + tiến độ thuần `journey-model.ts`, `useJourneyProgress`, `useJourneySample`); "Vì sao xếp tay không
+                        xuể" `why/` (`LandingWhy`, phép đếm `why-count.ts`); "Một chuyến, bốn màn" `roles/` (`LandingRoles`, khung
+                        `DeviceFrame`, bốn màn thu nhỏ, số mẫu `roles-model.ts`); "Thử với hàng của bạn"
                         `try/` (`LandingTry`, luật form `try-form.ts`, request `try-request.ts`, số của ba phương án `try-outcome.ts`,
                         `try-api.ts` → `useTryRun`);
                         chữ và khối hiện một lần `reveal/` (`RevealProvider` — một IntersectionObserver —, `Reveal`, `RevealWords`,

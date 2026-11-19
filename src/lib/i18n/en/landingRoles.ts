@@ -23,19 +23,19 @@ export const landingRoles = {
       p2: 'Expected arrival beside each stop\'s deadline, mandatory rests included.',
     },
     warehouse: {
-      p1: 'One package per screen: which one, into which stop\'s zone of the truck.',
-      p2: 'A package only counts as loaded once verified — scan, type the code, or confirm by hand.',
+      p1: 'One package per screen, and the zone of the truck it goes in.',
+      p2: 'A package counts as loaded once checked: scan, type the code or confirm by hand.',
     },
     driver: {
-      p1: 'The next stop, expected arrival and deadline; one main button per step.',
-      p2: 'Unload each package through the verification box; refused packages stay on the truck.',
+      p1: 'Next stop, expected arrival and deadline; one main button per step.',
+      p2: 'Unload each package through a check; refused ones stay on the truck.',
     },
     companyManager: {
       p1: 'Trip figures by period, each number with its source, ready to export.',
       p2: 'Read-only view of trips and plans, and the monthly driver payroll.',
     },
   },
-  mobileApp: 'Drivers and warehouse workers also have their own mobile app — not on the app stores yet.',
+  mobileApp: 'Drivers and warehouse staff also have a mobile app — not in app stores yet.',
   source: 'Numbers in the picture come from the {count}-package sample trip; arrivals assume straight lines, leaving the depot at {time}.',
   frame: {
     trip: 'Sample trip',

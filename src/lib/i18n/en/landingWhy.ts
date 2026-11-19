@@ -8,7 +8,7 @@ import type { landingWhy as source } from '../vi/landingWhy'
  * `approx` is how a screen reader says them.
  */
 export const landingWhy = {
-  title: 'Why loading by hand does not scale',
+  title: 'Why hand loading falls short',
   stops: {
     label: 'Stops',
     value: { one: '{count} stop', other: '{count} stops' },
@@ -17,11 +17,11 @@ export const landingWhy = {
     label: 'Packages',
   },
   orders: { one: 'Orders to visit {count} stop', other: 'Orders to visit {count} stops' },
-  orientations: { one: 'Orientation choices for {count} package', other: 'Orientation choices for {count} packages' },
+  orientations: { one: 'Orientations of {count} package', other: 'Orientations of {count} packages' },
   approx: 'about {mantissa} times 10 to the power of {exponent}',
-  digits: { one: 'a number {count} digit long', other: 'a number {count} digits long' },
+  digits: { one: 'a {count}-digit number', other: 'a {count}-digit number' },
   closing: {
-    one: 'Each package has {base} orientations, before even picking its position. The LoadMaster optimizer goes through them for you and returns {count} plan.',
-    other: 'Each package has {base} orientations, before even picking its position. The LoadMaster optimizer goes through them for you and returns {count} plans.',
+    one: 'Each package has {base} orientations, before its spot is even chosen. LoadMaster weighs them for you and returns {count} plan.',
+    other: 'Each package has {base} orientations, before its spot is even chosen. LoadMaster weighs them for you and returns {count} plans.',
   },
 } satisfies Dictionary<typeof source>

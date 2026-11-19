@@ -23,7 +23,7 @@ export function VerifyVisual() {
       <p className={LABEL}>{t('landingJourney.verify.label')}</p>
       <div className="flex items-center gap-5">
         <div aria-hidden className="flex-none rounded-md border border-line-soft bg-bg p-1">
-          <QrCode token={SAMPLE_QR_TOKEN} size={88} />
+          <QrCode token={SAMPLE_QR_TOKEN} size={72} />
         </div>
         <ol className="m-0 flex min-w-0 list-none flex-col gap-2.5 p-0">
           {VERIFY_LEVELS.map((level, index) => (
@@ -51,14 +51,15 @@ const STOPS = [
 
 /**
  * Chặng trên đường: sơ đồ tuyến (trang trí — kho, đường đi, số điểm giao trên màu định danh) và chú giải ba mức hạn, cùng chữ và màu
- * như Chi tiết chuyến — không phải giờ đến của chuyến nào.
+ * như Chi tiết chuyến — không phải giờ đến của chuyến nào. Dưới 640 px chỉ còn chú giải: sơ đồ tuyến có số thật nằm ở tab điều phối
+ * viên của "Một chuyến, bốn màn" ngay dưới.
  */
 export function RouteVisual() {
   const t = useT()
   const route = [DEPOT, ...STOPS].map((point) => `${point.x},${point.y}`).join(' ')
   return (
     <div className="flex flex-col gap-4">
-      <svg aria-hidden viewBox="0 0 530 150" className="block h-auto w-full max-w-130">
+      <svg aria-hidden viewBox="0 0 530 150" className="block h-auto w-full max-w-130 max-sm:hidden">
         <polyline points={route} fill="none" className="stroke-cyan-200" strokeWidth={9} strokeLinecap="round" strokeLinejoin="round" />
         <polyline points={route} fill="none" className="stroke-primary" strokeWidth={2.5} strokeDasharray="1 7" strokeLinecap="round" strokeLinejoin="round" />
         <rect x={DEPOT.x - 16} y={DEPOT.y - 16} width={32} height={32} rx={7} className="fill-panel-dark" />
