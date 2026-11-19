@@ -52,6 +52,7 @@ import { landingJourney } from './en/landingJourney'
 import { landingMotion } from './en/landingMotion'
 import { landingStage } from './en/landingStage'
 import { landingStory } from './en/landingStory'
+import { landingTry } from './en/landingTry'
 import { pricing } from './en/pricing'
 import { privacy } from './en/privacy'
 import { warehouseCustomers } from './en/warehouseCustomers'
@@ -120,6 +121,7 @@ export const en = {
   landingMotion,
   landingStage,
   landingStory,
+  landingTry,
   pricing,
   privacy,
   warehouseCustomers,

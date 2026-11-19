@@ -123,11 +123,11 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
 - **Trang giới thiệu** `/gioi-thieu`: khối mở đầu tối `.landing-cinema` (tiêu đề, nút chính "Nhận tư vấn" tới `#lien-he` — khi nối backend
   cho khách chưa đăng nhập là "Đăng ký trải nghiệm", mục "Đăng ký công khai" ở trên —, khung 3D chuyến mẫu,
   dải "Ba chuyện quen thuộc của một chuyến hàng" `LandingProblems` — ba chuyện, mỗi chuyện kèm việc ứng dụng làm thật, không số) · "Một chuyến
-  hàng trên LoadMaster" `#cach-hoat-dong` (mục dưới) · Gói cước `#goi-cuoc` (cùng truy vấn với Bảng giá) · Hỏi đáp `#hoi-dap` (`marketing/faq/`:
-  sáu chủ đề của trợ lý Lumo `FAQ_TOPICS` — câu hỏi là `chip`, câu trả lời và liên kết là `TopicAnswer` với cùng `useAssistantContext`, không
-  chữ riêng; mỗi câu một `<details>` gốc, dòng câu hỏi 44 px, 56 px trên máy cảm ứng, mũi tên xoay bằng CSS và không quay khi giảm chuyển động)
-  · dải liên hệ tối `.landing-closing` `#lien-he` · chân trang. Menu đầu trang ba mục (`PUBLIC_LINKS`: Cách hoạt động, Bảng giá, Liên hệ) —
-  Hỏi đáp mở từ chân trang. **Nhận hàng dọc đường không được giới
+  hàng trên LoadMaster" `#cach-hoat-dong` (mục dưới) · "Thử với hàng của bạn" `#thu-ngay` (mục dưới) · Gói cước `#goi-cuoc` (cùng truy vấn
+  với Bảng giá) · Hỏi đáp `#hoi-dap` (`marketing/faq/`: sáu chủ đề của trợ lý Lumo `FAQ_TOPICS` — câu hỏi là `chip`, câu trả lời và liên kết
+  là `TopicAnswer` với cùng `useAssistantContext`, không chữ riêng; mỗi câu một `<details>` gốc, dòng câu hỏi 44 px, 56 px trên máy cảm
+  ứng, mũi tên xoay bằng CSS và không quay khi giảm chuyển động) · dải liên hệ tối `.landing-closing` `#lien-he` · chân trang. Menu đầu
+  trang ba mục (`PUBLIC_LINKS`: Cách hoạt động, Bảng giá, Liên hệ) — Hỏi đáp mở từ chân trang. **Nhận hàng dọc đường không được giới
   thiệu** ở hai trang công khai, kể cả trợ lý Lumo (quyết định của chủ sản phẩm 19/11/2026); tính năng vẫn có trong ứng dụng. Cả trang nằm trong
   `RevealProvider`: chữ và thẻ hiện ra **một lần** khi cuộn tới (`features/marketing/reveal`, mục 8).
 - **"Một chuyến hàng trên LoadMaster"** (`marketing/journey/`, `LandingJourney`): năm chặng theo thứ tự (`CHAPTERS` ở `journey-model.ts`) —
@@ -142,6 +142,19 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   đầy (`--p` mặc định 0,5); giảm chuyển động thì hình đổi theo chặng, không theo từng điểm cuộn; chữ không bao giờ ẩn chờ cuộn. Bảng và số của
   điểm 1 đọc **cùng truy vấn** lần chạy mẫu với khung 3D (`useJourneySample`, khoá `['landing', 'sample-candidates']`); không Web Worker hay
   bật tiết kiệm dữ liệu thì không chạy — vạch giữ chỗ và một câu nói vì sao.
+- **"Thử với hàng của bạn"** (`marketing/try/`, `LandingTry`, `#thu-ngay`, ngay sau "Một chuyến hàng"): khách nhập lòng thùng (cm) và tải
+  trọng (kg), một tới bốn loại kiện (cm, kg, số kiện, điểm giao 1–4; tổng tối đa 1.000 kiện — cổng hiệu năng của bộ tối ưu mô phỏng), form
+  react-hook-form + zod, lỗi là mã (`try-form.ts`); mở ra với xe 3,5 tấn 520 × 200 × 200 cm và 120 thùng 60 × 40 × 40 cm để chạy được ngay.
+  Chỉ chạy khi bấm "Tính ba phương án" — **nút phụ**, nút chính của trang ở phần mở đầu —: `try-api.ts` → `useTryRun` (mutation; bấm lại
+  thì huỷ lần cũ) gọi `optimizeCandidates` của chính bộ tối ưu mô phỏng (Web Worker khi có, luồng gọi khi không), một lần chạy ra ba phương
+  án A · B · C; không tài khoản, kho mẫu, credit hay máy chủ. Xe của bản thử: cửa sau bằng lòng thùng, không vật cản, **không trục**; kiện theo
+  mặc định của kiện thêm lẻ (`cargoFromPackage`), không bắt buộc xếp. Mỗi thẻ phương án: chữ cái + mục tiêu, hình SVG `PlanThumbnail` (không
+  Three.js), xếp được / tổng, lấp đầy thể tích, trọng tâm lệch giữa thùng (thay chênh tải trục: xe không trục thì không có số tải trục — câu
+  dưới kết quả nói vậy), số kiện dỡ-xếp lại **chỉ khi** hàng có từ hai điểm giao (một điểm thì luôn 0 — bỏ hàng, kèm câu), kiện chưa xếp theo
+  loại kèm lý do (`viewer.unplacedReasons`); hai mục tiêu chọn trùng một cách xếp thì thẻ ghi "Giống hệt phương án …" (`try-outcome.ts`).
+  "Tốt nhất" trung tính như màn So sánh. Không nhãn MOCK RESULT: câu nguồn nói số do bộ tối ưu mô phỏng chạy trên trình duyệt tính. Form đổi
+  sau lần tính thì có câu báo kết quả cũ. Dưới kết quả: "Đăng ký trải nghiệm" khi khách tự đăng ký được, không thì "Nhận tư vấn". Từ 1.280 px
+  form trái, kết quả phải (ba thẻ cạnh nhau từ 640 px); `e2e/landing-try.spec.ts` đo gọn trong 900 px ở 1.440 × 900 và điện thoại 390 px.
 - **Chân trang công khai** (`PublicFooter`, `marketing/footer/`): dải đường có xe tải chạy vào một lần, khối thương hiệu (logo, khẩu
   hiệu, nút tới form liên hệ, ngôn ngữ), bốn cột — Sản phẩm (hai neo của trang giới thiệu, Bảng giá) · Dành cho (năm vai trò công ty, là
   chữ) · Hỗ trợ (Hỏi đáp → `#hoi-dap`, Liên hệ tư vấn → `#lien-he`, Chính sách bảo mật → `/chinh-sach-bao-mat`) · Tài khoản ("Đăng nhập" hay "Vào ứng dụng"; khách có thêm hai lối đăng ký khi nối backend)
@@ -446,7 +459,9 @@ src/
                         chủ đề `faq-topics.ts`); khung chung `PublicPage` (đầu trang `PublicHeader`, chân trang `PublicFooter` + `footer/`, cuộn tới neo
                         `useHashScroll`); khung 3D chuyến mẫu `LandingStage` (cổng `useStageGate`, phần 3D ở `viewer3d/LandingStageViewer`);
                         "Ba chuyện quen thuộc" `LandingProblems`; "Một chuyến hàng" `journey/` (`LandingJourney`, thùng xe `JourneyTruck`,
-                        hình học + tiến độ thuần `journey-model.ts`, `useJourneyProgress`, `useJourneySample`);
+                        hình học + tiến độ thuần `journey-model.ts`, `useJourneyProgress`, `useJourneySample`); "Thử với hàng của bạn"
+                        `try/` (`LandingTry`, luật form `try-form.ts`, request `try-request.ts`, số của ba phương án `try-outcome.ts`,
+                        `try-api.ts` → `useTryRun`);
                         chữ và khối hiện một lần `reveal/` (`RevealProvider` — một IntersectionObserver —, `Reveal`, `RevealWords`,
                         `FlowHeading`, `LineRise`, `TextRibbon`, `Odometer`, `LumoSays`, `split-text.ts` thuần, `reveal.css`); trợ lý "Hỏi Lumo"
                         `assistant/` (nút mở `AssistantLauncher`, khung chat lười `AssistantPanel`, bộ câu trả lời `assistant-kb.ts` + khớp
