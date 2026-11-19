@@ -1,0 +1,229 @@
+/*
+ * Chân trang của các trang công khai (PublicFooter): nền tối đặc nối liền dải liên hệ của trang giới thiệu (`--landing-closing` tắt về
+ * `--cyan-950` = `--panel-dark`), lưới chấm như sàn kho ở phần trên, và dải đường có xe tải chạy vào một lần (FooterRoad).
+ * Luật chuyển động như reveal.css / sections.css: keyframes chỉ có khung đầu khi khung cuối là style của chính phần tử, nên bỏ animation
+ * (giảm chuyển động, in trang) là đúng trạng thái đỗ; mọi chuyển động chỉ khai dưới `prefers-reduced-motion: no-preference` và dừng trước
+ * giây thứ 5 (WCAG 2.2.2). Chỉ `transform` và `opacity`.
+ */
+
+@layer components {
+  .public-footer {
+    position: relative;
+    isolation: isolate;
+    overflow-x: clip;
+    background-color: var(--panel-dark);
+    color: var(--sky-text-2);
+  }
+  /* Lưới chấm của dải trời, mờ dần xuống dưới để phần chữ đọc trên nền phẳng */
+  .public-footer::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto;
+    height: 22rem;
+    z-index: -1;
+    pointer-events: none;
+    background-image: var(--sky-dots);
+    background-size: 22px 22px;
+    mask-image: linear-gradient(180deg, black 0%, transparent 100%);
+  }
+
+  /* ---- Dải đường ---------------------------------------------------------------------------------------------------------------- */
+  .footer-road {
+    --truck-w: 112px;
+    --truck-h: 48px;
+    position: relative;
+    height: 6.5rem;
+    overflow-x: clip;
+  }
+  @media (width >= 40rem) {
+    .footer-road {
+      --truck-w: 140px;
+      --truck-h: 60px;
+    }
+  }
+  @media (width >= 64rem) {
+    .footer-road {
+      --truck-w: 168px;
+      --truck-h: 72px;
+      height: 7.5rem;
+    }
+  }
+  /* Mặt đường: dải phẳng giữa hai mép mảnh, vạch kẻ đứt ở giữa */
+  .footer-road-surface {
+    position: absolute;
+    inset: auto 0 8px;
+    height: 18px;
+    border-block: 1px solid var(--border-dark);
+    background-color: color-mix(in srgb, var(--cyan-900) 45%, transparent);
+  }
+  .footer-road-dashes {
+    position: absolute;
+    inset: auto 0 16px;
+    stroke: var(--cyan-700);
+    stroke-width: 2;
+    stroke-dasharray: 14 12;
+  }
+  .footer-road-lane {
+    position: absolute;
+    inset: 0;
+  }
+
+  /* Ghim điểm giao cuối, mũi ghim chạm mép trên của mặt đường */
+  .footer-pin {
+    position: absolute;
+    right: 4px;
+    bottom: 22px;
+    width: 24px;
+    height: 24px;
+    color: var(--cyan-300);
+  }
+  .footer-pin-ring {
+    position: absolute;
+    left: 50%;
+    bottom: -14px;
+    width: 28px;
+    height: 28px;
+    margin-left: -14px;
+    border: 1.5px solid var(--cyan-300);
+    border-radius: 50%;
+    opacity: 0;
+    transform: scale(2.2, 0.77);
+  }
+
+  /* Xe đỗ cạnh ghim; mặt đường của hình (y = 56 / 60) nằm trên mép trên của mặt đường + 4 px */
+  .footer-truck {
+    position: absolute;
+    right: 40px;
+    bottom: calc(22px - var(--truck-h) / 15);
+    width: var(--truck-w);
+    height: var(--truck-h);
+  }
+  .footer-puff {
+    position: absolute;
+    width: 0;
+    height: 0;
+  }
+  /* Một cụm khói: múi chính và ba múi phụ (bóng đặc cùng màu), viền mờ nhẹ, đục nhất 0,6 — cùng kiểu với khói của dải nguyên tắc
+     (steps/truck-motion.css) và khói 3D của phần mở đầu */
+  .footer-puff-cloud {
+    position: absolute;
+    left: -5px;
+    top: -5px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: var(--n-200);
+    box-shadow:
+      6px 1px 0 -1px var(--n-200),
+      -5px 2px 0 -2px var(--n-200),
+      1px -4px 0 -1px var(--n-200);
+    filter: blur(1px);
+    opacity: 0;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .footer-road[data-road='ready'] .footer-truck {
+      transform: translateX(-100vw);
+    }
+
+    .footer-road[data-road='go'] .footer-truck {
+      animation: footer-drive 3.2s cubic-bezier(0.33, 1, 0.68, 1) both;
+    }
+    .footer-road[data-road='go'] .footer-wheel {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: footer-spin 3.2s cubic-bezier(0.33, 1, 0.68, 1) both;
+    }
+    /* Nhún nhẹ theo mặt đường lúc chạy: số lần lẻ để dừng đúng ở vị trí của chính nhóm */
+    .footer-road[data-road='go'] .footer-truck-bob {
+      animation: footer-bob 0.22s ease-in-out 13 alternate both;
+    }
+    /* Phanh: chúi đầu quanh bánh trước rồi lắng lại */
+    .footer-road[data-road='go'] .footer-truck-pitch {
+      transform-box: view-box;
+      transform-origin: 114px 48px;
+      animation: footer-brake 0.6s var(--ease-standard) 2.7s both;
+    }
+    .footer-road[data-road='go'] .footer-puff {
+      /* Trong 1 giây cụm khói sống, xe đi chừng 60 % quãng của đoạn đó ở nửa đầu: ease-out nhẹ hơn đường chạy của cả chuyến */
+      animation: footer-puff-trail 1s cubic-bezier(0.2, 0.4, 0.6, 1) var(--puff-at) both;
+    }
+    .footer-road[data-road='go'] .footer-puff-cloud {
+      animation: footer-puff-cloud 1s var(--ease-decelerate) var(--puff-at) both;
+    }
+    .footer-road[data-road='go'] .footer-pin-ring {
+      animation: footer-ring 0.9s var(--ease-decelerate) 2.9s both;
+    }
+  }
+
+  /* Màu cưỡng bức: dải chỉ để nhìn, bỏ hẳn thay vì vẽ bằng màu hệ thống */
+  @media (forced-colors: active) {
+    .footer-road {
+      display: none;
+    }
+  }
+  @media print {
+    .footer-road,
+    .public-footer::before {
+      display: none;
+    }
+  }
+}
+
+@keyframes footer-drive {
+  from {
+    transform: translateX(-100vw);
+  }
+}
+@keyframes footer-spin {
+  from {
+    transform: rotate(-2160deg);
+  }
+}
+@keyframes footer-bob {
+  from {
+    transform: translateY(-0.7px);
+  }
+}
+@keyframes footer-brake {
+  0% {
+    transform: none;
+  }
+  40% {
+    transform: rotate(1.6deg);
+  }
+  72% {
+    transform: rotate(-0.5deg);
+  }
+  100% {
+    transform: none;
+  }
+}
+/* Cụm khói lùi đúng quãng xe đi trong lúc nó sống (--puff-k × 100vw): đứng yên trên đường trong khi xe chạy tiếp */
+@keyframes footer-puff-trail {
+  from {
+    transform: none;
+  }
+  to {
+    transform: translateX(calc(var(--puff-k) * -100vw));
+  }
+}
+@keyframes footer-puff-cloud {
+  0% {
+    opacity: 0;
+    transform: scale(0.35);
+  }
+  14% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-10px, -16px) scale(2);
+  }
+}
+@keyframes footer-ring {
+  from {
+    opacity: 0.8;
+    transform: scale(0.4, 0.14);
+  }
+}

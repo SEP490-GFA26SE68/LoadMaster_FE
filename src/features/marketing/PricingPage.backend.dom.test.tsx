@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { AuthProvider } from '@/features/auth/AuthProvider'
 import { I18nProvider } from '@/lib/i18n'
+import { signedInAs } from '@/test/signed-in'
 import { PricingPage } from './PricingPage'
 
 /**
@@ -52,4 +53,23 @@ test('guests see the sign-up entry points: header buttons and plan-card links, t
   expect(within(pro).getByRole('link', { name: 'Đăng ký dùng ngay gói Pro' })).toHaveAttribute('href', '/dang-ky?planId=PLAN-002')
   expect(within(pro).queryByRole('link', { name: /Đăng ký trải nghiệm/ })).not.toBeInTheDocument()
   expect(within(pro).getByRole('link', { name: 'Liên hệ tư vấn gói Pro' })).toHaveAttribute('href', '/gioi-thieu?goi=PLAN-002&loai=bao-gia#lien-he')
+})
+
+test('someone signed in sees no sign-up entry point: not in the header, not on a plan card', async () => {
+  signedInAs('companyAdmin')
+  renderPricing()
+  await screen.findByRole('heading', { level: 2, name: 'Pro' }, SLOW)
+
+  expect(within(screen.getByRole('banner')).getByRole('link', { name: 'Vào ứng dụng' })).toBeInTheDocument()
+  expect(screen.queryByRole('link', { name: /Đăng ký/ })).not.toBeInTheDocument()
+  // Thẻ còn đúng một nút: "Liên hệ tư vấn", là nút phụ như ở kho mẫu
+  const basic = screen.getByRole('group', { name: 'Basic' })
+  expect(within(basic).getAllByRole('link').map((link) => link.textContent)).toStrictEqual(['Liên hệ tư vấn gói Basic'])
+})
+
+test('the note under the plans tells guests they can register themselves, not that the team opens the account', async () => {
+  renderPricing()
+  await screen.findByRole('heading', { level: 2, name: 'Pro' }, SLOW)
+  expect(screen.getByText(/tự đăng ký tài khoản công ty/)).toBeInTheDocument()
+  expect(screen.queryByText(/đội LoadMaster mở tài khoản công ty sau khi trao đổi/)).not.toBeInTheDocument()
 })

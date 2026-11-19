@@ -80,7 +80,8 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   chưa đăng nhập, dễ thấy nhất trước: **nút chính** của khối mở đầu `/gioi-thieu` là "Đăng ký trải nghiệm" ("Nhận tư vấn" lùi thành nút kính
   cạnh nó); đầu trang có nút kính "Đăng ký trải nghiệm" từ 768 px và "Đăng ký dùng ngay" từ 1.280 px (hẹp hơn hai mục nằm trong nút menu); màn
   đăng nhập có hai nút phụ dưới form (`LoginSignUp`); thẻ gói có nút phụ ("Đăng ký trải nghiệm" chỉ ở gói Basic). Người đã đăng nhập không thấy
-  lối vào nào. Kho mẫu (D-20) ẩn mọi lối vào, ba route chuyển về form liên hệ
+  lối vào nào (đầu trang, khối mở đầu, thẻ gói, chân trang). Câu dưới bảng gói và bước cuối của dải liên hệ nói đúng theo nguồn: khách tự
+  đăng ký được thì là `signUpNoteSelf`, kho mẫu thì "tài khoản do đội LoadMaster tạo". Kho mẫu (D-20) ẩn mọi lối vào, ba route chuyển về form liên hệ
   của `/gioi-thieu` (dùng thử / báo giá, giữ gói) hoặc trang giới thiệu, và tài khoản công ty do đội LoadMaster mở sau yêu cầu liên hệ. Tài khoản
   dùng thử phải ký thoả thuận dịch vụ trong 72 giờ; quá hạn thì bị gắn cờ (màn khoá `TrialAccountLockedView`, gửi yêu cầu mở khoá) và bị xoá hẳn
   30 ngày sau khi hết hạn dùng thử. Chỉ quản trị công ty đọc và ký thoả thuận (`GET /api/agreements/my-agreement`, máy chủ chỉ cho vai trò
@@ -100,8 +101,13 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
 - **Đầu trang công khai** (`PublicHeader`, dải trời dính trên cùng): mục của trang thành hàng từ 1.024 px với chuột, từ 1.366 px trên máy cảm
   ứng (điều khiển 56 px: ở 1.024–1.365 px hàng mục đè lên nút ngôn ngữ khi có nút đăng ký) — nơi bốn mục vừa cả hai ngôn ngữ —, hẹp hơn thì gom
   vào nút menu `PublicNavMenu` (40 px, 56 px trên máy cảm ứng, mỗi mục 56 px; chọn một mục thì focus tới tiêu đề của phần đó, không về nút menu).
-  Đổi mốc nào ở đầu trang thì đo lại 360 → 1.440 px, vi / en, chuột / cảm ứng, khi nhóm `registration` nối backend (không điều khiển nào tràn,
-  chồng nhau hay xuống dòng). Ngôn ngữ là `LanguageSwitch` từ 640 px, hẹp hơn là `LanguageMenu`; logo có vùng bấm 48 px (56 px cảm ứng). Trang có liên kết "Bỏ
+  Hàng mục nằm trong khay kính `.glass-nav` có chỉ báo trượt `.glass-follow` (`components/useGlassFollow`): chỉ báo đứng ở trang đang mở,
+  và trên `/gioi-thieu` ở phần đang đọc (`useHeaderScroll`, `data-active` — chỉ là hình, không `aria-current`). Qua khỏi khối mở đầu thì
+  đầu trang đặc lại (`data-scrolled`, `public-header.css`); trang giới thiệu có vạch tiến độ cuộn 2 px (`PublicPage progress`,
+  `.landing-progress`), trang khác không. Để đủ chỗ cho nút đăng ký: lề mục 8 px tới dưới 1.536 px, khe giữa các nhóm 12 px và khe giữa các
+  nút 8 px tới dưới 1.280 px. `e2e/public-header.spec.ts` đo đầu trang của khách **có nút đăng ký** ở 360 → 1.440 px, vi / en, chuột / cảm
+  ứng (không điều khiển nào tràn khỏi hàng, chồng nhau hay xuống dòng; trang không cuộn ngang) — spec trả lời thay dev server cho module
+  `registration-capabilities.ts`, nên dời hay đổi tên module đó thì sửa spec. Đổi mốc, nhãn hay lề ở đầu trang thì chạy lại spec này. Ngôn ngữ là `LanguageSwitch` từ 640 px, hẹp hơn là `LanguageMenu`; logo có vùng bấm 48 px (56 px cảm ứng). Trang có liên kết "Bỏ
   qua tới nội dung chính" (chỉ hiện khi nhận focus; đưa focus vào `<main>` mà không đổi neo). Tới một phần qua neo thì tiêu đề `<h2>` của phần
   nhận focus (`useHashScroll`; neo mã hoá hỏng như `#%` coi như không có neo). Điều khiển trên dải trời của hai trang công khai và màn đăng nhập
   (nút chính, nút kính, nút về, "Đăng nhập") ghép `SKY_FOCUS` (`components/sky-focus.ts`): vòng focus `--cyan-300` thay `--primary` ngay ở
@@ -112,14 +118,25 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
 - **Trang giới thiệu** `/gioi-thieu`: khối mở đầu tối `.landing-cinema` (tiêu đề, nút chính "Nhận tư vấn" tới `#lien-he` — khi nối backend
   cho khách chưa đăng nhập là "Đăng ký trải nghiệm", mục "Đăng ký công khai" ở trên —, khung 3D chuyến mẫu,
   "Con số kiểm được" `#con-so`) · Tính năng chính `#tinh-nang` · Cách hoạt động `#cach-hoat-dong` · Gói cước `#goi-cuoc` (cùng truy vấn với
-  Bảng giá) · dải liên hệ tối `.landing-closing` `#lien-he` · chân trang. Menu đầu trang vẫn bốn mục (`PUBLIC_LINKS`).
+  Bảng giá) · dải liên hệ tối `.landing-closing` `#lien-he` · chân trang. Menu đầu trang vẫn bốn mục (`PUBLIC_LINKS`). Cả trang nằm trong
+  `RevealProvider`: chữ và thẻ hiện ra **một lần** khi cuộn tới (`features/marketing/reveal`, mục 8).
+- **Chân trang công khai** (`PublicFooter`, `marketing/footer/`): dải đường có xe tải chạy vào một lần, khối thương hiệu (logo, khẩu
+  hiệu, nút tới form liên hệ, ngôn ngữ), bốn cột — Sản phẩm (ba neo của trang giới thiệu, Bảng giá) · Dành cho (năm vai trò công ty, là
+  chữ) · Hỗ trợ (Liên hệ tư vấn → `#lien-he`) · Tài khoản ("Đăng nhập" hay "Vào ứng dụng"; khách có thêm hai lối đăng ký khi nối backend)
+  — và nút "Lên đầu trang". Cột chỉ chứa liên kết tới thứ **đang có**. Thông tin liên hệ của công ty ở `lib/site-info.ts` (`SITE_INFO`):
+  email, số điện thoại, địa chỉ, mã số thuế đều `null` tới khi chủ sản phẩm đưa số thật, và chân trang không vẽ dòng nào cho giá trị `null`
+  — không viết email hay số điện thoại chưa xác nhận vào code.
 - **Khung 3D chuyến mẫu** (`LandingStage`; Three.js chỉ ở `viewer3d/LandingStageViewer`, tải lười): bộ tối ưu mô phỏng tính chuyến mẫu 366
-  kiện, bốn điểm giao ngay trên trình duyệt (Web Worker khi có), không backend, không credit; mọi số kèm MOCK RESULT. Xếp **một lần** (khoảng 3
+  kiện, bốn điểm giao ngay trên trình duyệt (Web Worker khi có), không backend, không credit. **Hai trang công khai không hiện nhãn MOCK RESULT** (quyết định của
+  chủ sản phẩm 19/11/2026): tiêu đề "Kết quả của lần chạy" và câu dưới khung nói số do bộ tối ưu mô phỏng tính. Xếp **một lần** (khoảng 3
   giây) rồi đứng yên; "Xếp lại" xếp từ đầu; giảm chuyển động thì đầy ngay, không có "Xếp lại". Khung không nhận thao tác, camera chỉ theo ba nút
   góc nhìn. Không WebGL, không tạo được ngữ cảnh, bật tiết kiệm dữ liệu, lỗi tải hay mất ngữ cảnh: `CargoArtwork`, không số nào; `useStageGate`
-  biết trước thì không tải Three.js, không chạy bộ tối ưu.
-- **Số trên trang giới thiệu** đều có nguồn: mỗi số của `#con-so` kèm câu nguồn (hằng số code, cổng bench), giá và credit từ danh mục gói, số
-  của khung 3D từ lần chạy vừa tính. Không lời khen, logo khách hay thống kê sử dụng.
+  biết trước thì không tải Three.js, không chạy bộ tối ưu. Cổng chỉ mở khi khung cách khung nhìn không quá 250 px **và** trình duyệt rảnh:
+  điện thoại (khung nằm dưới chữ) hay khách mở thẳng một neo bên dưới thì chưa tải Three.js.
+- **Số trên trang giới thiệu** đều có nguồn: sáu số của `#con-so` đọc từ hằng của code (`LandingFacts`) — số phương án mỗi lần chạy
+  (`PLAN_OBJECTIVES`), credit mỗi lần chạy (`BILLING_CONSTANTS.optimizationCost`), cổng bench 1.000 kiện dưới 1 giây, số luật nhận hàng dọc
+  đường, số mức đối chiếu kiện, số vai trò công ty — mỗi số kèm câu nguồn, lăn một lần (`Odometer`) rồi đứng; giá và credit từ danh mục gói,
+  số của khung 3D từ lần chạy vừa tính. Không lời khen, logo khách hay thống kê sử dụng.
 - E2E đăng nhập bằng `login(route, role)` (`login('/')` mở thẳng `/dang-nhap`, vì khách mở `/` là sang trang giới thiệu); không còn vai trò toàn
   quyền nên kịch bản đi qua nhiều vai trò **đăng nhập đúng vai trò của từng bước**, đổi người trong app bằng `switchUser`
   (`e2e/spec-flow-helpers.ts` — tải lại trang là mất kho); test DOM đăng nhập đúng người bằng `signedInAs(vai trò | mã người dùng seed)`.
@@ -185,7 +202,7 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   chuyến đã mở màn đó (`exitAction` hỏi quyền `trips.view`, không hỏi tên vai trò).
 - **Thanh ngang 60 px trên dải trời** (`app/NavRail.tsx`, V2.3): logo trái, nhóm mục giữa trên kính tối (`.glass-nav`), tìm nhanh · ngôn ngữ ·
   chuông · tài khoản phải. Mục đang mở nằm dưới kính cyan (trong + viền + quầng, `--nav-on`), và kính đó là **chỉ báo trượt theo con trỏ**
-  (`useGlassFollow`, `.glass-follow`): bám mục đang rê / focus, về mục đang mở khi con trỏ rời thanh. Chỉ báo là phản hồi nền duy nhất; mục
+  (`components/useGlassFollow` — dùng chung với đầu trang công khai, `activeSelector` chọn mục nghỉ —, `.glass-follow`): bám mục đang rê / focus, về mục đang mở khi con trỏ rời thanh. Chỉ báo là phản hồi nền duy nhất; mục
   đang mở chỉ có chữ trắng 600, **không** nền riêng, nếu không sẽ thành hai lớp chồng nhau. Ngôn ngữ trên thanh là một nút quả địa cầu kèm mã
   ngôn ngữ ("VI") mở menu chọn (`components/LanguageMenu.tsx`); màn toàn màn hình kho/tài xế giữ hai nút `LanguageSwitch` 56 px. Mọi chỗ chọn
   ngôn ngữ — `LanguageMenu`, `LanguageSwitch`, và `LanguageSwitch` của app mobile — dùng icon `Globe` của Lucide, không dùng `Languages`. Vòng focus trên dải trời là `--cyan-300`
@@ -251,7 +268,8 @@ cùng ý đó, trừ sự kiện máy chủ chưa ghi (mục 9 "Nối backend").
 - **Bắt buộc theo Spec** ([docs/build-spec.md](docs/build-spec.md); quyết định ở [docs/prd.md](docs/prd.md) D-01 → D-39): đơn vị cm/kg, hệ toạ độ, mô hình
   dữ liệu và contract `OptimizationService`, validation, nhãn **MOCK RESULT**, acceptance criteria mục 15. Khi luật trong file này mâu thuẫn
   với phần bắt buộc của Spec, Spec thắng và phải sửa luật. Cấu trúc thư mục, component, thư viện được điều chỉnh cho khớp repo.
-- Mọi kết quả từ mock có badge **MOCK RESULT** (không dịch). Không có chữ kiểu "AI optimized", không đặt tên service là `AIService`.
+- Mọi kết quả từ mock có badge **MOCK RESULT** (không dịch). Ngoại lệ: hai trang công khai `/gioi-thieu`, `/bang-gia` không hiện nhãn
+  (mục 1 "Khung 3D chuyến mẫu") — số ở đó vẫn kèm câu nguồn. Không có chữ kiểu "AI optimized", không đặt tên service là `AIService`.
 - Giao diện chuyển được **vi / en** (D-07); tiếng Việt là ngôn ngữ mặc định và nguồn chuẩn của từ điển.
 - Quyết định và issue của giai đoạn sau Review 1 nằm ở [docs/prd-v2.md](docs/prd-v2.md) và [docs/issues-2-fe/](docs/issues-2-fe/README.md) — tài liệu
   nội bộ, chỉ có trên máy của nhóm (mục 13); đọc hai tài liệu đó trước khi làm việc thuộc giai đoạn này. Luật ở các mục dưới mô tả code hiện tại;
@@ -359,8 +377,10 @@ src/
     platform/           màn của nền tảng: danh mục gói cước `/nen-tang/goi`, Công ty `/nen-tang/cong-ty`
     support/            yêu cầu hỗ trợ: màn `/ho-tro`, hộp thoại `SupportTicketDialog` của người dùng công ty, cuộc trao đổi dùng chung `TicketThread`
     marketing/          hai trang công khai ngoài `RequireAuth`: giới thiệu `/gioi-thieu` (kèm form liên hệ của khách `ContactForm`) và bảng giá
-                        `/bang-gia`; khung chung `PublicPage` (đầu trang `PublicHeader`, chân trang `PublicFooter`, cuộn tới neo `useHashScroll`);
-                        khung 3D chuyến mẫu `LandingStage` (cổng `useStageGate`, phần 3D ở `viewer3d/LandingStageViewer`)
+                        `/bang-gia`; khung chung `PublicPage` (đầu trang `PublicHeader`, chân trang `PublicFooter` + `footer/`, cuộn tới neo
+                        `useHashScroll`); khung 3D chuyến mẫu `LandingStage` (cổng `useStageGate`, phần 3D ở `viewer3d/LandingStageViewer`);
+                        chữ và khối hiện một lần `reveal/` (`RevealProvider` — một IntersectionObserver —, `Reveal`, `RevealWords`,
+                        `FlowHeading`, `LineRise`, `TextRibbon`, `Odometer`, `LumoSays`, `split-text.ts` thuần, `reveal.css`)
     contacts/           yêu cầu liên hệ của khách `/lien-he-khach` (quản trị hệ thống, hỗ trợ khách hàng): bảng, khung xử lý `ContactPanel`
   lib/                  format, helper, mock dùng chung, api client
     i18n/               từ điển vi/en (mỗi nhánh một file trong vi/, en/), provider, hook
@@ -391,7 +411,8 @@ src/
     optimization/       interface OptimizationService, MockOptimizationService, worker; mock xếp kệ theo vùng điểm giao (`shelf-packer.ts`,
                         `shelf-walls.ts`); ba phương án ứng viên một job (`mock-candidates.ts`, `candidate-layouts.ts`, `mock-plan.ts`); xếp kiện
                         nhận dọc đường vào vùng trống `reoptimize-freed-zone.ts`
-  test/                 setup và dữ liệu test dùng chung (setup-dom.ts, spec-13.ts, placements.ts, engine-plans.ts)
+  test/                 setup và dữ liệu test dùng chung (setup-dom.ts, spec-13.ts, placements.ts, engine-plans.ts; `intersection-observer.ts`,
+                        `match-media.ts` giả hai API trình duyệt cho test chuyển động)
 tests/                  unit test của viewer3d (Vitest)
 e2e/                    Playwright
 ```
@@ -743,9 +764,12 @@ Nguồn: `design/brand/` (`source/` là file người dùng giao; `logo-mark*.sv
 - **Lumo** (`components/brand/Lumo.tsx`, `pose`; ảnh WebP 320 px khoảng 20 KB mỗi tư thế ở `src/assets/brand/lumo/`, tải theo màn):
   mỗi tư thế **một nghĩa cố định** — `greet` chào (đăng nhập) · `empty` chưa có dữ liệu (danh sách rỗng) · `notFound` không tìm thấy (404)
   · `error` có sự cố (lỗi tải, 403, lỗi render, chuyến đã huỷ ở kho / tài xế) · `done` xong việc lớn (kho xếp xong, tài xế giao xong)
-  · `warehouseWaiting` kho chờ hàng · `driverWaiting` tài xế chờ chuyến. Trạng thái rỗng dùng `EmptyState mascot`
+  · `warehouseWaiting` kho chờ hàng · `driverWaiting` tài xế chờ chuyến. Bảy tư thế **chỉ của hai trang công khai**: toàn thân `point`
+  chỉ vào việc đang diễn ra · `carry` mang kiện · `scan` đối chiếu kiện · `tablet` phương án trên máy tính bảng; bán thân ló lên trên một
+  cạnh ngang `explain` giải thích · `idea` gợi ý · `wink` mời liên hệ. Ảnh không lật gương (mũ và áo có chữ). Trạng thái rỗng dùng `EmptyState mascot`
   (`compact` 96 px trong card); `ErrorScreen` bắt buộc `mascot`; `WarehouseEmpty` / `DriverNotice` mặc định tư thế chờ. Luôn `alt=""` +
-  `aria-hidden`, không động. **Không** ở bảng, form, Planner, bảng điều khiển (kể cả kỳ không có dữ liệu), toast, hộp thoại; ở màn kho và
+  `aria-hidden`, không động — trừ trang giới thiệu, nơi Lumo đổi tư thế và bong bóng `LumoSays` gõ chữ một lần (lời trong bong bóng là
+  nội dung đọc được, ảnh vẫn `aria-hidden`). **Không** ở bảng, form, Planner, bảng điều khiển (kể cả kỳ không có dữ liệu), toast, hộp thoại; ở màn kho và
   tài xế chỉ màn rỗng, màn lỗi và màn xong việc.
 
 ### Cấm tuyệt đối
@@ -1137,6 +1161,15 @@ chỉ đi tới máy chủ của mình qua `api-client`).
 | Một bước phát lại xếp hàng | 400–700ms | decelerate |
 
 Bắt buộc hỗ trợ `prefers-reduced-motion`: mọi thời lượng trên 200ms rút về 100ms, tắt chuyển động lớn.
+
+**Trang giới thiệu** (`features/marketing/reveal`; token `--dur-reveal`, `--dur-reveal-long`, `--dur-odometer`, `--dur-pose`,
+`--reveal-rise`, `--stagger-word`, `--stagger-item` ở `index.css`): chuyển động chỉ bật khi có `IntersectionObserver`, `matchMedia` và
+người xem không chọn giảm chuyển động (`data-motion="on"`); tắt, hay nằm ngoài `RevealProvider` (như `/bang-gia`), thì mọi thứ ở trạng
+thái cuối ngay từ đầu và DOM là chữ thường — **không bao giờ có nội dung ẩn chờ chuyển động**. Mỗi cổng mở một lần khi khối vào khung
+nhìn (ba ngưỡng 0, 0,07, 0,15; khối cao hơn khung nhìn dùng `Reveal at={0.07}`), cuộn ngược không chạy lại; phần tử nhận focus và trang in
+hiện ngay trạng thái cuối. Chữ tách để chuyển động (`split-text.ts`) giữ tên truy cập: một bản `sr-only` và một bản `aria-hidden` — test
+vẫn đọc tiêu đề bằng `exact: true`. Đoạn văn dài nhô lên cả khối (`RevealWords mode="ink"`), không tô từng từ; hiệu ứng mới trên chữ chỉ
+dùng opacity / transform. Mỗi chuyển động tự chạy xong trong 1,5 giây; chuyển động theo cuộn không tự chạy.
 
 ## 9. Quy ước code
 
@@ -2252,7 +2285,9 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
 Mọi màn trong `app/App.tsx` đều `lazy()`. Nhờ đó Three.js chỉ tải khi mở màn 3D, thư viện biểu đồ
 chỉ tải khi mở màn cần nó, và máy tính bảng ở kho không gánh code của dispatcher.
 Thêm màn mới thì thêm theo đúng lối này. Từ điển `en` cũng là chunk riêng (mục 6). Kho mẫu (`lib/mock-db`) vẫn nằm trong
-bundle đầu: `AuthProvider` và mọi `-api.ts` gọi nó đồng bộ.
+bundle đầu: `AuthProvider` và mọi `-api.ts` gọi nó đồng bộ. Nhưng **khách chưa đăng nhập không dựng kho** khi mở trang (dựng seed là việc
+nặng nhất lúc mở): `restoreSession(null)` chỉ xoá phiên của kho đã dựng (`peekMockDb`), bảng giá công khai đọc `SEED_PLANS` tới khi kho
+được dựng, và trang giới thiệu chỉ hỏi danh mục gói khi phần Gói cước hay form liên hệ tới gần khung nhìn (`useNearViewport`). E2E kiểm cả trang giới thiệu thì cuộn hết trang trước (`scrollThrough` ở `e2e/i18n-en.spec.ts`): form liên hệ chỉ hiện sau khi danh mục gói về.
 
 ## 10. Khả năng truy cập
 

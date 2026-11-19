@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils'
 import { PUBLIC_TOUCH, PUBLIC_TOUCH_TAG } from './public-chrome'
 import { SectionHeading } from './SectionHeading'
 import { usePublicPlansQuery } from './useMarketingQuery'
+import { useNearViewport } from './useNearViewport'
 
 /** Số cột theo số gói đang bán (mỗi hạng một gói, tối đa ba) để không hàng nào lẻ một thẻ — như Bảng giá. */
 const COLUMNS: Readonly<Record<number, string>> = { 1: 'md:max-w-120', 2: 'md:grid-cols-2', 3: 'md:grid-cols-3' }
@@ -44,10 +45,12 @@ function PlanTile({ plan }: { plan: SubscriptionPlan }) {
  */
 export function LandingPlans() {
   const t = useT()
-  const plans = usePublicPlansQuery()
+  // Chưa đọc danh mục gói khi khách còn ở phần mở đầu: truy vấn bật khi phần này tới gần khung nhìn
+  const [sectionRef, near] = useNearViewport<HTMLElement>()
+  const plans = usePublicPlansQuery(near)
   const list = plans.data ?? []
   return (
-    <section id="goi-cuoc" aria-labelledby="landing-plans" className="scroll-mt-24 px-4 py-16 md:px-shell lg:py-24">
+    <section ref={sectionRef} id="goi-cuoc" aria-labelledby="landing-plans" className="scroll-mt-24 px-4 py-16 md:px-shell lg:py-24">
       <SectionHeading id="landing-plans" title={t('landing.plans.title')} lede={t('landing.plans.lede')} />
 
       {plans.isPending ? (

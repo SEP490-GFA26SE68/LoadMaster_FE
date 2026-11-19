@@ -1,8 +1,8 @@
 /**
- * Trang giới thiệu công khai `/gioi-thieu` (`features/marketing`): đầu trang và chân trang dùng chung với Bảng giá, phần mở đầu và khung
- * 3D, dải số liệu, tính năng, cách hoạt động, gói cước và form liên hệ của khách. Chỉ nói điều ứng dụng làm được thật: không tên hay lời
- * khen của khách hàng; số nào cũng có nguồn — lần chạy của bộ tối ưu mô phỏng trên trình duyệt (kèm MOCK RESULT), hằng số trong code,
- * hoặc danh mục gói.
+ * Trang giới thiệu công khai `/gioi-thieu` (`features/marketing`): đầu trang dùng chung với Bảng giá, phần mở đầu và khung 3D, dải số
+ * liệu, tính năng, cách hoạt động, gói cước và form liên hệ của khách; chân trang ở nhánh `landingFooter`. Chỉ nói điều ứng dụng làm
+ * được thật: không tên hay lời khen của khách hàng; số nào cũng có câu nguồn — lần chạy của bộ tối ưu mô phỏng trên trình duyệt, hằng số
+ * trong code, hoặc danh mục gói. Trang công khai không hiện nhãn MOCK RESULT: câu nguồn nói thay.
  */
 export const landing = {
   /** Liên kết đầu tiên của trang, chỉ hiện khi nhận focus bằng bàn phím. */
@@ -32,7 +32,7 @@ export const landing = {
   },
   /**
    * Khung 3D của phần mở đầu: chuyến mẫu do bộ tối ưu mô phỏng tính ngay trên trình duyệt của người xem, vẽ bằng bộ máy 3D của ứng dụng.
-   * Mọi số ở đây là số của lần chạy đó và đi kèm MOCK RESULT.
+   * Mọi số ở đây là số của lần chạy đó; câu `caption` nói số do bộ tối ưu mô phỏng tính (không nhãn MOCK RESULT trên trang công khai).
    */
   stage: {
     title: 'Thùng mẫu 6 m',
@@ -69,36 +69,39 @@ export const landing = {
     stop4: 'Đại lý tạp hoá',
   },
   /**
-   * Dải số liệu dưới phần mở đầu (`#con-so`): mỗi số lấy từ hằng số trong code của ứng dụng (số hướng đặt, số phương án, số luật nhận
-   * hàng, số vai trò, bước làm tròn) hoặc từ ngưỡng kiểm hiệu năng của bộ tối ưu mô phỏng — câu nguồn nói rõ số đến từ đâu.
+   * Dải số liệu dưới phần mở đầu (`#con-so`): sáu con số người mua quan tâm, mỗi số lấy từ hằng số trong code của ứng dụng (số phương án,
+   * credit mỗi lần chạy, số luật nhận hàng, số cách đối chiếu, số vai trò trong công ty) hoặc từ ngưỡng của bài đo hiệu năng của bộ tối ưu
+   * mô phỏng — câu nguồn nói rõ số đến từ đâu. Giá trị có chữ (`credit.value`, `speed.value`) nhận số qua tham số.
    */
   facts: {
     title: 'Con số kiểm được',
-    lede: 'Mỗi con số dưới đây lấy thẳng từ mã nguồn của ứng dụng hoặc từ phép đo của nó — không con số nào là ước đoán.',
-    orientations: {
-      label: 'hướng đặt được thử cho mỗi kiện',
-      source: 'Kiện phải giữ đứng chỉ dùng hai hướng; hướng nào không lọt cửa xe thì bị loại.',
-    },
+    lede: 'Mỗi con số đi kèm nguồn của nó: hằng số trong ứng dụng hoặc ngưỡng của một bài đo tự động — không con số nào là ước đoán.',
     plans: {
       label: 'phương án cho mỗi lần chạy tối ưu',
-      source: 'Tối đa thể tích, cân bằng tải trục, ít dỡ-xếp lại — so sánh cạnh nhau rồi duyệt một.',
+      source: 'Tối đa thể tích, cân bằng tải trục, ít dỡ-xếp lại — so cạnh nhau rồi duyệt một.',
     },
-    precision: {
-      label: 'bước làm tròn kích thước',
-      source: 'Khối lượng làm tròn tới {kg}; hai kiện chạm mặt không bị báo chồng lấn vì sai số làm tròn.',
+    credit: {
+      value: { one: '{count} credit', other: '{count} credit' },
+      label: 'cho một lần chạy tối ưu 3D',
+      source: 'Cả ba phương án vẫn tính là một lần chạy; tối ưu thứ tự điểm giao không tốn credit.',
     },
     speed: {
       value: '< {seconds} giây',
-      label: 'để xếp {count} kiện, đủ ba phương án',
-      source: 'Ngưỡng kiểm hiệu năng của bộ tối ưu mô phỏng, đo trên máy phát triển.',
+      label: 'để xếp {count} kiện thành đủ ba phương án',
+      source: 'Ngưỡng của bài đo hiệu năng tự động cho bộ tối ưu mô phỏng, đo trên máy phát triển — máy khác có thể khác.',
     },
     pickup: {
       label: 'luật kiểm trước khi nhận hàng dọc đường',
       source: 'Tải trọng, tải trục, trọng tâm, chỗ trống trong thùng, thứ tự dỡ, hạn giao…',
     },
+    verify: {
+      label: 'cách đối chiếu một kiện',
+      source: 'Quét mã QR, gõ mã in trên nhãn, hoặc xác nhận tay chờ điều phối viên duyệt khi nhãn hỏng.',
+    },
     roles: {
-      label: 'vai trò, mỗi vai trò chỉ thấy việc của mình',
-      source: 'Ba vai trò của nền tảng, năm vai trò của công ty vận tải.',
+      label: 'vai trò trong công ty của bạn',
+      /** `{roles}`: tên năm vai trò của công ty, nối bằng `format.list`. */
+      source: '{roles} — mỗi người chỉ thấy việc của mình.',
     },
   },
   features: {
@@ -145,7 +148,7 @@ export const landing = {
       dispatcher: 'Lập chuyến, chạy tối ưu, so sánh và duyệt phương án.',
       warehouse: 'Soạn và xếp từng kiện trên máy tính bảng, đối chiếu bằng mã QR.',
       driver: 'Giao theo từng điểm trên điện thoại, xem vị trí hàng trong thùng.',
-      companyManager: 'Lập yêu cầu giao, theo dõi bảng điều khiển và xuất báo cáo.',
+      companyManager: 'Theo dõi bảng điều khiển, giám sát chuyến đang chạy và xuất báo cáo.',
     },
   },
   how: {
@@ -157,7 +160,7 @@ export const landing = {
     steps: {
       intake: {
         title: 'Nhập kiện và yêu cầu giao',
-        text: 'Nhập kiện từ file hoặc thêm tay, in nhãn QR. Quản lý lập yêu cầu giao với điểm đến và hạn giao.',
+        text: 'Kho nhập kiện từ file hoặc thêm tay, in nhãn QR. Điều phối viên lập yêu cầu giao với điểm đến và hạn giao.',
       },
       plan: {
         title: 'Lập chuyến, tối ưu tuyến',
@@ -187,6 +190,8 @@ export const landing = {
     title: 'Liên hệ với LoadMaster',
     lede: 'Để lại thông tin, đội LoadMaster sẽ liên hệ lại để tư vấn gói và cách dùng phù hợp với đội xe của bạn.',
     signUpNote: 'Tài khoản công ty do đội LoadMaster tạo sau khi trao đổi với bạn.',
+    /** Thay `signUpNote` khi khách tự đăng ký được (nhóm `registration` nối máy chủ). */
+    signUpNoteSelf: 'Khi sẵn sàng, bạn tự đăng ký tài khoản công ty: đăng ký trải nghiệm để dùng thử, hoặc đăng ký dùng ngay rồi chọn gói và thanh toán.',
     loading: 'Đang tải form liên hệ',
     /** Việc xảy ra sau khi khách gửi yêu cầu; bước cuối là `signUpNote`. */
     next: {
@@ -222,16 +227,5 @@ export const landing = {
       text: 'Đội LoadMaster sẽ liên hệ lại qua email bạn đã nhập.',
       again: 'Gửi yêu cầu khác',
     },
-  },
-  footer: {
-    nav: 'Liên kết cuối trang',
-    /** Tiêu đề hai cột liên kết — là `<p>`, không phải tiêu đề mục (Bảng giá chỉ có tên gói làm tiêu đề cấp 2). */
-    product: 'Sản phẩm',
-    account: 'Tài khoản',
-    landing: 'Giới thiệu',
-    pricing: 'Bảng giá',
-    contact: 'Liên hệ',
-    signIn: 'Đăng nhập',
-    note: 'Đây là bản demo: dữ liệu trong ứng dụng là dữ liệu mẫu, kết quả tối ưu do bộ tối ưu mô phỏng tính và luôn mang nhãn MOCK RESULT.',
   },
 } as const

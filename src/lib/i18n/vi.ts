@@ -44,6 +44,8 @@ import { companyProfile } from './vi/companyProfile'
 import { support } from './vi/support'
 import { contacts } from './vi/contacts'
 import { landing } from './vi/landing'
+import { landingFooter } from './vi/landingFooter'
+import { landingMotion } from './vi/landingMotion'
 import { pricing } from './vi/pricing'
 import { warehouseCustomers } from './vi/warehouseCustomers'
 import { backendTripRoute } from './vi/backendTripRoute'
@@ -112,6 +114,8 @@ export const vi = {
   support,
   contacts,
   landing,
+  landingFooter,
+  landingMotion,
   pricing,
   warehouseCustomers,
   backendTripRoute,

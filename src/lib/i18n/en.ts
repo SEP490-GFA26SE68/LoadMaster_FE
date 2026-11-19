@@ -46,6 +46,8 @@ import { companyProfile } from './en/companyProfile'
 import { support } from './en/support'
 import { contacts } from './en/contacts'
 import { landing } from './en/landing'
+import { landingFooter } from './en/landingFooter'
+import { landingMotion } from './en/landingMotion'
 import { pricing } from './en/pricing'
 import { warehouseCustomers } from './en/warehouseCustomers'
 import { backendTripRoute } from './en/backendTripRoute'
@@ -106,6 +108,8 @@ export const en = {
   support,
   contacts,
   landing,
+  landingFooter,
+  landingMotion,
   pricing,
   warehouseCustomers,
   backendTripRoute,

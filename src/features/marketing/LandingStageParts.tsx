@@ -1,12 +1,10 @@
 import { RotateCcw } from 'lucide-react'
 import { StopDot } from '@/components/StopChip'
 import { SKY_FOCUS } from '@/components/sky-focus'
-import { Badge } from '@/components/ui/Badge'
 import type { OptimizationResult } from '@/domain/models'
 import type { CameraPreset } from '@/features/viewer3d/viewer-types'
 import { useFormat, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import { PUBLIC_TOUCH_TAG } from './public-chrome'
 
 /** Ba góc nhìn của khung 3D: toàn cảnh, nhìn từ trên (bật dải vùng điểm giao) và cửa sau — nơi kho và tài xế đứng. */
 export const STAGE_VIEWS = [
@@ -75,7 +73,10 @@ export function StageLegend({ stopNames }: { stopNames: readonly string[] }) {
   )
 }
 
-/** Số của lần chạy vừa xong trên trình duyệt, kèm MOCK RESULT: kiện đã xếp, lấp đầy, tải trọng, kiện phải dỡ-xếp lại, thời gian tính. */
+/**
+ * Số của lần chạy vừa xong trên trình duyệt: kiện đã xếp, lấp đầy, tải trọng, kiện phải dỡ-xếp lại, thời gian tính. Trang công khai không
+ * hiện nhãn MOCK RESULT: tiêu đề "Kết quả của lần chạy" và câu dưới khung (`landing.stage.caption`) nói số do bộ tối ưu mô phỏng tính.
+ */
 export function StageReadout({ result }: { result: OptimizationResult }) {
   const t = useT()
   const format = useFormat()
@@ -90,11 +91,7 @@ export function StageReadout({ result }: { result: OptimizationResult }) {
   ]
   return (
     <div className="flex flex-col gap-2.5 border-t border-landing-hairline px-4 py-3 sm:px-5">
-      <div className="flex flex-wrap items-center gap-2">
-        <p className="m-0 text-small font-semibold text-sky-text-2 pointer-coarse:text-body-lg">{t('landing.stage.readout.title')}</p>
-        {/* Chữ hổ phách đậm của nhãn không đủ tương phản trên nền tối: dùng bậc 200 */}
-        <Badge shape="tag" tone="mock" className={cn('text-amber-200', PUBLIC_TOUCH_TAG)}>MOCK RESULT</Badge>
-      </div>
+      <p className="m-0 text-small font-semibold text-sky-text-2 pointer-coarse:text-body-lg">{t('landing.stage.readout.title')}</p>
       <dl className="m-0 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3 md:grid-cols-5">
         {items.map((item) => (
           <div key={item.key} className="flex min-w-0 flex-col justify-between gap-0.5">

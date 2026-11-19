@@ -39,6 +39,14 @@ export function getMockDb(): MockDb {
 }
 
 /**
+ * Kho dùng chung nếu đã dựng, không dựng nếu chưa — cho việc chỉ có nghĩa khi kho đã có (xoá phiên của khách chưa đăng nhập) hoặc có
+ * nguồn khác khi kho chưa có (bảng giá công khai đọc danh mục gói của seed).
+ */
+export function peekMockDb(): MockDb | undefined {
+  return appDb
+}
+
+/**
  * Đăng ký nghe việc kho vừa được thay bằng dữ liệu của tab khác (đã gộp thành một thông báo) để làm mới màn hình. Không có đồng bộ
  * (một tab, Vitest, trình duyệt không có `BroadcastChannel`) thì không bao giờ được gọi. Trả hàm huỷ đăng ký.
  */
