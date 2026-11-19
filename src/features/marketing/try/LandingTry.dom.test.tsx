@@ -146,6 +146,19 @@ test('cartons the truck cannot take are listed per carton type with the translat
   }
 })
 
+test('a carton bigger than the body cross-section reads as too tall or wide, not as a door that is too small', async () => {
+  const user = userEvent.setup()
+  const section = renderTry()
+  // Lòng thùng mặc định 200 × 200 cm: thùng 250 cm mọi chiều không vào được hướng nào
+  for (const name of ['Dài (cm)', 'Rộng (cm)', 'Cao (cm)']) await retype(user, field(section, 'Loại kiện 3', name), '250')
+  await user.click(section.getByRole('button', { name: 'Tính ba phương án' }))
+
+  expect(await section.findByText('Đã tính xong ba phương án cho 124 kiện.')).toBeInTheDocument()
+  const plan = within(section.getByRole('group', { name: 'Phương án A' }))
+  expect(plan.getByText('Loại kiện 3: 16 kiện — Cao hoặc rộng hơn lòng thùng')).toBeInTheDocument()
+  expect(plan.queryByText(/lọt cửa/)).not.toBeInTheDocument()
+})
+
 test('a wrong field blocks the run and says why, in the field', async () => {
   const user = userEvent.setup()
   const section = renderTry()

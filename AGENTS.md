@@ -71,7 +71,10 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   `/` (`RootLandingPage`): khách sang `/gioi-thieu` (giữ query và neo), người đã đăng nhập sang màn chính của vai trò, lúc đang mở lại phiên Keycloak chưa quyết gì; mở trang khác khi chưa đăng
   nhập vẫn về `/dang-nhap` (nhớ trang đó). **Chính sách bảo mật** `/chinh-sach-bao-mat` (`marketing/privacy/`, nhánh từ điển `privacy`): năm
   mục — form liên hệ, đăng ký, khi dùng ứng dụng, trên trình duyệt, hỏi về dữ liệu —, mỗi câu nói đúng điều mã hôm nay làm và chọn theo nguồn
-  đang chạy (máy chủ hay bản demo: `usesBackend('contacts')`, `REGISTRATION_CAPABILITIES`, `backendConfig.authSource`); không hạn lưu trữ, pháp
+  đang chạy (máy chủ hay bản demo: `usesBackend('contacts')`, `REGISTRATION_CAPABILITIES`, `backendConfig.authSource`) — người đọc yêu cầu
+  liên hệ theo `CONTACT_READER_ROLES` (`contacts/contact-readers.ts`: máy chủ cho thêm quản lý nền tảng), máy chủ trả lời qua email (Brevo),
+  email của máy chủ khi đăng ký, VNPay khi thanh toán thật, Goong khi tìm địa chỉ và tính tuyến; dấu tích đồng ý chỉ để form cho gửi, không
+  gửi đi. Không hạn lưu trữ, pháp
   nhân, địa chỉ, mã số thuế, email hay cam kết tuân thủ nào chưa có — hỏi về dữ liệu đi qua form liên hệ. Sửa luật thu hay lưu dữ liệu (ô của
   form, nơi lưu phiên, bản đồ, GPS) thì sửa trang này và ngày "Cập nhật lần cuối" cùng lúc. Bảng điều khiển ở `/tong-quan` (`/dashboard`
   chuyển hướng sang đó). Ai đã đăng nhập
@@ -158,7 +161,8 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   mặc định của kiện thêm lẻ (`cargoFromPackage`), không bắt buộc xếp. Mỗi thẻ phương án: chữ cái + mục tiêu, hình SVG `PlanThumbnail` (không
   Three.js), xếp được / tổng, lấp đầy thể tích, trọng tâm lệch giữa thùng (thay chênh tải trục: xe không trục thì không có số tải trục — câu
   dưới kết quả nói vậy), số kiện dỡ-xếp lại **chỉ khi** hàng có từ hai điểm giao (một điểm thì luôn 0 — bỏ hàng, kèm câu), kiện chưa xếp theo
-  loại kèm lý do (`viewer.unplacedReasons`); hai mục tiêu chọn trùng một cách xếp thì thẻ ghi "Giống hệt phương án …" (`try-outcome.ts`).
+  loại kèm lý do (`viewer.unplacedReasons`; riêng `DOOR_TOO_SMALL` là "Cao hoặc rộng hơn lòng thùng" — cửa của bản thử bằng lòng thùng,
+  nên không nói "lọt cửa"); hai mục tiêu chọn trùng một cách xếp thì thẻ ghi "Giống hệt phương án …" (`try-outcome.ts`).
   "Tốt nhất" trung tính như màn So sánh. Không nhãn MOCK RESULT: câu nguồn nói số do bộ tối ưu mô phỏng chạy trên trình duyệt tính. Form đổi
   sau lần tính thì có câu báo kết quả cũ. Dưới kết quả: "Đăng ký trải nghiệm" khi khách tự đăng ký được, không thì "Nhận tư vấn". Từ 1.280 px
   form trái, kết quả phải (ba thẻ cạnh nhau từ 640 px); `e2e/landing-try.spec.ts` đo gọn trong 900 px ở 1.440 × 900 và điện thoại 390 px.

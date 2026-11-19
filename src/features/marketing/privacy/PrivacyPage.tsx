@@ -4,10 +4,10 @@ import { Link } from 'react-router'
 import { LUMO_NAME } from '@/components/brand/Lumo'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { CONTACT_READER_ROLES } from '@/features/contacts/contact-readers'
 import { REGISTRATION_CAPABILITIES } from '@/features/registration/useRegistrationQuery'
 import { backendConfig, usesBackend } from '@/lib/backend-config'
 import { useFormat, useT } from '@/lib/i18n'
-import { CONTACT_HANDLER_ROLES } from '@/lib/mock-db'
 import { SITE_INFO } from '@/lib/site-info'
 import { contactPath } from '../contact-form'
 import { PublicPage } from '../PublicPage'
@@ -46,7 +46,7 @@ function PrivacySection({ id, title, children }: { id: string; title: string; ch
 function ContactPart() {
   const t = useT()
   const format = useFormat()
-  const roles = format.list(CONTACT_HANDLER_ROLES.map((role) => t(`roles.${role}`)))
+  const roles = format.list(CONTACT_READER_ROLES.map((role) => t(`roles.${role}`)))
   return (
     <PrivacySection id="privacy-contact" title={t('privacy.contact.title')}>
       <p className={TEXT}>{t('privacy.contact.intro')}</p>
@@ -60,6 +60,8 @@ function ContactPart() {
       <p className={TEXT}>{t('privacy.contact.record')}</p>
       <p className={TEXT}>{t('privacy.contact.handlers', { roles })}</p>
       <p className={TEXT}>{CONTACTS_ON_SERVER ? t('privacy.contact.server') : t('privacy.contact.demo')}</p>
+      {/* Trả lời bằng email chỉ máy chủ có (`CONTACTS_SOURCE.canReply` cùng điều kiện) */}
+      {CONTACTS_ON_SERVER ? <p className={TEXT}>{t('privacy.contact.reply')}</p> : null}
     </PrivacySection>
   )
 }
@@ -72,6 +74,7 @@ function RegistrationPart() {
         <>
           <p className={TEXT}>{t('privacy.registration.trial')}</p>
           <p className={TEXT}>{t('privacy.registration.paid')}</p>
+          <p className={TEXT}>{t('privacy.registration.email')}</p>
           <p className={TEXT}>{t('privacy.registration.payment')}</p>
         </>
       ) : (
@@ -148,7 +151,7 @@ export function PrivacyPage() {
             {t('privacy.title')}
           </h1>
           <p className="m-0 max-w-150 text-body-lg text-pretty text-sky-text-2">{t('privacy.lede')}</p>
-          <p className="m-0 text-body text-sky-text-2">{t('privacy.updated', { date: format.date(UPDATED_AT) })}</p>
+          <p className="m-0 text-body text-sky-text-2 pointer-coarse:text-body-lg">{t('privacy.updated', { date: format.date(UPDATED_AT) })}</p>
         </div>
       </section>
       <div className="sky-overlap flex flex-col px-4 pb-14 md:px-shell lg:pb-18">

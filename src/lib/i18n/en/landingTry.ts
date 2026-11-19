@@ -55,6 +55,7 @@ export const landingTry = {
     rehandling: 'Cartons to move and reload',
     unplacedTitle: 'Not loaded',
     unplacedRow: 'Carton type {kind}: {count} — {reason}',
+    doorTooSmall: 'Taller or wider than the cargo body',
     legend: 'Carton colour by delivery stop',
     stopName: 'Stop {number}',
     balanceNote: 'The trial does not ask for axles, so there are no axle loads: plan B balances by moving the centre of gravity of the cargo to the middle of the body length.',

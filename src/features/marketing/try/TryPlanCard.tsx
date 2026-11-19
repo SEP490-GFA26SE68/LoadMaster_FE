@@ -115,7 +115,8 @@ export function TryPlanCard({ outcome, plan }: { outcome: TryOutcome; plan: TryP
                 {t('landingTry.results.unplacedRow', {
                   kind: item.kind + 1,
                   count: format.integer(item.count),
-                  reason: t(`viewer.unplacedReasons.${item.reason}`),
+                  // Bản thử coi cửa sau là cả mặt cắt lòng thùng: "không lọt cửa" ở đây là kiện lớn hơn mặt cắt đó
+                  reason: item.reason === 'DOOR_TOO_SMALL' ? t('landingTry.results.doorTooSmall') : t(`viewer.unplacedReasons.${item.reason}`),
                 })}
               </li>
             ))}

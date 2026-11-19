@@ -52,6 +52,8 @@ export const landingTry = {
     rehandling: 'Kiện dỡ-xếp lại',
     unplacedTitle: 'Chưa xếp',
     unplacedRow: 'Loại kiện {kind}: {count} kiện — {reason}',
+    /** Bản thử coi cửa sau là cả mặt cắt lòng thùng, nên "không lọt cửa" của bộ tối ưu nghĩa là kiện cao hoặc rộng hơn lòng thùng. */
+    doorTooSmall: 'Cao hoặc rộng hơn lòng thùng',
     legend: 'Màu kiện theo điểm giao',
     stopName: 'Điểm {number}',
     balanceNote: 'Bản thử không hỏi trục xe nên không tính tải trục: phương án B cân bằng bằng cách đưa trọng tâm hàng về giữa chiều dài thùng.',

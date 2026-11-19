@@ -88,7 +88,7 @@ export const assistant = {
     tenancy: {
       chip: 'Dữ liệu công ty tôi có tách riêng không?',
       answer:
-        'Có. Mỗi tài khoản thuộc một công ty và chỉ thấy xe, kiện, chuyến, người dùng của công ty mình. Quản trị công ty tạo tài khoản và giao vai trò cho nhân viên.',
+        'Có. Tài khoản của một công ty chỉ thấy xe, kiện, chuyến, người dùng của công ty mình; quản trị công ty tạo tài khoản và giao vai trò cho nhân viên. Đội LoadMaster không mở được xe, kiện, chuyến của công ty — đội chỉ thấy tài khoản, gói, credit và yêu cầu hỗ trợ để hỗ trợ bạn.',
     },
     support: {
       chip: 'Cần hỗ trợ khi đang dùng thì sao?',

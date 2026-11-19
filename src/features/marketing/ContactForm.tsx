@@ -170,8 +170,11 @@ export function ContactForm({ plans, initial, focusFirst = false, onSent }: {
               aria-required
               aria-invalid={consentError ? true : undefined}
               aria-describedby={consentError ? consentErrorId : undefined}
+              // Tên của ô là câu đồng ý, không kèm "(mở trong thẻ mới)" của liên kết nằm trong nhãn
+              aria-label={`${t('landing.contact.form.consent.before')}${t('landing.contact.form.consent.link')}${t('landing.contact.form.consent.after')}`}
+              className="pointer-coarse:size-6"
               label={
-                <span className="block py-2 text-body-lg text-ink-1">
+                <span className="block py-2 text-body-lg text-ink-1 pointer-coarse:min-h-14 pointer-coarse:py-4">
                   {t('landing.contact.form.consent.before')}
                   <Link
                     to={`${PUBLIC_PRIVACY}?lang=${locale}`}

@@ -217,6 +217,8 @@ test('the contact form needs a name, a valid email and the privacy consent, refu
   expect(consent).not.toBeChecked()
   expect(consent).toHaveAttribute('aria-invalid', 'true')
   expect(consent).toHaveAccessibleDescription('Đánh dấu ô đồng ý để gửi yêu cầu')
+  // Tên của ô là đúng câu đồng ý — gợi ý "mở trong thẻ mới" chỉ thuộc liên kết
+  expect(consent).toHaveAccessibleName('Tôi đã đọc và đồng ý với chính sách bảo mật.')
   // Nhãn dẫn tới chính sách bảo mật, mở ở thẻ mới cùng ngôn ngữ đang dùng
   const policy = screen.getByRole('link', { name: /^chính sách bảo mật\s?\(mở trong thẻ mới\)$/ })
   expect(policy).toHaveAttribute('href', '/chinh-sach-bao-mat?lang=vi')

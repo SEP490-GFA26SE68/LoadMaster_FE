@@ -82,7 +82,7 @@ export const assistant = {
     tenancy: {
       chip: 'Is my company’s data kept separate?',
       answer:
-        'Yes. Every account belongs to one company and only sees that company’s vehicles, packages, trips and users. The company admin creates accounts and assigns roles to staff.',
+        'Yes. A company account only sees its own company’s vehicles, packages, trips and users; the company admin creates accounts and assigns roles to staff. The LoadMaster team cannot open a company’s vehicles, packages or trips — it only sees accounts, plans, credit and support requests to help you.',
     },
     support: {
       chip: 'How do I get help once I’m using it?',
