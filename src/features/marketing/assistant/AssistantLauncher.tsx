@@ -13,11 +13,11 @@ const AssistantPanel = lazy(() => import('./AssistantPanel'))
  * Nút "Hỏi Lumo" góc dưới phải của hai trang công khai — trợ lý thụ động: không tự mở, không tự bật lời mời. Từ 640 px có chữ cạnh ảnh
  * Lumo; hẹp hơn chỉ còn ảnh (chữ vẫn là tên truy cập). 48 px, 56 px trên máy cảm ứng. Khung chat là chunk lười, chỉ tải lần mở đầu tiên,
  * rồi giữ lại để đóng / mở không tải lại; cuộc trò chuyện ở `assistant-session.ts`. Nút nâng lên khi chạm điều khiển quan trọng của trang
- * (`useLauncherLift`).
+ * (`useLauncherLift`). Viền gradient quay (`assistant.css`): đứng yên lúc nghỉ, quay khi rê chuột / focus và khi Lumo đang trả lời.
  */
 export function AssistantLauncher() {
   const t = useT()
-  const { open } = useAssistantSession()
+  const { open, pending } = useAssistantSession()
   const [loaded, setLoaded] = useState(open)
   // Dựng lại khi khung đã mở sẵn (chuyển giữa hai trang công khai): khung không giành focus của trang
   const [mountedOpen] = useState(open)
@@ -37,6 +37,8 @@ export function AssistantLauncher() {
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls={open ? ASSISTANT_PANEL_ID : undefined}
+        // Viền gradient quay trong lúc Lumo đang trả lời (assistant.css); chỉ là hình — khung chat đã đọc "đang trả lời"
+        data-thinking={pending || undefined}
         onClick={handleToggle}
         className={cn(
           'assistant-launcher inline-flex h-12 min-w-12 items-center justify-center gap-2.5 rounded-lg border border-border bg-bg p-1.5 shadow-e2',

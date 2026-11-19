@@ -207,8 +207,11 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   và không bao giờ nói mình là AI; câu mở đầu nói Lumo trả lời từ tài liệu của LoadMaster, không phải nhân viên tư vấn. Khớp câu hỏi bằng
   từ khoá vi + en không dấu (`assistant-match.ts`, dưới ngưỡng thì nói thẳng là chưa có câu trả lời). Lớp mạng `assistant-api.ts`
   (`askAssistant`, `POST /api/assistant/messages` — chưa có ở BE: khớp ở trình duyệt sau 500 ms) → `useAskAssistantMutation`. Nút mở góc
-  dưới phải (chữ từ 640 px, 48 px / 56 px cảm ứng, chừa vùng an toàn) có **viền màu quay** (`animated gradient border`: `conic-gradient` thang cyan · xanh lam · xanh lá · hổ phách, không tím; quay hai vòng
-  ~4,8 s khi trang mở rồi đứng yên — dưới mốc 5 s của WCAG 2.2.2 —, rê chuột / focus thì quay tiếp, giảm chuyển động thì đứng yên) và nâng lên khi chạm phần tử mang `data-assistant-avoid` (nút chính của
+  dưới phải (chữ từ 640 px, 48 px / 56 px cảm ứng, chừa vùng an toàn) có **viền gradient quay** kiểu nút trợ lý AI của AWS (`animated gradient border`: `conic-gradient` theo gradient AI của AWS Cloudscape —
+  token `--genai-1…5` ở `index.css`, xanh nhạt → xanh dương → chàm → tím, ngoại lệ duy nhất của luật không tím, quyết định của chủ sản phẩm
+  19/11/2026 —, viền 2 px thay viền xám + quầng màu ngoài nút; đứng yên lúc nghỉ, quay khi rê chuột / focus và khi Lumo đang trả lời
+  `data-thinking`; khi trang mở quay hai vòng ~4,8 s — dưới mốc 5 s của WCAG 2.2.2; giảm chuyển động thì đứng yên); khung chat có vạch
+  gradient 2 px chạy ngang dưới đầu khung chỉ trong lúc đang trả lời (`assistant-thinking-bar`). Nút nâng lên khi chạm phần tử mang `data-assistant-avoid` (nút chính của
   phần mở đầu, nút "Tạm dừng / Tiếp tục / Xếp lại" của khung 3D, bộ chọn phương án dưới khung, "Lên đầu trang" —
   `useLauncherLift`; nâng lên chạm phần tử khác thì nâng tiếp qua nó); khung chat là chunk lười: từ 768 px thẻ trắng không modal cạnh nút, hẹp hơn tờ phủ
   cả màn modal. Mỗi câu trả lời tối đa ba câu kèm liên kết tới phần của trang hay Bảng giá; lối đăng ký chỉ khi khách tự đăng ký được. Tính
@@ -725,7 +728,7 @@ Mẫu: `design/v2.3/screens/web/ThanhPhan.jpg`, `TrangThaiChung.jpg`, `MenuToanC
   hoàn thành, đã huỷ chip đỏ trọn (không gạch chữ). Xe: sẵn sàng xanh lá, đang phục vụ chuyến xanh lam có quầng, bảo dưỡng xám. Tài khoản: đang
   hoạt động xanh lá, đã khoá xám. `shape="tag"` (20 px) cho phiên bản, "Đã chỉnh tay" (xanh lam) và **MOCK RESULT** (`tone="mock"`).
   Thang **xanh lam** `--azure-*` (khác hẳn cyan thương hiệu) cho "đang chạy"; `@theme` xoá thang `violet`/`purple` của Tailwind: không dùng tím ở
-  đâu trong app. "Đã huỷ" là chip đỏ trọn, không gạch chữ.
+  đâu trong app — ngoại lệ duy nhất: gradient trợ lý `--genai-*` của nút "Hỏi Lumo" (mục 1). "Đã huỷ" là chip đỏ trọn, không gạch chữ.
   Chuyến có **6 trạng thái của backend** (`DRAFT`, `PLANNED`, `LOADING`, `IN_TRANSIT`,
   `DELIVERED`, `CANCELLED`): nháp xám đặc · đã lập kế hoạch cyan đặc · đang xếp hàng và đang vận chuyển xanh lam có quầng · đã giao
   xanh lá đặc · đã huỷ đỏ đặc. "Đang tối ưu" là tiến trình job (hộp thoại tối ưu), không phải trạng thái. Phương án và tiến độ kho là
@@ -876,7 +879,7 @@ Nguồn: `design/brand/` (`source/` là file người dùng giao; `logo-mark*.sv
 - Kính (blur nền, viền sáng) dùng **theo lớp**, không rải tuỳ ý. **Được** ở chrome điều hướng (`.glass-nav` trên dải trời) và panel điều khiển
   nổi đè lên khung 3D nền tối (`.glass-dark`): kính là kính **tối**. Ô số liệu là card nền đặc. **Không** ở bảng, form, inspector và mọi bề mặt
   người dùng đọc lâu — những chỗ đó giữ nền đặc, phân tách bằng viền 1px. Không lồng kính trong kính. Luôn có nền đặc dự phòng khi trình duyệt
-  thiếu `backdrop-filter`, và tôn trọng `prefers-reduced-transparency`. Viền phát sáng không dùng ngoài các chỗ kể trên và viền màu quay của nút "Hỏi Lumo" (mục 1, `assistant.css`). Màn kho và tài xế dùng
+  thiếu `backdrop-filter`, và tôn trọng `prefers-reduced-transparency`. Viền phát sáng không dùng ngoài các chỗ kể trên và viền gradient quay của nút "Hỏi Lumo" (mục 1, `assistant.css`). Màn kho và tài xế dùng
   điều khiển đặc (mục 1); blur ở đó (tablet trong kho sáng, đeo găng; điện thoại ngoài nắng) chưa có số đo tương phản và FPS trên thiết bị thật,
   phải đo trước khi coi kính ở hai màn đó là đã chốt.
 - Toast nằm dưới thanh tiêu đề (`offset` trên 80 px): không che nút hành động ở góc phải header — rê chuột lên toast làm nó dừng đếm giờ

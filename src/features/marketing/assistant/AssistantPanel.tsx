@@ -110,6 +110,8 @@ export default function AssistantPanel({ launcherRef, skipInitialFocus = false }
               </Button>
             </DialogPrimitive.Close>
           </div>
+          {/* Vạch gradient chạy ngang khi Lumo đang trả lời (assistant.css) — chỉ là hình, vùng log đã có dấu "đang gõ" */}
+          <div aria-hidden className="assistant-thinking-bar flex-none" data-on={pending || undefined} />
           <AssistantLog
             entries={entries}
             pending={pending}
