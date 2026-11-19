@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { I18nProvider } from '@/lib/i18n'
 import { installFakeIntersectionObserver, type FakeIntersectionObserverControl } from '@/test/intersection-observer'
@@ -64,7 +65,7 @@ function renderStage({ motion = false } = {}) {
   const stageUi = motion ? <RevealProvider><LandingStage /></RevealProvider> : <LandingStage />
   return render(
     <QueryClientProvider client={client}>
-      <I18nProvider>{stageUi}</I18nProvider>
+      <I18nProvider><MemoryRouter initialEntries={['/gioi-thieu']}>{stageUi}</MemoryRouter></I18nProvider>
     </QueryClientProvider>,
   )
 }
@@ -267,6 +268,8 @@ test('with reduced motion the trip is loaded at once: the plan figures and the r
   expect(figure()).toHaveAttribute('data-story-phase', 'ready')
   expect(screen.getByRole('button', { name: 'Phương án B — Cân bằng tải trục' })).toHaveAttribute('aria-pressed', 'true')
   expect(planFigures()).toHaveTextContent(/Chênh tải hai trục\s*[\d,]+ điểm %\s*Tốt nhất/)
+  // Lối vào trang phương án mẫu mở đúng phương án đang chọn
+  expect(screen.getByRole('link', { name: 'Mở phương án mẫu toàn màn hình' })).toHaveAttribute('href', '/phuong-an-mau?phuong-an=b&che-do=xep')
 })
 
 test('once the trip is loaded the 3D frame is not asked to redraw: scrolling the frame away and back or switching tabs changes nothing', async () => {

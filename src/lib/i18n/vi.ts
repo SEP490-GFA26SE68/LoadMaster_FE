@@ -52,6 +52,7 @@ import { landingMotion } from './vi/landingMotion'
 import { landingStage } from './vi/landingStage'
 import { landingStory } from './vi/landingStory'
 import { landingTry } from './vi/landingTry'
+import { samplePlan } from './vi/samplePlan'
 import { pricing } from './vi/pricing'
 import { privacy } from './vi/privacy'
 import { warehouseCustomers } from './vi/warehouseCustomers'
@@ -130,6 +131,7 @@ export const vi = {
   landingStage,
   landingStory,
   landingTry,
+  samplePlan,
   pricing,
   privacy,
   warehouseCustomers,

@@ -1,4 +1,4 @@
-import { useFrame, useThree } from '@react-three/fiber'
+import { useThree } from '@react-three/fiber'
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { useSearchParams } from 'react-router'
 import type { Group } from 'three'
@@ -7,6 +7,7 @@ import { DIORAMA_FRAME_POINTS, HERO_INSETS, laneSlots, STAGE_CAMERA, type HeroTi
 import { DioramaScene } from './landing/DioramaScene'
 import type { StorySource } from './landing/story-clock'
 import { DepartMotion, TruckStandIn } from './landing/DepartMotion'
+import { ContextWatch, FirstFrame } from './landing/frame-watch'
 import { doorsShut, loadedCount, STOP_SCENE_AT, UNLOAD_STOP, unloadedCount, ZONES_AT } from './landing/story-timeline'
 import { deriveSceneSemantics } from './operations/scene-semantics'
 import { adaptResult } from './scene-input'
@@ -19,27 +20,6 @@ const noop = () => {}
 
 /** Khung đổi cỡ (xoay máy, kéo cửa sổ) thì canh lại camera một lần, khi kích thước đã yên chừng này ms. */
 const RESIZE_SETTLE_MS = 150
-
-/** Báo một lần khi khung hình đầu tiên đã vẽ: trang giới thiệu lúc đó mới đổi ảnh tĩnh sang khung 3D, rồi mới cho chuyện chạy. */
-function FirstFrame({ onFrame }: { onFrame: () => void }) {
-  const done = useRef(false)
-  useFrame(() => {
-    if (done.current) return
-    done.current = true
-    onFrame()
-  })
-  return null
-}
-
-/** Mất ngữ cảnh WebGL giữa chừng (card đồ hoạ khởi động lại, hết bộ nhớ): báo trang đổi sang hình minh hoạ thay vì để khung đen. */
-function ContextWatch({ onLost }: { onLost: () => void }) {
-  const canvas = useThree((state) => state.gl.domElement)
-  useEffect(() => {
-    canvas.addEventListener('webglcontextlost', onLost)
-    return () => canvas.removeEventListener('webglcontextlost', onLost)
-  }, [canvas, onLost])
-  return null
-}
 
 /** Mỗi nhịp của chuyện xin một khung hình (`frameloop="demand"`); chuyện dừng hay hết thì cảnh nghỉ. */
 function StoryFrames({ story }: { story: StorySource }) {

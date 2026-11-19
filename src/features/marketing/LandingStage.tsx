@@ -1,13 +1,16 @@
+import { Maximize2 } from 'lucide-react'
 import { lazy, Suspense, useCallback, useEffect, useId, useMemo, useState } from 'react'
+import { Link } from 'react-router'
 import { CargoArtwork } from '@/components/CargoArtwork'
 import { PLAN_LABELS, type PlanLabel } from '@/domain/models'
+import { PUBLIC_SAMPLE_PLAN } from '@/features/auth/landing'
 import type { StageView } from '@/features/viewer3d/landing/diorama-layout'
 import { LOADING_AT } from '@/features/viewer3d/landing/story-timeline'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { useFormat, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { DioramaPoster } from './DioramaPoster'
-import { StageViews, StoryButton } from './LandingStageParts'
+import { CONTROL, STAGE_SURFACE, StageViews, StoryButton } from './LandingStageParts'
 import { StageArrival } from './StageArrival'
 import { StageBoundary } from './StageBoundary'
 import { StagePlans } from './StagePlans'
@@ -16,6 +19,7 @@ import { StoryTripCard, StoryTripCardLive } from './StoryTripCard'
 import { DEFAULT_OBJECTIVE, landingPlans } from './landing-plans'
 import { LANDING_REQUEST, LANDING_STOP_COUNT } from './landing-sample.mock'
 import { useHeroFit } from './useHeroFit'
+import { DEFAULT_SAMPLE_STATE, sampleSearch } from './sample-plan/sample-plan-url'
 import { useLandingSample } from './useLandingSample'
 import { useStageGate } from './useStageGate'
 import { useStoryDriver, useStoryPhase, useStoryStatus, type HeroPhase } from './useStoryDriver'
@@ -127,6 +131,14 @@ export function LandingStage() {
   const choosable = plans && !COMPUTING.has(phase) ? plans : null
   const views = <StageViews view={view} onChange={setChosen} layout={tier === 'narrow' ? 'segmented' : 'inline'} className={tier === 'narrow' ? 'mt-3 w-full' : undefined} />
   const button = reducedMotion ? null : <StoryButton status={status} onToggle={toggle} compact={tier === 'narrow'} />
+  // Lối vào trang phương án mẫu: cùng phương án đang chọn, xoay và xem dỡ được; điện thoại chỉ còn biểu tượng
+  const open = (
+    <Link to={`${PUBLIC_SAMPLE_PLAN}?${sampleSearch({ ...DEFAULT_SAMPLE_STATE, plan: picked })}`} aria-label={t('samplePlan.openLabel')}
+      className={cn(STAGE_SURFACE, CONTROL, tier === 'narrow' && 'min-w-11 px-0 pointer-coarse:min-w-14')}>
+      <Maximize2 aria-hidden strokeWidth={1.5} />
+      {tier === 'narrow' ? null : t('samplePlan.open')}
+    </Link>
+  )
   // Chỉ nút tạm dừng làm chữ đứng lại; khung bị cuộn khuất thì câu đang gõ vẫn gõ xong (tối đa 1 giây), pha giữ nguyên nên câu không đổi
   const narrator = <StoryNarrator line={line} paused={status === 'paused'} layout={wide ? 'overlay' : 'row'} preload={going} />
   // Thẻ chuyến: từ 1.280 px nằm đè góc trên phải khung; hẹp hơn nằm trên khung — lúc chưa tải phần 3D vẫn giữ chỗ (trong suốt)
@@ -158,9 +170,12 @@ export function LandingStage() {
           <div className="pointer-events-none absolute inset-0">
             {going ? <StageArrival story={story} stopName={stopNames[0]!} /> : null}
             {tier === 'narrow' ? (
-              <div data-assistant-avoid className="pointer-events-auto absolute top-4 right-4">{button}</div>
+              <>
+                <div className="pointer-events-auto absolute top-4 left-4">{open}</div>
+                <div data-assistant-avoid className="pointer-events-auto absolute top-4 right-4">{button}</div>
+              </>
             ) : (
-              <div className="pointer-events-auto absolute top-4 left-4 flex gap-2">{views}{wide ? null : button}</div>
+              <div className="pointer-events-auto absolute top-4 left-4 flex gap-2">{views}{open}{wide ? null : button}</div>
             )}
             {wide ? (
               <>
