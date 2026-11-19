@@ -216,7 +216,7 @@ for (const viewport of VIEWPORTS) {
     await expect(page.getByRole('button', { name: 'Send request', exact: true })).toBeVisible()
     await check(page, testInfo, `${viewport.name}-landing`, DATA_NAMES)
 
-    await page.getByRole('main').getByRole('link', { name: 'See pricing', exact: true }).click()
+    await page.getByRole('main').getByRole('link', { name: 'Compare the plans', exact: true }).click()
     await page.waitForURL((url) => url.pathname === '/bang-gia')
     await expect(page.getByRole('heading', { level: 2, name: 'Ultimate', exact: true })).toBeVisible()
     await check(page, testInfo, `${viewport.name}-pricing`, DATA_NAMES)

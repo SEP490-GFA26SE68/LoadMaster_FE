@@ -13,12 +13,14 @@ export const TRY_NOTE = 'm-0 text-small text-pretty text-ink-3 pointer-coarse:te
 /**
  * Một ô số có nhãn kèm đơn vị ("Dài (cm)"): bàn phím số trên điện thoại (`inputMode`), nhận dấu "," hoặc "."; 56 px và chữ 16 px trên máy
  * cảm ứng. Mọi ô đều bắt buộc (`aria-required`) nên không gắn dấu sao cho từng nhãn. Lỗi là key của schema, dịch kèm khoảng nhận được.
+ * `deps`: các ô phải kiểm lại khi ô này đổi (lỗi của chúng phụ thuộc số ở đây).
  */
-export function TryNumberInput({ form, name, label, limits }: {
+export function TryNumberInput({ form, name, label, limits, deps }: {
   form: UseFormReturn<TryFormValues>
   name: FieldPath<TryFormValues>
   label: string
   limits: FieldLimits
+  deps?: FieldPath<TryFormValues>[]
 }) {
   const t = useT()
   const format = useFormat()
@@ -33,7 +35,7 @@ export function TryNumberInput({ form, name, label, limits }: {
       aria-required
       className={PUBLIC_TOUCH}
       error={tryFieldError(t, format, message, limits)}
-      {...form.register(name)}
+      {...form.register(name, deps && deps.length > 0 ? { deps } : undefined)}
     />
   )
 }

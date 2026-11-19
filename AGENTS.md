@@ -104,7 +104,7 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   gửi qua email → mật khẩu mới; mở từ "Quên mật khẩu?" của màn đăng nhập, từ lỗi mật khẩu tạm và từ thẻ Mật khẩu của Hồ sơ (`?email=` điền
   sẵn). Kho mẫu không gửi được mã nên chế độ kho mẫu không có liên kết đó, và mở `/quen-mat-khau` là về `/dang-nhap`.
 - **Đầu trang công khai** (`PublicHeader`, dải trời dính trên cùng): mục của trang thành hàng từ 1.024 px với chuột, từ 1.366 px trên máy cảm
-  ứng (điều khiển 56 px: ở 1.024–1.365 px hàng mục đè lên nút ngôn ngữ khi có nút đăng ký) — nơi ba mục vừa cả hai ngôn ngữ —, hẹp hơn thì gom
+  ứng (điều khiển 56 px: ở 1.024–1.365 px hàng mục đè lên nút ngôn ngữ khi có nút đăng ký) — nơi bốn mục vừa cả hai ngôn ngữ —, hẹp hơn thì gom
   vào nút menu `PublicNavMenu` (40 px, 56 px trên máy cảm ứng, mỗi mục 56 px; chọn một mục thì focus tới tiêu đề của phần đó, không về nút menu).
   Hàng mục nằm trong khay kính `.glass-nav` có chỉ báo trượt `.glass-follow` (`components/useGlassFollow`): chỉ báo đứng ở trang đang mở,
   và trên `/gioi-thieu` ở phần đang đọc (`useHeaderScroll`, `data-active` — chỉ là hình, không `aria-current`). Qua khỏi khối mở đầu thì
@@ -121,13 +121,16 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   dòng được trên máy cảm ứng. Hình `CargoArtwork` của màn đăng nhập xếp đầy **một lần** (khoảng 4 giây) rồi đứng yên — không lặp, vì không có
   nút dừng (WCAG 2.2.2); người chọn giảm chuyển động thấy ngay thùng đầy.
 - **Trang giới thiệu** `/gioi-thieu`: khối mở đầu tối `.landing-cinema` (tiêu đề, nút chính "Nhận tư vấn" tới `#lien-he` — khi nối backend
-  cho khách chưa đăng nhập là "Đăng ký trải nghiệm", mục "Đăng ký công khai" ở trên —, khung 3D chuyến mẫu,
+  cho khách chưa đăng nhập là "Đăng ký trải nghiệm", mục "Đăng ký công khai" ở trên —, nút kính "Thử với hàng của bạn" tới `#thu-ngay`,
+  khung 3D chuyến mẫu,
   dải "Ba chuyện quen thuộc của một chuyến hàng" `LandingProblems` — ba chuyện, mỗi chuyện kèm việc ứng dụng làm thật, không số) · "Một chuyến
   hàng trên LoadMaster" `#cach-hoat-dong` (mục dưới) · "Thử với hàng của bạn" `#thu-ngay` (mục dưới) · Gói cước `#goi-cuoc` (cùng truy vấn
-  với Bảng giá) · Hỏi đáp `#hoi-dap` (`marketing/faq/`: sáu chủ đề của trợ lý Lumo `FAQ_TOPICS` — câu hỏi là `chip`, câu trả lời và liên kết
+  với Bảng giá; gói mang cờ tạm được nói bằng **một câu** dưới tiêu đề kèm tên các gói đó — `landing.plans.provisional` —, không nhãn trên
+  từng thẻ như Bảng giá) · Hỏi đáp `#hoi-dap` (`marketing/faq/`: sáu chủ đề của trợ lý Lumo `FAQ_TOPICS` — câu hỏi là `chip`, câu trả lời và liên kết
   là `TopicAnswer` với cùng `useAssistantContext`, không chữ riêng; mỗi câu một `<details>` gốc, dòng câu hỏi 44 px, 56 px trên máy cảm
   ứng, mũi tên xoay bằng CSS và không quay khi giảm chuyển động) · dải liên hệ tối `.landing-closing` `#lien-he` · chân trang. Menu đầu
-  trang ba mục (`PUBLIC_LINKS`: Cách hoạt động, Bảng giá, Liên hệ) — Hỏi đáp mở từ chân trang. **Nhận hàng dọc đường không được giới
+  trang bốn mục (`PUBLIC_LINKS`: Cách hoạt động, Thử ngay — tới `#thu-ngay`, neo ở module thuần `try/try-anchor.ts` —, Bảng giá, Liên hệ) —
+  Hỏi đáp mở từ chân trang. **Nhận hàng dọc đường không được giới
   thiệu** ở hai trang công khai, kể cả trợ lý Lumo (quyết định của chủ sản phẩm 19/11/2026); tính năng vẫn có trong ứng dụng. Cả trang nằm trong
   `RevealProvider`: chữ và thẻ hiện ra **một lần** khi cuộn tới (`features/marketing/reveal`, mục 8).
 - **"Một chuyến hàng trên LoadMaster"** (`marketing/journey/`, `LandingJourney`): năm chặng theo thứ tự (`CHAPTERS` ở `journey-model.ts`) —
@@ -144,7 +147,11 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   bật tiết kiệm dữ liệu thì không chạy — vạch giữ chỗ và một câu nói vì sao.
 - **"Thử với hàng của bạn"** (`marketing/try/`, `LandingTry`, `#thu-ngay`, ngay sau "Một chuyến hàng"): khách nhập lòng thùng (cm) và tải
   trọng (kg), một tới bốn loại kiện (cm, kg, số kiện, điểm giao 1–4; tổng tối đa 1.000 kiện — cổng hiệu năng của bộ tối ưu mô phỏng), form
-  react-hook-form + zod, lỗi là mã (`try-form.ts`); mở ra với xe 3,5 tấn 520 × 200 × 200 cm và 120 thùng 60 × 40 × 40 cm để chạy được ngay.
+  react-hook-form + zod, lỗi là mã (`try-form.ts`); mở ra với xe 3,5 tấn 520 × 200 × 200 cm và ba loại thùng cho ba điểm giao (48 thùng 60 × 40 × 40 cm, 60 thùng 50 × 40 × 30 cm, 16 thùng
+  80 × 60 × 50 cm — 124 kiện, 1.680 kg) để chạy được ngay và lần chạy đầu đã có màu ba điểm giao, số kiện dỡ-xếp lại. Nhóm nghìn của ô số
+  không bắt đầu bằng 0 ("0,500" là lỗi, không phải 500); đổi một ô số kiện thì các ô số kiện khác được kiểm lại (`deps`), để lỗi quá trần
+  tổng tự hết. Form cao hơn một màn hình nên từ 1.280 px (màn cao từ 768 px) cột kết quả dính dưới đầu trang, và tính xong thì cột được cuộn
+  vào khung nhìn nếu đang bị cắt (`try/try-scroll.ts`; nhảy thẳng khi giảm chuyển động; cột cao hơn màn hình thì không cuộn).
   Chỉ chạy khi bấm "Tính ba phương án" — **nút phụ**, nút chính của trang ở phần mở đầu —: `try-api.ts` → `useTryRun` (mutation; bấm lại
   thì huỷ lần cũ) gọi `optimizeCandidates` của chính bộ tối ưu mô phỏng (Web Worker khi có, luồng gọi khi không), một lần chạy ra ba phương
   án A · B · C; không tài khoản, kho mẫu, credit hay máy chủ. Xe của bản thử: cửa sau bằng lòng thùng, không vật cản, **không trục**; kiện theo

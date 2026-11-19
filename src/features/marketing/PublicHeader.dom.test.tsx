@@ -65,11 +65,12 @@ afterEach(() => {
   Object.defineProperty(window, 'scrollY', { configurable: true, value: 0 })
 })
 
-test('a guest on the sample store gets the three page links, the language controls, sign-in and the menu button — no sign-up', () => {
+test('a guest on the sample store gets the four page links, the language controls, sign-in and the menu button — no sign-up', () => {
   const banner = renderHeader('/gioi-thieu')
   const nav = within(banner.getByRole('navigation', { name: 'Mục của trang giới thiệu' }))
   expect(nav.getAllByRole('link').map((link) => [link.textContent, link.getAttribute('href')])).toStrictEqual([
     ['Cách hoạt động', '/gioi-thieu#cach-hoat-dong'],
+    ['Thử ngay', '/gioi-thieu#thu-ngay'],
     ['Bảng giá', '/bang-gia'],
     ['Liên hệ', '/gioi-thieu#lien-he'],
   ])

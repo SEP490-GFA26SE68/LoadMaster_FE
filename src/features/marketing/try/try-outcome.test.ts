@@ -14,6 +14,11 @@ function run(input: TryInput) {
 }
 
 const DEFAULTS = toTryInput(TRY_DEFAULTS) as TryInput
+/** Một loại thùng, một điểm giao. */
+const ONE_STOP: TryInput = {
+  truck: DEFAULTS.truck,
+  cartons: [{ lengthCm: 60, widthCm: 40, heightCm: 40, weightKg: 15, quantity: 120, stop: 1 }],
+}
 
 test('the trial truck is the visitor\'s body with a full-size rear door, no obstacles and no axles; cartons are not must-load', () => {
   const request = buildTryRequest({
@@ -43,8 +48,27 @@ test('the trial truck is the visitor\'s body with a full-size rear door, no obst
   expect(tryRequestIssues(request)).toEqual([])
 })
 
-test('the default run loads all 120 cartons in three plans; with one stop there is no rehandling figure, and B balances best', () => {
+test('the default run loads all 124 cartons of three stops in three plans; B balances best and C rehandles least', () => {
   const outcome = run(DEFAULTS)
+  expect(outcome.totalCount).toBe(124)
+  expect(outcome.multiStop).toBe(true)
+  expect(outcome.plans.map((plan) => [plan.id, plan.objective])).toEqual([['A', 'MAX_VOLUME'], ['B', 'AXLE_BALANCE'], ['C', 'MIN_REHANDLING']])
+  for (const plan of outcome.plans) {
+    expect(plan.placedCount).toBe(124)
+    expect(plan.unplaced).toEqual([])
+    expect(plan.rehandlingCount).toEqual(expect.any(Number))
+    expect(plan.result.isMockResult).toBe(true)
+  }
+  // (48 × 96.000 + 60 × 60.000 + 16 × 240.000) cm³ = 12,048 m³ trên 520 × 200 × 200 cm = 20,8 m³
+  expect(outcome.plans[0]?.volumePercent).toBeCloseTo(57.92, 2)
+  expect(outcome.best.placed).toBeUndefined()
+  expect(outcome.best.volume).toBeUndefined()
+  expect([...(outcome.best.balance ?? [])]).toEqual(['B'])
+  expect([...(outcome.best.rehandling ?? [])]).toEqual(['C'])
+})
+
+test('with one stop all 120 cartons are loaded and there is no rehandling figure; B balances best', () => {
+  const outcome = run(ONE_STOP)
   expect(outcome.totalCount).toBe(120)
   expect(outcome.multiStop).toBe(false)
   expect(outcome.plans.map((plan) => [plan.id, plan.objective])).toEqual([['A', 'MAX_VOLUME'], ['B', 'AXLE_BALANCE'], ['C', 'MIN_REHANDLING']])
@@ -64,7 +88,7 @@ test('the default run loads all 120 cartons in three plans; with one stop there 
 })
 
 test('when two objectives pick the same layout the later plan says which plan it repeats', () => {
-  const outcome = run(DEFAULTS)
+  const outcome = run(ONE_STOP)
   const byId = new Map(outcome.plans.map((plan) => [plan.id, plan]))
   expect(byId.get('A')?.sameAs).toBeNull()
   for (const plan of outcome.plans) {
@@ -76,8 +100,8 @@ test('when two objectives pick the same layout the later plan says which plan it
 
 test('with two stops every plan has a rehandling figure', () => {
   const outcome = run({
-    ...DEFAULTS,
-    cartons: [...DEFAULTS.cartons, { lengthCm: 40, widthCm: 30, heightCm: 30, weightKg: 8, quantity: 60, stop: 2 }],
+    ...ONE_STOP,
+    cartons: [...ONE_STOP.cartons, { lengthCm: 40, widthCm: 30, heightCm: 30, weightKg: 8, quantity: 60, stop: 2 }],
   })
   expect(outcome.multiStop).toBe(true)
   expect(outcome.totalCount).toBe(180)

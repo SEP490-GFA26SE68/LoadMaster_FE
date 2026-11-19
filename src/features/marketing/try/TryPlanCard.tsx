@@ -83,6 +83,8 @@ export function TryPlanCard({ outcome, plan }: { outcome: TryOutcome; plan: TryP
         placements={plan.result.placements}
         totalCount={outcome.totalCount}
         className={THUMB}
+        // Số "xếp được" nằm ngay hàng dưới: không lặp lại bằng chữ 11 px đè trên hình
+        overlays={false}
       />
       <dl className="m-0">
         <Row

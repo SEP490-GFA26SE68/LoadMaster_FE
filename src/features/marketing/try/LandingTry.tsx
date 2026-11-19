@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 import { PUBLIC_TOUCH } from '../public-chrome'
 import { Reveal } from '../reveal'
 import { SectionHeading } from '../SectionHeading'
+import { TRY_ANCHOR } from './try-anchor'
 import { toTryInput, TRY_DEFAULTS, tryFormSchema, type TryFormValues } from './try-form'
 import { TryCartonFields } from './TryCartonFields'
 import { TRY_NOTE } from './TryNumberInput'
@@ -16,15 +17,13 @@ import { TryResults } from './TryResults'
 import { TryTruckFields } from './TryTruckFields'
 import { useTryRun } from './useTryRun'
 
-/** Neo của phần trên trang giới thiệu. */
-export const TRY_ANCHOR = 'thu-ngay'
-
 /**
  * "Thử với hàng của bạn" (`#thu-ngay`): khách nhập lòng thùng xe (cm, kg) và một tới bốn loại kiện (kèm điểm giao), bấm "Tính ba phương
  * án" — nút phụ, vì nút chính duy nhất của trang nằm ở phần mở đầu — và bộ tối ưu mô phỏng của ứng dụng chạy **một lần** ngay trên trình
  * duyệt (Web Worker khi có), ra ba phương án A · B · C theo ba mục tiêu. Không tài khoản, không credit, không máy chủ; chỉ chạy khi bấm,
- * bấm lại trong lúc đang tính thì lần cũ bị bỏ. Từ 1.280 px form trái, kết quả phải; hẹp hơn xếp chồng. Trong lúc tính, nút giữ nguyên
- * chiều rộng (icon đổi thành vòng quay) và vẫn bấm được.
+ * bấm lại trong lúc đang tính thì lần cũ bị bỏ. Từ 1.280 px form trái, kết quả phải; hẹp hơn xếp chồng. Form mở với ba loại kiện nên cao
+ * hơn một màn hình: cột kết quả dính dưới đầu trang (khi màn cao từ 768 px), và tính xong thì cột được cuộn vào khung nhìn nếu đang bị
+ * cắt (`try-scroll.ts`) — nút chạy nằm cuối form nên cột dính bị đáy form kéo lên. Trong lúc tính, nút giữ nguyên chiều rộng (icon đổi thành vòng quay) và vẫn bấm được.
  */
 export function LandingTry() {
   const t = useT()
@@ -64,7 +63,7 @@ export function LandingTry() {
             </form>
           </Card>
         </Reveal>
-        <Reveal index={1} className="min-w-0">
+        <Reveal index={1} className="min-w-0 xl:[@media(min-height:48rem)]:sticky xl:[@media(min-height:48rem)]:top-20">
           <TryResults control={form.control} run={run} />
         </Reveal>
       </div>

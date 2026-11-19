@@ -13,7 +13,7 @@ test('a guest picks a plan on the pricing page and sends a request; customer sup
   await page.waitForURL(/\/gioi-thieu$/)
   await expect(page.getByRole('heading', { level: 1, name: 'Tới điểm nào, mở cửa là thấy hàng của điểm đó.' })).toBeVisible()
 
-  await page.getByRole('main').getByRole('link', { name: 'Xem bảng giá', exact: true }).click()
+  await page.getByRole('main').getByRole('link', { name: 'So sánh các gói', exact: true }).click()
   await page.waitForURL(/\/bang-gia$/)
   await expect(page.getByRole('heading', { level: 1, name: 'Bảng giá', exact: true })).toBeVisible()
   const pro = page.getByRole('group', { name: 'Pro', exact: true })

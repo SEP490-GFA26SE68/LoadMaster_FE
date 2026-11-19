@@ -4,7 +4,8 @@ import { attachJson, expect, test } from './fixtures'
 /**
  * "Thử với hàng của bạn" (`#thu-ngay`) của trang giới thiệu, trong trình duyệt thật: bấm "Tính ba phương án" với số mặc định thì bộ tối ưu
  * mô phỏng chạy trên trình duyệt (Web Worker) và ba phương án A · B · C hiện cạnh nhau, không nhãn MOCK RESULT, không lỗi nào trong
- * console; ở 1.440 × 900 form và kết quả gọn trong khoảng một màn hình; điện thoại 390 px không cuộn ngang, ô và nút cao 56 px.
+ * console; ở 1.440 × 900 cột kết quả gọn trong một màn hình và dính dưới đầu trang — form (ba loại kiện) cao hơn một màn hình, nên bấm nút
+ * ở cuối form xong thì cột được cuộn vào, ba phương án nằm trọn trong khung nhìn; điện thoại 390 px không cuộn ngang, ô và nút cao 56 px.
  */
 test.use({ collectConsoleErrors: true })
 
@@ -33,7 +34,7 @@ test.describe('landing trial at 1440 × 900', () => {
     const plans = ['A', 'B', 'C'].map((label) => section.getByRole('group', { name: `Phương án ${label}`, exact: true }))
     for (const plan of plans) {
       await expect(plan).toBeVisible()
-      await expect(plan.getByText('120 / 120', { exact: true }).first()).toBeVisible()
+      await expect(plan.getByText('124 / 124', { exact: true })).toBeVisible()
     }
     await expect(section).not.toContainText('MOCK RESULT')
     await expect(section.getByText(/Số do bộ tối ưu mô phỏng của LoadMaster chạy trên trình duyệt của bạn tính/)).toBeVisible()
@@ -42,12 +43,14 @@ test.describe('landing trial at 1440 × 900', () => {
     const tops = await Promise.all(plans.map(async (plan) => (await plan.boundingBox())?.y ?? Number.NaN))
     expect(new Set(tops.map((top) => Math.round(top))).size).toBe(1)
 
-    // Form và kết quả gọn trong khoảng một màn hình
+    // Cột kết quả (tiêu đề → nút đi tiếp) gọn trong một màn hình
+    const results = await section.locator('[data-try-state]').boundingBox()
     const form = await section.getByRole('form').boundingBox()
-    const next = await section.getByRole('link', { name: 'Nhận tư vấn cho hàng của bạn', exact: true }).boundingBox()
-    const height = next && form ? next.y + next.height - form.y : Number.NaN
-    await attachJson(testInfo, 'landing-try-height', { height })
-    expect(height).toBeLessThanOrEqual(900)
+    await attachJson(testInfo, 'landing-try-height', { results: results?.height, form: form?.height })
+    expect(results?.height ?? Number.NaN).toBeLessThanOrEqual(900 - 80)
+    // Nút chạy nằm cuối form, dưới màn đầu: tính xong thì cột kết quả được cuộn vào, cả ba thẻ nằm trọn trong khung nhìn
+    await expect(section.getByRole('button', { name: RUN, exact: true })).toBeInViewport()
+    for (const plan of plans) await expect(plan).toBeInViewport({ ratio: 1 })
     expect(await scrollsSideways(page)).toBe(false)
     expect(browserErrors).toStrictEqual([])
   })

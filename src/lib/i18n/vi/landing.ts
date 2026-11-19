@@ -11,6 +11,7 @@ export const landing = {
     nav: 'Mục của trang giới thiệu',
     menu: 'Menu trang',
     how: 'Cách hoạt động',
+    try: 'Thử ngay',
     pricing: 'Bảng giá',
     contact: 'Liên hệ',
     signIn: 'Đăng nhập',
@@ -24,7 +25,7 @@ export const landing = {
     title: 'Tới điểm nào, mở cửa là thấy hàng của điểm đó.',
     lede: 'LoadMaster lập phương án xếp hàng 3D theo đúng thứ tự giao. Điều phối viên duyệt, kho xếp theo phương án, tài xế dỡ đúng hàng ở từng điểm.',
     cta: 'Nhận tư vấn',
-    pricing: 'Xem bảng giá',
+    try: 'Thử với hàng của bạn',
     artworkLabel: 'Mô phỏng thùng xe được xếp hàng theo thứ tự dỡ',
   },
   /**
@@ -74,6 +75,8 @@ export const landing = {
     credit: { one: 'Một lần chạy tối ưu 3D dùng {count} credit và cho ra cả ba phương án.', other: 'Một lần chạy tối ưu 3D dùng {count} credit và cho ra cả ba phương án.' },
     credits: '{count} credit mỗi tháng',
     compare: 'So sánh các gói',
+    /** Một câu dưới tiêu đề thay nhãn "Giá trị tạm" trên từng thẻ; `names` là tên các gói mang cờ tạm. */
+    provisional: 'Giá và credit của gói {names} là giá trị tạm, chờ chốt.',
     loading: 'Đang tải danh sách gói',
     error: 'Chưa tải được danh sách gói. Bảng giá có đủ thông tin của từng gói.',
     /** Thanh kéo "số lần chạy mỗi tháng" dưới các gói — cùng phép tính với trợ lý Lumo (`assistant-advisor.ts`). */

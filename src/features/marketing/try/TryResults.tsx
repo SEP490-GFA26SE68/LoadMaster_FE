@@ -1,4 +1,5 @@
 import { ArrowRight } from 'lucide-react'
+import { useEffect, useRef } from 'react'
 import { useWatch, type Control } from 'react-hook-form'
 import { Link } from 'react-router'
 import { Banner } from '@/components/Banner'
@@ -15,6 +16,7 @@ import { PUBLIC_TOUCH } from '../public-chrome'
 import { sameInput, toTryInput, type TryFormValues } from './try-form'
 import { tryErrorLines } from './try-messages'
 import type { TryOutcome } from './try-outcome'
+import { scrollResultsIntoView } from './try-scroll'
 import { TRY_NOTE } from './TryNumberInput'
 import { TryPlanCard, TryPlanPlaceholder } from './TryPlanCard'
 import { isAbort, type useTryRun } from './useTryRun'
@@ -26,7 +28,7 @@ function StaleNote({ control, outcome }: { control: Control<TryFormValues>; outc
   const t = useT()
   const values = useWatch({ control }) as TryFormValues
   if (sameInput(toTryInput(values), outcome.input)) return null
-  return <Banner tone="warning">{t('landingTry.results.stale')}</Banner>
+  return <Banner tone="warning" className="pointer-coarse:text-body-lg">{t('landingTry.results.stale')}</Banner>
 }
 
 /** Chú giải màu điểm giao của hình (màu luôn kèm số và chữ). Chỉ khi hàng có từ hai điểm giao. */
@@ -56,7 +58,8 @@ function NextStep() {
   return (
     <div className="flex flex-col items-start gap-3 border-t border-line-soft pt-4 sm:flex-row sm:items-center sm:justify-between">
       <p className={cn(TRY_NOTE, 'text-ink-2')}>{t('landingTry.next.lead')}</p>
-      <Button asChild variant="secondary" className={cn('flex-none', PUBLIC_TOUCH)}>
+      {/* Từ 640 px nút dồn sát mép phải — đúng chỗ nút "Hỏi Lumo": nút đó nâng lên khi chạm */}
+      <Button asChild variant="secondary" className={cn('flex-none', PUBLIC_TOUCH)} data-assistant-avoid>
         <Link to={signUp ? TRIAL_REGISTRATION : contactPath({ type: 'DEMO_REQUEST' })}>
           {signUp ? t('landingTry.next.trial') : t('landingTry.next.contact')}{' '}
           {/* Chữ hiện ra trùng nút ở khối mở đầu; phần đuôi chỉ cho trình đọc màn hình để hai liên kết khác tên truy cập */}
@@ -77,13 +80,18 @@ export function TryResults({ control, run }: { control: Control<TryFormValues>; 
   const t = useT()
   const format = useFormat()
   const outcome = run.data
+  const root = useRef<HTMLDivElement>(null)
+  // Mỗi lần tính xong: kết quả mới nằm trong khung nhìn (cột dính có thể đang bị cắt khi nút chạy ở cuối form)
+  useEffect(() => {
+    if (outcome) scrollResultsIntoView(root.current)
+  }, [outcome])
   const failed = run.isError && !isAbort(run.error)
   const rows = [t('landingTry.results.placed'), t('landingTry.results.volume'), t('landingTry.results.balance')]
   const announcement = run.isPending
     ? t('landingTry.announce.running')
     : outcome ? t('landingTry.announce.done', { total: format.integer(outcome.totalCount) }) : ''
   return (
-    <div className="flex flex-col gap-4" data-try-state={run.isPending ? 'running' : outcome ? 'done' : failed ? 'failed' : 'idle'}>
+    <div ref={root} className="flex scroll-mt-20 flex-col gap-4" data-try-state={run.isPending ? 'running' : outcome ? 'done' : failed ? 'failed' : 'idle'}>
       <h3 className="m-0 font-display text-h3 leading-5.5 font-[650] text-ink-strong font-stretch-106%">{t('landingTry.results.title')}</h3>
       <p role="status" className="sr-only">{announcement}</p>
       <div className="grid gap-3 sm:grid-cols-3">
@@ -92,7 +100,7 @@ export function TryResults({ control, run }: { control: Control<TryFormValues>; 
           : PLAN_OBJECTIVES.map((objective) => <TryPlanPlaceholder key={objective} objective={objective} rows={rows} />)}
       </div>
       {failed ? (
-        <Banner tone="danger" role="alert">
+        <Banner tone="danger" role="alert" className="pointer-coarse:text-body-lg">
           {tryErrorLines(run.error, t, format).map((line, index) => <p key={`${index}-${line}`} className="m-0">{line}</p>)}
         </Banner>
       ) : null}

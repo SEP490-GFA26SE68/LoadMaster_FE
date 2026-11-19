@@ -49,14 +49,15 @@ export const TRY_ERRORS = {
   totalQuantity: 'landingTry.errors.totalQuantity',
 } as const satisfies Record<string, MessageKey>
 
-/** Số nguyên có nhóm nghìn bằng một loại dấu ("1.500" · "1,500" · "12.000.000"). */
-const GROUPED = /^\d{1,3}([.,])\d{3}(?:\1\d{3})*$/
+/** Số nguyên có nhóm nghìn bằng một loại dấu ("1.500" · "1,500" · "12.000.000"); nhóm đầu không bắt đầu bằng 0 ("0,500" không phải 500). */
+const GROUPED = /^[1-9]\d{0,2}([.,])\d{3}(?:\1\d{3})*$/
 /** Số không nhóm nghìn, dấu thập phân "," hoặc "." với tối đa hai chữ số sau dấu ("45,5" · "45.5"). */
 const PLAIN = /^\d+(?:[.,]\d{1,2})?$/
 
 /**
  * Số khách gõ, bỏ khoảng trắng. Ba chữ số sau dấu luôn là nhóm nghìn ("3.500" và "3,500" đều là 3500), vì phần thập phân chỉ nhận tối đa
- * hai chữ số — nên số đọc ra không phụ thuộc ngôn ngữ đang chọn. Chữ khác, số âm: `null`.
+ * hai chữ số — nên số đọc ra không phụ thuộc ngôn ngữ đang chọn. Chữ khác, số âm, và "0,500" (ba chữ số sau dấu mà không phải nhóm
+ * nghìn): `null`.
  */
 export function parseTryNumber(raw: string): number | null {
   const text = raw.replace(/\s/g, '')
@@ -156,12 +157,18 @@ export function sameInput(a: TryInput | null, b: TryInput | null): boolean {
 }
 
 /**
- * Form mở ra với một xe tải 3,5 tấn thùng kín (lòng thùng 520 × 200 × 200 cm — cỡ của xe nhỏ nhất trong đội xe mẫu của ứng dụng) và một
- * loại thùng carton 60 × 40 × 40 cm, 15 kg, 120 thùng, giao một điểm: bấm chạy được ngay.
+ * Form mở ra với một xe tải 3,5 tấn thùng kín (lòng thùng 520 × 200 × 200 cm — cỡ của xe nhỏ nhất trong đội xe mẫu của ứng dụng) và ba
+ * loại thùng carton cho ba điểm giao — 48 thùng 60 × 40 × 40 cm (15 kg), 60 thùng 50 × 40 × 30 cm (8 kg), 16 thùng 80 × 60 × 50 cm
+ * (30 kg): 124 kiện, 1.680 kg, 12,048 m³ trên 20,8 m³ của thùng. Bấm chạy được ngay, và lần chạy đầu đã có hàng của ba điểm giao để so ba
+ * phương án (màu điểm giao, số kiện dỡ-xếp lại).
  */
 export const TRY_DEFAULTS: TryFormValues = {
   truck: { lengthCm: '520', widthCm: '200', heightCm: '200', payloadKg: '3500' },
-  cartons: [{ lengthCm: '60', widthCm: '40', heightCm: '40', weightKg: '15', quantity: '120', stop: '1' }],
+  cartons: [
+    { lengthCm: '60', widthCm: '40', heightCm: '40', weightKg: '15', quantity: '48', stop: '1' },
+    { lengthCm: '50', widthCm: '40', heightCm: '30', weightKg: '8', quantity: '60', stop: '2' },
+    { lengthCm: '80', widthCm: '60', heightCm: '50', weightKg: '30', quantity: '16', stop: '3' },
+  ],
 }
 
 /** Loại kiện thêm vào thứ `index` (0–3): thùng nhỏ hơn, giao điểm kế tiếp, để ba phương án có hàng của nhiều điểm giao mà so. */

@@ -26,10 +26,14 @@ function errorAt(form: TryFormValues, path: string): string | undefined {
   return parsed.error.issues.find((issue) => issue.path.join('.') === path)?.message
 }
 
-test('the defaults are a 3.5-tonne box truck with 120 cartons for one stop, ready to run', () => {
+test('the defaults are a 3.5-tonne box truck with three carton types for three stops, ready to run', () => {
   expect(toTryInput(TRY_DEFAULTS)).toEqual({
     truck: { lengthCm: 520, widthCm: 200, heightCm: 200, payloadKg: 3500 },
-    cartons: [{ lengthCm: 60, widthCm: 40, heightCm: 40, weightKg: 15, quantity: 120, stop: 1 }],
+    cartons: [
+      { lengthCm: 60, widthCm: 40, heightCm: 40, weightKg: 15, quantity: 48, stop: 1 },
+      { lengthCm: 50, widthCm: 40, heightCm: 30, weightKg: 8, quantity: 60, stop: 2 },
+      { lengthCm: 80, widthCm: 60, heightCm: 50, weightKg: 30, quantity: 16, stop: 3 },
+    ],
   })
 })
 
@@ -42,6 +46,8 @@ test('numbers take either decimal mark with up to two decimals, and three digits
   expect(parseTryNumber('1 000')).toBe(1000)
   expect(parseTryNumber('12.000.000')).toBe(12_000_000)
   for (const raw of ['', 'abc', '-3', '1.5.0', '1.50,5', '3,5000', '12,000.000']) expect(parseTryNumber(raw)).toBeNull()
+  // Nhóm nghìn không bắt đầu bằng 0: "0,500" kg không được đọc thành 500 kg
+  for (const raw of ['0,500', '0.750', '00.500', '0.500.000']) expect(parseTryNumber(raw)).toBeNull()
 })
 
 test('every field says what is wrong with it: empty, not a number, not whole, out of range', () => {

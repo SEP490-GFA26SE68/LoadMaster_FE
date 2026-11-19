@@ -33,11 +33,16 @@ function CartonStopDot({ form, index }: { form: UseFormReturn<TryFormValues>; in
   return <StopDot stop={Number(stop)} className="size-6 text-small" />
 }
 
-/** Một loại kiện: dài · rộng · cao (cm), khối lượng (kg), số kiện và điểm giao; nút bỏ khi còn hơn một loại. */
-function CartonFieldset({ form, index, onRemove }: { form: UseFormReturn<TryFormValues>; index: number; onRemove?: () => void }) {
+/**
+ * Một loại kiện: dài · rộng · cao (cm), khối lượng (kg), số kiện và điểm giao; nút bỏ khi còn hơn một loại. Lỗi "quá trần tổng số kiện"
+ * nằm ở ô số kiện của loại cuối nhưng phụ thuộc mọi ô số kiện: đổi một ô thì các ô số kiện khác (`count` loại) được kiểm lại, để lỗi tự
+ * hết khi tổng đã về dưới trần.
+ */
+function CartonFieldset({ form, index, count, onRemove }: { form: UseFormReturn<TryFormValues>; index: number; count: number; onRemove?: () => void }) {
   const t = useT()
   const number = index + 1
   const stops = STOP_CHOICES.map((value) => ({ value, label: t('landingTry.cartons.stopOption', { number: value }) }))
+  const otherQuantities = Array.from({ length: count }, (_, other) => `cartons.${other}.quantity` as const).filter((_, other) => other !== index)
   return (
     <fieldset className={cn(TRY_FIELDSET, 'border-t border-line-soft pt-4')}>
       <legend className="sr-only">{t('landingTry.cartons.legend', { number })}</legend>
@@ -65,7 +70,14 @@ function CartonFieldset({ form, index, onRemove }: { form: UseFormReturn<TryForm
           <TryNumberInput key={field} form={form} name={`cartons.${index}.${field}`} label={t(`landingTry.cartons.${field}`)} limits={CARTON_LIMITS[field]} />
         ))}
         {LOAD_FIELDS.map((field) => (
-          <TryNumberInput key={field} form={form} name={`cartons.${index}.${field}`} label={t(`landingTry.cartons.${field}`)} limits={CARTON_LIMITS[field]} />
+          <TryNumberInput
+            key={field}
+            form={form}
+            name={`cartons.${index}.${field}`}
+            label={t(`landingTry.cartons.${field}`)}
+            limits={CARTON_LIMITS[field]}
+            deps={field === 'quantity' ? otherQuantities : undefined}
+          />
         ))}
         <SelectField control={form.control} name={`cartons.${index}.stop`} label={t('landingTry.cartons.stop')} options={stops} className={SELECT_TOUCH} />
       </div>
@@ -95,6 +107,7 @@ export function TryCartonFields({ form }: { form: UseFormReturn<TryFormValues> }
           key={field.id}
           form={form}
           index={index}
+          count={fields.length}
           onRemove={fields.length > 1 ? () => {
             focusAdd.current = true
             remove(index)

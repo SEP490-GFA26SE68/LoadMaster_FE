@@ -80,7 +80,7 @@ test('a guest sees what the app does and how to get in touch: sign-in in the hea
   expect(banner.getByRole('link', { name: 'Đăng nhập' })).toHaveAttribute('href', '/dang-nhap')
   expect(screen.getByRole('link', { name: 'Bỏ qua tới nội dung chính' })).toHaveAttribute('href', '#noi-dung-chinh')
   expect(screen.getByRole('link', { name: 'Nhận tư vấn' })).toHaveAttribute('href', '/gioi-thieu#lien-he')
-  expect(screen.getByRole('link', { name: 'Xem bảng giá' })).toHaveAttribute('href', '/bang-gia')
+  expect(screen.getByRole('link', { name: 'Thử với hàng của bạn' })).toHaveAttribute('href', '/gioi-thieu#thu-ngay')
   for (const name of ['Ba chuyện quen thuộc của một chuyến hàng', 'Một chuyến hàng trên LoadMaster', 'Hỏi đáp', 'Liên hệ với LoadMaster']) {
     expect(screen.getByRole('heading', { level: 2, name })).toBeInTheDocument()
   }
@@ -120,7 +120,9 @@ test('every number on the page has a source: code constants, the plan catalogue 
   const plans = within(screen.getByRole('region', { name: 'Gói cước' }))
   expect(await plans.findByRole('group', { name: 'Pro' }, SLOW)).toHaveTextContent('10.000 credit mỗi tháng')
   expect(plans.getByRole('group', { name: 'Ultimate' })).toHaveTextContent('Không giới hạn')
-  expect(plans.getByRole('group', { name: 'Basic' })).toHaveTextContent('Giá trị tạm — chờ chốt')
+  // Một câu dưới tiêu đề thay ba nhãn "Giá trị tạm" trên từng thẻ
+  expect(plans.getByText('Giá và credit của gói Basic, Pro và Ultimate là giá trị tạm, chờ chốt.')).toBeInTheDocument()
+  expect(plans.queryByText('Giá trị tạm — chờ chốt')).not.toBeInTheDocument()
   expect(plans.getByRole('link', { name: 'So sánh các gói' })).toHaveAttribute('href', '/bang-gia')
 
   // Thanh kéo số lần chạy: cùng phép tính với trợ lý — 300 lần × 2 credit vừa gói Basic (3.000), 2.000 lần cần Pro (10.000)
@@ -169,13 +171,14 @@ test('the skip link moves focus to the main content without changing the address
   expect(screen.queryByText(/Đang ở/)).not.toBeInTheDocument()
 })
 
-test('the header menu lists the three sections; picking one moves focus to that section, not back to the menu button', async () => {
+test('the header menu lists the four sections; picking one moves focus to that section, not back to the menu button', async () => {
   const user = userEvent.setup()
   renderLanding('/gioi-thieu')
   await user.click(within(screen.getByRole('banner')).getByRole('button', { name: 'Menu trang' }))
   const items = screen.getAllByRole('menuitem')
   expect(items.map((item) => [item.textContent, item.getAttribute('href')])).toStrictEqual([
     ['Cách hoạt động', '/gioi-thieu#cach-hoat-dong'],
+    ['Thử ngay', '/gioi-thieu#thu-ngay'],
     ['Bảng giá', '/bang-gia'],
     ['Liên hệ', '/gioi-thieu#lien-he'],
   ])

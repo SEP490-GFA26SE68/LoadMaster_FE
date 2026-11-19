@@ -2,7 +2,7 @@ import { Link } from 'react-router'
 import { SKY_FOCUS } from '@/components/sky-focus'
 import { Button } from '@/components/ui/Button'
 import { useAuthSafe } from '@/features/auth/AuthProvider'
-import { PUBLIC_HOME, PUBLIC_PRICING, TRIAL_REGISTRATION } from '@/features/auth/landing'
+import { PUBLIC_HOME, TRIAL_REGISTRATION } from '@/features/auth/landing'
 import { REGISTRATION_CAPABILITIES } from '@/features/registration/useRegistrationQuery'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
@@ -10,10 +10,11 @@ import { CONTACT_ANCHOR } from './contact-form'
 import { LandingStage } from './LandingStage'
 import { PUBLIC_TOUCH } from './public-chrome'
 import { FlowHeading, Reveal, RevealWords } from './reveal'
+import { TRY_ANCHOR } from './try/try-anchor'
 
 /**
  * Phần mở đầu của trang giới thiệu, trên nền tối nối liền với đầu trang: tiêu đề, một câu mô tả, nút chính duy nhất của trang và nút kính
- * "Xem bảng giá" — vòng focus `--cyan-300` như mọi điều khiển trên dải trời; bên phải (dưới, khi màn hẹp) là khung 3D của chuyến mẫu
+ * "Thử với hàng của bạn" (cuộn tới `#thu-ngay`, nơi khách tự chạy ba phương án) — vòng focus `--cyan-300` như mọi điều khiển trên dải trời; bên phải (dưới, khi màn hẹp) là khung 3D của chuyến mẫu
  * (`LandingStage`). Khi nối backend (`REGISTRATION_CAPABILITIES`) và khách chưa đăng nhập, nút chính là "Đăng ký trải nghiệm" — lối vào dễ
  * thấy nhất của luồng dùng thử — và "Nhận tư vấn" (cuộn tới form liên hệ) lùi thành nút kính; kho mẫu không có luồng đăng ký nên nút chính
  * vẫn là "Nhận tư vấn". Trên trang giới thiệu (trong `RevealProvider`) cột chữ là một cổng hiện một lần: dòng mở đầu chảy từng chữ sau
@@ -54,7 +55,7 @@ export function LandingHero() {
               <Link to={{ pathname: PUBLIC_HOME, hash: `#${CONTACT_ANCHOR}` }}>{t('landing.hero.cta')}</Link>
             </Button>
             <Button asChild variant="glass" size="lg" className={cn(PUBLIC_TOUCH, SKY_FOCUS)}>
-              <Link to={PUBLIC_PRICING}>{t('landing.hero.pricing')}</Link>
+              <Link to={{ pathname: PUBLIC_HOME, hash: `#${TRY_ANCHOR}` }}>{t('landing.hero.try')}</Link>
             </Button>
           </Reveal>
         </Reveal>

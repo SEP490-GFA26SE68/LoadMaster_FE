@@ -7,6 +7,7 @@ export const landing = {
     nav: 'Site sections',
     menu: 'Site menu',
     how: 'How it works',
+    try: 'Try it',
     pricing: 'Pricing',
     contact: 'Contact',
     signIn: 'Sign in',
@@ -20,7 +21,7 @@ export const landing = {
     title: 'At every stop, open the door and that stop’s cargo is right there.',
     lede: 'LoadMaster plans 3D loading in delivery order. The dispatcher approves the plan, the warehouse loads by it, and the driver unloads the right cargo at every stop.',
     cta: 'Talk to us',
-    pricing: 'See pricing',
+    try: 'Try it with your cargo',
     artworkLabel: 'A truck body being loaded in unloading order',
   },
   stage: {
@@ -58,6 +59,7 @@ export const landing = {
     credit: { one: 'One 3D optimization run uses {count} credit and gives all three plans.', other: 'One 3D optimization run uses {count} credits and gives all three plans.' },
     credits: '{count} credits a month',
     compare: 'Compare the plans',
+    provisional: 'Prices and credits for {names} are provisional, pending confirmation.',
     loading: 'Loading the plans',
     error: 'The plans could not be loaded. The pricing page has the details of every plan.',
     advisor: {

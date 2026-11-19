@@ -74,11 +74,11 @@ test('with motion on the title is split for the eye only: one heading, one exact
   expect(gate).toHaveAttribute('data-shown')
   expect(io?.instances.some((instance) => instance.targets.has(gate as HTMLElement))).toBe(false)
 
-  // Nút không đổi theo chuyển động: "Nhận tư vấn" là nút chính duy nhất, "Xem bảng giá" là nút kính
+  // Nút không đổi theo chuyển động: "Nhận tư vấn" là nút chính duy nhất, "Thử với hàng của bạn" là nút kính
   const consult = hero.getByRole('link', { name: 'Nhận tư vấn' })
   expect(consult).toHaveAttribute('href', '/gioi-thieu#lien-he')
   expect(hero.getAllByRole('link').filter(isPrimary)).toEqual([consult])
-  expect(hero.getByRole('link', { name: 'Xem bảng giá' })).toHaveAttribute('href', '/bang-gia')
+  expect(hero.getByRole('link', { name: 'Thử với hàng của bạn' })).toHaveAttribute('href', '/gioi-thieu#thu-ngay')
   expect(hero.queryByRole('link', { name: /Đăng ký/ })).not.toBeInTheDocument()
   // Vai trò giới thiệu ở "Một chuyến hàng", không ở phần mở đầu
   expect(hero.queryByRole('list')).not.toBeInTheDocument()
