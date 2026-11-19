@@ -18,17 +18,23 @@ const remoteListeners = new Set<() => void>()
  * (D-44); dưới Vitest neo `SEED_ANCHOR_DATE` cho test tất định. Test logic kho tự tạo kho riêng bằng `createMockDb`.
  *
  * Đồng hồ của kho (FE-6-08, D-85): mở trang kèm `?toc-do=<n>` thì chạy nhanh n lần kể từ lúc tạo kho, suốt đời của tab — tham số chỉ
- * đọc một lần ở đây, đổi route trong app không đổi tốc độ. Không có tham số, và dưới Vitest, đồng hồ là giờ máy.
+ * đọc một lần lúc tải trang (`LOAD_SPEED`), đổi route trong app không đổi tốc độ. Không có tham số, và dưới Vitest, đồng hồ là giờ máy.
  *
  * Nhiều tab (FE-BL-06): các tab cùng trình duyệt dùng chung dữ liệu qua `tab-sync.ts` — tab mở sau lấy trạng thái của tab đang mở (và
  * cả đồng hồ của nó, nên `?toc-do` của tab sau bị bỏ qua), phiên đăng nhập vẫn riêng từng tab. Chỉ một tab thì không có gì thay đổi.
  */
+/**
+ * Tốc độ đồng hồ đọc từ URL **lúc tải trang**, không phải lúc dựng kho: khách chưa đăng nhập không dựng kho, nên kho có thể được dựng
+ * sau khi router đã đổi URL (mở `/chuyen?toc-do=40` khi chưa đăng nhập là sang `/dang-nhap`, mất tham số).
+ */
+const LOAD_SPEED = import.meta.env.MODE === 'test' || typeof window === 'undefined' ? 1 : clockSpeedFrom(window.location.search)
+
 export function getMockDb(): MockDb {
   if (appDb === undefined) {
     const parts = createMockDbParts({
       latencyMs: APP_LATENCY_MS,
       today: import.meta.env.MODE === 'test' ? SEED_ANCHOR_DATE : vnDate(new Date()),
-      speed: import.meta.env.MODE === 'test' || typeof window === 'undefined' ? 1 : clockSpeedFrom(window.location.search),
+      speed: LOAD_SPEED,
       // Mã QR của kiện đăng ký mới: ngẫu nhiên thật trong app, tất định dưới Vitest
       ...(import.meta.env.MODE === 'test' ? {} : { random: Math.random }),
     })
