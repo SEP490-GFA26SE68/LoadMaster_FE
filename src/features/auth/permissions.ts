@@ -22,6 +22,7 @@ export const PERMISSIONS = [
   'audit.view',
   'subscriptionPlans.manage',
   'billing.manage',
+  'payroll.manage',
   'support.create',
   'support.handle',
   'contacts.handle',
@@ -87,6 +88,7 @@ export const ROLE_PERMISSIONS: Readonly<Record<Role, readonly Permission[]>> = {
   companyAdmin: ['companyProfile.manage', 'users.manage', 'audit.view', 'billing.manage', 'support.create'],
 
   companyManager: [
+    'payroll.manage',
     'support.create',
     'dashboard.view',
     'reports.export',

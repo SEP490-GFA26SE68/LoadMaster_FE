@@ -6,7 +6,6 @@ import {
   fetchServerWarehouseTrips,
   confirmServerPlacementManually,
   recordServerDeviation,
-  recordServerSeal,
   reportServerDamaged,
   reportServerShortage,
   stageServerPackage,
@@ -36,10 +35,14 @@ export function useServerLoadingSessionQuery(tripId: string) {
   return useQuery({ queryKey: sessionKey(tripId), queryFn: () => fetchServerLoadingSession(tripId), staleTime: 0, retry: false })
 }
 
-/** Ghi của kho đổi trạng thái chuyến ở mọi màn đã đọc nó. Phiên mới đặt thẳng vào cache: không phải đọc lại. */
+/**
+ * Ghi của kho đổi trạng thái chuyến ở mọi màn đã đọc nó. Phiên mới đặt thẳng vào cache: không phải đọc lại. Chỉ chờ khoá của màn kho;
+ * chuyến và bảng điều khiển của màn khác chỉ bị đánh dấu cũ rồi đọc lại ngầm, để mỗi lần quét không phải chờ chúng.
+ */
 function settle(client: QueryClient, tripId: string, session: ServerLoadingSession | undefined) {
   if (session !== undefined) client.setQueryData(sessionKey(tripId), session)
-  const keys = [['warehouse', 'server', 'trips'], ['trips'], ['dashboard'], ...(session === undefined ? [sessionKey(tripId)] : [])]
+  for (const queryKey of [['trips'], ['dashboard']]) void client.invalidateQueries({ queryKey })
+  const keys = [['warehouse', 'server', 'trips'], ...(session === undefined ? [sessionKey(tripId)] : [])]
   return Promise.all(keys.map((queryKey) => client.invalidateQueries({ queryKey })))
 }
 
@@ -127,11 +130,4 @@ export function useReportServerDamagedMutation(tripId: string) {
     mutationFn: (placementId: string) => reportServerDamaged(tripId, placementId),
     onSuccess: (result) => settle(client, tripId, result.outcome === 'leftOut' ? result.session : undefined),
   })
-}
-
-export function useRecordServerSealMutation(tripId: string) {
-  const client = useQueryClient()
-  return useMutation({
-    // A failed/ambiguous write is never confirmation evidence. Reconcile by GET, retaining the original mutation error.
-    onError: () => client.refetchQueries({ queryKey: sessionKey(tripId), type: 'active' }), mutationFn: (sealNumber: string) => recordServerSeal(tripId, sealNumber), onSuccess: (session) => settle(client, tripId, session) })
 }

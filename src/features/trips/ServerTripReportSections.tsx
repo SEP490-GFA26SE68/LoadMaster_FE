@@ -45,11 +45,6 @@ export function ServerTripReportInfo({ report }: { report: ServerTripReport }) {
           <VehicleName name={report.vehicle.name} /> <span className="font-mono text-caption text-ink-3">{report.vehicle.plate}</span>
         </Fact>
         <Fact label={t('tripReport.info.driver')}>{report.driverName ?? t('tripReport.info.noDriver')}</Fact>
-        <Fact label={t('tripReport.info.seal')}>
-          {loading?.seal
-            ? <span className="font-mono">{loading.seal.at ? t('tripReport.info.sealValue', { number: loading.seal.number, time: format.time(loading.seal.at) }) : loading.seal.number}</span>
-            : t('tripReport.info.noSeal')}
-        </Fact>
         {report.overrideReason === null ? null : <Fact label={t('tripReport.info.override')}>{report.overrideReason}</Fact>}
         {packages ? (
           <>

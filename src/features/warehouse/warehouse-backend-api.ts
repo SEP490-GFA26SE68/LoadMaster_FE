@@ -11,7 +11,6 @@
  *   reportShortage → POST /api/warehouse/tasks/{tripId}/staging/packages/{packageId}/shortage
  *   confirmManually → POST /api/warehouse/placements/{id}/manual
  *   damaged      → POST /api/warehouse/placements/{id}/damaged
- *   seal         → POST /api/warehouse/tasks/{tripId}/seal
  */
 import { api, ApiError, isApiError, type ApiClient } from '@/lib/api-client'
 import type { ManualConfirmReason } from '@/lib/mock-db'
@@ -23,7 +22,6 @@ export type {
   ServerLoadingSession,
   ServerManualState,
   ServerPlacement,
-  ServerSeal,
   ServerStagingState,
   ServerWarehouseStage,
   ServerWarehouseTrip,
@@ -156,11 +154,6 @@ export function createWarehouseBackend(client: () => ApiClient = api) {
     return { outcome: 'leftOut', session: await fetchSession(tripId) }
   }
 
-  // POST /api/warehouse/tasks/{tripId}/seal — chỉ khi đã xếp xong và xe chưa xuất phát (`SEAL_NOT_ALLOWED`)
-  async function seal(tripId: string, sealNumber: string): Promise<ServerLoadingSession> {
-    await client().post(`${tripPath(tripId)}/seal`, { body: { sealNumber: sealNumber.trim() } })
-    return fetchSession(tripId)
-  }
 
   /** Read-only approved plan, available before an execution exists. Never fall back to start(). */
   async function fetchApprovedPlan(tripId: string): Promise<ServerLoadingSession> {
@@ -178,7 +171,7 @@ export function createWarehouseBackend(client: () => ApiClient = api) {
     }
   }
 
-  return { fetchApprovedPlan, fetchTrips, fetchSession, start, confirm, deviation, complete, stage, stageManually, reportShortage, confirmManually, damaged, seal }
+  return { fetchApprovedPlan, fetchTrips, fetchSession, start, confirm, deviation, complete, stage, stageManually, reportShortage, confirmManually, damaged }
 }
 
 export type WarehouseBackend = ReturnType<typeof createWarehouseBackend>

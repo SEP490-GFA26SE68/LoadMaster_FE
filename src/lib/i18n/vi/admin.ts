@@ -34,6 +34,8 @@ export const admin = {
       title: 'Khoá tài khoản {name}?',
       description: 'Nhân viên này sẽ không thể đăng nhập vào hệ thống cho tới khi được mở khoá.',
     },
+    createdSuccess: 'Đã thêm nhân viên {name}. Thông tin tài khoản và mật khẩu tạm thời đã được gửi tới email {email}.',
+    resetSuccess: 'Đã đặt lại mật khẩu cho {name}. Mật khẩu tạm thời mới đã được gửi tới email {email}.',
   },
   users: {
     title: 'Người dùng',
@@ -238,6 +240,7 @@ export const admin = {
       audit: { view: 'Xem nhật ký hệ thống' },
       subscriptionPlans: { manage: 'Tạo, sửa gói cước và chính sách credit' },
       billing: { manage: 'Mua gói cước, nạp credit, xem giao dịch' },
+      payroll: { manage: 'Quản lý cấu hình và tính bảng lương tài xế' },
       support: { create: 'Gửi yêu cầu hỗ trợ', handle: 'Xử lý yêu cầu hỗ trợ' },
       contacts: { handle: 'Xử lý yêu cầu liên hệ của khách' },
       trialRequests: { manage: 'Duyệt yêu cầu dùng thử' },

@@ -22,6 +22,7 @@ export const pageHero = {
   tripReport: 'Kiện đã giao, sự cố và thời gian xếp, giao của chuyến.',
   subscriptionPlans: 'Danh mục gói cước bán cho công ty: giá, credit mỗi tháng và hạng thuật toán của từng gói.',
   billing: 'Gói cước của công ty, số dư credit, lịch sử và thanh toán.',
+  payroll: 'Cấu hình mức lương công ty, tính thu nhập tài xế theo chuyến và chốt bảng lương từng tháng.',
   payment: 'Hoàn tất hoặc huỷ một giao dịch đăng ký gói, gia hạn hay nạp credit.',
   paymentResult: 'Xác nhận thanh toán đăng ký gói hoặc nạp credit với máy chủ.',
   companies: 'Công ty dùng LoadMaster: gói cước, số người dùng, kho xuất phát và quản trị công ty đầu tiên.',

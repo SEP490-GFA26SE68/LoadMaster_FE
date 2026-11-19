@@ -38,12 +38,15 @@ import { monitoring } from './vi/monitoring'
 import { pickups } from './vi/pickups'
 import { platform } from './vi/platform'
 import { billing } from './vi/billing'
+import { payroll } from './vi/payroll'
 import { payment } from './vi/payment'
 import { companies } from './vi/companies'
 import { companyProfile } from './vi/companyProfile'
 import { support } from './vi/support'
 import { contacts } from './vi/contacts'
 import { landing } from './vi/landing'
+import { landingFooter } from './vi/landingFooter'
+import { landingMotion } from './vi/landingMotion'
 import { pricing } from './vi/pricing'
 import { warehouseCustomers } from './vi/warehouseCustomers'
 import { backendTripRoute } from './vi/backendTripRoute'
@@ -105,12 +108,15 @@ export const vi = {
   pickups,
   platform,
   billing,
+  payroll,
   payment,
   companies,
   companyProfile,
   support,
   contacts,
   landing,
+  landingFooter,
+  landingMotion,
   pricing,
   warehouseCustomers,
   backendTripRoute,

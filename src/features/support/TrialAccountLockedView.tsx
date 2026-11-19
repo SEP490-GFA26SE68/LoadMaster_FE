@@ -1,4 +1,4 @@
-import { Clock, FileSignature, LogOut, ShieldAlert, Sparkles } from 'lucide-react'
+import { ChevronDown, ChevronUp, Clock, FileSignature, HelpCircle, LogOut, ShieldAlert, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Logo } from '@/components/brand/Logo'
@@ -12,12 +12,13 @@ import { SignAgreementDialog } from '@/features/billing/SignAgreementDialog'
 import { useMyAgreementQuery, useSignAgreementMutation } from '@/features/billing/useAgreementQuery'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import type { SupportTicket } from '@/lib/mock-db'
-import { TicketKindBadge, TicketStatusBadge } from './TicketBadges'
+import { TicketStatusBadge } from './TicketBadges'
 import { useCreateTicketMutation, useSupportTicketsQuery } from './useSupportQuery'
 
 /**
- * Màn thay khung ứng dụng khi tài khoản dùng thử bị gắn cờ vì quá 72 giờ chưa ký thoả thuận (chỉ khi nối backend — kho mẫu không có
- * tài khoản bị gắn cờ): gửi yêu cầu hỗ trợ mở khoá, theo dõi yêu cầu đang chờ, hoặc ký thoả thuận ngay khi còn ký được.
+ * Màn hình thay thế toàn bộ ứng dụng khi tài khoản bị gắn cờ FLAGGED (quá hạn 72h chưa ký thỏa thuận).
+ * Áp dụng PHƯƠNG ÁN A (Self-Service): Cho phép người dùng ký thỏa thuận điện tử trực tiếp
+ * để tự động mở khóa phục hồi tài khoản về ACTIVE ngay tức thì, không bắt buộc qua bước duyệt ticket.
  */
 export function TrialAccountLockedView() {
   const t = useT()
@@ -29,20 +30,20 @@ export function TrialAccountLockedView() {
   const myAgreementQuery = useMyAgreementQuery()
   const signAgreementMutation = useSignAgreementMutation()
 
-  const [reason, setReason] = useState('')
   const [openSignDialog, setOpenSignDialog] = useState(false)
-
-  const pendingTicket: SupportTicket | undefined = (ticketsQuery.data ?? []).find(
-    (ticket) =>
-      ticket.kind === 'TRIAL_ACCOUNT_UNLOCK' &&
-      (ticket.status === 'OPEN' || ticket.status === 'IN_PROGRESS'),
-  )
+  const [showHelpSection, setShowHelpSection] = useState(false)
+  const [supportMessage, setSupportMessage] = useState('')
 
   const agreement = myAgreementQuery.data ?? null
 
-  async function handleSendUnlockRequest(e: React.FormEvent) {
+  const pendingTicket: SupportTicket | undefined = (ticketsQuery.data ?? []).find(
+    (ticket) =>
+      ticket.status === 'OPEN' || ticket.status === 'IN_PROGRESS',
+  )
+
+  async function handleSendSupportRequest(e: React.FormEvent) {
     e.preventDefault()
-    if (!reason.trim()) {
+    if (!supportMessage.trim()) {
       toast.error(t('support.trialLocked.reasonRequired'))
       return
     }
@@ -51,10 +52,10 @@ export function TrialAccountLockedView() {
       await createTicketMutation.mutateAsync({
         kind: 'TRIAL_ACCOUNT_UNLOCK',
         title: t('support.trialLocked.ticketTitle', { name: user?.fullName ?? user?.email ?? '' }),
-        description: reason.trim(),
+        description: supportMessage.trim(),
       })
       toast.success(t('support.trialLocked.sent'))
-      setReason('')
+      setSupportMessage('')
     } catch (err) {
       toast.error(dataErrorMessage(err, t))
     }
@@ -87,71 +88,122 @@ export function TrialAccountLockedView() {
                 <ShieldAlert className="size-6" strokeWidth={1.5} />
               </div>
               <div className="flex-1">
-                <h1 className="m-0 font-display text-h2 font-bold text-ink-strong">{t('support.trialLocked.title')}</h1>
-                <p className="mt-2 text-body text-ink-2">{t('support.trialLocked.body')}</p>
+                <h1 className="m-0 font-display text-h2 font-bold text-ink-strong">
+                  {t('support.trialLocked.title')}
+                </h1>
+                <p className="mt-2 text-body text-ink-2">
+                  {t('support.trialLocked.body')}
+                </p>
               </div>
             </div>
 
-            {pendingTicket ? (
-              <div className="flex flex-col gap-3 rounded-lg border border-azure-200 bg-azure-50 p-5">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <Clock className="size-4 text-azure-700" strokeWidth={1.5} />
-                    <span className="font-semibold text-ink-strong">{t('support.trialLocked.pendingTitle')}</span>
+            {/* HERO SECTION: TỰ PHỤC VỤ KÝ THỎA THUẬN ĐỂ MỞ KHÓA NGAY */}
+            <div className="flex flex-col gap-4 rounded-lg border border-cyan-200 bg-surface p-5">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-tint-blue text-tint-blue-fg">
+                    <FileSignature className="h-5 w-5" strokeWidth={1.5} aria-hidden />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <TicketStatusBadge status={pendingTicket.status} />
-                    <TicketKindBadge kind={pendingTicket.kind} />
-                  </div>
-                </div>
-                <div className="rounded-md bg-bg p-3 text-caption">
-                  <div className="font-mono font-semibold text-ink-1">{pendingTicket.code ?? pendingTicket.id}</div>
-                  <p className="mt-1 mb-0 whitespace-pre-wrap text-ink-2">{pendingTicket.description}</p>
-                </div>
-                <p className="m-0 text-caption text-ink-2">{t('support.trialLocked.pendingNote')}</p>
-              </div>
-            ) : (
-              <form onSubmit={handleSendUnlockRequest} className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5">
-                <div className="flex items-center gap-2 font-semibold text-ink-strong">
-                  <Sparkles className="size-4 text-amber-700" strokeWidth={1.5} />
-                  <span>{t('support.trialLocked.formTitle')}</span>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="unlock-reason" className="text-small font-semibold text-ink-2">
-                    {t('support.trialLocked.reasonLabel')} <span aria-hidden="true">*</span>
-                  </label>
-                  <Textarea
-                    id="unlock-reason"
-                    rows={4}
-                    required
-                    aria-required
-                    value={reason}
-                    onChange={(e) => setReason(e.target.value)}
-                    placeholder={t('support.trialLocked.reasonPlaceholder')}
-                  />
-                </div>
-                <div className="flex justify-end">
-                  <Button type="submit" variant="primary" loading={createTicketMutation.isPending}>
-                    {t('support.trialLocked.submit')}
-                  </Button>
-                </div>
-              </form>
-            )}
-
-            {agreement && agreement.status !== 'SIGNED' ? (
-              <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-bg p-4">
-                <div className="flex items-center gap-3">
-                  <FileSignature className="size-5 text-primary" strokeWidth={1.5} />
                   <div>
-                    <div className="text-small font-medium text-ink-strong">{t('support.trialLocked.signTitle')}</div>
-                    <div className="text-caption text-ink-3">{t('support.trialLocked.signHint')}</div>
+                    <h2 className="text-body font-semibold text-ink-strong">{t('support.trialLocked.signTitle')}</h2>
+                    <p className="text-caption text-ink-3">{t('support.trialLocked.signAuto')}</p>
                   </div>
                 </div>
-                <Button type="button" variant="secondary" size="sm" onClick={() => setOpenSignDialog(true)}>
-                  {t('support.trialLocked.signNow')}
+                <Badge tone="success">{t('support.trialLocked.signAutoTag')}</Badge>
+              </div>
+
+              {agreement ? (
+                <div className="rounded-lg border border-border bg-surface p-3.5 text-small">
+                  <div className="font-semibold text-ink-strong">{agreement.title}</div>
+                  <div className="mt-2 grid grid-cols-1 gap-1 text-caption text-ink-2 sm:grid-cols-2">
+                    <div>
+                      <span className="text-ink-3">{t('support.trialLocked.agreementCompany')}</span> {agreement.companyName}
+                    </div>
+                    <div>
+                      <span className="text-ink-3">{t('support.trialLocked.agreementCode')}</span> {agreement.agreementCode}
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
+              <div className="flex justify-end pt-1">
+                <Button
+                  type="button"
+                  variant="primary"
+                  className="w-full sm:w-auto"
+                  onClick={() => setOpenSignDialog(true)}
+                >
+                  <FileSignature strokeWidth={1.5} aria-hidden />
+                  {t('support.trialLocked.signUnlock')}
                 </Button>
               </div>
-            ) : null}
+            </div>
+
+            {/* SECONDARY / OPTIONAL: HỖ TRỢ KỸ THUẬT NẾU GẶP SỰ CỐ */}
+            <div className="border-t border-border pt-2">
+              <button
+                type="button"
+                onClick={() => setShowHelpSection((prev) => !prev)}
+                className="flex w-full items-center justify-between py-2 text-left text-small font-medium text-ink-2 hover:text-ink-1"
+              >
+                <div className="flex items-center gap-2">
+                  <HelpCircle className="h-4 w-4 text-ink-3" />
+                  <span>{t('support.trialLocked.helpToggle')}</span>
+                </div>
+                {showHelpSection ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </button>
+
+              {showHelpSection ? (
+                <div className="mt-3 flex flex-col gap-4 rounded-lg border border-border bg-surface p-4">
+                  {pendingTicket ? (
+                    <div className="flex flex-col gap-2 rounded-lg border border-azure-200 bg-azure-50 p-3 text-caption">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-azure-700" strokeWidth={1.5} aria-hidden />
+                          <span className="font-semibold text-azure-700">
+                            {t('support.trialLocked.pendingTitle')}
+                          </span>
+                        </div>
+                        <TicketStatusBadge status={pendingTicket.status} />
+                      </div>
+                      <div className="font-mono text-ink-2">{pendingTicket.code ?? pendingTicket.id}</div>
+                      <p className="m-0 text-ink-3 whitespace-pre-wrap">{pendingTicket.description}</p>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleSendSupportRequest} className="flex flex-col gap-3">
+                      <div className="flex items-center gap-2 text-caption font-semibold text-ink-strong">
+                        <Sparkles className="h-4 w-4 text-warning" strokeWidth={1.5} aria-hidden />
+                        <span>{t('support.trialLocked.formTitle')}</span>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label htmlFor="support-message" className="text-caption font-medium text-ink-2">
+                          {t('support.trialLocked.helpLabel')}
+                          <span aria-hidden> *</span>
+                        </label>
+                        <Textarea
+                          id="support-message"
+                          rows={3}
+                          required
+                          value={supportMessage}
+                          onChange={(e) => setSupportMessage(e.target.value)}
+                          placeholder={t('support.trialLocked.helpPlaceholder')}
+                        />
+                      </div>
+                      <div className="flex justify-end">
+                        <Button
+                          type="submit"
+                          variant="secondary"
+                          size="sm"
+                          loading={createTicketMutation.isPending}
+                        >
+                          {t('support.trialLocked.helpSubmit')}
+                        </Button>
+                      </div>
+                    </form>
+                  )}
+                </div>
+              ) : null}
+            </div>
           </div>
         </Card>
       </main>

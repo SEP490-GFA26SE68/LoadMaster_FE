@@ -1,8 +1,9 @@
 /**
  * Bảng giá công khai `/bang-gia` (`features/marketing`): thẻ của các gói đang bán. Tên hạng, "Giá trị tạm — chờ chốt", "Không giới hạn"
  * dùng nhãn của `common`. Hạng thuật toán viết bằng lời của khách (Cơ bản / Nâng cao), không tên thuật toán — tên thuật toán chỉ ở màn
- * Thiết lập tối ưu (`optimization.credit`). Không có nút đăng ký hay mua gói: tài khoản công ty do đội LoadMaster mở sau khi khách gửi
- * yêu cầu liên hệ.
+ * Thiết lập tối ưu (`optimization.credit`). Kho mẫu không có nút đăng ký hay mua gói: tài khoản công ty do đội LoadMaster mở sau khi
+ * khách gửi yêu cầu liên hệ (`signUpNote`). Khi nối backend khách tự đăng ký — nút của thẻ gói dùng chữ của `landing.header`, ghi chú là
+ * `signUpNoteSelf`.
  */
 export const pricing = {
   title: 'Bảng giá',
@@ -31,6 +32,8 @@ export const pricing = {
   contactPlanName: 'gói {name}',
   manage: 'Quản lý gói của công ty',
   signUpNote: 'Muốn dùng một gói? Gửi yêu cầu liên hệ, đội LoadMaster mở tài khoản công ty sau khi trao đổi với bạn.',
+  /** Thay `signUpNote` khi khách tự đăng ký được (nối backend). */
+  signUpNoteSelf: 'Muốn dùng một gói? Bạn tự đăng ký tài khoản công ty: đăng ký dùng ngay rồi chọn gói và thanh toán, hoặc đăng ký trải nghiệm gói Basic — đội LoadMaster duyệt đơn dùng thử trước khi mở tài khoản.',
   loading: 'Đang tải bảng giá',
   empty: 'Hiện chưa có gói nào đang bán.',
   error: 'Không tải được bảng giá.',

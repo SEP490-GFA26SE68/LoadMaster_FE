@@ -21,6 +21,7 @@ export const nav = {
   subscriptionHistory: 'Lịch sử gói cước',
   trialRequests: 'Đơn dùng thử',
   billing: 'Gói và credit',
+  payroll: 'Bảng lương',
   // Công ty (FE-8-06): quản trị hệ thống. Hỗ trợ (FE-8-07): Hỗ trợ khách hàng; mục menu tài khoản của người dùng công ty
   companies: 'Công ty',
   // Thông tin công ty của chính mình: quản trị công ty

@@ -57,9 +57,7 @@ test('the server report reads by trip code and maps times, deadline levels and s
   expect(calls.map((call) => `${call.method} ${call.path}`)).toStrictEqual(['GET /api/trips/TRIP-2026-0042/report'])
   expect(report.stops.map((stop) => [stop.number, stop.plannedStatus, stop.arrivedOnTime])).toStrictEqual([[1, 'OK', null], [2, 'AT_RISK', false]])
   expect(report.stops[1]).toMatchObject({ arrivedAt: '2026-11-10T03:55:00.000Z', deadline: '2026-11-10T03:45:00.000Z', completed: true, pickup: false })
-  expect(report.loading).toStrictEqual({
-    startedAt: '2026-11-09T22:30:00.000Z', completedAt: '2026-11-09T23:45:00.000Z', seal: { number: 'SEAL-0091', at: '2026-11-09T23:50:00.000Z' },
-  })
+  expect(report.loading).toStrictEqual({ startedAt: '2026-11-09T22:30:00.000Z', completedAt: '2026-11-09T23:45:00.000Z' })
   expect(report.verifications.map((row) => row.step)).toStrictEqual(['STAGING', 'LOADING', 'UNLOADING'])
   expect(report.manualConfirms[0]).toMatchObject({ step: 'LOADING', status: 'MANUAL_APPROVED', reason: 'QR_UNREADABLE', stopNumber: 2, note: '' })
   expect(report.exceptions[0]).toMatchObject({ type: 'TRAFFIC', status: 'RESOLVED', delayMinutes: 20, resolvedAt: '2026-11-10T03:00:00.000Z' })

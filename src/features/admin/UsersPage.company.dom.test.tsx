@@ -6,7 +6,6 @@ import { Toaster } from 'sonner'
 import { expect, test } from 'vitest'
 import { AuthProvider } from '@/features/auth/AuthProvider'
 import { I18nProvider } from '@/lib/i18n'
-import { getMockDb } from '@/lib/mock-db'
 import { signedInAs } from '@/test/signed-in'
 import { UsersPage } from './UsersPage'
 
@@ -115,7 +114,7 @@ test('tài khoản đang đăng nhập — chủ công ty: nổi bật nhãn Ch�
   expect(within(panel).getByText('Chỉ cập nhật qua trang Hồ sơ cá nhân')).toBeInTheDocument()
 })
 
-test('tạo tài khoản: chỉ năm vai trò công ty; người mới thuộc công ty của quản trị và đăng nhập được bằng mật khẩu tạm', async () => {
+test('tạo tài khoản: chỉ năm vai trò công ty; không hiện mật khẩu tạm cho quản trị công ty, thông báo đã gửi email', async () => {
   const user = userEvent.setup()
   renderUsers()
   await screen.findByRole('table', {}, SLOW)
@@ -131,15 +130,27 @@ test('tạo tài khoản: chỉ năm vai trò công ty; người mới thuộc c
   await user.click(screen.getByRole('option', { name: 'Tài xế' }))
   await user.click(within(form).getByRole('button', { name: 'Thêm người dùng' }))
 
-  const result = await screen.findByRole('dialog', { name: 'Đã tạo tài khoản Mai Văn Phúc' }, SLOW)
-  const value = (within(result).getByLabelText('Mật khẩu tạm') as HTMLInputElement).value
-  expect(value).toMatch(/^[A-Za-z2-9]{10}$/)
-  await user.click(within(result).getByRole('button', { name: 'Xong' }))
+  // Không hiện popup mật khẩu tạm đối với quản trị công ty
+  expect(screen.queryByRole('dialog', { name: /Đã tạo tài khoản/i })).toBeNull()
+  // Toast thông báo đã thêm và gửi email thành công
+  expect(await screen.findByText(/Đã thêm nhân viên Mai Văn Phúc.*phuc\.mai@loadmaster\.vn/, {}, SLOW)).toBeInTheDocument()
 
   expect(within(await rowOf('Mai Văn Phúc')).getByText('0915 111 222')).toBeInTheDocument()
   expect(screen.getByText(/^13 nhân viên · /)).toBeInTheDocument()
-  // Đăng nhập được bằng mật khẩu tạm (kho giữ phiên; test sau dựng lại phiên quản trị): tài xế của Long Bình
-  await expect(getMockDb().authenticate('phuc.mai@loadmaster.vn', value)).resolves.toMatchObject({ role: 'driver', companyId: 'LOG-001', depot: 'Kho Long Bình' })
+})
+
+test('đặt lại mật khẩu: không hiện mật khẩu tạm cho quản trị công ty, thông báo đã gửi email', async () => {
+  const user = userEvent.setup()
+  renderUsers()
+  await screen.findByRole('table', {}, SLOW)
+  await user.click(within(await openMenu(user, 'Đỗ Thị Hạnh')).getByRole('menuitem', { name: 'Đặt lại mật khẩu' }))
+  const confirm = await screen.findByRole('dialog', { name: 'Đặt lại mật khẩu cho Đỗ Thị Hạnh?' })
+  await user.click(within(confirm).getByRole('button', { name: 'Đặt lại mật khẩu' }))
+
+  // Không hiện popup mật khẩu tạm đối với quản trị công ty
+  expect(screen.queryByRole('dialog', { name: /Mật khẩu tạm/i })).toBeNull()
+  // Toast thông báo đã đặt lại và gửi email thành công
+  expect(await screen.findByText(/Đã đặt lại mật khẩu cho Đỗ Thị Hạnh.*hanh\.do@loadmaster\.vn/, {}, SLOW)).toBeInTheDocument()
 })
 
 test('khoá rồi mở khoá tài khoản: có hộp thoại xác nhận trước khi khoá', async () => {

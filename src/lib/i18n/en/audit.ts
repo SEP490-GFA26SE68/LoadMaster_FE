@@ -10,7 +10,7 @@ export const audit = {
     revision: { approved: 'Approved plan' },
     loading: {
       started: 'Started staging', shortageReported: 'Warehouse reported a package missing while staging', shortageKept: 'Dispatcher chose to keep searching',
-      shortageDropped: 'Dropped the missing package from the trip', damaged: 'Warehouse reported a damaged package while loading', completed: 'Finished loading', sealed: 'Recorded seal number',
+      shortageDropped: 'Dropped the missing package from the trip', damaged: 'Warehouse reported a damaged package while loading', completed: 'Finished loading',
     },
     delivery: { started: 'Left for delivery', arrived: 'Driver arrived at the stop', issue: 'Reported delivery issue', stopCompleted: 'Completed stop', completed: 'Completed trip', etaRisk: 'Delivery at risk of being late' },
     user: {
@@ -137,7 +137,6 @@ export const audit = {
       algorithm: 'Algorithm',
       reasonCode: 'Reason',
       vehicleTypeId: 'Vehicle type',
-      sealNumber: 'Seal number',
       handlingClass: 'Handling class of the trip',
       conflictCount: 'Packages of another class',
       totalKm: 'Distance (km)',

@@ -13,7 +13,7 @@ const SUB_TOUCH = 'h-8 px-3 text-body-lg'
 /**
  * Một chuyến ở danh sách kho: mã chuyến, trạng thái và dòng phụ, tuyến, ngày chạy, xe, số kiện, tiến độ và một nút 56px theo nhóm
  * (FE-6-01): "Bắt đầu soạn hàng" (chờ soạn), "Tiếp tục soạn / xếp (x/y)" (đang soạn, đang xếp — FE-6-02), "Xem chuyến đã xếp" (xếp
- * xong — còn ghi được số seal). Bản duyệt lỗi thời thì thay nút bằng cảnh báo — kho không làm theo phương án đã lệch dữ liệu (D-31);
+ * xong — chờ tài xế xuất phát). Bản duyệt lỗi thời thì thay nút bằng cảnh báo — kho không làm theo phương án đã lệch dữ liệu (D-31);
  * chuyến vừa từ Đang xếp hàng quay về (bỏ kiện thiếu, kiện hỏng có kiện tựa lên) nói rõ lý do và có phải dỡ ra không. Chuyến có xác
  * nhận tay bị điều phối viên từ chối nói rõ còn kiện phải kiểm lại (FE-6-04).
  */
@@ -58,9 +58,6 @@ export function WarehouseTripCard({ row, primary }: { row: WarehouseTripRow; pri
             </div>
             <span aria-hidden className="w-12 text-right font-display text-body-lg font-[650] text-ink-2 tabular-nums">{format.integer(percent)}%</span>
           </div>
-        ) : null}
-        {row.stage === 'loaded' ? (
-          <p className="m-0 text-text-2">{row.seal === undefined ? t('warehouse.list.noSeal') : t('warehouse.list.seal', { number: row.seal })}</p>
         ) : null}
         {row.recheck > 0 ? <Warning tone="danger">{t('warehouse.list.recheck', { count: row.recheck })}</Warning> : null}
         {row.stage === 'stale' ? (

@@ -34,6 +34,7 @@ const PREFIX_GROUP: Readonly<Record<Prefix, PermissionGroupId>> = {
   audit: 'administration',
   subscriptionPlans: 'billing',
   billing: 'billing',
+  payroll: 'billing',
   support: 'support',
   contacts: 'support',
   trialRequests: 'support',

@@ -46,6 +46,8 @@ function assigned(call: FakeCall): FakeReply {
 }
 
 beforeEach(() => {
+  // Hợp đồng mẫu hết hạn 19/11/2026: giữ "hôm nay" trước ngày đó, không thì gói đọc là đã hết hạn và không gói nào bị khoá
+  vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-11-01T03:00:00Z') })
   contract = CONTRACT
   connectApiAuth(() => Promise.resolve('token-1'))
   backend = stubBackend({
@@ -59,7 +61,10 @@ beforeEach(() => {
     },
   })
 })
-afterEach(() => vi.unstubAllGlobals())
+afterEach(() => {
+  vi.useRealTimers()
+  vi.unstubAllGlobals()
+})
 
 function renderWith(children: ReactNode) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })

@@ -11,7 +11,6 @@
  *   reportServerShortage      → POST /api/warehouse/tasks/{tripId}/staging/packages/{packageId}/shortage
  *   confirmServerPlacementManually → POST /api/warehouse/placements/{id}/manual
  *   reportServerDamaged       → POST /api/warehouse/placements/{id}/damaged
- *   recordServerSeal          → POST /api/warehouse/tasks/{tripId}/seal
  */
 import { ApiError } from '@/lib/api-client'
 import { usesBackend } from '@/lib/backend-config'
@@ -36,7 +35,6 @@ export type {
   ServerManualInput,
   ServerManualState,
   ServerPlacement,
-  ServerSeal,
   ServerStagingState,
   ServerWarehouseStage,
   ServerWarehouseTrip,
@@ -47,10 +45,10 @@ export { codeMatches } from './warehouse-backend-api'
 const ON_BACKEND = usesBackend('warehouse')
 
 /**
- * Màn kho làm được gì với nguồn dữ liệu đang dùng (D-20). Kho mẫu: soạn hàng, báo thiếu, đối chiếu ba mức, kiện hỏng, seal, khung 3D vị trí
+ * Màn kho làm được gì với nguồn dữ liệu đang dùng (D-20). Kho mẫu: soạn hàng, báo thiếu, đối chiếu ba mức, kiện hỏng, khung 3D vị trí
  * kiện, chuông. Backend: danh sách chuyến chờ xếp, đang xếp và đã xếp xong, bắt đầu xếp theo phương án đã duyệt, mở lại phiên ở mọi thiết
  * bị, soạn hàng và báo thiếu, đối chiếu từng kiện theo thứ tự (quét QR, gõ mã hoặc xác nhận tay), ghi sai lệch vị trí, kiện hỏng, hoàn tất
- * xếp, số seal, khung 3D vị trí kiện khi máy chủ trả lòng thùng. Chuông đọc máy chủ khi nhóm `notifications` nối backend.
+ * xếp, khung 3D vị trí kiện khi máy chủ trả lòng thùng. Chuông đọc máy chủ khi nhóm `notifications` nối backend.
  */
 export type WarehouseCapabilities = {
   /** Màn `/kho` là bản máy chủ (`ServerWarehouseTripsPage`, `ServerLoadingSession`). */
@@ -62,8 +60,6 @@ export type WarehouseCapabilities = {
   readonly manualConfirm: boolean
   /** "Kiện hỏng" ở bước xếp. */
   readonly damaged: boolean
-  /** Ghi số seal khi đã xếp xong. */
-  readonly seal: boolean
 }
 
 export const WAREHOUSE_CAPABILITIES: WarehouseCapabilities = {
@@ -73,7 +69,6 @@ export const WAREHOUSE_CAPABILITIES: WarehouseCapabilities = {
   staging: true,
   manualConfirm: true,
   damaged: true,
-  seal: true,
 }
 
 let source: WarehouseBackend | null = null
@@ -139,9 +134,4 @@ export function confirmServerPlacementManually(tripId: string, placementId: stri
 // POST /api/warehouse/placements/{id}/damaged
 export function reportServerDamaged(tripId: string, placementId: string): Promise<DamageResult> {
   return ON_BACKEND ? backend().damaged(tripId, placementId) : mockOnly()
-}
-
-// POST /api/warehouse/tasks/{tripId}/seal
-export function recordServerSeal(tripId: string, sealNumber: string): Promise<ServerLoadingSession> {
-  return ON_BACKEND ? backend().seal(tripId, sealNumber) : mockOnly()
 }

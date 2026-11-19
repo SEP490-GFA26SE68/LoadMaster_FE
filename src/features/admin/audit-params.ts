@@ -37,7 +37,7 @@ const PARAM_KEYS = [
   'loaded', 'returned', 'damaged', 'supporting', 'requirementId', 'packageInstanceId', 'stopNumber', 'kind', 'stops', 'issues', 'packageId', 'field', 'before', 'after',
   // LM-104
   'count', 'packageTypeId', 'lastPackageId', 'destinationName', 'priority', 'tripId', 'objective', 'runId', 'algorithm', 'reasonCode', 'vehicleTypeId',
-  'sealNumber', 'packageCode', 'flag',
+  'packageCode', 'flag',
   // Phân tách hàng, tối ưu tuyến (FE-4b-06, FE-4b-09)
   'handlingClass', 'conflictCount', 'totalKm', 'totalMinutes', 'lateStops',
   // Xác nhận tay (FE-6-03, FE-6-04)

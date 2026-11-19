@@ -70,13 +70,9 @@ test('the simulated vehicle of a trip in transit moves on the trip detail, waits
 
   // Tài xế hoàn tất điểm 1: xe rời điểm, chạy chặng 8 phút 38 giây (13 giây thật) tới điểm 2 rồi lại đứng chờ
   await driverCompletesStop(page, 1)
-  // Rời chi tiết rồi mở lại để đọc lại tiến độ giao (chuyến chỉ đọc lại khi màn mở lại; vị trí xe mới theo nhịp). Phải chờ danh sách
-  // dựng xong: router đổi route trong transition, lần đổi thứ hai tới khi lần đầu chưa commit thì React bỏ lần đầu, màn chi tiết không
-  // hề rời trang và tiến độ giao giữ bản cũ
-  await navigateInApp(page, '/chuyen')
-  await expect(page.getByRole('heading', { level: 1, name: 'Chuyến hàng', exact: true })).toBeVisible()
-  await navigateInApp(page, `/chuyen/${TRIP}`)
-  await expect(stops.nth(1)).toContainText('Đã giao')
+  // Chi tiết chuyến Đang vận chuyển tự đọc lại mỗi 30 giây (`live-trip-refresh.ts`): chờ lần đọc đó thay vì rời màn rồi mở lại — nhịp
+  // đọc lại giữ dữ liệu luôn "mới" nên mở lại trong 30 giây không đọc lại kho
+  await expect(stops.nth(1)).toContainText('Đã giao', { timeout: 45_000 })
   await expect(stops.nth(1)).not.toContainText('Xe đến lúc')
   await expect(stops.nth(2)).toContainText('Xe đến lúc', { timeout: 90_000 })
   await expect.poll(async () => distance(await centerOf(vehicle), await centerOf(stopMarker(2)))).toBeLessThan(2)

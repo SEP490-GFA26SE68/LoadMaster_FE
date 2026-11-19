@@ -107,8 +107,25 @@ export function AuthProvider({ children, source = backendConfig.authSource, keyc
   useEffect(() => {
     if (session === null) return
     let cancelled = false
+    // Gói của công ty hết hạn hay tài khoản bị gắn cờ giữa phiên: máy chủ trả 403 có mã khoá cho mọi lượt gọi. Đọc lại hồ sơ một lần (lượt
+    // đang đọc thì bỏ qua) để `AppShell` hiện màn khoá; chỉ thay người dùng khi cờ khoá thật sự đổi. Lỗi đọc lại thì thôi — lỗi của lượt
+    // gọi gốc vẫn hiện ở màn
+    let rechecking = false
+    const recheckLock = () => {
+      if (rechecking) return
+      rechecking = true
+      authApi.fetchBackendUser()
+        .then((fresh) => {
+          if (cancelled) return
+          setUser((current) => (current !== null && current.status === fresh.status && current.subscriptionExpired === fresh.subscriptionExpired ? current : fresh))
+        })
+        .catch(() => undefined)
+        .finally(() => {
+          rechecking = false
+        })
+    }
     // Máy chủ trả 401: làm mới token một lần rồi gửi lại; vẫn 401 thì đóng phiên (`onEnded` dưới đây đưa về màn đăng nhập)
-    connectApiAuth(() => session.token(), { refreshToken: () => session.refreshToken(), onUnauthorized: () => session.reject() })
+    connectApiAuth(() => session.token(), { refreshToken: () => session.refreshToken(), onUnauthorized: () => session.reject(), onAccountLocked: recheckLock })
     // Phiên hết giữa chừng (không làm mới được, tab khác đăng xuất): về màn đăng nhập, bỏ dữ liệu của người vừa thoát
     const stopListening = session.onEnded(() => {
       authApi.forgetBackendUser()

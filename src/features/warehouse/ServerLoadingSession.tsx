@@ -36,7 +36,7 @@ const PositionViewer = lazy(() =>
  * Phiên xếp `/kho?chuyen=<mã số>` khi nhóm `warehouse` nối backend: kiện theo thứ tự xếp của phương án đã duyệt, đọc lại từ máy chủ ở thiết
  * bị nào cũng được. Phiên có bước soạn hàng thì soạn đủ trước (`ServerStagingStep`). Mỗi kiện: đối chiếu bằng quét QR hoặc mã gõ (màn kiểm
  * mã khớp kiện của bước rồi máy chủ ghi đã xếp), xác nhận tay chờ điều phối viên duyệt, ghi sai lệch vị trí, hoặc "Kiện hỏng"; xong mọi kiện
- * và không còn xác nhận tay chờ duyệt thì "Hoàn tất xếp hàng", rồi ghi số seal. Khung 3D vị trí kiện khi máy chủ trả lòng thùng.
+ * và không còn xác nhận tay chờ duyệt thì "Hoàn tất xếp hàng". Khung 3D vị trí kiện khi máy chủ trả lòng thùng.
  */
 export function ServerLoadingSession({ tripId }: { tripId: string }) {
   const t = useT()

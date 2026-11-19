@@ -22,7 +22,7 @@ import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { initialsOf } from '@/types/user'
 import { logoPath, navItemsFor } from './nav-items'
-import { useGlassFollow } from './useGlassFollow'
+import { useGlassFollow } from '@/components/useGlassFollow'
 
 /** Hộp thoại yêu cầu hỗ trợ (FE-8-07) tải khi mở lần đầu: chỉ người dùng công ty mở. */
 const SupportTicketDialog = lazy(() => import('@/features/support/SupportTicketDialog').then((m) => ({ default: m.SupportTicketDialog })))
@@ -59,7 +59,14 @@ export function NavRail() {
   const [supportOpen, setSupportOpen] = useState(false)
   const [customerPlanOpen, setCustomerPlanOpen] = useState(false)
   // Mục và thứ tự theo vai trò (`NAV_ITEMS`), chỉ mục vai trò có quyền mở
-  const items = user ? navItemsFor(user.role) : []
+  let items = user ? navItemsFor(user.role) : []
+
+  // Nếu Company Admin có gói cước hết hạn: Chỉ hiển thị duy nhất mục "Gói và Credit" (/goi-cuoc)
+  if (user?.subscriptionExpired && user.role === 'companyAdmin') {
+    items = items.filter((item) => item.to === '/goi-cuoc')
+  }
+
+  const homePath = user?.subscriptionExpired && user.role === 'companyAdmin' ? '/goi-cuoc' : logoPath(user?.role)
 
   async function handleSignOut() {
     await signOut()
@@ -67,9 +74,9 @@ export function NavRail() {
   }
 
   return (
-    <header className="sky flex h-15 flex-none items-center gap-5 px-4 xl:gap-6 xl:px-shell">
+    <header className="sky flex h-15 flex-none items-center gap-4 px-4 xl:gap-5 xl:px-shell">
       <Link
-        to={logoPath(user?.role)}
+        to={homePath}
         aria-label={t('nav.home')}
         className="flex flex-none items-center gap-2.5 rounded-md outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
       >
@@ -84,7 +91,7 @@ export function NavRail() {
         <nav
           ref={navRef}
           aria-label={t('nav.label')}
-          className="glass-nav relative flex min-w-0 flex-1 gap-0.5 overflow-x-auto rounded-lg p-1 min-[1400px]:flex-none"
+          className="glass-nav relative flex min-w-0 flex-initial max-w-fit gap-0.5 overflow-x-auto rounded-lg p-1"
         >
           <span ref={followRef} aria-hidden className="glass-follow" />
           {items.map(({ to, labelKey, icon: Icon }) => {
@@ -97,7 +104,7 @@ export function NavRail() {
                 aria-label={t(actualLabelKey)}
                 className={({ isActive }) =>
                   cn(
-                    'relative z-1 flex h-9 items-center gap-2 rounded-md px-2.5 text-body whitespace-nowrap xl:px-3.5',
+                    'relative z-1 flex h-9 items-center gap-1.5 rounded-md px-2 text-body whitespace-nowrap 2xl:gap-2 2xl:px-3.5',
                     'transition-colors duration-(--dur-fast) ease-standard',
                     'outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-cyan-300',
                     isActive ? 'font-semibold text-sky-text' : 'font-medium text-sky-text-2 hover:text-sky-text',
@@ -117,6 +124,16 @@ export function NavRail() {
       ) : null}
 
       <div className="ml-auto flex flex-none items-center gap-2.5">
+        {user?.subscriptionExpired && user.role === 'companyAdmin' && can(user.role, 'support.create') ? (
+          <button
+            type="button"
+            onClick={() => setSupportOpen(true)}
+            className="flex h-9 items-center gap-1.5 rounded-md border border-cyan-300/40 bg-cyan-950/50 px-3 text-small font-semibold text-sky-text transition-colors hover:bg-cyan-900/60 focus-visible:outline-2 focus-visible:outline-cyan-300"
+          >
+            <LifeBuoy className="size-4 text-cyan-200" strokeWidth={1.75} aria-hidden />
+            <span>{t('nav.supportRequests')}</span>
+          </button>
+        ) : null}
         {user && SUPPORT_SOURCE.planAssign && can(user.role, 'support.handle') ? (
           <button
             type="button"
@@ -127,7 +144,7 @@ export function NavRail() {
             <span>{t('nav.changeCustomerPlan')}</span>
           </button>
         ) : null}
-        <QuickSearch />
+        {!user?.subscriptionExpired ? <QuickSearch /> : null}
         <LanguageMenu />
         <NotificationBell />
         <EtaRiskWatcher />

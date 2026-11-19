@@ -132,8 +132,15 @@ function envelopeOf(payload: unknown): Envelope | null {
   return isRecord(payload) && 'success' in payload ? payload : null
 }
 
+/**
+ * Mã 403 của máy chủ nói **cả tài khoản** không còn dùng được (gói của công ty hết hạn, tài khoản dùng thử bị gắn cờ), không riêng lượt gọi
+ * đó: phiên đọc lại hồ sơ để app hiện màn khoá (`AppShell`) thay cho lỗi ở từng màn.
+ */
+export const ACCOUNT_LOCK_CODES: ReadonlySet<string> = new Set(['SUBSCRIPTION_EXPIRED', 'ACCOUNT_FLAGGED'])
+
 function failureOf(status: number, envelope: Envelope | null): ApiError {
   const code = typeof envelope?.code === 'string' && envelope.code !== '' ? envelope.code : codeOfStatus(status)
+  if (status === 403 && ACCOUNT_LOCK_CODES.has(code)) recovery?.onAccountLocked?.()
   return new ApiError(code, { status, params: isRecord(envelope?.errors) ? envelope.errors : {} })
 }
 
@@ -233,6 +240,8 @@ export function createApiClient({ baseUrl, accessToken, refreshToken, onUnauthor
 export type ApiAuthRecovery = {
   readonly refreshToken: () => Promise<string | null>
   readonly onUnauthorized: () => void
+  /** Máy chủ trả 403 với một mã của `ACCOUNT_LOCK_CODES`: đọc lại hồ sơ người dùng. */
+  readonly onAccountLocked?: () => void
 }
 
 let tokenSource: () => Promise<string | null> = () => Promise.resolve(null)

@@ -1,7 +1,7 @@
 /**
  * Màn kho `/kho` khi nhóm `warehouse` nối backend: danh sách chuyến chờ xếp / đang xếp, phiên xếp theo phương án đã duyệt của máy chủ (soạn
- * hàng và báo thiếu, đối chiếu từng kiện theo thứ tự bằng quét QR, mã gõ hoặc xác nhận tay, ghi sai lệch vị trí, kiện hỏng, hoàn tất xếp, số
- * seal, khung 3D vị trí kiện).
+ * hàng và báo thiếu, đối chiếu từng kiện theo thứ tự bằng quét QR, mã gõ hoặc xác nhận tay, ghi sai lệch vị trí, kiện hỏng, hoàn tất xếp,
+ * khung 3D vị trí kiện).
  */
 export const serverWarehouse = {
   groups: {

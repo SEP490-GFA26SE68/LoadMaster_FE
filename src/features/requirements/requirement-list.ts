@@ -63,7 +63,9 @@ export function groupByType(packages: readonly RequirementPackage[], classGroupN
   const groups = new Map<string, RequirementPackage[]>()
   for (const item of packages) {
     const key = item.package.packageTypeId ?? `class:${item.package.handlingClass}`
-    groups.set(key, [...(groups.get(key) ?? []), item])
+    const group = groups.get(key)
+    if (group) group.push(item)
+    else groups.set(key, [item])
   }
   return [...groups].map(([key, items]) => ({
     key,

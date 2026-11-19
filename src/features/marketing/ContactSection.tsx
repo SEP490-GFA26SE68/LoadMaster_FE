@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Spinner } from '@/components/ui/Spinner'
+import { REGISTRATION_CAPABILITIES } from '@/features/registration/useRegistrationQuery'
 import { useT, type MessageKey } from '@/lib/i18n'
 import type { GuestContact } from '@/lib/mock-db'
 import { CONTACT_ANCHOR, contactDefaults } from './contact-form'
@@ -11,6 +12,7 @@ import { ContactForm } from './ContactForm'
 import { PUBLIC_TOUCH } from './public-chrome'
 import { SectionHeading } from './SectionHeading'
 import { usePublicPlansQuery } from './useMarketingQuery'
+import { useNearViewport } from './useNearViewport'
 
 /** Gửi xong: mã yêu cầu kèm một câu nói điều đã xảy ra, và nút gửi yêu cầu khác. Tiêu đề nhận focus để bàn phím không lạc về đầu trang. */
 function ContactSent({ contact, onAgain }: { contact: GuestContact; onAgain: () => void }) {
@@ -31,11 +33,14 @@ function ContactSent({ contact, onAgain }: { contact: GuestContact; onAgain: () 
   )
 }
 
-/** Ba việc xảy ra sau khi khách gửi yêu cầu, theo thứ tự; bước cuối là câu "tài khoản công ty do đội LoadMaster tạo". */
+/**
+ * Ba việc xảy ra sau khi khách gửi yêu cầu, theo thứ tự. Bước cuối nói đúng cách có tài khoản của chế độ đang chạy: khách tự đăng ký
+ * được (`REGISTRATION_CAPABILITIES.publicSignUp`) thì "bạn tự đăng ký", kho mẫu thì "đội LoadMaster tạo sau khi trao đổi".
+ */
 const NEXT_STEPS: readonly { icon: LucideIcon; key: MessageKey }[] = [
   { icon: MailCheck, key: 'landing.contact.next.reply' },
   { icon: MessagesSquare, key: 'landing.contact.next.talk' },
-  { icon: Building2, key: 'landing.contact.signUpNote' },
+  { icon: Building2, key: REGISTRATION_CAPABILITIES.publicSignUp ? 'landing.contact.signUpNoteSelf' : 'landing.contact.signUpNote' },
 ]
 
 function ContactNextSteps() {
@@ -58,21 +63,23 @@ function ContactNextSteps() {
 }
 
 /**
- * Phần "Liên hệ" của trang giới thiệu (`#lien-he`) — lời kêu gọi duy nhất của hai trang công khai: không có nút đăng ký hay mua gói,
- * tài khoản công ty do đội LoadMaster mở sau khi trao đổi. Dải tối cuối trang: tiêu đề, câu mô tả và ba việc xảy ra sau khi gửi bên
- * trái; form trong thẻ trắng bên phải. Form chờ danh sách gói đang bán (để chọn sẵn gói trên URL `?goi=`); đọc
- * gói lỗi thì form vẫn dùng được, chỉ không có gói để chọn.
+ * Phần "Liên hệ" của trang giới thiệu (`#lien-he`). Dải tối cuối trang: tiêu đề, câu mô tả và ba việc xảy ra sau khi gửi bên trái; form
+ * trong thẻ trắng bên phải. Phần này không có nút đăng ký: ở kho mẫu tài khoản công ty do đội LoadMaster mở sau khi trao đổi, khi nối
+ * máy chủ lối đăng ký nằm ở phần mở đầu, đầu trang và thẻ gói. Form chờ danh sách gói đang bán (để chọn sẵn gói trên URL `?goi=`); đọc
+ * gói lỗi thì form vẫn dùng được, chỉ không có gói để chọn. Danh mục gói chỉ đọc khi phần này tới gần khung nhìn (`useNearViewport`) —
+ * liên kết sâu `#lien-he` cuộn thẳng tới đây nên đọc ngay.
  */
 export function ContactSection() {
   const t = useT()
   const [searchParams] = useSearchParams()
-  const plans = usePublicPlansQuery()
+  const [sectionRef, near] = useNearViewport<HTMLElement>()
+  const plans = usePublicPlansQuery(near)
   const [sent, setSent] = useState<GuestContact | null>(null)
   // Gửi yêu cầu khác: form mới, chọn sẵn như lúc mở trang
   const [round, setRound] = useState(0)
 
   return (
-    <section id={CONTACT_ANCHOR} aria-labelledby="landing-contact" className="landing-closing scroll-mt-24 px-4 py-16 md:px-shell lg:py-24">
+    <section ref={sectionRef} id={CONTACT_ANCHOR} aria-labelledby="landing-contact" className="landing-closing scroll-mt-24 px-4 py-16 md:px-shell lg:py-24">
       <div className="grid gap-10 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-14">
         <div className="flex flex-col gap-10">
           <SectionHeading id="landing-contact" tone="dark" title={t('landing.contact.title')} lede={t('landing.contact.lede')} />

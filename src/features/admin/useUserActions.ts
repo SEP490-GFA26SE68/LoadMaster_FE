@@ -65,6 +65,12 @@ export function useUserActions() {
     handleAction,
     async submitCreate(values: UserFormValues) {
       const result = await createUser.mutateAsync(values)
+      const isCompany = currentUser !== null && userScopeOf(currentUser.role) === 'company'
+      if (isCompany) {
+        setDialog(null)
+        toast.success(t('admin.employees.createdSuccess', { name: values.fullName, email: values.email }))
+        return
+      }
       setDialog({ kind: 'password', result, reason: 'created' })
     },
     async submitEdit(user: User, values: UserFormValues) {
@@ -75,8 +81,16 @@ export function useUserActions() {
     },
     resetPending: resetPassword.isPending,
     confirmReset(user: User) {
+      const isCompany = currentUser !== null && userScopeOf(currentUser.role) === 'company'
       resetPassword.mutate(user.id, {
-        onSuccess: (result) => setDialog({ kind: 'password', result, reason: 'reset' }),
+        onSuccess: (result) => {
+          if (isCompany) {
+            setDialog(null)
+            toast.success(t('admin.employees.resetSuccess', { name: user.fullName, email: user.email }))
+            return
+          }
+          setDialog({ kind: 'password', result, reason: 'reset' })
+        },
         onError: (error) => {
           toast.error(dataErrorMessage(error, t))
           setDialog((current) => (current?.kind === 'reset' && current.user.id === user.id ? null : current))

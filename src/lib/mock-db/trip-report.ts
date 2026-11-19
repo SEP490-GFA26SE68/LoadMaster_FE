@@ -85,7 +85,6 @@ export type TripReport = {
     deliveryCompletedAt: string | null
   }
   durations: { loadingMs: number | null; deliveryMs: number | null; totalMs: number | null }
-  seal: { number: string; at: string } | null
 }
 
 /**
@@ -200,6 +199,5 @@ export function tripReport(trip: Trip, plan: Pick<Revision, 'request' | 'result'
       deliveryMs: between(delivery?.startedAt, delivery?.completedAt),
       totalMs: between(loading?.startedAt, delivery?.completedAt),
     },
-    seal: loading?.seal ? { number: loading.seal.number, at: loading.seal.at } : null,
   }
 }

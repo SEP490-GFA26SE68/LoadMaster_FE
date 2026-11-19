@@ -22,17 +22,20 @@ const PACKAGE_COUNT = LANDING_REQUEST.packages.reduce((count, line) => count + l
 const { innerLengthCm, innerWidthCm, innerHeightCm } = LANDING_REQUEST.vehicle
 
 /**
- * Khung 3D của phần mở đầu trang giới thiệu. Lần vẽ đầu chỉ có chữ và ảnh tĩnh của thùng rỗng; khi trình duyệt rảnh, trang tải bộ máy
- * 3D của ứng dụng và cho bộ tối ưu mô phỏng tính chuyến mẫu ngay trên máy người xem, rồi khung hình thay ảnh tĩnh và xếp đầy thùng một
- * lần (khoảng 3 giây). Không có WebGL, bật tiết kiệm dữ liệu, hay tải / tính hỏng: hình minh hoạ SVG (`CargoArtwork`), không số nào.
- * Số của lần chạy luôn kèm MOCK RESULT.
+ * Khung 3D của phần mở đầu trang giới thiệu. Lần vẽ đầu chỉ có chữ và ảnh tĩnh của thùng rỗng; khi khung đã tới gần khung nhìn (cách
+ * không quá 250 px) và trình duyệt rảnh (`useStageGate`), trang tải bộ máy 3D của ứng dụng và cho bộ tối ưu mô phỏng tính chuyến mẫu
+ * ngay trên máy người xem, rồi khung hình thay ảnh tĩnh và xếp đầy thùng một lần (khoảng 3 giây). Khung còn ở xa (điện thoại: khung nằm
+ * dưới chữ của phần mở đầu; mở thẳng một neo bên dưới) thì chưa tải Three.js, chưa chạy bộ tối ưu. Không có WebGL, bật tiết kiệm dữ
+ * liệu, hay tải / tính hỏng: hình minh hoạ SVG (`CargoArtwork`), không số nào.
  */
 export function LandingStage() {
   const t = useT()
   const format = useFormat()
   const titleId = useId()
   const reducedMotion = usePrefersReducedMotion()
-  const gate = useStageGate()
+  // Phần tử khung là state (không phải ref) để cổng theo dõi lại khi khung được gắn
+  const [figure, setFigure] = useState<HTMLElement | null>(null)
+  const gate = useStageGate(figure)
   const sample = useLandingSample(gate === 'go')
   const [failed, setFailed] = useState(false)
   const [ready, setReady] = useState(false)
@@ -68,7 +71,7 @@ export function LandingStage() {
 
   const live = ready && sample.data !== undefined
   return (
-    <figure aria-labelledby={titleId} className="landing-stage-surface relative m-0 flex min-w-0 flex-col rounded-xl">
+    <figure ref={setFigure} aria-labelledby={titleId} className="landing-stage-surface relative m-0 flex min-w-0 flex-col rounded-xl">
       <span aria-hidden className="landing-stage-glow" />
       {/* Hẹp: tên thùng + "Xếp lại" một hàng, góc nhìn xuống hàng riêng rộng hết khung; rộng: cả ba một hàng */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-3 px-4 pt-4 sm:px-5">

@@ -93,7 +93,7 @@ export function departureDateOf(value: string | null): string | undefined {
  * Một chuyến của "Chuyến của tôi": backend chưa có tên tuyến, số kiện, điểm đang giao, sự cố — để trống. Chuyến Đang xếp hàng mà kho đã
  * xếp xong (`loadingCompleted`) mang dòng phụ "Xếp xong — chờ xuất phát".
  */
-export function tripRowOf(dto: DriverTripDto, status: 'IN_TRANSIT' | 'LOADING' | 'DELIVERED' = 'IN_TRANSIT'): MyTripRow {
+export function tripRowOf(dto: DriverTripDto, status: 'IN_TRANSIT' | 'LOADING' | 'DELIVERED' | 'PLANNED' = 'IN_TRANSIT'): MyTripRow {
   const id = String(dto.tripId)
   return {
     id,
@@ -120,15 +120,16 @@ const byDeparture = (a: DriverTripDto, b: DriverTripDto) => (a.departureTime ?? 
 /**
  * Chuyến của tài xế theo backend: Đang vận chuyển; Đang xếp hàng mà kho đã xếp xong ở nhóm "Xếp xong — chờ xuất phát" (tài xế xuất phát ở
  * thẻ); Đang xếp hàng mà kho chưa xong ở nhóm "Kho đang soạn / xếp"; Đã giao ở "Đã giao gần đây" (`RECENT_LIMIT` chuyến giao xong gần nhất,
- * như kho mẫu). Chuyến chưa tới kho và chuyến đã huỷ không hiện. Ba nhóm đầu: giờ xuất phát sớm trước, rồi mã chuyến.
+ * như kho mẫu). Đã lập kế hoạch ở nhóm `upcoming` — chỉ app mobile hiện (web bỏ nhóm này). Chuyến đã huỷ không hiện. Bốn nhóm đầu: giờ
+ * xuất phát sớm trước, rồi mã chuyến.
  */
 export function myTripsOf(dtos: readonly DriverTripDto[] | null): MyTrips {
-  const of = (status: 'IN_TRANSIT' | 'LOADING', keep: (dto: DriverTripDto) => boolean = () => true) =>
+  const of = (status: 'IN_TRANSIT' | 'LOADING' | 'PLANNED', keep: (dto: DriverTripDto) => boolean = () => true) =>
     (dtos ?? []).filter((dto) => dto.status === status && keep(dto)).toSorted(byDeparture).map((dto) => tripRowOf(dto, status))
   const loaded = (dto: DriverTripDto) => dto.loadingCompleted === true
   const recent = (dtos ?? []).filter((dto) => dto.status === 'DELIVERED').map((dto) => tripRowOf(dto, 'DELIVERED'))
     .toSorted((a, b) => (b.completedAt ?? '').localeCompare(a.completedAt ?? '')).slice(0, RECENT_LIMIT)
-  return { inTransit: of('IN_TRANSIT'), loaded: of('LOADING', loaded), preparing: of('LOADING', (dto) => !loaded(dto)), recent }
+  return { inTransit: of('IN_TRANSIT'), loaded: of('LOADING', loaded), preparing: of('LOADING', (dto) => !loaded(dto)), upcoming: of('PLANNED'), recent }
 }
 
 type StopPackage = StopPackageDto & { readonly packageId: number }

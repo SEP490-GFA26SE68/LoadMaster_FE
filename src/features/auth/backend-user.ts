@@ -9,8 +9,15 @@ export type BackendUserProfile = {
   readonly fullName: string
   readonly phoneNumber: string | null
   readonly companyId: number | null
+  readonly companyName?: string
+  readonly companyCode?: string
+  readonly companyTaxCode?: string
+  readonly companyBillingEmail?: string
+  readonly companyStatus?: string
   readonly userRoleType: string
+  readonly userType?: string
   readonly status: string
+  readonly subscriptionExpired?: boolean
 }
 
 /**
@@ -27,7 +34,10 @@ const ROLE_OF_BACKEND: Readonly<Record<string, Role>> = {
   COMPANY_MANAGER: 'companyManager',
   DISPATCHER: 'dispatcher',
   WAREHOUSE_WORKER: 'warehouse',
+  WAREHOUSE: 'warehouse',
+  warehouse: 'warehouse',
   DRIVER: 'driver',
+  driver: 'driver',
 }
 
 export function roleOfBackend(code: string): Role | null {
@@ -48,5 +58,26 @@ export function isActiveOnBackend(status: string): boolean {
 export function userFromBackend(profile: BackendUserProfile, role: Role, standIn: User): User {
   const { depot: _sampleDepot, ...sample } = standIn
   const status = profile.status === 'FLAGGED' ? 'flagged' : 'active'
-  return { ...sample, role, fullName: profile.fullName, email: profile.email, phone: profile.phoneNumber ?? '', status }
+  return {
+    ...sample,
+    role,
+    fullName: profile.fullName,
+    email: profile.email,
+    phone: profile.phoneNumber ?? '',
+    status,
+    // Thông tin công ty (thẻ tài khoản của app mobile): chỉ đặt trường có giá trị, không để khoá `undefined` trong người dùng
+    ...definedOnly({
+      companyName: profile.companyName ?? sample.companyName,
+      companyCode: profile.companyCode ?? sample.companyCode,
+      companyTaxCode: profile.companyTaxCode ?? sample.companyTaxCode,
+      companyBillingEmail: profile.companyBillingEmail ?? sample.companyBillingEmail,
+      companyStatus: profile.companyStatus ?? sample.companyStatus,
+    }),
+    userType: profile.userType === 'TRIAL' ? 'TRIAL' : 'OFFICIAL',
+    subscriptionExpired: Boolean(profile.subscriptionExpired),
+  }
+}
+
+function definedOnly<T extends Record<string, unknown>>(fields: T): Partial<T> {
+  return Object.fromEntries(Object.entries(fields).filter(([, value]) => value !== undefined)) as Partial<T>
 }

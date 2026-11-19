@@ -162,7 +162,7 @@ test('two-carton trip: staging both cartons opens the Loading step with the cm m
   expect([stored.phase, stored.loading?.steps.map((step) => [step.packageInstanceId, step.outcome])]).toStrictEqual(['loaded', [['PKG-001-01', 'loaded'], ['PKG-002-01', 'damaged']]])
 }, 30_000)
 
-test('verification by label (LM-104, FE-6-03): a wrong package is explained and not recorded; the right ones load; the seal is recorded when finished', async () => {
+test('verification by label (LM-104, FE-6-03): a wrong package is explained and not recorded; the right ones load; the finished screen asks for nothing more', async () => {
   const { db, trip } = await stagedTwoCartonTrip()
   const token = Object.fromEntries((await db.listTripLabels(trip.id)).map((label) => [label.packageInstanceId, label.qrToken]))
   renderWarehouse(`/kho?chuyen=${trip.id}`)
@@ -187,14 +187,11 @@ test('verification by label (LM-104, FE-6-03): a wrong package is explained and 
   await typeCode('pkg-002-01')
   expect(await screen.findByRole('heading', { level: 1, name: `Đã xếp xong chuyến ${trip.id}` }, NEXT)).toBeInTheDocument()
   expect(screen.getByText('Đã đối chiếu bằng nhãn 2 kiện')).toBeInTheDocument()
-  // Chưa ghi seal: nút ghi seal là nút chính, lối về danh sách là nút phụ
-  await userEvent.click(screen.getByRole('button', { name: 'Ghi số seal' }))
-  expect(screen.getByText('Nhập số seal trước khi ghi.')).toBeInTheDocument()
-  await userEvent.type(screen.getByRole('textbox', { name: 'Số seal' }), 'SEAL-0915')
-  await userEvent.click(screen.getByRole('button', { name: 'Ghi số seal' }))
-  expect(await screen.findByText(/^Số seal SEAL-0915 · ghi lúc/, {}, LOAD)).toBeInTheDocument()
+  // Xếp xong không hỏi thêm gì (không còn ô số seal): lối về danh sách là việc duy nhất
+  expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+  expect(screen.getByRole('link', { name: 'Về danh sách chuyến' })).toHaveAttribute('href', '/kho')
   const stored = await db.getTrip(trip.id)
-  expect([stored.phase, stored.loading?.seal?.number, stored.loading?.steps.map((step) => step.via)]).toStrictEqual(['loaded', 'SEAL-0915', ['qr', 'qr']])
+  expect([stored.phase, stored.loading?.steps.map((step) => step.via)]).toStrictEqual(['loaded', ['qr', 'qr']])
   // Mỗi lần đối chiếu ghi bước, cách, người: soạn bằng quét, xếp bằng gõ mã, do nhân viên kho demo làm
   expect(stored.verifications?.map((entry) => [entry.context, entry.packageInstanceId, entry.method, entry.by])).toStrictEqual([
     ['STAGING', 'PKG-001-01', 'QR', 'US-0003'], ['STAGING', 'PKG-002-01', 'QR', 'US-0003'],

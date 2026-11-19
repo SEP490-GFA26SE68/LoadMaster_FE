@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest'
 import { createMockDb, normalizeQrToken, tripReport, type MockDb } from '@/lib/mock-db'
 
-/** Luồng 5 Review 1 (LM-104): quét QR khi xếp và dỡ, số seal, báo cáo chuyến, và loại xe. */
+/** Luồng 5 Review 1 (LM-104): quét QR khi xếp và dỡ, báo cáo chuyến, và loại xe. */
 
 async function nextLoadingInstance(db: MockDb, tripId: string) {
   const trip = await db.getTrip(tripId)
@@ -37,15 +37,6 @@ test('the warehouse confirms the current step by scanning its label; another pac
   await expect(db.confirmLoadingByQr('TRIP-010', 'LM-0000-0000-0000')).rejects.toMatchObject({ code: 'TRIP_PHASE_INVALID' })
 })
 
-test('the seal number is recorded once loading is finished, before the truck leaves', async () => {
-  const db = createMockDb()
-  await expect(db.recordSeal('TRIP-011', 'SEAL-1')).rejects.toMatchObject({ code: 'TRIP_PHASE_INVALID' })
-  await expect(db.recordSeal('TRIP-010', '   ')).rejects.toMatchObject({ code: 'SEAL_INVALID', params: { max: 32 } })
-  const trip = await db.recordSeal('TRIP-010', ' LB-2609-00417 ')
-  expect(trip.loading?.seal).toMatchObject({ number: 'LB-2609-00417' })
-  expect((await db.listEvents())[0]).toMatchObject({ action: 'loading.sealed', params: { sealNumber: 'LB-2609-00417' } })
-})
-
 test('the driver confirms unloading at the current stop by scanning; a package of another stop is refused', async () => {
   const db = createMockDb()
   const trip = await db.getTrip('TRIP-009')
@@ -73,7 +64,6 @@ test('trip report of a completed trip counts what the warehouse and the driver r
   expect(report.stops.every((stop) => stop.completedAt !== null)).toBe(true)
   expect(report.durations.loadingMs).toBeGreaterThan(0)
   expect(report.durations.totalMs).toBe(Date.parse(report.times.deliveryCompletedAt ?? '') - Date.parse(report.times.loadingStartedAt ?? ''))
-  expect(report.seal).toBeNull()
   const draft = tripReport(await db.getTrip('TRIP-014'), undefined)
   expect(draft).toMatchObject({ completed: false, packages: { planned: 0, delivered: 0 }, durations: { loadingMs: null, deliveryMs: null, totalMs: null } })
 })

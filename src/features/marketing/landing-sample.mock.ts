@@ -4,7 +4,7 @@ import type { CargoPackage, OptimizationRequest } from '@/domain/models'
 /**
  * Chuyến mẫu của khung 3D trên trang giới thiệu: thùng 6 m của Spec mục 12 (600 × 240 × 250 cm, 5.000 kg, hốc bánh xe không chịu tải)
  * và bốn dòng kiện cho bốn điểm giao — 366 kiện, chồng tới 240 cm. Kết quả không lưu sẵn ở đây: bộ tối ưu mô phỏng chạy trên trình duyệt của người xem
- * (`landing-sample-api.ts`) nên mọi số trên khung là số của lần chạy đó, kèm MOCK RESULT. Mã kiện viết ASCII vì có thể lọt vào DOM
+ * (`landing-sample-api.ts`) nên mọi số trên khung là số của lần chạy đó. Mã kiện viết ASCII vì có thể lọt vào DOM
  * (nhãn của khung 3D) mà bản tiếng Anh không được có chữ có dấu; tên điểm giao lấy từ từ điển (`landing.sample.*`).
  */
 const LINE_DEFAULTS = {
