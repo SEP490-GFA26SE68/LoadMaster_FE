@@ -14,6 +14,7 @@ const path='/api/warehouse/vehicle-presence'
 const vehicle: PresenceVehicle={id:6,name:'V6',license_plate:'TEST-6',status:'AVAILABLE',presence_status:'UNKNOWN',current_warehouse_id:null,observed_at:null,actor_name:null}
 const vehiclePage = (data: (typeof vehicle)[], page = 0, total = data.length) => ({ ...envelope(data), page, size: 20, totalElements: total, totalPages: Math.ceil(total / 20), last: (page + 1) * 20 >= total })
 const routes = (extra:FakeRoutes={}):FakeRoutes => ({
+ [`GET ${path}/101/transfers`]:{body:{...envelope([]),totalPages:0,last:true}},
  [`GET ${path}/warehouses`]:{body:envelope([{id:101,name:'A1'}])},
  [`GET ${path}/101/vehicles`]:{body:vehiclePage([vehicle])},
  [`POST ${path}/101/check-in`]:{body:envelope({vehicleId:6,warehouseId:101,status:'AT_WAREHOUSE'})},

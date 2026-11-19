@@ -232,4 +232,5 @@ VEHICLE_PRESENCE_CONFLICT: "Trạng thái xe hoặc mã xác nhận xung đột.
   STOP_NOT_MOVABLE: 'Điểm đã hoàn tất hoặc xe đã tới nên không đổi chỗ được.',
   PICKUP_AFTER_DELIVERY: 'Điểm nhận hàng phải đứng trước điểm giao của cùng yêu cầu.',
   STOP_ORDER_BLOCKS_CARGO: 'Theo thứ tự này có kiện bị kiện giao sau che kín lối dỡ nên không dỡ được. Thứ tự điểm giữ nguyên.',
+  VEHICLE_TRANSFER_CONFLICT: "Xe hoặc yêu cầu điều chuyển đã thay đổi. Tải lại và kiểm tra trước khi thử lại cùng thao tác.",
 } as const

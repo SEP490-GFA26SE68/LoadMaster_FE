@@ -1,3 +1,4 @@
+import { transfers } from './vi/transfers'
 import { language } from './vi/language'
 import { nav } from './vi/nav'
 import { roles } from './vi/roles'
@@ -121,4 +122,5 @@ export const vi = {
   serverWarehouse,
   trialRegistration,
   guestRegistration,
+  transfers,
 } as const

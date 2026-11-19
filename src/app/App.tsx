@@ -26,6 +26,7 @@ const TripDetailPage = lazy(() => import('@/features/trips/TripDetailPage').then
 const OptimizationSetupPage = lazy(() => import('@/features/optimization/OptimizationSetupPage').then((m) => ({ default: m.OptimizationSetupPage })))
 const PlanComparisonPage = lazy(() => import('@/features/trips/PlanComparisonPage').then((m) => ({ default: m.PlanComparisonPage })))
 const ViewerPage = lazy(() => import('@/features/viewer3d/ViewerPage').then((m) => ({ default: m.ViewerPage })))
+const VehicleTransferPage = lazy(() => import('@/features/vehicle-transfers/VehicleTransferPage').then(m => ({ default: m.VehicleTransferPage })))
 const WarehouseVehiclesPage = lazy(() => import('@/features/warehouse/WarehouseVehiclesPage').then((m) => ({ default: m.WarehouseVehiclesPage })))
 const WarehousePage = lazy(() => import('@/features/warehouse/WarehousePage').then((m) => ({ default: m.WarehousePage })))
 const CompanyWarehousesPage = lazy(() =>
@@ -187,7 +188,7 @@ export const routes: RouteObject[] = [
                       handle: titled((t) => t('companyWarehouses.title')),
                     },
                   ]),
-                  guarded('fleet.edit', [{ path: '/doi-xe/moi', element: <VehicleDetailPage />, handle: titled((t) => t('titles.newVehicle')) }]),
+                  guarded('fleet.edit', [{ path: '/doi-xe/dieu-chuyen', element: <VehicleTransferPage />, handle: titled(t => t('transfers.title')) }, { path: '/doi-xe/moi', element: <VehicleDetailPage />, handle: titled((t) => t('titles.newVehicle')) }]),
                   guarded('users.manage', [{ path: '/nguoi-dung', element: <UsersPage />, handle: titled((t) => t('titles.users')) }]),
                   guarded('audit.view', [{ path: '/nhat-ky', element: <AuditLogPage />, handle: titled((t) => t('titles.audit')) }]),
                   // Công ty: màn chính của quản trị hệ thống (FE-8-06, D-65)
