@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 import { ComparisonColumnHeader } from './ComparisonColumnHeader'
 import { ComparisonLineage } from './ComparisonLineage'
 import { comparisonGroups, ComparisonValue, type ComparisonRow } from './ComparisonRows'
-import { PlanThumbnail } from './PlanThumbnail'
+import { PlanThumbnail } from '@/components/PlanThumbnail'
 import type { RevisionCardModel, bestValues } from './revision-comparison'
 
 /** Nền cột đang chọn: đầu cột cyan-50 có vạch trên, thân cột nhạt hơn để chữ vẫn đọc trên nền gần trắng. */

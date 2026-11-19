@@ -17,20 +17,24 @@ const SCALE = 21
 const PAD = 12
 
 /**
- * Ảnh thu nhỏ SVG đẳng cự nền tối của một revision, dựng từ placement thật (LM-051). Không dùng Three.js: ảnh tĩnh,
- * không xoay (AGENTS.md mục 7). Khung nhìn tính từ lòng thùng của chính revision nên xe nào cũng vừa khung.
+ * Ảnh thu nhỏ SVG đẳng cự nền tối của một phương án, dựng từ placement thật (LM-051). Không dùng Three.js: ảnh tĩnh,
+ * không xoay (AGENTS.md mục 7). Khung nhìn tính từ lòng thùng của chính phương án nên xe nào cũng vừa khung. Dùng ở màn So sánh
+ * phương án và ở bộ chọn A · B · C của khung 3D trang giới thiệu.
  */
 export function PlanThumbnail({
   revisionId,
   request,
   placements,
   totalCount,
+  overlays = true,
   className,
 }: {
   revisionId: string
   request: Pick<OptimizationRequest, 'vehicle' | 'packages'>
   placements: readonly PackagePlacement[]
   totalCount: number
+  /** `false`: không có nhãn số kiện và nhãn "đã vẽ n khối" đè trên ảnh — ảnh nhỏ mà số đã nằm ngay cạnh. */
+  overlays?: boolean
   /** Chiều cao khung (mặc định 190 px). V2.3: 176 px trong ma trận so sánh, 150 px ở thẻ bản lưu (LM-106). */
   className?: string
 }) {
@@ -76,10 +80,12 @@ export function PlanThumbnail({
         ))}
         <polyline points={roof} fill="none" stroke="rgba(255,255,255,.28)" strokeWidth={0.8} strokeDasharray="2 2" />
       </svg>
-      <span className="absolute top-2.5 right-3 rounded-sm bg-black/35 px-1.5 py-0.5 font-mono text-[11px] leading-3.5 text-white/80">
-        {format.integer(placedCount)} / {format.integer(totalCount)}
-      </span>
-      {drawnCount < placedCount ? (
+      {overlays ? (
+        <span className="absolute top-2.5 right-3 rounded-sm bg-black/35 px-1.5 py-0.5 font-mono text-[11px] leading-3.5 text-white/80">
+          {format.integer(placedCount)} / {format.integer(totalCount)}
+        </span>
+      ) : null}
+      {overlays && drawnCount < placedCount ? (
         <span className="absolute bottom-2.5 left-3 text-[11px] leading-3.5 text-white/65">
           {t('trips.compare.thumbnailCapped', { drawn: format.integer(drawnCount), placed: format.integer(placedCount) })}
         </span>
