@@ -59,6 +59,7 @@ import { serverAudit } from './vi/serverAudit'
 import { serverWarehouse } from './vi/serverWarehouse'
 import { trialRegistration } from './vi/trialRegistration'
 import { guestRegistration } from './vi/guestRegistration'
+import { assistant } from './vi/assistant'
 
 /**
  * Từ điển nguồn. Mọi ngôn ngữ khác khai báo `satisfies Dictionary<typeof vi>`,
@@ -131,4 +132,5 @@ export const vi = {
   serverWarehouse,
   trialRegistration,
   guestRegistration,
+  assistant,
 } as const

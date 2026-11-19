@@ -159,6 +159,19 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   `useStageGate` còn chờ khung vào gần khung nhìn (IntersectionObserver, lề 250 px) rồi mới thử WebGL, tải Three.js và chạy bộ tối ưu; tiêu đề và
   câu mô tả vẽ ngay, không chờ phần 3D. Câu mô tả khung
   (`landing.stage.caption`) là `sr-only`, nối bằng `aria-describedby`; canvas `aria-hidden`.
+- **Trợ lý "Hỏi Lumo"** (`marketing/assistant/`, gắn ở `PublicPage` nên có ở cả hai trang công khai): trợ lý **thụ động** — không tự mở, không
+  lời mời bật lên — trả lời từ **bộ câu trả lời soạn sẵn** (`assistant-kb.ts`, 17 chủ đề; câu ở nhánh `assistant` của từ điển), **không phải AI**
+  và không bao giờ nói mình là AI; câu mở đầu nói Lumo trả lời từ tài liệu của LoadMaster, không phải nhân viên tư vấn. Khớp câu hỏi bằng
+  từ khoá vi + en không dấu (`assistant-match.ts`, dưới ngưỡng thì nói thẳng là chưa có câu trả lời). Lớp mạng `assistant-api.ts`
+  (`askAssistant`, `POST /api/assistant/messages` — chưa có ở BE: khớp ở trình duyệt sau 500 ms) → `useAskAssistantMutation`. Nút mở góc
+  dưới phải (chữ từ 640 px, 48 px / 56 px cảm ứng, chừa vùng an toàn) nâng lên khi chạm phần tử mang `data-assistant-avoid` (nút chính của
+  phần mở đầu, "Lên đầu trang" — `useLauncherLift`); khung chat là chunk lười: từ 768 px thẻ trắng không modal cạnh nút, hẹp hơn tờ phủ
+  cả màn modal. Mỗi câu trả lời tối đa ba câu kèm liên kết tới phần của trang hay Bảng giá; lối đăng ký chỉ khi khách tự đăng ký được. Tính
+  gói: số lần chạy × `BILLING_CONSTANTS.optimizationCost` → gói đang bán rẻ nhất đủ credit (`assistant-advisor.ts`), không nói tiết kiệm.
+  "Hỏi đội LoadMaster" mở form liên hệ (Hỏi thông tin) và điền sẵn câu hỏi qua `state` của điều hướng (không lên URL;
+  `ContactSection` đọc một lần mỗi lần điều hướng) — không hứa thời gian trả lời. Cuộc trò chuyện chỉ trong bộ nhớ
+  (`assistant-session.ts`): giữ qua hai trang, tải lại là mất; không `localStorage`. Thêm điều sản phẩm làm được thì thêm chủ đề, chỉ nói
+  điều đang đúng; điều theo nguồn dữ liệu đi qua `AssistantContext` (luật nghỉ bắt buộc chỉ khi giờ đến là của mock).
 - **Số trên trang giới thiệu** đều có nguồn: sáu số của `#con-so` đọc từ hằng của code (`LandingFacts`) — số phương án mỗi lần chạy
   (`PLAN_OBJECTIVES`), credit mỗi lần chạy (`BILLING_CONSTANTS.optimizationCost`), cổng bench 1.000 kiện dưới 1 giây, số luật nhận hàng dọc
   đường, số mức đối chiếu kiện, số vai trò công ty — mỗi số kèm câu nguồn, lăn một lần (`Odometer`) rồi đứng; giá và credit từ danh mục gói,
@@ -406,7 +419,9 @@ src/
                         `/bang-gia`; khung chung `PublicPage` (đầu trang `PublicHeader`, chân trang `PublicFooter` + `footer/`, cuộn tới neo
                         `useHashScroll`); khung 3D chuyến mẫu `LandingStage` (cổng `useStageGate`, phần 3D ở `viewer3d/LandingStageViewer`);
                         chữ và khối hiện một lần `reveal/` (`RevealProvider` — một IntersectionObserver —, `Reveal`, `RevealWords`,
-                        `FlowHeading`, `LineRise`, `TextRibbon`, `Odometer`, `LumoSays`, `split-text.ts` thuần, `reveal.css`)
+                        `FlowHeading`, `LineRise`, `TextRibbon`, `Odometer`, `LumoSays`, `split-text.ts` thuần, `reveal.css`); trợ lý "Hỏi Lumo"
+                        `assistant/` (nút mở `AssistantLauncher`, khung chat lười `AssistantPanel`, bộ câu trả lời `assistant-kb.ts` + khớp
+                        `assistant-match.ts` + tính gói `assistant-advisor.ts` thuần, `assistant-api.ts`, `assistant-session.ts`)
     contacts/           yêu cầu liên hệ của khách `/lien-he-khach` (quản trị hệ thống, hỗ trợ khách hàng): bảng, khung xử lý `ContactPanel`
   lib/                  format, helper, mock dùng chung, api client
     i18n/               từ điển vi/en (mỗi nhánh một file trong vi/, en/), provider, hook
@@ -795,7 +810,8 @@ Nguồn: `design/brand/` (`source/` là file người dùng giao; `logo-mark*.sv
   cạnh ngang `explain` giải thích · `idea` gợi ý · `wink` mời liên hệ. Ảnh không lật gương (mũ và áo có chữ). Trạng thái rỗng dùng `EmptyState mascot`
   (`compact` 96 px trong card); `ErrorScreen` bắt buộc `mascot`; `WarehouseEmpty` / `DriverNotice` mặc định tư thế chờ. Luôn `alt=""` +
   `aria-hidden`, không động — trừ trang giới thiệu, nơi Lumo đổi tư thế và bong bóng `LumoSays` gõ chữ một lần (lời trong bong bóng là
-  nội dung đọc được, ảnh vẫn `aria-hidden`). **Không** ở bảng, form, Planner, bảng điều khiển (kể cả kỳ không có dữ liệu), toast, hộp thoại; ở màn kho và
+  nội dung đọc được, ảnh vẫn `aria-hidden`). Trợ lý "Hỏi Lumo" của hai trang công khai dùng Lumo bán thân làm ảnh đại diện trong ô vuông bo
+  góc (`AssistantAvatar`): `wink` ở nút mở, `explain` ở đầu khung chat — đứng yên, `aria-hidden`. **Không** ở bảng, form, Planner, bảng điều khiển (kể cả kỳ không có dữ liệu), toast, hộp thoại; ở màn kho và
   tài xế chỉ màn rỗng, màn lỗi và màn xong việc.
 
 ### Cấm tuyệt đối

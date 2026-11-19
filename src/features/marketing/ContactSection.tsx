@@ -1,12 +1,14 @@
 import { Building2, CircleCheck, MailCheck, MessagesSquare, type LucideIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router'
+import { useLocation, useSearchParams } from 'react-router'
+import { LUMO_NAME } from '@/components/brand/Lumo'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Spinner } from '@/components/ui/Spinner'
 import { REGISTRATION_CAPABILITIES } from '@/features/registration/useRegistrationQuery'
 import { useT, type MessageKey } from '@/lib/i18n'
 import type { GuestContact } from '@/lib/mock-db'
+import { handoffMessage, handoffQuestionsOf } from './assistant/assistant-handoff'
 import { CONTACT_ANCHOR, contactDefaults } from './contact-form'
 import { ContactForm } from './ContactForm'
 import { PUBLIC_TOUCH } from './public-chrome'
@@ -67,7 +69,9 @@ function ContactNextSteps() {
  * trong thẻ trắng bên phải. Phần này không có nút đăng ký: ở kho mẫu tài khoản công ty do đội LoadMaster mở sau khi trao đổi, khi nối
  * máy chủ lối đăng ký nằm ở phần mở đầu, đầu trang và thẻ gói. Form chờ danh sách gói đang bán (để chọn sẵn gói trên URL `?goi=`); đọc
  * gói lỗi thì form vẫn dùng được, chỉ không có gói để chọn. Danh mục gói chỉ đọc khi phần này tới gần khung nhìn (`useNearViewport`) —
- * liên kết sâu `#lien-he` cuộn thẳng tới đây nên đọc ngay.
+ * liên kết sâu `#lien-he` cuộn thẳng tới đây nên đọc ngay. Khách chuyển câu hỏi từ trợ lý "Hỏi Lumo" thì câu hỏi đi trong `state` của lần
+ * điều hướng (không lên URL): mỗi lần điều hướng mang câu hỏi được đọc một lần, điền sẵn ô nội dung của form đang mở (form đã gửi thì mở
+ * lại form); "Gửi yêu cầu khác" sau đó là form trống như thường.
  */
 export function ContactSection() {
   const t = useT()
@@ -77,6 +81,14 @@ export function ContactSection() {
   const [sent, setSent] = useState<GuestContact | null>(null)
   // Gửi yêu cầu khác: form mới, chọn sẵn như lúc mở trang
   const [round, setRound] = useState(0)
+  const location = useLocation()
+  const handoff = handoffQuestionsOf(location.state)
+  const [prefill, setPrefill] = useState<{ key: string; message: string; round: number } | null>(null)
+  if (handoff !== null && handoff.length > 0 && prefill?.key !== location.key) {
+    setPrefill({ key: location.key, message: handoffMessage(t('assistant.handoff.intro', { name: LUMO_NAME }), handoff), round })
+    setSent(null)
+  }
+  const message = prefill !== null && prefill.round === round ? prefill.message : ''
 
   return (
     <section ref={sectionRef} id={CONTACT_ANCHOR} aria-labelledby="landing-contact" className="landing-closing scroll-mt-24 px-4 py-16 md:px-shell lg:py-24">
@@ -93,9 +105,9 @@ export function ContactSection() {
             <div className="flex justify-center py-16"><Spinner label={t('landing.contact.loading')} /></div>
           ) : (
             <ContactForm
-              key={round}
+              key={`${round}-${prefill?.key ?? ''}`}
               plans={plans.data ?? []}
-              initial={contactDefaults(searchParams, plans.data ?? [])}
+              initial={contactDefaults(searchParams, plans.data ?? [], message)}
               focusFirst={round > 0}
               onSent={setSent}
             />

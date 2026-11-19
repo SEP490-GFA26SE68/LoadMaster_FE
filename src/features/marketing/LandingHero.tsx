@@ -48,7 +48,7 @@ export function LandingHero() {
             className="m-0 max-w-[15em] font-display text-hero font-bold tracking-[-0.02em] text-balance text-sky-text font-stretch-112%"
           />
           <RevealWords as="p" mode="ink" delay={350} text={t('landing.hero.lede')} className="m-0 max-w-[36em] text-intro text-sky-text-2" />
-          <Reveal kind="rise" delay={500} className="flex flex-wrap gap-3 pt-1">
+          <Reveal kind="rise" delay={500} className="flex flex-wrap gap-3 pt-1" data-assistant-avoid>
             {signUp ? (
               <Button asChild variant="primary" size="lg" className={cn(PUBLIC_TOUCH, SKY_FOCUS)}>
                 <Link to={TRIAL_REGISTRATION}>{t('landing.header.trial')}</Link>

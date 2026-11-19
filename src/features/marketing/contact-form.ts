@@ -49,7 +49,7 @@ export type ContactFormValues = z.infer<typeof contactFormSchema>
  * Giá trị đầu của form: loại yêu cầu và gói chọn sẵn từ URL (`?loai=bao-gia&goi=PLAN-002`, nút "Liên hệ tư vấn" của thẻ gói ở Bảng giá).
  * Gói không có trong danh sách hoặc đã ngừng bán thì bỏ; loại lạ thì là "Hỏi thông tin".
  */
-export function contactDefaults(search: URLSearchParams, plans: readonly SubscriptionPlan[]): ContactFormValues {
+export function contactDefaults(search: URLSearchParams, plans: readonly SubscriptionPlan[], message = ''): ContactFormValues {
   const planId = search.get('goi')
   return {
     fullName: '',
@@ -58,7 +58,7 @@ export function contactDefaults(search: URLSearchParams, plans: readonly Subscri
     companyName: '',
     requestType: contactTypeFromSlug(search.get('loai')) ?? 'INQUIRY',
     planId: plans.find((plan) => plan.id === planId && plan.active)?.id ?? NO_PLAN,
-    message: '',
+    message,
   }
 }
 

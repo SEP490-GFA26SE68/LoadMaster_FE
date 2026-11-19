@@ -1,0 +1,52 @@
+/*
+ * Chỗ của trợ lý "Hỏi Lumo" trên hai trang công khai. Nút mở và khung chat neo góc dưới phải, chừa vùng an toàn của máy (tai thỏ, thanh
+ * home). `--assistant-lift` do `useLauncherLift` ghi lên <html>: nút nâng lên khi nút chính của phần mở đầu hay nút "Lên đầu trang" chạm
+ * vào chỗ của nó; khung chat (từ 768 px) đứng ngay trên nút. Dưới 768 px khung chat là tờ phủ cả màn (`100dvh`: bàn phím ảo không che ô
+ * nhập). Lớp z 200: trên đầu trang dính (z 20), dưới hộp thoại (z 300) và toast.
+ */
+:root {
+  --assistant-edge: max(1rem, env(safe-area-inset-right));
+  --assistant-base: max(1rem, env(safe-area-inset-bottom));
+  --assistant-launcher-h: 3rem;
+}
+
+@media (pointer: coarse) {
+  :root {
+    --assistant-launcher-h: 3.5rem;
+  }
+}
+
+@media (min-width: 768px) {
+  :root {
+    --assistant-edge: max(1.5rem, env(safe-area-inset-right));
+    --assistant-base: max(1.5rem, env(safe-area-inset-bottom));
+  }
+}
+
+.assistant-launcher {
+  position: fixed;
+  right: var(--assistant-edge);
+  bottom: var(--assistant-base);
+  z-index: 200;
+  transform: translateY(calc(-1 * var(--assistant-lift, 0px)));
+  transition:
+    transform var(--dur-md) var(--ease-standard),
+    background-color var(--dur-fast) var(--ease-standard);
+}
+
+.assistant-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  height: 100dvh;
+}
+
+@media (min-width: 768px) {
+  .assistant-panel {
+    inset: auto;
+    right: var(--assistant-edge);
+    bottom: calc(var(--assistant-base) + var(--assistant-launcher-h) + 0.75rem + var(--assistant-lift, 0px));
+    width: min(380px, calc(100vw - 3rem));
+    height: min(560px, calc(100dvh - var(--assistant-base) - var(--assistant-launcher-h) - 1.75rem - var(--assistant-lift, 0px)));
+  }
+}

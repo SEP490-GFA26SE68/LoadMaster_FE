@@ -1,5 +1,6 @@
 import type { MouseEvent, ReactNode } from 'react'
 import { useT } from '@/lib/i18n'
+import { AssistantLauncher } from './assistant/AssistantLauncher'
 import { PAGE_TOP_ID } from './footer/back-to-top'
 import { PublicFooter } from './PublicFooter'
 import { PublicHeader } from './PublicHeader'
@@ -20,7 +21,8 @@ function handleSkip(event: MouseEvent<HTMLAnchorElement>) {
  * Khung của hai trang công khai: chỗ dừng focus ở đầu trang (`PAGE_TOP_ID` — nút "Lên đầu trang" của chân trang đưa focus về đây, phím
  * Tab kế tiếp tới liên kết bỏ qua), liên kết bỏ qua đầu trang (chỉ hiện khi nhận focus bằng bàn phím), đầu trang dải trời, nội dung trên
  * nền `--app`, chân trang tối. Khác khung ứng dụng: trang cuộn cả tài liệu (màn không có dữ liệu vận hành), nên neo `#…` và chỗ cuộn khi
- * đổi trang do `useHashScroll` lo. `progress`: vạch tiến độ cuộn dưới đầu trang — chỉ trang giới thiệu bật.
+ * đổi trang do `useHashScroll` lo. `progress`: vạch tiến độ cuộn dưới đầu trang — chỉ trang giới thiệu bật. Góc dưới phải là nút "Hỏi Lumo"
+ * của trợ lý (`assistant/`), cuộc trò chuyện giữ qua hai trang tới khi tải lại.
  */
 export function PublicPage({ children, progress = false }: { children: ReactNode; progress?: boolean }) {
   const t = useT()
@@ -39,6 +41,7 @@ export function PublicPage({ children, progress = false }: { children: ReactNode
       <PublicHeader progress={progress} />
       <main id={MAIN_ID} tabIndex={-1} className="flex flex-1 flex-col outline-none">{children}</main>
       <PublicFooter />
+      <AssistantLauncher />
     </div>
   )
 }

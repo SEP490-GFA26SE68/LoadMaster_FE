@@ -24,7 +24,7 @@ export function FooterBottom() {
         </p>
         <p className="m-0 max-w-200 text-small text-pretty text-sky-text-3 pointer-coarse:text-body-lg">{t('landingFooter.credit')}</p>
       </div>
-      <Button variant="glass" className={cn('h-11 self-start lg:self-center', PUBLIC_TOUCH, SKY_FOCUS)} onClick={scrollToPageTop}>
+      <Button variant="glass" className={cn('h-11 self-start lg:self-center', PUBLIC_TOUCH, SKY_FOCUS)} onClick={scrollToPageTop} data-assistant-avoid>
         <ArrowUp aria-hidden strokeWidth={1.5} />
         {t('landingFooter.backToTop')}
       </Button>
