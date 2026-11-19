@@ -66,8 +66,8 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
 - **Điều phối viên duyệt phương án** (FE-0-07, D-80): `plans.approve` (chỉnh tay và Duyệt trong Planner) là của điều phối — lập chuyến, chạy tối ưu,
   chỉnh tay, rồi "Duyệt phương án" / "Duyệt bản chỉnh". Quản lý công ty chỉ đọc + xuất báo cáo: mở Planner ở chế độ chỉ xem, một dòng lý do. Không có hàng đợi `/duyet` hay quyền duyệt của quản lý.
 - Đường dẫn của các màn đã bỏ (`/lo-hang`, `/nhan-hang`, `/duyet`) là màn 404.
-- **Trang công khai** `/gioi-thieu` (giới thiệu + form liên hệ), `/bang-gia` và `/chinh-sach-bao-mat` (`features/marketing`, hằng `PUBLIC_HOME`,
-  `PUBLIC_PRICING`, `PUBLIC_PRIVACY` ở `auth/landing.ts`) nằm **ngoài** `RequireAuth`, không đòi quyền nào; người đã đăng nhập vẫn mở được (nút "Vào ứng dụng" thay "Đăng nhập"). Gốc
+- **Trang công khai** `/gioi-thieu` (giới thiệu + form liên hệ), `/bang-gia`, `/chinh-sach-bao-mat` và `/phuong-an-mau` (`features/marketing`, hằng `PUBLIC_HOME`,
+  `PUBLIC_PRICING`, `PUBLIC_PRIVACY`, `PUBLIC_SAMPLE_PLAN` ở `auth/landing.ts`) nằm **ngoài** `RequireAuth`, không đòi quyền nào; người đã đăng nhập vẫn mở được (nút "Vào ứng dụng" thay "Đăng nhập"). Gốc
   `/` (`RootLandingPage`): khách sang `/gioi-thieu` (giữ query và neo), người đã đăng nhập sang màn chính của vai trò, lúc đang mở lại phiên Keycloak chưa quyết gì; mở trang khác khi chưa đăng
   nhập vẫn về `/dang-nhap` (nhớ trang đó). **Chính sách bảo mật** `/chinh-sach-bao-mat` (`marketing/privacy/`, nhánh từ điển `privacy`): năm
   mục — form liên hệ, đăng ký, khi dùng ứng dụng, trên trình duyệt, hỏi về dữ liệu —, mỗi câu nói đúng điều mã hôm nay làm và chọn theo nguồn
@@ -149,10 +149,13 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   đầy (`--p` mặc định 0,5); giảm chuyển động thì hình đổi theo chặng, không theo từng điểm cuộn; chữ không bao giờ ẩn chờ cuộn. Bảng và số của
   điểm 1 đọc **cùng truy vấn** lần chạy mẫu với khung 3D (`useJourneySample`, khoá `['landing', 'sample-candidates']`); không Web Worker hay
   bật tiết kiệm dữ liệu thì không chạy — vạch giữ chỗ và một câu nói vì sao.
-- **"Thử với hàng của bạn"** (`marketing/try/`, `LandingTry`, `#thu-ngay`, ngay sau "Một chuyến hàng"): khách nhập lòng thùng (cm) và tải
+- **"Thử với hàng của bạn"** (`marketing/try/`, `LandingTry`, `#thu-ngay`, ngay sau "Một chuyến hàng"): hai tab — "Xếp thử xe của bạn"
+  (dưới) và "Tải trục" (`TryAxleTab`: xe mẫu 3,5 tấn có hai trục, hai thanh kéo khối lượng hàng và trọng tâm, số là `axleLoadsOf` của ứng
+  dụng, vượt có chữ "Vượt"). Tab xếp thử: khách nhập lòng thùng (cm) và tải
   trọng (kg), một tới bốn loại kiện (cm, kg, số kiện, điểm giao 1–4; tổng tối đa 1.000 kiện — cổng hiệu năng của bộ tối ưu mô phỏng), form
-  react-hook-form + zod, lỗi là mã (`try-form.ts`); mở ra với xe 3,5 tấn 520 × 200 × 200 cm và ba loại thùng cho ba điểm giao (48 thùng 60 × 40 × 40 cm, 60 thùng 50 × 40 × 30 cm, 16 thùng
-  80 × 60 × 50 cm — 124 kiện, 1.680 kg) để chạy được ngay và lần chạy đầu đã có màu ba điểm giao, số kiện dỡ-xếp lại. Nhóm nghìn của ô số
+  react-hook-form + zod, lỗi là mã (`try-form.ts`); mở ra với xe 3,5 tấn 520 × 200 × 200 cm và hai loại thùng cho hai điểm giao (80 thùng 60 × 40 × 40 cm,
+  20 thùng 80 × 60 × 50 cm — 100 kiện, 1.800 kg) để chạy được ngay và lần chạy đầu đã có màu hai điểm giao, số kiện dỡ-xếp lại. Giả định của
+  bản thử (cửa bằng lòng thùng, không vật cản, không trục; luật kiện mặc định) nằm trong "Tính thế nào?" cuối form, không thành đoạn văn. Nhóm nghìn của ô số
   không bắt đầu bằng 0 ("0,500" là lỗi, không phải 500); đổi một ô số kiện thì các ô số kiện khác được kiểm lại (`deps`), để lỗi quá trần
   tổng tự hết. Form cao hơn một màn hình nên từ 1.280 px (màn cao từ 768 px) cột kết quả dính dưới đầu trang, và tính xong thì cột được cuộn
   vào khung nhìn nếu đang bị cắt (`try/try-scroll.ts`; nhảy thẳng khi giảm chuyển động; cột cao hơn màn hình thì không cuộn).
@@ -165,8 +168,26 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   loại kèm lý do (`viewer.unplacedReasons`; riêng `DOOR_TOO_SMALL` là "Cao hoặc rộng hơn lòng thùng" — cửa của bản thử bằng lòng thùng,
   nên không nói "lọt cửa"); hai mục tiêu chọn trùng một cách xếp thì thẻ ghi "Giống hệt phương án …" (`try-outcome.ts`).
   "Tốt nhất" trung tính như màn So sánh. Không nhãn MOCK RESULT: câu nguồn nói số do bộ tối ưu mô phỏng chạy trên trình duyệt tính. Form đổi
-  sau lần tính thì có câu báo kết quả cũ. Dưới kết quả: "Đăng ký trải nghiệm" khi khách tự đăng ký được, không thì "Nhận tư vấn". Từ 1.280 px
-  form trái, kết quả phải (ba thẻ cạnh nhau từ 640 px); `e2e/landing-try.spec.ts` đo gọn trong 900 px ở 1.440 × 900 và điện thoại 390 px.
+  sau lần tính thì có câu báo kết quả cũ. Dưới kết quả: "Đăng ký trải nghiệm" khi khách tự đăng ký được, không thì "Nhận tư vấn"; cạnh tiêu
+  đề kết quả là liên kết "Xem phương án mẫu ở dạng 3D" (`/phuong-an-mau`). Từ 1.280 px
+  form trái, kết quả phải (ba thẻ cạnh nhau từ 640 px); `e2e/landing-try.spec.ts` đo cột kết quả gọn trong một màn hình ở 1.440 × 900 và
+  1.280 × 768, cả phần không quá 1.335 px (1.440) / 1.900 px (390, trước lần chạy).
+- **"Tính thế nào?"** (`marketing/how/`: `HowComputed` — nút `aria-expanded` mở danh sách nhãn + câu; `PlanHow` + `how-entries.ts` dựng câu
+  từ số của **chính lần chạy**, nhánh từ điển `landingHow`): dưới số của khung 3D mở đầu, thẻ phương án và tab Tải trục của bản thử, và trang
+  `/phuong-an-mau`. Câu nói công thức bằng lời thường kèm số đã tính; số nào phương án không có (xe không trục, không chia vùng) thì bỏ dòng.
+  Không tên thuật toán. Giả định của bản thử cũng nằm ở đây thay cho đoạn văn.
+- **Phương án mẫu** `/phuong-an-mau` (`marketing/sample-plan/`, `SamplePlanPage`; phần 3D `viewer3d/SamplePlanViewer` tải lười): chuyến mẫu
+  366 kiện, bốn điểm giao, **cùng truy vấn** lần chạy mẫu với khung 3D mở đầu (`useLandingSample`) trong khung 3D xoay được, bấm vào kiện
+  được (cùng `SceneCanvas`, InstancedMesh). Chọn phương án A · B · C (`StagePlans`), "Xếp hàng" theo `loadingOrder` hoặc "Dỡ hàng" ở điểm 1–4
+  theo `unloadingOrder` (`viewer3d/sample/useSamplePlayback`, `useUnloadPlayback`: kiện điểm sau chắn lối có viền cảnh báo, che kín thì dừng
+  kèm nút bỏ qua); `Timeline` phát / dừng / từng bước, phím Space · ← · → · Home trên cả trang; bốn góc nhìn; số của chuyến và của điểm kèm
+  "Tính thế nào?". Trạng thái trên URL, slug không dấu (`sample-plan-url.ts`): `phuong-an=a|b|c`, `che-do=xep|do`, `diem=1–4`, `goc=…`
+  (mặc định C · xếp · góc chéo không ghi), giữ tham số khác (`lang`, `debug`). "Sao chép liên kết" (`ShareLink`): có `navigator.share` thì
+  "Chia sẻ liên kết", không thì bộ nhớ tạm, phản hồi ở `role="status"`; không có cả hai thì không có nút. Không MOCK RESULT: một câu nguồn.
+  Lối ra là logo kèm mũi tên về `/gioi-thieu`; một nút chính như khối mở đầu (`SampleCta`). Không WebGL / tiết kiệm dữ liệu / lỗi: `CargoArtwork`
+  kèm câu, số vẫn đủ. Giảm chuyển động: không tự phát, thùng đầy. Từ 1.024 px khung 3D trái, cột số phải tự cuộn (trang cao đúng khung nhìn);
+  hẹp hơn khung ở trên, cột ở dưới, nút 56 px trên máy cảm ứng. Lối vào: nút "Toàn màn hình" của khung 3D mở đầu (giữ phương án đang chọn) và
+  liên kết của bản thử. `e2e/sample-plan.spec.ts`.
 - **Chân trang công khai** (`PublicFooter`, `marketing/footer/`): dải đường có xe tải chạy vào một lần, khối thương hiệu (logo, khẩu
   hiệu, nút tới form liên hệ, ngôn ngữ), bốn cột — Sản phẩm (hai neo của trang giới thiệu, Bảng giá) · Dành cho (năm vai trò công ty, là
   chữ) · Hỗ trợ (Hỏi đáp → `#hoi-dap`, Liên hệ tư vấn → `#lien-he`, Chính sách bảo mật → `/chinh-sach-bao-mat`) · Tài khoản ("Đăng nhập" hay "Vào ứng dụng"; khách có thêm hai lối đăng ký khi nối backend)
