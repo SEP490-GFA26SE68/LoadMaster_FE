@@ -57,6 +57,7 @@ import { pricing } from './en/pricing'
 import { privacy } from './en/privacy'
 import { terms } from './en/terms'
 import { legal } from './en/legal'
+import { seo } from './en/seo'
 import { warehouseCustomers } from './en/warehouseCustomers'
 import { backendTripRoute } from './en/backendTripRoute'
 import { serverPlans } from './en/serverPlans'
@@ -128,6 +129,7 @@ export const en = {
   privacy,
   terms,
   legal,
+  seo,
   warehouseCustomers,
   backendTripRoute,
   serverPlans,

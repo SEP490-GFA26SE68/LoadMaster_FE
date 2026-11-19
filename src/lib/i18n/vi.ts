@@ -55,6 +55,7 @@ import { pricing } from './vi/pricing'
 import { privacy } from './vi/privacy'
 import { terms } from './vi/terms'
 import { legal } from './vi/legal'
+import { seo } from './vi/seo'
 import { warehouseCustomers } from './vi/warehouseCustomers'
 import { backendTripRoute } from './vi/backendTripRoute'
 import { serverPlans } from './vi/serverPlans'
@@ -134,6 +135,7 @@ export const vi = {
   privacy,
   terms,
   legal,
+  seo,
   warehouseCustomers,
   backendTripRoute,
   serverPlans,

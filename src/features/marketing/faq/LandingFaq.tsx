@@ -7,6 +7,7 @@ import { PUBLIC_TOUCH } from '../public-chrome'
 import { Reveal } from '../reveal'
 import { SectionHeading } from '../SectionHeading'
 import { FAQ_TOPICS } from './faq-topics'
+import { FaqStructuredData } from './FaqStructuredData'
 import './faq.css'
 
 /**
@@ -40,6 +41,7 @@ export function LandingFaq() {
           ))}
         </ul>
       </div>
+      <FaqStructuredData />
     </section>
   )
 }
