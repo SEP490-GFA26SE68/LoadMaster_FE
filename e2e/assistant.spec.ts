@@ -41,12 +41,12 @@ async function scrollToBottom(page: Page) {
   await expect(page.getByRole('button', { name: 'Lên đầu trang' })).toBeInViewport()
 }
 
-async function askAdvisor(page: Page, runs: string) {
+async function askAdvisor(page: Page, runs: string, plan: string) {
   const panel = page.getByRole('dialog', { name: 'Lumo' })
   await panel.getByRole('textbox', { name: 'Câu hỏi của bạn' }).fill('Gói nào hợp với công ty tôi?')
   await panel.getByRole('textbox', { name: 'Câu hỏi của bạn' }).press('Enter')
   await panel.getByRole('group', { name: 'Chọn nhanh số lần chạy mỗi tháng' }).getByRole('button', { name: runs }).click()
-  await expect(panel.getByText(/^Gói rẻ nhất đủ dùng: Basic — /)).toBeVisible()
+  await expect(panel.getByText(new RegExp(`^Gói rẻ nhất đủ dùng: ${plan} — `))).toBeVisible()
 }
 
 test.describe('desktop', () => {
@@ -77,8 +77,8 @@ test.describe('desktop', () => {
     await expect(panel.getByRole('link', { name: 'Mở bảng giá' })).toBeVisible()
     await attachScreenshot(page, testInfo, 'assistant-1440-plans')
 
-    await askAdvisor(page, '500 lần mỗi tháng')
-    await expect(panel.getByText('500 lần × 2 credit mỗi lần = 1.000 credit mỗi tháng.')).toBeVisible()
+    await askAdvisor(page, '2.000 lần mỗi tháng', 'Pro')
+    await expect(panel.getByText('2.000 lần × 2 credit mỗi lần = 4.000 credit mỗi tháng.')).toBeVisible()
     await attachScreenshot(page, testInfo, 'assistant-1440-advisor')
 
     // Thẻ không modal: trang phía sau vẫn bấm được; Esc ở trong khung thì đóng và trả focus về nút
@@ -112,8 +112,8 @@ test('@phone the launcher is a 56 px icon clear of the hero CTA and back-to-top;
   await expect.poll(async () => boxOf(panel)).toStrictEqual({ x: 0, y: 0, width: 390, height: 844 })
   expect(await horizontalOverflow(page)).toBe(0)
 
-  await askAdvisor(page, '100 lần mỗi tháng')
-  await expect(panel.getByText('100 lần × 2 credit mỗi lần = 200 credit mỗi tháng.')).toBeVisible()
+  await askAdvisor(page, '300 lần mỗi tháng', 'Basic')
+  await expect(panel.getByText('300 lần × 2 credit mỗi lần = 600 credit mỗi tháng.')).toBeVisible()
   expect(await horizontalOverflow(page)).toBe(0)
   await attachScreenshot(page, testInfo, 'assistant-390-advisor')
 

@@ -33,21 +33,25 @@ function PlanList() {
   if (plans.isPending) return <p className="m-0 text-ink-3">{t('assistant.facts.loadingPlans')}</p>
   if (plans.isError) return <p className="m-0">{t('landing.plans.error')}</p>
   if (plans.data.length === 0) return <p className="m-0">{t('pricing.empty')}</p>
+  // Mọi gói đều mang cờ tạm thì một nhãn dưới danh sách, không lặp ở từng dòng
+  const allProvisional = plans.data.every((plan) => plan.provisional)
+  const badge = (className?: string) => <Badge shape="tag" tone="warning" outlined className={className}>{t('common.provisionalPlan')}</Badge>
   return (
-    <ul className={LIST}>
-      {plans.data.map((plan) => (
-        <li key={plan.id}>
-          {t('assistant.facts.planLine', {
-            name: plan.name,
-            price: format.currency(plan.priceVnd),
-            credits: planCredits(plan, t, format.integer),
-          })}
-          {plan.provisional ? (
-            <Badge shape="tag" tone="warning" outlined className="ml-2 align-middle">{t('common.provisionalPlan')}</Badge>
-          ) : null}
-        </li>
-      ))}
-    </ul>
+    <>
+      <ul className={LIST}>
+        {plans.data.map((plan) => (
+          <li key={plan.id}>
+            {t('assistant.facts.planLine', {
+              name: plan.name,
+              price: format.currency(plan.priceVnd),
+              credits: planCredits(plan, t, format.integer),
+            })}
+            {plan.provisional && !allProvisional ? badge('ml-2 align-middle') : null}
+          </li>
+        ))}
+      </ul>
+      {allProvisional ? <p className="m-0">{badge()}</p> : null}
+    </>
   )
 }
 

@@ -6,7 +6,8 @@ import type { SubscriptionPlan } from '@/lib/mock-db'
  * gói gợi ý là gói đang bán rẻ nhất có credit tháng đủ dùng (`null` là không giới hạn). Không nói tiết kiệm hay lợi ích nào khác.
  */
 export const MAX_RUNS = 100_000
-export const QUICK_RUNS = [20, 100, 500] as const
+/** Ba mức chọn nhanh trải đủ dải của danh mục gói (gói nhỏ, gói giữa, gói lớn) để khách thấy gói đổi theo số lần chạy. */
+export const QUICK_RUNS = [300, 2_000, 6_000] as const
 
 export type PlanAdvice = {
   readonly runs: number

@@ -100,17 +100,17 @@ test('plan advisor: runs × 2 credits, the cheapest plan on sale that covers it;
   const { user, panel } = await openAssistant()
   await user.click(panel.getByRole('button', { name: 'Gói nào hợp với công ty tôi?' }))
   const quick = await panel.findByRole('group', { name: 'Chọn nhanh số lần chạy mỗi tháng' }, ANSWER)
-  await user.click(within(quick).getByRole('button', { name: '500 lần mỗi tháng' }))
-  expect(await panel.findByText('500 lần × 2 credit mỗi lần = 1.000 credit mỗi tháng.', {}, ANSWER)).toBeInTheDocument()
-  expect(await panel.findByText(/^Gói rẻ nhất đủ dùng: Basic — /, {}, ANSWER)).toBeInTheDocument()
+  await user.click(within(quick).getByRole('button', { name: '2.000 lần mỗi tháng' }))
+  expect(await panel.findByText('2.000 lần × 2 credit mỗi lần = 4.000 credit mỗi tháng.', {}, ANSWER)).toBeInTheDocument()
+  expect(await panel.findByText(/^Gói rẻ nhất đủ dùng: Pro — /, {}, ANSWER)).toBeInTheDocument()
   expect(panel.getByText('Đây chỉ là ước tính theo số lần chạy bạn nhập.')).toBeInTheDocument()
 
   // Hỏi lại, lần này gõ số vào ô hỏi
   await user.click(panel.getByRole('button', { name: 'Gói nào hợp với công ty tôi?' }))
   await panel.findAllByRole('group', { name: 'Chọn nhanh số lần chạy mỗi tháng' }, ANSWER)
-  await user.type(panel.getByRole('textbox', { name: 'Câu hỏi của bạn' }), 'khoảng 2.000 lần{Enter}')
-  expect(await panel.findByText('2.000 lần × 2 credit mỗi lần = 4.000 credit mỗi tháng.', {}, ANSWER)).toBeInTheDocument()
-  expect(panel.getByText(/^Gói rẻ nhất đủ dùng: Pro — /)).toBeInTheDocument()
+  await user.type(panel.getByRole('textbox', { name: 'Câu hỏi của bạn' }), 'khoảng 6.000 lần{Enter}')
+  expect(await panel.findByText('6.000 lần × 2 credit mỗi lần = 12.000 credit mỗi tháng.', {}, ANSWER)).toBeInTheDocument()
+  expect(panel.getByText(/^Gói rẻ nhất đủ dùng: Ultimate — /)).toBeInTheDocument()
 })
 
 test('the advisor number field rejects what is not a whole number of runs', async () => {
