@@ -5,7 +5,7 @@ import { attachJson, expect, test } from './fixtures'
  * "Thử với hàng của bạn" (`#thu-ngay`) của trang giới thiệu, trong trình duyệt thật: bấm "Tính ba phương án" với số mặc định thì bộ tối ưu
  * mô phỏng chạy trên trình duyệt (Web Worker) và ba phương án A · B · C hiện cạnh nhau, không nhãn MOCK RESULT, không lỗi nào trong
  * console; ở 1.440 × 900 cột kết quả gọn trong một màn hình và dính dưới đầu trang — form (ba loại kiện) cao hơn một màn hình, nên bấm nút
- * ở cuối form xong thì cột được cuộn vào, ba phương án nằm trọn trong khung nhìn; điện thoại 390 px không cuộn ngang, ô và nút cao 56 px.
+ * ở cuối form xong thì cột được cuộn vào, ba phương án nằm trọn trong khung nhìn — cả ở 1.280 × 768, mốc thấp nhất cột còn dính; điện thoại 390 px không cuộn ngang, ô và nút cao 56 px.
  */
 test.use({ collectConsoleErrors: true })
 
@@ -53,6 +53,21 @@ test.describe('landing trial at 1440 × 900', () => {
     for (const plan of plans) await expect(plan).toBeInViewport({ ratio: 1 })
     expect(await scrollsSideways(page)).toBe(false)
     expect(browserErrors).toStrictEqual([])
+  })
+})
+
+test.describe('landing trial at 1280 × 768', () => {
+  test.use({ viewport: { width: 1280, height: 768 } })
+
+  test('the sticky results column still fits under the header, so the three plans end up fully in view', async ({ page }, testInfo) => {
+    const section = await runDefaults(page)
+    const results = await section.locator('[data-try-state]').boundingBox()
+    await attachJson(testInfo, 'landing-try-height-1280x768', { results: results?.height })
+    // 768 − 80 (đầu trang trên máy cảm ứng): cột vừa màn thì còn dính và còn được cuộn vào
+    expect(results?.height ?? Number.NaN).toBeLessThanOrEqual(768 - 80)
+    for (const label of ['A', 'B', 'C']) {
+      await expect(section.getByRole('group', { name: `Phương án ${label}`, exact: true })).toBeInViewport({ ratio: 1 })
+    }
   })
 })
 

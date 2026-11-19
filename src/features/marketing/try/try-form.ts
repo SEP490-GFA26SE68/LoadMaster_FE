@@ -157,7 +157,7 @@ export function sameInput(a: TryInput | null, b: TryInput | null): boolean {
 }
 
 /**
- * Form mở ra với một xe tải 3,5 tấn thùng kín (lòng thùng 520 × 200 × 200 cm — cỡ của xe nhỏ nhất trong đội xe mẫu của ứng dụng) và ba
+ * Form mở ra với một xe tải 3,5 tấn thùng kín (lòng thùng 520 × 200 × 200 cm — cỡ xe Hino XZU720 trong đội xe mẫu Long Bình của ứng dụng) và ba
  * loại thùng carton cho ba điểm giao — 48 thùng 60 × 40 × 40 cm (15 kg), 60 thùng 50 × 40 × 30 cm (8 kg), 16 thùng 80 × 60 × 50 cm
  * (30 kg): 124 kiện, 1.680 kg, 12,048 m³ trên 20,8 m³ của thùng. Bấm chạy được ngay, và lần chạy đầu đã có hàng của ba điểm giao để so ba
  * phương án (màu điểm giao, số kiện dỡ-xếp lại).

@@ -1,5 +1,5 @@
-/** Chiều cao đầu trang dính (60 px) cộng lề nhỏ: phần cột kết quả nằm dưới mốc này coi là đã thấy. */
-const HEADER_PX = 72
+/** Chiều cao đầu trang dính: 64 px, 80 px trên máy cảm ứng — lấy số lớn: phần cột kết quả nằm dưới mốc này coi là đã thấy. */
+const HEADER_PX = 80
 const REDUCE = '(prefers-reduced-motion: reduce)'
 
 /**
