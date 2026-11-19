@@ -81,7 +81,7 @@ test('a guest sees what the app does and how to get in touch: sign-in in the hea
   expect(screen.getByRole('link', { name: 'Bỏ qua tới nội dung chính' })).toHaveAttribute('href', '#noi-dung-chinh')
   expect(screen.getByRole('link', { name: 'Nhận tư vấn' })).toHaveAttribute('href', '/gioi-thieu#lien-he')
   expect(screen.getByRole('link', { name: 'Thử với hàng của bạn' })).toHaveAttribute('href', '/gioi-thieu#thu-ngay')
-  for (const name of ['Ba chuyện quen thuộc của một chuyến hàng', 'Một chuyến hàng trên LoadMaster', 'Hỏi đáp', 'Liên hệ với LoadMaster']) {
+  for (const name of ['Ba chuyện quen thuộc của một chuyến hàng', 'Vì sao xếp tay không xuể', 'Một chuyến hàng trên LoadMaster', 'Một chuyến, bốn màn', 'Hỏi đáp', 'Liên hệ với LoadMaster']) {
     expect(screen.getByRole('heading', { level: 2, name })).toBeInTheDocument()
   }
   // Năm chặng của một chuyến, theo thứ tự, mỗi chặng một tiêu đề
@@ -108,8 +108,8 @@ test('every number on the page has a source: code constants, the plan catalogue 
   expect(journey.getByText(/^Trình duyệt này không chạy bộ tối ưu mẫu/)).toBeInTheDocument()
   // Hai số cố định của lần chạy, mỗi số một câu nguồn: giá trị là định nghĩa thứ nhất của từng cặp, câu nguồn là định nghĩa thứ hai
   expect(journey.getAllByRole('term').map((term) => term.textContent)).toStrictEqual([
-    'cho một lần chạy, cả ba phương án',
-    'cho 1.000 kiện, đủ ba phương án',
+    'mỗi lần chạy',
+    'cho 1.000 kiện',
   ])
   const definitions = journey.getAllByRole('definition').map((definition) => definition.textContent)
   expect(definitions.filter((_, index) => index % 2 === 0)).toStrictEqual(['2 credit', '< 1 giây'])
@@ -150,7 +150,7 @@ test('with motion on, split text keeps every accessible name: the title, the sec
   // Chữ đã tách thành mảnh chỉ để nhìn; tên truy cập vẫn là đúng một câu
   expect(h1.querySelector('[aria-hidden="true"]')).not.toBeNull()
   expect(screen.getByRole('region', { name: title })).toBeInTheDocument()
-  for (const name of ['Ba chuyện quen thuộc của một chuyến hàng', 'Một chuyến hàng trên LoadMaster', 'Gói cước', 'Hỏi đáp', 'Liên hệ với LoadMaster']) {
+  for (const name of ['Ba chuyện quen thuộc của một chuyến hàng', 'Vì sao xếp tay không xuể', 'Một chuyến hàng trên LoadMaster', 'Một chuyến, bốn màn', 'Gói cước', 'Hỏi đáp', 'Liên hệ với LoadMaster']) {
     expect(screen.getByRole('heading', { level: 2, name })).toBeInTheDocument()
   }
   for (const name of CHAPTER_TITLES) expect(screen.getByRole('heading', { level: 3, name })).toBeInTheDocument()

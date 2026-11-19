@@ -22,29 +22,29 @@ export const landingJourney = {
     },
   },
   title: 'Một chuyến hàng trên LoadMaster',
-  lede: 'Năm chặng, bốn vai trò, cùng một phương án đã duyệt. Cuộn xuống để xem thùng xe đi qua từng chặng.',
+  lede: 'Năm chặng, một phương án đã duyệt.',
   /** Tên truy cập của danh sách năm chặng. */
   chaptersLabel: 'Năm chặng của một chuyến hàng',
   chapters: {
     plan: {
       title: 'Lập chuyến và chọn phương án',
-      text: 'Điều phối viên đưa yêu cầu giao vào chuyến, tối ưu thứ tự điểm giao rồi chạy tối ưu xếp hàng 3D. Một lần chạy cho ba phương án; so cạnh nhau, chỉnh tay nếu cần rồi duyệt một.',
+      text: 'Tối ưu thứ tự điểm rồi xếp hàng 3D: một lần chạy ra ba phương án để so và duyệt.',
     },
     load: {
       title: 'Soạn và xếp ở kho',
-      text: 'Nhân viên kho soạn hàng rồi xếp theo thứ tự của phương án đã duyệt: hàng của điểm giao cuối vào trước, nằm sâu nhất. Mỗi kiện phải đối chiếu mới tính là đã xếp.',
+      text: 'Hàng của điểm cuối vào trước, nằm sâu nhất; kiện phải đối chiếu mới tính là đã xếp.',
     },
     road: {
       title: 'Trên đường',
-      text: 'Xe đi theo thứ tự điểm đã tối ưu. Điều phối viên theo dõi vị trí xe và giờ đến dự kiến so với hạn giao, xử lý sự cố khi xe gặp chuyện trên đường.',
+      text: 'Theo dõi vị trí xe, giờ đến dự kiến so với hạn từng điểm và xử lý sự cố trên đường.',
     },
     stop: {
       title: 'Tại điểm giao',
-      text: 'Hàng của điểm đang giao nằm sát cửa. Tài xế dỡ từng kiện qua hộp đối chiếu; kiện khách từ chối ở lại xe và thành hoàn trả khi hoàn tất điểm.',
+      text: 'Hàng của điểm đang giao nằm sát cửa; tài xế dỡ từng kiện qua hộp đối chiếu.',
     },
     done: {
       title: 'Giao xong, báo cáo và tính lương',
-      text: 'Giao xong điểm cuối, chuyến thành Đã giao. Báo cáo chuyến ghi giờ đến thật so với hạn từng điểm; quản lý công ty xem bảng điều khiển và chốt bảng lương tài xế theo tháng.',
+      text: 'Báo cáo ghi giờ đến thật so với hạn; quản lý xem số liệu và chốt bảng lương tài xế.',
     },
   },
   /** Hình thùng xe dính theo cuộn: chỉ là hình (trình đọc màn hình đọc chữ của từng chặng). */
@@ -55,7 +55,7 @@ export const landingJourney = {
   plans: {
     caption: 'So sánh ba phương án của lần chạy mẫu',
     metric: 'Chỉ số',
-    source: 'Số của lần chạy mẫu {count} kiện mà bộ tối ưu mô phỏng vừa tính trên trình duyệt của bạn — cùng lần chạy với khung 3D ở đầu trang. "Tốt nhất" so trong ba phương án, không phải điểm chuẩn.',
+    source: 'Số của lần chạy mẫu {count} kiện trên trình duyệt này; "Tốt nhất" chỉ so ba phương án.',
     pending: 'Đang tính lần chạy mẫu…',
     off: 'Trình duyệt này không chạy bộ tối ưu mẫu (đang tiết kiệm dữ liệu hoặc thiếu Web Worker), nên bảng không có số.',
     error: 'Lần chạy mẫu không tính được trên trình duyệt này, nên bảng không có số.',
@@ -64,13 +64,13 @@ export const landingJourney = {
   facts: {
     credit: {
       value: { one: '{count} credit', other: '{count} credit' },
-      label: 'cho một lần chạy, cả ba phương án',
-      source: 'Hằng số của ứng dụng. Tối ưu thứ tự điểm giao không tốn credit.',
+      label: 'mỗi lần chạy',
+      source: 'Hằng số của ứng dụng.',
     },
     speed: {
       value: '< {seconds} giây',
-      label: 'cho {count} kiện, đủ ba phương án',
-      source: 'Ngưỡng của bài đo hiệu năng tự động cho bộ tối ưu mô phỏng, đo trên máy phát triển — máy khác có thể khác.',
+      label: 'cho {count} kiện',
+      source: 'Ngưỡng bài đo trên máy phát triển.',
     },
   },
   verify: {
@@ -87,11 +87,11 @@ export const landingJourney = {
     deadlines: 'Mức hạn của mỗi điểm giao',
   },
   stop: {
-    source: 'Đếm trên phương án {label} của lần chạy mẫu ở đầu trang.',
+    source: 'Đếm trên phương án {label} của lần chạy mẫu.',
   },
   /** Phiếu lương minh hoạ của chặng cuối: nhãn của màn Bảng lương, không số nào. */
   payslip: {
     title: 'Phiếu lương tài xế',
-    note: 'Hoa hồng và tiền bốc dỡ tính theo khối lượng hàng của các chuyến đã giao trong tháng, theo đơn giá của công ty.',
+    note: 'Hoa hồng và tiền bốc dỡ tính theo khối lượng đã giao trong tháng.',
   },
 } as const

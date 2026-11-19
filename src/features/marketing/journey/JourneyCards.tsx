@@ -72,12 +72,12 @@ export function JourneyPayslip() {
       <p className="m-0 font-display text-h3 font-[650] text-ink-strong font-stretch-108%">{t('landingJourney.payslip.title')}</p>
       <ul className="m-0 flex list-none flex-col p-0">
         {PAYSLIP_ROWS.map((row) => (
-          <li key={row} className="flex items-center justify-between gap-4 border-t border-line-soft py-2 text-body text-ink-2 pointer-coarse:text-body-lg">
+          <li key={row} className="flex items-center justify-between gap-4 border-t border-line-soft py-1 text-body text-ink-2 sm:py-1.5 pointer-coarse:text-body-lg">
             {t(`payroll.statement.${row}`)}
             <span aria-hidden className="block h-4 w-20 flex-none rounded-sm bg-n-100" />
           </li>
         ))}
-        <li className="flex items-center justify-between gap-4 border-t border-border py-2 text-body font-semibold text-ink-strong pointer-coarse:text-body-lg">
+        <li className="flex items-center justify-between gap-4 border-t border-border py-1 text-body font-semibold sm:py-1.5 text-ink-strong pointer-coarse:text-body-lg">
           {t('payroll.statement.totalSalary')}
           <span aria-hidden className="block h-5 w-24 flex-none rounded-sm bg-tint-blue" />
         </li>

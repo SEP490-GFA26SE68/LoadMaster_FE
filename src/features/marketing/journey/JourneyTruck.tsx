@@ -45,7 +45,7 @@ function Cab() {
 export function JourneyTruck({ className }: { className?: string }) {
   const t = useT()
   return (
-    <div aria-hidden className={cn('flex flex-col gap-3', className)}>
+    <div aria-hidden className={cn('flex flex-col gap-2 sm:gap-3', className)}>
       <div className="flex min-h-7 items-center justify-between gap-3">
         <span className="flex">
           {CHIPS.map(({ status, chapters }) => (
@@ -54,7 +54,7 @@ export function JourneyTruck({ className }: { className?: string }) {
             </span>
           ))}
         </span>
-        <span className="text-small text-ink-3 pointer-coarse:text-body-lg">{t('landingJourney.truck.door')}</span>
+        <span className="text-small whitespace-nowrap text-ink-3 pointer-coarse:text-body-lg">{t('landingJourney.truck.door')}</span>
       </div>
       <svg viewBox={`0 0 ${TRUCK_VIEW.width} ${TRUCK_VIEW.height}`} className="block h-auto w-full">
         <line x1={0} x2={TRUCK_VIEW.width} y1={ROAD_Y} y2={ROAD_Y} className="stroke-border" strokeWidth={2} />

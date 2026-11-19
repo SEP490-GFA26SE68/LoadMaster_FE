@@ -35,7 +35,8 @@ function chapterVisual(key: ChapterKey, sample: JourneySample): ReactNode {
 /**
  * "Một chuyến hàng trên LoadMaster" (`#cach-hoat-dong`): năm chặng của một chuyến — lập chuyến và chọn phương án, soạn và xếp ở kho, trên
  * đường, tại điểm giao, giao xong — mỗi chặng một vai trò, một đoạn chữ và một hình của chính ứng dụng (bảng so ba phương án của lần chạy
- * mẫu, ba cách đối chiếu, sơ đồ tuyến và mức hạn, số của điểm 1, phiếu lương). Cạnh danh sách (trên điện thoại: dải dính dưới đầu trang)
+ * mẫu, ba cách đối chiếu, sơ đồ tuyến và mức hạn, số của điểm 1, phiếu lương). Dưới 640 px không có đường dọc và mốc, tiêu đề chặng nhỏ
+ * một bậc, để năm chặng gọn trong chừng ba màn điện thoại. Cạnh danh sách (trên điện thoại: dải dính dưới đầu trang)
  * là hình thùng xe dính theo cuộn: kiện lên xe ở chặng kho, xuống xe ở chặng điểm giao, chip trạng thái theo chặng đang xem
  * (`useJourneyProgress` ghi thẳng vào DOM). Mốc của chặng đã tới đổi sang cyan. Không có IntersectionObserver hay giảm chuyển động:
  * hình đứng ở trạng thái mặc định hoặc đổi theo từng chặng; chữ không bao giờ bị ẩn chờ cuộn.
@@ -45,31 +46,31 @@ export function LandingJourney() {
   const progressRef = useJourneyProgress<HTMLElement>()
   const [sampleRef, sample] = useJourneySample<HTMLOListElement>()
   return (
-    <section ref={progressRef} id="cach-hoat-dong" aria-labelledby="landing-journey" className="journey scroll-mt-24 px-4 py-12 md:px-shell lg:py-16">
+    <section ref={progressRef} id="cach-hoat-dong" aria-labelledby="landing-journey" className="journey scroll-mt-24 px-4 py-8 md:px-shell lg:py-16">
       <SectionHeading id="landing-journey" title={t('landingJourney.title')} lede={t('landingJourney.lede')} />
-      <div className="mt-8 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-14">
+      <div className="mt-6 lg:mt-8 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-14">
         {/* Dải dính: con trực tiếp của khối chứa cả danh sách chặng, nên điện thoại dính suốt năm chặng; từ 1.024 px là cột phải */}
-        <div className="sticky top-16 z-10 -mx-4 border-b border-border bg-app px-4 py-3 md:-mx-6 md:px-6 pointer-coarse:top-20 lg:col-start-2 lg:row-start-1 lg:mx-0 lg:self-start lg:border-0 lg:bg-transparent lg:px-0 lg:pt-6 lg:[top:calc(50vh-11rem)]">
-          <JourneyTruck className="mx-auto max-w-140 lg:max-w-none" />
+        <div className="sticky top-16 z-10 -mx-4 border-b border-border bg-app px-4 py-2.5 md:-mx-6 md:px-6 pointer-coarse:top-20 lg:col-start-2 lg:row-start-1 lg:mx-0 lg:self-start lg:border-0 lg:bg-transparent lg:px-0 lg:pt-6 lg:[top:calc(50vh-11rem)]">
+          <JourneyTruck className="mx-auto max-w-64 sm:max-w-140 lg:max-w-none" />
         </div>
-        <ol ref={sampleRef} aria-label={t('landingJourney.chaptersLabel')} className="m-0 mt-8 list-none p-0 lg:col-start-1 lg:row-start-1 lg:mt-0">
+        <ol ref={sampleRef} aria-label={t('landingJourney.chaptersLabel')} className="m-0 mt-6 list-none p-0 lg:col-start-1 lg:row-start-1 lg:mt-0">
           {CHAPTERS.map((key, index) => {
             const { role, icon: Icon } = CHAPTER_SPEC[key]
             const last = index === CHAPTERS.length - 1
             return (
               <li key={key} data-chapter-index={index}
-                className="group relative pb-10 pl-14 last:pb-0 lg:min-h-[40vh] lg:pb-10 lg:last:min-h-0">
-                {last ? null : <span aria-hidden className="absolute top-12 bottom-2 left-5 w-px bg-border" />}
-                <span aria-hidden className="absolute top-0 left-0 grid size-10 place-items-center rounded-full border border-border bg-bg text-ink-3 transition-colors duration-(--dur-md) ease-standard group-data-[reached]:border-primary group-data-[reached]:bg-primary-bg group-data-[reached]:text-primary">
+                className="group relative pb-5 last:pb-0 sm:pb-8 sm:pl-14 lg:min-h-[40vh] lg:pb-10 lg:last:min-h-0">
+                {last ? null : <span aria-hidden className="absolute top-12 bottom-2 left-5 hidden w-px bg-border sm:block" />}
+                <span aria-hidden className="absolute top-0 left-0 hidden size-10 place-items-center rounded-full border border-border bg-bg text-ink-3 transition-colors duration-(--dur-md) ease-standard group-data-[reached]:border-primary group-data-[reached]:bg-primary-bg group-data-[reached]:text-primary sm:grid">
                   <Icon className="size-5" strokeWidth={1.5} />
                 </span>
-                <div className="flex min-w-0 flex-col gap-3">
+                <div className="flex min-w-0 flex-col gap-2 sm:gap-3">
                   <div><RoleBadge role={role} size="md" /></div>
-                  <h3 className="m-0 font-display text-h1 font-bold tracking-[-0.01em] text-balance text-ink-strong font-stretch-108%">
+                  <h3 className="m-0 font-display text-h2 font-bold tracking-[-0.01em] text-balance text-ink-strong font-stretch-108% sm:text-h1">
                     {t(`landingJourney.chapters.${key}.title`)}
                   </h3>
                   <p className="m-0 max-w-[36em] text-body-lg text-pretty text-ink-2">{t(`landingJourney.chapters.${key}.text`)}</p>
-                  <div className="mt-2">{chapterVisual(key, sample)}</div>
+                  <div className="mt-1 sm:mt-2">{chapterVisual(key, sample)}</div>
                 </div>
               </li>
             )

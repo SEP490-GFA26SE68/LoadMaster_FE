@@ -49,10 +49,12 @@ import { landingFooter } from './vi/landingFooter'
 import { landingHow } from './vi/landingHow'
 import { landingJourney } from './vi/landingJourney'
 import { landingMotion } from './vi/landingMotion'
+import { landingRoles } from './vi/landingRoles'
 import { landingStage } from './vi/landingStage'
 import { landingStory } from './vi/landingStory'
 import { landingTry } from './vi/landingTry'
 import { samplePlan } from './vi/samplePlan'
+import { landingWhy } from './vi/landingWhy'
 import { pricing } from './vi/pricing'
 import { privacy } from './vi/privacy'
 import { terms } from './vi/terms'
@@ -131,10 +133,12 @@ export const vi = {
   landingHow,
   landingJourney,
   landingMotion,
+  landingRoles,
   landingStage,
   landingStory,
   landingTry,
   samplePlan,
+  landingWhy,
   pricing,
   privacy,
   terms,

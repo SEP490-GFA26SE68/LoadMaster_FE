@@ -151,6 +151,6 @@ test('with the sample run computed, the table compares A · B · C with a grey "
   const card = within(stop as HTMLElement)
   expect(card.getAllByRole('term')[0]).toHaveTextContent('Kiện của điểm')
   expect(card.getAllByRole('definition')[0]).toHaveTextContent('96')
-  expect(card.getByText('Đếm trên phương án C của lần chạy mẫu ở đầu trang.')).toBeInTheDocument()
+  expect(card.getByText('Đếm trên phương án C của lần chạy mẫu.')).toBeInTheDocument()
   expect(screen.queryByText(/MOCK/)).not.toBeInTheDocument()
 })
