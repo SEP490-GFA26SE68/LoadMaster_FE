@@ -12,6 +12,8 @@ export const assistant = {
     subtitle: 'Hỏi đáp về LoadMaster',
     close: 'Đóng trợ lý',
     restart: 'Bắt đầu lại',
+    expand: 'Phóng to khung chat',
+    shrink: 'Thu nhỏ khung chat',
     log: 'Cuộc trò chuyện với {name}',
     /** Dòng nhỏ dưới ô gõ, cũng là mô tả của khung chat cho trình đọc màn hình. */
     disclaimer: '{name} trả lời từ tài liệu của LoadMaster — không phải nhân viên tư vấn.',

@@ -225,7 +225,9 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   `aria-expanded`. Nút nâng lên khi chạm phần tử mang `data-assistant-avoid` (nút chính của
   phần mở đầu, nút "Tạm dừng / Tiếp tục / Xếp lại" của khung 3D, bộ chọn phương án dưới khung, "Lên đầu trang" —
   `useLauncherLift`; nâng lên chạm phần tử khác thì nâng tiếp qua nó); khung chat là chunk lười: từ 768 px thẻ trắng không modal cạnh nút, hẹp hơn tờ phủ
-  cả màn modal. Mỗi câu trả lời tối đa ba câu kèm liên kết tới phần của trang hay Bảng giá; lối đăng ký chỉ khi khách tự đăng ký được. Tính
+  cả màn modal. Từ 768 px đầu khung có nút "Phóng to khung chat" / "Thu nhỏ khung chat" (nhãn đổi theo trạng thái): khung rộng 720 px, cao
+  tới dưới đầu trang (đỉnh khung cách mép trên 5 rem, không che nút nào của đầu trang); trạng thái `expanded` nằm trong phiên trò chuyện —
+  giữ khi đóng mở lại và qua "Bắt đầu lại". Mỗi câu trả lời tối đa ba câu kèm liên kết tới phần của trang hay Bảng giá; lối đăng ký chỉ khi khách tự đăng ký được. Tính
   gói: số lần chạy × `BILLING_CONSTANTS.optimizationCost` → gói đang bán rẻ nhất đủ credit (`assistant-advisor.ts`), không nói tiết kiệm.
   Phần Gói cước của trang giới thiệu dùng cùng phép tính cho thanh kéo "số lần chạy mỗi tháng" (`PlanAdvisorSlider`: thanh kéo gốc của
   trình duyệt, 15 mức từ 50 tới 10.000, đứng sẵn ở 300); thẻ gói rẻ nhất đủ dùng có viền `--primary` kèm nhãn chữ "Rẻ nhất đủ dùng".

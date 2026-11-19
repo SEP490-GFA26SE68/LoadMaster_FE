@@ -9,6 +9,8 @@ export const assistant = {
     subtitle: 'Questions about LoadMaster',
     close: 'Close the assistant',
     restart: 'Start over',
+    expand: 'Enlarge the chat',
+    shrink: 'Shrink the chat',
     log: 'Conversation with {name}',
     disclaimer: '{name} answers from the LoadMaster documentation — not a sales or support person.',
     greeting: 'Hi, I’m {name}.',

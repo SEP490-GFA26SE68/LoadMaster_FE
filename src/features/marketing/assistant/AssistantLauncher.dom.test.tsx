@@ -153,6 +153,25 @@ test('while the panel is open the launcher collapses it: same name, expanded sta
   expect(launcher).toHaveFocus()
 })
 
+test('the enlarge button makes the panel bigger and names the way back; the size survives closing and reopening', async () => {
+  const { user, launcher, panel } = await openAssistant()
+  const dialog = screen.getByRole('dialog', { name: 'Lumo' })
+  expect(dialog).not.toHaveAttribute('data-expanded')
+  await user.click(panel.getByRole('button', { name: 'Phóng to khung chat' }))
+  expect(dialog).toHaveAttribute('data-expanded')
+  // Nhãn nói việc bấm tiếp theo sẽ làm; focus ở lại trên nút
+  const shrink = panel.getByRole('button', { name: 'Thu nhỏ khung chat' })
+  expect(shrink).toHaveFocus()
+
+  await user.click(launcher)
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  await user.click(launcher)
+  const reopened = await screen.findByRole('dialog', { name: 'Lumo' }, ANSWER)
+  expect(reopened).toHaveAttribute('data-expanded')
+  await user.click(within(reopened).getByRole('button', { name: 'Thu nhỏ khung chat' }))
+  expect(reopened).not.toHaveAttribute('data-expanded')
+})
+
 test('a question outside the documents says so, and hands the questions to the contact form', async () => {
   const { user, panel } = await openAssistant()
   await user.type(panel.getByRole('textbox', { name: 'Câu hỏi của bạn' }), 'Thời tiết hôm nay thế nào?{Enter}')

@@ -21,9 +21,11 @@ export type AssistantSession = {
   readonly open: boolean
   readonly entries: readonly AssistantEntry[]
   readonly pending: boolean
+  /** Khung chat phóng to (từ 768 px). Giữ qua "Bắt đầu lại" và khi chuyển giữa hai trang công khai. */
+  readonly expanded: boolean
 }
 
-const INITIAL: AssistantSession = { open: false, entries: [], pending: false }
+const INITIAL: AssistantSession = { open: false, entries: [], pending: false, expanded: false }
 
 let session = INITIAL
 let nextId = 1
@@ -45,6 +47,7 @@ export const assistantSession = {
   },
   setOpen: (open: boolean) => update({ open }),
   setPending: (pending: boolean) => update({ pending }),
+  setExpanded: (expanded: boolean) => update({ expanded }),
   append(...entries: readonly NewEntry[]) {
     update({ entries: [...session.entries, ...entries.map((entry) => ({ ...entry, id: nextId++ }) as AssistantEntry)] })
   },

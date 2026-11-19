@@ -234,5 +234,21 @@
     bottom: calc(var(--assistant-base) + var(--assistant-launcher-h) + 0.75rem + var(--assistant-lift, 0px));
     width: min(380px, calc(100vw - 3rem));
     height: min(560px, calc(100dvh - var(--assistant-base) - var(--assistant-launcher-h) - 1.75rem - var(--assistant-lift, 0px)));
+    transition:
+      width var(--dur-md) var(--ease-standard),
+      height var(--dur-md) var(--ease-standard);
+  }
+
+  /* Phóng to: rộng 720 px, cao tới dưới đầu trang (đỉnh khung cách mép trên 5 rem — đầu trang cao 4 rem, không che nút nào của nó) —
+     câu trả lời dài và bảng giá đọc không phải cuộn nhiều */
+  .assistant-panel[data-expanded] {
+    width: min(720px, calc(100vw - 3rem));
+    height: min(880px, calc(100dvh - var(--assistant-base) - var(--assistant-launcher-h) - 5.75rem - var(--assistant-lift, 0px)));
+  }
+}
+
+@media (min-width: 768px) and (prefers-reduced-motion: reduce) {
+  .assistant-panel {
+    transition: none;
   }
 }

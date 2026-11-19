@@ -1,5 +1,5 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog'
-import { RotateCcw, X } from 'lucide-react'
+import { Maximize2, Minimize2, RotateCcw, X } from 'lucide-react'
 import { useRef, useSyncExternalStore, type RefObject } from 'react'
 import { LUMO_NAME } from '@/components/brand/Lumo'
 import { SKY_FOCUS } from '@/components/sky-focus'
@@ -28,14 +28,15 @@ const isPhone = () => hasMatchMedia() && window.matchMedia(PHONE_QUERY).matches
  * màn hình, bẫy focus). Mở thì focus vào ô gõ; Esc (khi focus ở khung hoặc nút mở) hay nút đóng thì focus về nút mở — trừ khi đóng để
  * điều hướng (liên kết của câu trả lời, chuyển sang form liên hệ): trang đích tự đặt focus. `skipInitialFocus`: khung dựng lại khi đã mở
  * sẵn (chuyển giữa hai trang công khai) thì không giành focus của trang. Mô tả của hộp thoại là dòng nhỏ dưới ô gõ: Lumo trả lời từ tài
- * liệu, không phải nhân viên tư vấn.
+ * liệu, không phải nhân viên tư vấn. Từ 768 px nút phóng to ở đầu khung mở khung rộng 720 px, cao gần hết màn để đọc câu trả lời dài; nhãn
+ * của nút đổi theo trạng thái ("Phóng to" / "Thu nhỏ").
  */
 export default function AssistantPanel({ launcherRef, skipInitialFocus = false }: {
   launcherRef: RefObject<HTMLButtonElement | null>
   skipInitialFocus?: boolean
 }) {
   const t = useT()
-  const { open, entries, pending } = useAssistantSession()
+  const { open, entries, pending, expanded } = useAssistantSession()
   const phone = useSyncExternalStore(subscribePhone, isPhone, () => false)
   const context = useAssistantContext()
   const contentRef = useRef<HTMLDivElement>(null)
@@ -60,6 +61,7 @@ export default function AssistantPanel({ launcherRef, skipInitialFocus = false }
         <DialogPrimitive.Content
           ref={contentRef}
           id={ASSISTANT_PANEL_ID}
+          data-expanded={expanded || undefined}
           aria-modal={phone ? true : undefined}
           onOpenAutoFocus={(event) => {
             event.preventDefault()
@@ -106,6 +108,18 @@ export default function AssistantPanel({ launcherRef, skipInitialFocus = false }
                 <RotateCcw aria-hidden />
               </Button>
             ) : null}
+            {/* Phóng to chỉ từ 768 px: dưới đó khung đã phủ cả màn */}
+            <Button
+              type="button"
+              variant="skyGhost"
+              size="icon"
+              onClick={() => assistantSession.setExpanded(!expanded)}
+              aria-label={t(expanded ? 'assistant.panel.shrink' : 'assistant.panel.expand')}
+              title={t(expanded ? 'assistant.panel.shrink' : 'assistant.panel.expand')}
+              className={cn(SKY_FOCUS, 'hidden md:inline-flex')}
+            >
+              {expanded ? <Minimize2 aria-hidden /> : <Maximize2 aria-hidden />}
+            </Button>
             <DialogPrimitive.Close asChild>
               <Button type="button" variant="skyGhost" size="icon" aria-label={t('assistant.panel.close')} className={cn(SKY_FOCUS, 'pointer-coarse:size-12')}>
                 <X aria-hidden />
