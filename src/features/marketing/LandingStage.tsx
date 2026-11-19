@@ -162,7 +162,7 @@ export function LandingStage() {
           <div className="pointer-events-none absolute inset-0">
             {going ? <StageArrival story={story} stopName={stopNames[0]!} /> : null}
             {tier === 'narrow' ? (
-              <div className="pointer-events-auto absolute top-4 right-4">{button}</div>
+              <div data-assistant-avoid className="pointer-events-auto absolute top-4 right-4">{button}</div>
             ) : (
               <div className="pointer-events-auto absolute top-4 left-4 flex gap-2">{views}{wide ? null : button}</div>
             )}
@@ -170,7 +170,7 @@ export function LandingStage() {
               <>
                 {card}
                 <div className="absolute bottom-4 left-4">{narrator}</div>
-                <div className="pointer-events-auto absolute right-4 bottom-4">{button}</div>
+                <div data-assistant-avoid className="pointer-events-auto absolute right-4 bottom-4">{button}</div>
               </>
             ) : null}
           </div>
