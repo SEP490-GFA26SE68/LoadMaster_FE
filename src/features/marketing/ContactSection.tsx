@@ -91,9 +91,9 @@ export function ContactSection() {
   const message = prefill !== null && prefill.round === round ? prefill.message : ''
 
   return (
-    <section ref={sectionRef} id={CONTACT_ANCHOR} aria-labelledby="landing-contact" className="landing-closing scroll-mt-24 px-4 py-16 md:px-shell lg:py-24">
-      <div className="grid gap-10 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-14">
-        <div className="flex flex-col gap-10">
+    <section ref={sectionRef} id={CONTACT_ANCHOR} aria-labelledby="landing-contact" className="landing-closing scroll-mt-24 px-4 py-12 md:px-shell lg:py-16">
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-12">
+        <div className="flex flex-col gap-8">
           <SectionHeading id="landing-contact" tone="dark" title={t('landing.contact.title')} lede={t('landing.contact.lede')} />
           <ContactNextSteps />
         </div>

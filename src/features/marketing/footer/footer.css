@@ -32,7 +32,7 @@
     --truck-w: 112px;
     --truck-h: 48px;
     position: relative;
-    height: 6.5rem;
+    height: 5.5rem;
     overflow-x: clip;
   }
   @media (width >= 40rem) {
@@ -45,7 +45,7 @@
     .footer-road {
       --truck-w: 168px;
       --truck-h: 72px;
-      height: 7.5rem;
+      height: 6.5rem;
     }
   }
   /* Mặt đường: dải phẳng giữa hai mép mảnh, vạch kẻ đứt ở giữa */

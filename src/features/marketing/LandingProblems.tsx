@@ -13,9 +13,9 @@ const PROBLEMS = ['buried', 'axle', 'wrong'] as const
 export function LandingProblems() {
   const t = useT()
   return (
-    <section aria-labelledby="landing-problems" className="border-t border-landing-hairline px-4 py-14 md:px-shell lg:py-18">
+    <section aria-labelledby="landing-problems" className="border-t border-landing-hairline px-4 py-10 md:px-shell lg:py-14">
       <SectionHeading id="landing-problems" tone="dark" title={t('landingJourney.problems.title')} lede={t('landingJourney.problems.lede')} />
-      <ul className="m-0 mt-10 grid list-none gap-x-10 gap-y-10 p-0 md:grid-cols-3">
+      <ul className="m-0 mt-8 grid list-none gap-x-10 gap-y-8 p-0 md:grid-cols-3">
         {PROBLEMS.map((key, index) => (
           <Reveal as="li" key={key} index={index} className="relative flex min-w-0 flex-col gap-4 border-t border-landing-hairline pt-6">
             <Reveal as="span" kind="fill-x" aria-hidden className="absolute -top-px left-0 h-px w-10 bg-cyan-300" />

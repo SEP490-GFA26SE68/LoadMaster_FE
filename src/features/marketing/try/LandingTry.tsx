@@ -37,7 +37,7 @@ export function LandingTry() {
   }
 
   return (
-    <section id={TRY_ANCHOR} aria-labelledby="landing-try" className="scroll-mt-24 px-4 py-16 md:px-shell lg:py-24">
+    <section id={TRY_ANCHOR} aria-labelledby="landing-try" className="scroll-mt-24 px-4 py-12 md:px-shell lg:py-16">
       <SectionHeading id="landing-try" title={t('landingTry.title')} lede={t('landingTry.lede')} />
       <div className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] xl:items-start">
         <Reveal className="min-w-0">

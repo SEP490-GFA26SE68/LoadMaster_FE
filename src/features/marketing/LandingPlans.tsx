@@ -64,7 +64,7 @@ export function LandingPlans() {
   const advice = advise(runsAt(stop), list)
   const provisional = list.filter((plan) => plan.provisional).map((plan) => plan.name)
   return (
-    <section ref={sectionRef} id="goi-cuoc" aria-labelledby="landing-plans" className="scroll-mt-24 px-4 py-16 md:px-shell lg:py-24">
+    <section ref={sectionRef} id="goi-cuoc" aria-labelledby="landing-plans" className="scroll-mt-24 px-4 py-12 md:px-shell lg:py-16">
       <SectionHeading id="landing-plans" title={t('landing.plans.title')} lede={t('landing.plans.lede')} />
 
       {plans.isPending ? (

@@ -143,7 +143,8 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   sơ đồ tuyến kèm mức hạn, số của điểm 1 (`JourneyStop`), phiếu lương chỉ có tên dòng (`payroll.statement.*`, không số). Cạnh danh sách là
   thùng xe SVG dính theo cuộn (`JourneyTruck`, `aria-hidden`; từ 1.024 px là cột phải, hẹp hơn là dải dính dưới đầu trang): 35 kiện trong vùng
   của bốn điểm giao, lên xe ở chặng kho (điểm cuối trước, từ sàn lên), xuống xe ở chặng điểm giao (điểm 1 trước, từ trên xuống) — hình học
-  thuần `truckBoxes`, có test. `useJourneyProgress` (IntersectionObserver, một khung hình mỗi lần cuộn, mốc 55 % chiều cao khung nhìn) ghi
+  thuần `truckBoxes`, có test. Từ 1.024 px mỗi chặng cao ít nhất 40 % khung nhìn (chặng cuối không) để thùng xe có quãng cuộn mà không để
+  khoảng trống lớn giữa các chặng. `useJourneyProgress` (IntersectionObserver, một khung hình mỗi lần cuộn, mốc 55 % chiều cao khung nhìn) ghi
   thẳng vào DOM `--p`, `data-chapter`, `data-reached` — không state React theo cuộn. Không IntersectionObserver thì không ghi gì, CSS giữ thùng
   đầy (`--p` mặc định 0,5); giảm chuyển động thì hình đổi theo chặng, không theo từng điểm cuộn; chữ không bao giờ ẩn chờ cuộn. Bảng và số của
   điểm 1 đọc **cùng truy vấn** lần chạy mẫu với khung 3D (`useJourneySample`, khoá `['landing', 'sample-candidates']`); không Web Worker hay

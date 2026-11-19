@@ -45,9 +45,9 @@ export function LandingJourney() {
   const progressRef = useJourneyProgress<HTMLElement>()
   const [sampleRef, sample] = useJourneySample<HTMLOListElement>()
   return (
-    <section ref={progressRef} id="cach-hoat-dong" aria-labelledby="landing-journey" className="journey scroll-mt-24 px-4 py-16 md:px-shell lg:py-24">
+    <section ref={progressRef} id="cach-hoat-dong" aria-labelledby="landing-journey" className="journey scroll-mt-24 px-4 py-12 md:px-shell lg:py-16">
       <SectionHeading id="landing-journey" title={t('landingJourney.title')} lede={t('landingJourney.lede')} />
-      <div className="mt-10 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-14">
+      <div className="mt-8 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-14">
         {/* Dải dính: con trực tiếp của khối chứa cả danh sách chặng, nên điện thoại dính suốt năm chặng; từ 1.024 px là cột phải */}
         <div className="sticky top-16 z-10 -mx-4 border-b border-border bg-app px-4 py-3 md:-mx-6 md:px-6 pointer-coarse:top-20 lg:col-start-2 lg:row-start-1 lg:mx-0 lg:self-start lg:border-0 lg:bg-transparent lg:px-0 lg:pt-6 lg:[top:calc(50vh-11rem)]">
           <JourneyTruck className="mx-auto max-w-140 lg:max-w-none" />
@@ -58,7 +58,7 @@ export function LandingJourney() {
             const last = index === CHAPTERS.length - 1
             return (
               <li key={key} data-chapter-index={index}
-                className="group relative pb-14 pl-14 last:pb-0 lg:min-h-[68vh] lg:pb-10">
+                className="group relative pb-10 pl-14 last:pb-0 lg:min-h-[40vh] lg:pb-10 lg:last:min-h-0">
                 {last ? null : <span aria-hidden className="absolute top-12 bottom-2 left-5 w-px bg-border" />}
                 <span aria-hidden className="absolute top-0 left-0 grid size-10 place-items-center rounded-full border border-border bg-bg text-ink-3 transition-colors duration-(--dur-md) ease-standard group-data-[reached]:border-primary group-data-[reached]:bg-primary-bg group-data-[reached]:text-primary">
                   <Icon className="size-5" strokeWidth={1.5} />
