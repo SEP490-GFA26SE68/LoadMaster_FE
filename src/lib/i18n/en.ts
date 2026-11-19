@@ -47,6 +47,7 @@ import { support } from './en/support'
 import { contacts } from './en/contacts'
 import { landing } from './en/landing'
 import { landingFooter } from './en/landingFooter'
+import { landingJourney } from './en/landingJourney'
 import { landingMotion } from './en/landingMotion'
 import { landingStage } from './en/landingStage'
 import { landingStory } from './en/landingStory'
@@ -112,6 +113,7 @@ export const en = {
   contacts,
   landing,
   landingFooter,
+  landingJourney,
   landingMotion,
   landingStage,
   landingStory,

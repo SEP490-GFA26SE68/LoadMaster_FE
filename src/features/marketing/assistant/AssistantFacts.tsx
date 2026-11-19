@@ -1,15 +1,14 @@
 import { Badge } from '@/components/ui/Badge'
 import { PLAN_OBJECTIVES } from '@/domain/models/plan-objective'
-import { PICKUP_RULES } from '@/domain/pickup'
 import { ROUTING_CONSTANTS } from '@/domain/routing'
 import { useFormat, useT, type TFunction } from '@/lib/i18n'
 import { BILLING_CONSTANTS } from '@/lib/mock-db/billing-model'
 import type { SubscriptionPlan } from '@/lib/mock-db'
 import type { Role } from '@/types/user'
 import { usePublicPlansQuery } from '../useMarketingQuery'
+import { CHAPTERS } from '../journey/journey-model'
 import type { FactId } from './assistant-kb'
 
-const STEPS = ['intake', 'plan', 'optimize', 'operate'] as const
 const ROLE_DEVICES: readonly [Role, 'desktop' | 'desktopTablet' | 'tablet' | 'phone'][] = [
   ['dispatcher', 'desktop'],
   ['warehouse', 'tablet'],
@@ -66,7 +65,7 @@ export function AssistantFact({ id }: { id: FactId }) {
     case 'steps':
       return (
         <ol className="m-0 flex list-decimal flex-col gap-1 pl-5 marker:text-ink-3">
-          {STEPS.map((step) => <li key={step}>{t(`landing.how.steps.${step}.title`)}</li>)}
+          {CHAPTERS.map((chapter) => <li key={chapter}>{t(`landingJourney.chapters.${chapter}.title`)}</li>)}
         </ol>
       )
     case 'roleDevices':
@@ -95,7 +94,5 @@ export function AssistantFact({ id }: { id: FactId }) {
           })}
         </p>
       )
-    case 'pickupRules':
-      return <p className="m-0">{t('assistant.facts.pickupRules', { count: PICKUP_RULES.length })}</p>
   }
 }

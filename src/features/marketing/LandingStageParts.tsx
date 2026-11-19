@@ -1,6 +1,4 @@
-import { ChevronRight, Pause, Play, RotateCcw, Warehouse, type LucideIcon } from 'lucide-react'
-import { useId } from 'react'
-import { StopDot } from '@/components/StopChip'
+import { Pause, Play, RotateCcw, type LucideIcon } from 'lucide-react'
 import { SKY_FOCUS } from '@/components/sky-focus'
 import type { StageView } from '@/features/viewer3d/landing/diorama-layout'
 import type { StoryStatus } from '@/features/viewer3d/landing/story-clock'
@@ -89,40 +87,5 @@ export function StoryButton({ status, onToggle, compact = false, className }: {
         ))}
       </span>
     </button>
-  )
-}
-
-const ROUTE_ITEM = 'flex min-w-0 items-center gap-2 text-small text-sky-text-2 pointer-coarse:text-body-lg'
-
-/**
- * Hàng "Thứ tự giao" dưới khung: kho rồi bốn điểm giao theo thứ tự đi, mỗi điểm số trong vòng màu kèm tên — màu không bao giờ đứng
- * một mình (mục 10), câu "Màu của kiện theo điểm giao" là mô tả của danh sách. Điện thoại: hai cột, bỏ mũi tên.
- */
-export function StageRoute({ stopNames, className }: { stopNames: readonly string[]; className?: string }) {
-  const t = useT()
-  const titleId = useId()
-  const legendId = useId()
-  return (
-    <div className={cn('flex flex-col gap-2', className)}>
-      <p id={titleId} className="m-0 text-small font-semibold text-sky-text-3 pointer-coarse:text-body-lg">{t('landing.stage.route')}</p>
-      <span id={legendId} className="sr-only">{t('landing.stage.legend')}</span>
-      <ol aria-labelledby={titleId} aria-describedby={legendId}
-        className="m-0 grid list-none grid-cols-2 gap-x-4 gap-y-2 p-0 md:flex md:flex-wrap md:items-center md:gap-x-2.5">
-        <li className={ROUTE_ITEM}>
-          <span aria-hidden className="grid size-6 flex-none place-items-center rounded-sm bg-panel-dark text-cyan-300 shadow-[inset_0_0_0_1px_var(--border-dark)] pointer-coarse:size-7">
-            <Warehouse className="size-4" strokeWidth={1.5} />
-          </span>
-          <span className="font-medium text-sky-text">{t('landing.stage.depot')}</span>
-        </li>
-        {stopNames.map((name, index) => (
-          <li key={name} className={ROUTE_ITEM}>
-            <ChevronRight aria-hidden strokeWidth={1.5} className="size-4 flex-none text-sky-text-3 max-md:hidden" />
-            <StopDot stop={index + 1} className="size-6 text-small pointer-coarse:size-7 pointer-coarse:text-body-lg" />
-            <span className="sr-only">{t('landing.stage.stop', { number: index + 1 })}: </span>
-            <span className="font-medium text-sky-text">{name}</span>
-          </li>
-        ))}
-      </ol>
-    </div>
   )
 }

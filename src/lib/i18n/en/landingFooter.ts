@@ -19,7 +19,6 @@ export const landingFooter = {
     account: 'Account',
   },
   links: {
-    features: 'Features',
     how: 'How it works',
     plans: 'Plans',
     pricing: 'Pricing',

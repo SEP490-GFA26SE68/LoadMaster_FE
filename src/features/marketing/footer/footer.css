@@ -103,8 +103,7 @@
     width: 0;
     height: 0;
   }
-  /* Một cụm khói: múi chính và ba múi phụ (bóng đặc cùng màu), viền mờ nhẹ, đục nhất 0,6 — cùng kiểu với khói của dải nguyên tắc
-     (steps/truck-motion.css) và khói 3D của phần mở đầu */
+  /* Một cụm khói: múi chính và ba múi phụ (bóng đặc cùng màu), viền mờ nhẹ, đục nhất 0,6 — cùng kiểu với khói 3D của phần mở đầu */
   .footer-puff-cloud {
     position: absolute;
     left: -5px;

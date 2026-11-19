@@ -53,7 +53,6 @@ test('the footer is a labelled landmark with one link column per area; anchors c
   const footer = screen.getByRole('contentinfo', { name: 'Thông tin và liên kết của LoadMaster' })
 
   expect(linksOf(within(footer).getByRole('navigation', { name: 'Sản phẩm' }))).toStrictEqual([
-    ['Tính năng', '/gioi-thieu#tinh-nang'],
     ['Cách hoạt động', '/gioi-thieu#cach-hoat-dong'],
     ['Gói cước', '/gioi-thieu#goi-cuoc'],
     ['Bảng giá', '/bang-gia'],
@@ -67,10 +66,10 @@ test('the footer is a labelled landmark with one link column per area; anchors c
   ])
   // Không liên kết nào tới trang chưa có (chính sách bảo mật, hỏi đáp) hay ra ngoài app
   const hrefs = within(footer).getAllByRole('link').map((link) => link.getAttribute('href'))
-  expect(hrefs.every((href) => /^\/(gioi-thieu#(tinh-nang|cach-hoat-dong|goi-cuoc|lien-he)|bang-gia|dang-nhap)$/.test(href ?? ''))).toBe(true)
+  expect(hrefs.every((href) => /^\/(gioi-thieu#(cach-hoat-dong|goi-cuoc|lien-he)|bang-gia|dang-nhap)$/.test(href ?? ''))).toBe(true)
   // Trang đang mở là trang riêng (Bảng giá); neo trong trang giới thiệu không phải "trang hiện tại"
   expect(within(footer).getByRole('link', { name: 'Bảng giá' })).toHaveAttribute('aria-current', 'page')
-  expect(within(footer).getByRole('link', { name: 'Tính năng' })).not.toHaveAttribute('aria-current')
+  expect(within(footer).getByRole('link', { name: 'Cách hoạt động' })).not.toHaveAttribute('aria-current')
 
   // Tiêu đề cột là tiêu đề thật: trình đọc màn hình nhảy được tới từng cột
   expect(within(footer).getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent)).toStrictEqual([
@@ -128,7 +127,6 @@ test('reads in English', () => {
     'Product', 'Built for', 'Support', 'Account',
   ])
   expect(linksOf(within(footer).getByRole('navigation', { name: 'Product' }))).toStrictEqual([
-    ['Features', '/gioi-thieu#tinh-nang'],
     ['How it works', '/gioi-thieu#cach-hoat-dong'],
     ['Plans', '/gioi-thieu#goi-cuoc'],
     ['Pricing', '/bang-gia'],

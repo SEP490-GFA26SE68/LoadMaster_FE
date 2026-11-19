@@ -11,7 +11,7 @@ test.use({ collectConsoleErrors: true })
 test('a guest picks a plan on the pricing page and sends a request; customer support finds it and takes it on', async ({ page, browserErrors }) => {
   await page.goto('/')
   await page.waitForURL(/\/gioi-thieu$/)
-  await expect(page.getByRole('heading', { level: 1, name: 'Tận dụng thùng xe, dỡ đúng thứ tự, theo dõi tới điểm giao cuối.' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Tới điểm nào, mở cửa là thấy hàng của điểm đó.' })).toBeVisible()
 
   await page.getByRole('main').getByRole('link', { name: 'Xem bảng giá', exact: true }).click()
   await page.waitForURL(/\/bang-gia$/)

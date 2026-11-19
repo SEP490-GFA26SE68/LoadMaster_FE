@@ -43,7 +43,7 @@ export const assistant = {
     },
     howItWorks: {
       chip: 'How does LoadMaster work?',
-      answer: 'A trip goes through four steps:',
+      answer: 'A trip goes through five legs:',
     },
     roles: {
       chip: 'Who in my company uses LoadMaster?',
@@ -78,10 +78,6 @@ export const assistant = {
       answer:
         'Yes. Dispatchers order the delivery stops with the route optimization button and see each stop’s estimated arrival against its deadline. While the truck is on the road, the monitoring screen shows it on a map, updates arrival times and warns about stops at risk of being late.',
     },
-    pickup: {
-      chip: 'Can a truck pick up more cargo on the way?',
-      answer: 'Picked-up packages go into the space freed by stops already delivered, without moving the cargo on board. A dispatcher approves each pickup request.',
-    },
     tenancy: {
       chip: 'Is my company’s data kept separate?',
       answer:
@@ -110,10 +106,6 @@ export const assistant = {
       other: 'Each optimization run produces {count} plans to compare:',
     },
     restRule: 'Estimated arrivals include a mandatory {rest}-minute break after every {drive} hours of continuous driving.',
-    pickupRules: {
-      one: 'Yes. Before a pickup, LoadMaster checks {count} condition such as payload, axle load, free space and deadlines.',
-      other: 'Yes. Before a pickup, LoadMaster checks {count} conditions such as payload, axle load, free space and deadlines.',
-    },
     roleLine: '{role}: {device}',
     devices: {
       desktop: 'computer',
@@ -142,7 +134,6 @@ export const assistant = {
     plans: 'See the plans',
     pricing: 'Open pricing',
     how: 'See how it works',
-    features: 'See the features',
     trial: 'Start a trial',
     registerNow: 'Sign up now',
     requestTrial: 'Request a trial',

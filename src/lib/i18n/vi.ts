@@ -45,6 +45,7 @@ import { support } from './vi/support'
 import { contacts } from './vi/contacts'
 import { landing } from './vi/landing'
 import { landingFooter } from './vi/landingFooter'
+import { landingJourney } from './vi/landingJourney'
 import { landingMotion } from './vi/landingMotion'
 import { landingStage } from './vi/landingStage'
 import { landingStory } from './vi/landingStory'
@@ -118,6 +119,7 @@ export const vi = {
   contacts,
   landing,
   landingFooter,
+  landingJourney,
   landingMotion,
   landingStage,
   landingStory,

@@ -48,7 +48,8 @@ async function openAssistant() {
   const launcher = screen.getByRole('button', { name: 'Hỏi Lumo' })
   expect(launcher).toHaveAttribute('aria-expanded', 'false')
   await user.click(launcher)
-  const panel = await screen.findByRole('dialog', { name: 'Lumo' })
+  // Khung chat là chunk tải lười: lần mở đầu của file test chờ chunk, lâu hơn 1 giây khi cả bộ chạy song song
+  const panel = await screen.findByRole('dialog', { name: 'Lumo' }, ANSWER)
   return { user, launcher, panel: within(panel) }
 }
 

@@ -47,7 +47,7 @@ export const assistant = {
     },
     howItWorks: {
       chip: 'LoadMaster hoạt động thế nào?',
-      answer: 'Một chuyến hàng đi qua bốn bước:',
+      answer: 'Một chuyến hàng đi qua năm chặng:',
     },
     roles: {
       chip: 'Ai trong công ty dùng LoadMaster?',
@@ -82,10 +82,6 @@ export const assistant = {
       answer:
         'Có. Điều phối viên sắp thứ tự điểm giao bằng nút tối ưu tuyến và thấy giờ đến dự kiến của từng điểm so với hạn giao. Khi xe chạy, màn giám sát hiện vị trí xe trên bản đồ, tính lại giờ đến và cảnh báo điểm có nguy cơ trễ hạn.',
     },
-    pickup: {
-      chip: 'Nhận thêm hàng dọc đường được không?',
-      answer: 'Kiện nhận thêm được xếp vào chỗ đã trống sau các điểm đã giao, không phải dời kiện đang chở. Điều phối viên duyệt từng yêu cầu nhận.',
-    },
     tenancy: {
       chip: 'Dữ liệu công ty tôi có tách riêng không?',
       answer:
@@ -115,10 +111,6 @@ export const assistant = {
       other: 'Mỗi lần chạy tối ưu cho ra {count} phương án để so sánh:',
     },
     restRule: 'Giờ đến dự kiến đã gồm nghỉ bắt buộc {rest} phút sau mỗi {drive} giờ lái liên tục.',
-    pickupRules: {
-      one: 'Được. Trước khi nhận, LoadMaster kiểm {count} điều kiện như tải trọng, tải trục, chỗ trống và hạn giao.',
-      other: 'Được. Trước khi nhận, LoadMaster kiểm {count} điều kiện như tải trọng, tải trục, chỗ trống và hạn giao.',
-    },
     roleLine: '{role}: {device}',
     devices: {
       desktop: 'máy tính',
@@ -149,7 +141,6 @@ export const assistant = {
     plans: 'Xem các gói',
     pricing: 'Mở bảng giá',
     how: 'Xem cách hoạt động',
-    features: 'Xem tính năng',
     trial: 'Đăng ký trải nghiệm',
     registerNow: 'Đăng ký dùng ngay',
     requestTrial: 'Gửi yêu cầu dùng thử',

@@ -9,18 +9,18 @@ import { contactPath } from '../contact-form'
  */
 export const TOPIC_IDS = [
   'plans', 'credit', 'advisor', 'start', 'howItWorks', 'roles', 'devices', 'packages', 'verify',
-  'loading3d', 'axle', 'routes', 'pickup', 'tenancy', 'support', 'human', 'about',
+  'loading3d', 'axle', 'routes', 'tenancy', 'support', 'human', 'about',
 ] as const
 export type TopicId = (typeof TOPIC_IDS)[number]
 
-/** Phần trả lời dựng từ dữ liệu: danh mục gói, hằng của code (credit mỗi lần chạy, số mục tiêu, số luật nhận hàng…). */
-export type FactId = 'planList' | 'creditCost' | 'steps' | 'roleDevices' | 'objectives' | 'restRule' | 'pickupRules'
+/** Phần trả lời dựng từ dữ liệu: danh mục gói, hằng của code (credit mỗi lần chạy, số mục tiêu, giờ nghỉ…). */
+export type FactId = 'planList' | 'creditCost' | 'steps' | 'roleDevices' | 'objectives' | 'restRule'
 export type AnswerPart = 'answer' | FactId
 
-/** `id` của ba phần trên trang giới thiệu; liên kết đi kèm `pathname` nên bấm từ Bảng giá vẫn tới đúng phần. */
-export const SECTION_ANCHORS = { plans: 'goi-cuoc', how: 'cach-hoat-dong', features: 'tinh-nang' } as const
+/** `id` của hai phần trên trang giới thiệu; liên kết đi kèm `pathname` nên bấm từ Bảng giá vẫn tới đúng phần. */
+export const SECTION_ANCHORS = { plans: 'goi-cuoc', how: 'cach-hoat-dong' } as const
 
-export type ActionId = 'plans' | 'pricing' | 'how' | 'features' | 'trial' | 'registerNow' | 'requestTrial'
+export type ActionId = 'plans' | 'pricing' | 'how' | 'trial' | 'registerNow' | 'requestTrial'
 /** `to` là đường dẫn của router (có thể kèm `?` và `#`); trang khác thì là điều hướng sang trang đó. */
 export type AssistantAction = { readonly id: ActionId; readonly to: string }
 
@@ -41,7 +41,7 @@ export type Topic = {
   readonly followUps: readonly TopicId[]
 }
 
-const section = (id: 'plans' | 'how' | 'features'): AssistantAction => ({ id, to: `${PUBLIC_HOME}#${SECTION_ANCHORS[id]}` })
+const section = (id: keyof typeof SECTION_ANCHORS): AssistantAction => ({ id, to: `${PUBLIC_HOME}#${SECTION_ANCHORS[id]}` })
 export const PRICING_ACTION: AssistantAction = { id: 'pricing', to: PUBLIC_PRICING }
 /** Form liên hệ, loại "Đăng ký tài khoản dùng thử" — kho mẫu: tài khoản công ty do đội LoadMaster tạo. */
 const REQUEST_TRIAL: AssistantAction = { id: 'requestTrial', to: contactPath({ type: 'DEMO_REQUEST' }) }
@@ -99,7 +99,7 @@ export const TOPICS: readonly Topic[] = [
     keywords: ['vai tro', 'ai dung', 'cong ty dung', 'ai trong cong ty', 'nguoi dung', 'dieu phoi', 'nhan vien kho', 'tai xe', 'quan ly', 'roles', 'role', 'who uses', 'uses loadmaster', 'who in my company', 'dispatcher', 'driver', 'drivers', 'warehouse staff', 'users'],
     hints: ['ai', 'who'],
     parts: () => ['answer', 'roleDevices'],
-    actions: () => [section('features')],
+    actions: () => [section('how')],
     followUps: ['devices', 'tenancy', 'howItWorks'],
   },
   {
@@ -107,7 +107,7 @@ export const TOPICS: readonly Topic[] = [
     keywords: ['dien thoai', 'may tinh bang', 'di dong', 'mobile', 'phone', 'phones', 'tablet', 'tablets', 'app', 'ung dung', 'trinh duyet', 'browser'],
     hints: ['thiet bi', 'device'],
     parts: answerOnly,
-    actions: () => [section('features')],
+    actions: () => [section('how')],
     followUps: ['roles', 'verify', 'packages'],
   },
   {
@@ -115,7 +115,7 @@ export const TOPICS: readonly Topic[] = [
     keywords: ['nhap kien', 'kien hang', 'excel', 'file', 'nhap file', 'import', 'nhan qr', 'in nhan', 'packages', 'package', 'parcel', 'parcels', 'enter packages', 'label', 'labels', 'upload'],
     hints: ['kien', 'hang', 'nhap'],
     parts: answerOnly,
-    actions: () => [section('features')],
+    actions: () => [section('how')],
     followUps: ['verify', 'loading3d', 'howItWorks'],
   },
   {
@@ -123,15 +123,15 @@ export const TOPICS: readonly Topic[] = [
     keywords: ['quet', 'quet qr', 'ma qr', 'qr', 'doi chieu', 'dung kien', 'nham kien', 'scan', 'scanning', 'barcode', 'right package', 'wrong package', 'verify', 'check packages'],
     hints: ['xep', 'giao', 'kiem'],
     parts: answerOnly,
-    actions: () => [section('features')],
-    followUps: ['packages', 'devices', 'pickup'],
+    actions: () => [section('how')],
+    followUps: ['packages', 'devices', 'loading3d'],
   },
   {
     id: 'loading3d',
     keywords: ['3d', 'xep hang', 'phuong an', 'thung xe', 'xep 3d', 'toi uu xep', 'chat xep', 'load plan', 'loading plan', 'load optimization', 'packing', 'cargo layout', 'stacking'],
     hints: ['toi uu', 'xep', 'optimize', 'optimization'],
     parts: () => ['objectives', 'answer'],
-    actions: () => [section('features')],
+    actions: () => [section('how')],
     followUps: ['axle', 'credit', 'routes'],
   },
   {
@@ -139,24 +139,16 @@ export const TOPICS: readonly Topic[] = [
     keywords: ['tai truc', 'truc xe', 'qua tai', 'can bang tai', 'trong tam', 'axle', 'axles', 'axle load', 'axle loads', 'overload', 'overloaded', 'weight balance', 'center of gravity'],
     hints: ['tai trong', 'weight'],
     parts: answerOnly,
-    actions: () => [section('features')],
-    followUps: ['loading3d', 'pickup', 'routes'],
+    actions: () => [section('how')],
+    followUps: ['loading3d', 'routes', 'credit'],
   },
   {
     id: 'routes',
     keywords: ['tuyen', 'tuyen duong', 'toi uu tuyen', 'lo trinh', 'diem giao', 'gio den', 'tre han', 'giam sat', 'ban do', 'gps', 'eta', 'route', 'routes', 'routing', 'optimize routes', 'delivery stops', 'tracking', 'late', 'deadline', 'map'],
     hints: ['duong', 'xe chay'],
     parts: (ctx) => (ctx.mockRoutes ? ['answer', 'restRule'] : ['answer']),
-    actions: () => [section('features')],
-    followUps: ['pickup', 'loading3d', 'devices'],
-  },
-  {
-    id: 'pickup',
-    keywords: ['doc duong', 'nhan hang', 'nhan them', 'lay them hang', 'nhan hang doc duong', 'pickup', 'pick up', 'pickups', 'on the way', 'extra cargo', 'collect'],
-    hints: ['them hang', 'more cargo'],
-    parts: () => ['pickupRules', 'answer'],
-    actions: () => [section('features')],
-    followUps: ['routes', 'axle', 'verify'],
+    actions: () => [section('how')],
+    followUps: ['loading3d', 'devices', 'axle'],
   },
   {
     id: 'tenancy',

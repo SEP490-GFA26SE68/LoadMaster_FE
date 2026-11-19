@@ -24,7 +24,6 @@ export const landingFooter = {
     account: 'Tài khoản',
   },
   links: {
-    features: 'Tính năng',
     how: 'Cách hoạt động',
     plans: 'Gói cước',
     pricing: 'Bảng giá',

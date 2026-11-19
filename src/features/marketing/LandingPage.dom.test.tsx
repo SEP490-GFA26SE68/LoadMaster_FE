@@ -16,6 +16,8 @@ import { LandingPage } from './LandingPage'
  * app nên chạy theo thứ tự.
  */
 const SLOW = { timeout: 5000 }
+/** Tiêu đề năm chặng của "Một chuyến hàng trên LoadMaster", theo thứ tự. */
+const CHAPTER_TITLES = ['Lập chuyến và chọn phương án', 'Soạn và xếp ở kho', 'Trên đường', 'Tại điểm giao', 'Giao xong, báo cáo và tính lương']
 
 /** Hình thùng xe đọc `prefers-reduced-motion`; jsdom chưa có `matchMedia`. */
 window.matchMedia ??= (query: string) => ({
@@ -63,16 +65,18 @@ afterEach(() => {
 
 test('a guest sees what the app does and how to get in touch: sign-in in the header, no sign-up or purchase', async () => {
   renderLanding('/gioi-thieu')
-  expect(screen.getByRole('heading', { level: 1, name: 'Tận dụng thùng xe, dỡ đúng thứ tự, theo dõi tới điểm giao cuối.' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { level: 1, name: 'Tới điểm nào, mở cửa là thấy hàng của điểm đó.' })).toBeInTheDocument()
   const banner = within(screen.getByRole('banner'))
   expect(banner.getByRole('link', { name: 'Đăng nhập' })).toHaveAttribute('href', '/dang-nhap')
   expect(screen.getByRole('link', { name: 'Bỏ qua tới nội dung chính' })).toHaveAttribute('href', '#noi-dung-chinh')
   expect(screen.getByRole('link', { name: 'Nhận tư vấn' })).toHaveAttribute('href', '/gioi-thieu#lien-he')
   expect(screen.getByRole('link', { name: 'Xem bảng giá' })).toHaveAttribute('href', '/bang-gia')
-  for (const name of ['Tính năng chính', 'Cách hoạt động', 'Liên hệ với LoadMaster']) {
+  for (const name of ['Ba chuyện quen thuộc của một chuyến hàng', 'Một chuyến hàng trên LoadMaster', 'Liên hệ với LoadMaster']) {
     expect(screen.getByRole('heading', { level: 2, name })).toBeInTheDocument()
   }
-  expect(within(screen.getByRole('region', { name: 'Cách hoạt động' })).getAllByRole('listitem')).toHaveLength(4)
+  // Năm chặng của một chuyến, theo thứ tự, mỗi chặng một tiêu đề
+  const journey = within(screen.getByRole('list', { name: 'Năm chặng của một chuyến hàng' }))
+  expect(journey.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent)).toStrictEqual(CHAPTER_TITLES)
   expect(screen.getByText(/đội LoadMaster sẽ liên hệ lại để tư vấn gói và cách dùng phù hợp với đội xe của bạn\.$/)).toBeInTheDocument()
   expect(await screen.findByRole('button', { name: 'Gửi yêu cầu' }, SLOW)).toBeInTheDocument()
   // Kho mẫu không có đăng ký hay mua gói ngay trên trang (hai luồng đăng ký chỉ có khi nối backend): tài khoản dùng thử mở qua yêu cầu liên hệ
@@ -87,23 +91,21 @@ test('every number on the page has a source: code constants, the plan catalogue 
   // Trang công khai không có nhãn MOCK RESULT ở đâu cả: mỗi số tự mang câu nguồn của nó
   expect(screen.queryByText(/MOCK/)).not.toBeInTheDocument()
 
-  const facts = within(screen.getByRole('region', { name: 'Con số kiểm được' }))
-  expect(facts.getAllByRole('term').map((term) => term.textContent)).toStrictEqual([
-    'phương án cho mỗi lần chạy tối ưu',
-    'cho một lần chạy tối ưu 3D',
-    'để xếp 1.000 kiện thành đủ ba phương án',
-    'luật kiểm trước khi nhận hàng dọc đường',
-    'cách đối chiếu một kiện',
-    'vai trò trong công ty của bạn',
+  // Bảng ba phương án: jsdom không có Web Worker nên lần chạy mẫu không chạy — bảng không có số nào, một câu nói vì sao
+  const journey = within(screen.getByRole('region', { name: 'Một chuyến hàng trên LoadMaster' }))
+  const table = journey.getByRole('table', { name: 'So sánh ba phương án của lần chạy mẫu' })
+  expect(within(table).getAllByRole('cell').every((cell) => cell.textContent === '')).toBe(true)
+  expect(journey.getByText(/^Trình duyệt này không chạy bộ tối ưu mẫu/)).toBeInTheDocument()
+  // Hai số cố định của lần chạy, mỗi số một câu nguồn: giá trị là định nghĩa thứ nhất của từng cặp, câu nguồn là định nghĩa thứ hai
+  expect(journey.getAllByRole('term').map((term) => term.textContent)).toStrictEqual([
+    'cho một lần chạy, cả ba phương án',
+    'cho 1.000 kiện, đủ ba phương án',
   ])
-  // Mỗi số một câu nguồn: giá trị là định nghĩa thứ nhất của từng cặp, câu nguồn là định nghĩa thứ hai
-  const definitions = facts.getAllByRole('definition').map((definition) => definition.textContent)
-  expect(definitions.filter((_, index) => index % 2 === 0)).toStrictEqual(['3', '2 credit', '< 1 giây', '10', '3', '5'])
+  const definitions = journey.getAllByRole('definition').map((definition) => definition.textContent)
+  expect(definitions.filter((_, index) => index % 2 === 0)).toStrictEqual(['2 credit', '< 1 giây'])
   const sources = definitions.filter((_, index) => index % 2 === 1)
-  expect(sources).toHaveLength(6)
+  expect(sources).toHaveLength(2)
   for (const source of sources) expect(source?.trim()).not.toBe('')
-  // Lumo nói các số này là số cố định của ứng dụng — một câu, đọc được bằng trình đọc màn hình
-  expect(facts.getByText(/Đây là các con số cố định của chính ứng dụng/)).toHaveTextContent(/^Lumo nói: /)
 
   const plans = within(screen.getByRole('region', { name: 'Gói cước' }))
   expect(await plans.findByRole('group', { name: 'Pro' }, SLOW)).toHaveTextContent('10.000 credit mỗi tháng')
@@ -112,33 +114,21 @@ test('every number on the page has a source: code constants, the plan catalogue 
   expect(plans.getByRole('link', { name: 'So sánh các gói' })).toHaveAttribute('href', '/bang-gia')
 })
 
-test('with motion on, split text keeps every accessible name: the title, the section headings and the numbered steps', () => {
+test('with motion on, split text keeps every accessible name: the title, the section headings and the five legs of a trip', () => {
   io = installFakeIntersectionObserver()
   media = installMatchMedia({})
   renderLanding('/gioi-thieu')
   expect(document.querySelector('[data-reveal-root]')).toHaveAttribute('data-motion', 'on')
 
-  const title = 'Tận dụng thùng xe, dỡ đúng thứ tự, theo dõi tới điểm giao cuối.'
+  const title = 'Tới điểm nào, mở cửa là thấy hàng của điểm đó.'
   const h1 = screen.getByRole('heading', { level: 1, name: title })
   // Chữ đã tách thành mảnh chỉ để nhìn; tên truy cập vẫn là đúng một câu
   expect(h1.querySelector('[aria-hidden="true"]')).not.toBeNull()
   expect(screen.getByRole('region', { name: title })).toBeInTheDocument()
-  for (const name of ['Con số kiểm được', 'Tính năng chính', 'Cách hoạt động', 'Gói cước', 'Liên hệ với LoadMaster']) {
+  for (const name of ['Ba chuyện quen thuộc của một chuyến hàng', 'Một chuyến hàng trên LoadMaster', 'Gói cước', 'Liên hệ với LoadMaster']) {
     expect(screen.getByRole('heading', { level: 2, name })).toBeInTheDocument()
   }
-  const steps = within(screen.getByRole('region', { name: 'Cách hoạt động' }))
-  expect(steps.getAllByRole('listitem')).toHaveLength(4)
-  // Tên của bước vẫn là "Bước n: tên bước". jsdom không nạp CSS nên thư viện tính tên coi tiền tố `sr-only` là chữ trong dòng và cắt
-  // khoảng trắng cuối của nó — ở cả hai chế độ —, nên khoảng trắng sau dấu hai chấm không so cứng.
-  for (const name of [
-    /^Bước 1:s?Nhập kiện và yêu cầu giao$/,
-    /^Bước 2:s?Lập chuyến, tối ưu tuyến$/,
-    /^Bước 3:s?Xếp 3D, so sánh, duyệt$/,
-    /^Bước 4:s?Soạn, xếp, giao, giám sát$/,
-  ]) {
-    expect(steps.getByRole('heading', { level: 3, name })).toBeInTheDocument()
-  }
-  expect(within(screen.getByRole('region', { name: 'Tính năng chính' })).getByRole('heading', { level: 3, name: 'Xếp hàng 3D theo điểm giao' })).toBeInTheDocument()
+  for (const name of CHAPTER_TITLES) expect(screen.getByRole('heading', { level: 3, name })).toBeInTheDocument()
 
   // Nội dung chờ ở trạng thái đầu tới khi cuộn tới; báo giao cắt thì mọi cổng mở, một lần
   const gates = [...document.querySelectorAll('[data-reveal-gate]')]
@@ -156,13 +146,12 @@ test('the skip link moves focus to the main content without changing the address
   expect(screen.queryByText(/Đang ở/)).not.toBeInTheDocument()
 })
 
-test('the header menu lists the four sections; picking one moves focus to that section, not back to the menu button', async () => {
+test('the header menu lists the three sections; picking one moves focus to that section, not back to the menu button', async () => {
   const user = userEvent.setup()
   renderLanding('/gioi-thieu')
   await user.click(within(screen.getByRole('banner')).getByRole('button', { name: 'Menu trang' }))
   const items = screen.getAllByRole('menuitem')
   expect(items.map((item) => [item.textContent, item.getAttribute('href')])).toStrictEqual([
-    ['Tính năng', '/gioi-thieu#tinh-nang'],
     ['Cách hoạt động', '/gioi-thieu#cach-hoat-dong'],
     ['Bảng giá', '/bang-gia'],
     ['Liên hệ', '/gioi-thieu#lien-he'],

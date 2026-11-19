@@ -5,20 +5,18 @@ import { CONTACT_ANCHOR } from '../contact-form'
 import type { PublicLink } from '../public-chrome'
 
 /**
- * Liên kết của chân trang — chỉ trỏ tới thứ đang có: ba phần của trang giới thiệu, Bảng giá, form liên hệ và hai trang đăng ký. Neo đi
+ * Liên kết của chân trang — chỉ trỏ tới thứ đang có: hai phần của trang giới thiệu, Bảng giá, form liên hệ và hai trang đăng ký. Neo đi
  * kèm `pathname` của trang giới thiệu nên bấm từ Bảng giá vẫn tới đúng phần (`useHashScroll` cuộn và đưa focus vào tiêu đề của phần đó).
  */
 function section(labelKey: MessageKey, anchor: string): PublicLink {
   return { labelKey, to: { pathname: PUBLIC_HOME, hash: `#${anchor}` } }
 }
 
-/** `id` của ba phần trên trang giới thiệu (`LandingFeatures`, `LandingSteps`, `LandingPlans`). */
-const FEATURES_ANCHOR = 'tinh-nang'
+/** `id` của hai phần trên trang giới thiệu (`LandingJourney`, `LandingPlans`). */
 const HOW_ANCHOR = 'cach-hoat-dong'
 const PLANS_ANCHOR = 'goi-cuoc'
 
 export const PRODUCT_LINKS: readonly PublicLink[] = [
-  section('landingFooter.links.features', FEATURES_ANCHOR),
   section('landingFooter.links.how', HOW_ANCHOR),
   section('landingFooter.links.plans', PLANS_ANCHOR),
   { labelKey: 'landingFooter.links.pricing', to: { pathname: PUBLIC_PRICING } },

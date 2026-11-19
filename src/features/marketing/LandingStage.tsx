@@ -7,11 +7,10 @@ import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { useFormat, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { DioramaPoster } from './DioramaPoster'
-import { StageRoute, StageViews, StoryButton } from './LandingStageParts'
+import { StageViews, StoryButton } from './LandingStageParts'
 import { StageArrival } from './StageArrival'
 import { StageBoundary } from './StageBoundary'
 import { StagePlans } from './StagePlans'
-import { StageReadout } from './StageReadout'
 import { StoryNarrator, type NarratorLine } from './StoryNarrator'
 import { StoryTripCard, StoryTripCardLive } from './StoryTripCard'
 import { DEFAULT_OBJECTIVE, landingPlans } from './landing-plans'
@@ -37,8 +36,6 @@ const PACKAGE_COUNT = LANDING_REQUEST.packages.reduce((count, line) => count + l
 const DOOR_CUE = 'max-sm:[&_[data-rear-door-cue]]:hidden [&:not([data-view=truck])_[data-rear-door-cue]]:hidden'
 /** Khung cao 600 px từ 1.440 px, 560 px tới 1.439 px; hẹp hơn theo tỉ lệ. */
 const BOX = { wide: 'h-140 min-[90rem]:h-150', medium: 'aspect-[16/10]', narrow: 'aspect-[4/3]' } as const
-/** Pha mà dải số có số: từ lúc xếp xong (số ở lại khi xe rời kho, tới và dỡ ở điểm 1). */
-const LOADED = new Set<HeroPhase>(['ready', 'depart', 'arrive', 'unload', 'delivered'])
 /** Pha chưa có ba phương án để chọn: bộ tối ưu chưa tính xong. */
 const COMPUTING = new Set<HeroPhase>(['preparing', 'intake', 'optimize'])
 
@@ -63,8 +60,8 @@ function StageFallback() {
  * trên máy người xem — một lần chạy, ba phương án A · B · C —, rồi khung hình thay ảnh tĩnh và chuyện chừng 24 giây chạy một lần
  * (`useStoryDriver`): kiện vào làn → tối ưu → xếp → xếp xong → cửa thùng đóng, xe lăn bánh rời kho → tới điểm 1 (`StageArrival`) → dỡ
  * đúng hàng của điểm 1 → đã giao điểm 1 (giảm chuyển động: dừng ở xếp xong). Khung vẽ phương án C; bộ chọn `StagePlans` đổi phương án và
- * cho chuyện chạy lại từ pha xếp. Quanh khung: thẻ chuyến với chip của ứng dụng, Lumo dẫn chuyện, nút ba trạng thái, ba góc nhìn, hàng
- * "Thứ tự giao", bộ chọn và dải số của phương án đang xem (chỉ khi xếp xong; không MOCK RESULT trên trang công khai). Từ 1.280 px thẻ,
+ * cho chuyện chạy lại từ pha xếp. Quanh khung: thẻ chuyến với chip của ứng dụng, Lumo dẫn chuyện, nút ba trạng thái, ba góc nhìn và
+ * bộ chọn kèm số của phương án đang chọn (không MOCK RESULT trên trang công khai; bảng so cả ba nằm ở "Một chuyến hàng"). Từ 1.280 px thẻ,
  * nút và Lumo nằm đè trên khung; hẹp hơn thì thẻ ở trên, Lumo ở dưới khung. Không có WebGL hay hỏng: `StageFallback`.
  */
 export function LandingStage() {
@@ -126,8 +123,7 @@ export function LandingStage() {
   const going = gate === 'go'
   const placed = result?.placements.length ?? 0
   const line: NarratorLine | null = !going ? null : phase === 'ready' && result && placed < PACKAGE_COUNT ? 'readyPartial' : phase
-  // Số của phương án hiện từ lúc xếp xong và ở lại tới hết chuyện; ba phương án chọn được từ lúc bộ tối ưu tính xong
-  const loaded = LOADED.has(phase)
+  // Ba phương án chọn được từ lúc bộ tối ưu tính xong
   const choosable = plans && !COMPUTING.has(phase) ? plans : null
   const views = <StageViews view={view} onChange={setChosen} layout={tier === 'narrow' ? 'segmented' : 'inline'} className={tier === 'narrow' ? 'mt-3 w-full' : undefined} />
   const button = reducedMotion ? null : <StoryButton status={status} onToggle={toggle} compact={tier === 'narrow'} />
@@ -178,9 +174,7 @@ export function LandingStage() {
       </div>
       {tier === 'narrow' ? views : null}
       {wide ? null : <div className="mt-3">{narrator}</div>}
-      <StageRoute stopNames={stopNames} className="mt-4" />
-      <StagePlans plans={choosable} selected={picked} onSelect={handlePick} layout={tier === 'narrow' ? 'segmented' : 'cards'} total={PACKAGE_COUNT} className="mt-3" />
-      <StageReadout plan={loaded && plan ? plan : null} total={PACKAGE_COUNT} stopName={stopNames[0]!} className="mt-3" />
+      <StagePlans plans={choosable} selected={picked} onSelect={handlePick} total={PACKAGE_COUNT} className="mt-4" />
       <figcaption id={captionId} className="sr-only">
         {t('landing.stage.caption', { count: format.integer(PACKAGE_COUNT), stops: format.integer(LANDING_STOP_COUNT) })}
         {reducedMotion ? null : ` ${t('landingStage.caption')}`}

@@ -210,7 +210,7 @@ for (const viewport of VIEWPORTS) {
   test(`${viewport.name}: landing and pricing pages in English`, async ({ page, browserErrors }, testInfo) => {
     await page.setViewportSize({ width: viewport.width, height: viewport.height })
     await page.goto('/gioi-thieu?lang=en')
-    await expect(page.getByRole('heading', { level: 1, name: 'Make the most of every truck, unload in the right order, follow it to the last stop.', exact: true }))
+    await expect(page.getByRole('heading', { level: 1, name: 'At every stop, open the door and that stop’s cargo is right there.', exact: true }))
       .toBeVisible()
     await scrollThrough(page)
     await expect(page.getByRole('button', { name: 'Send request', exact: true })).toBeVisible()

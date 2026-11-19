@@ -13,8 +13,8 @@ import {
 } from './assistant-kb'
 import { matchText } from './assistant-match'
 
-/** Mã nguồn của các phần trang giới thiệu, để kiểm mọi neo mà câu trả lời trỏ tới có thật. */
-const LANDING_SOURCES = import.meta.glob<string>('../Landing*.tsx', { query: '?raw', import: 'default', eager: true })
+/** Mã nguồn của các phần trang giới thiệu (kể cả "Một chuyến hàng" ở `journey/`), để kiểm mọi neo mà câu trả lời trỏ tới có thật. */
+const LANDING_SOURCES = import.meta.glob<string>(['../Landing*.tsx', '../journey/Landing*.tsx'], { query: '?raw', import: 'default', eager: true })
 
 const CONTEXTS: readonly AssistantContext[] = [
   { selfSignUp: false, mockRoutes: true },

@@ -6,8 +6,8 @@ import { drawnFrames, R3F_DEPS, waitDemandIdle, type R3FModule } from './viewer-
  * Khung 3D "Sân kho kể chuyện" của trang giới thiệu, chạy thật trên SwiftShader: một lần chạy tối ưu ngay trên trình duyệt ra ba
  * phương án, chuyện chừng 24 giây chạy một lần tới lúc đã giao điểm 1 (xếp xong, lăn bánh, tới điểm 1, dỡ hàng của điểm đó); chọn phương án
  * khác thì xếp lại theo nó; nút ba trạng thái dừng được cả số trên thẻ chuyến lẫn khung hình; giảm chuyển động cho thấy ngay trạng thái xếp
- * xong (không lăn bánh); số của "Con số kiểm được" lăn rồi dừng đúng chuỗi; neo `#lien-he` hiện tiêu đề ngay; điện thoại 390 px không cuộn
- * ngang, bộ chọn là ba nút cao 56 px. Scene R3F
+ * xong (không lăn bánh); dưới bộ chọn là số của phương án đang chọn; "Một chuyến hàng" so ba phương án của cùng lần chạy và thùng xe đi
+ * theo chặng đang đọc; neo `#lien-he` hiện tiêu đề ngay; điện thoại 390 px không cuộn ngang, bộ chọn là ba nút cao 56 px. Scene R3F
  * đọc qua `_roots` như các suite viewer — trang giới thiệu không có bảng đo của `?debug` (`?debug&quality=` chỉ khoá tier), nên số draw
  * call đọc thẳng từ renderer.
  */
@@ -31,10 +31,8 @@ async function loadingCount(page: Page): Promise<number | null> {
   return match ? Number(match[1]) : null
 }
 
-/** Chiều cao bố cục (không tính transform của chuyển động hiện ra). */
-function layoutHeight(locator: Locator): Promise<number> {
-  return locator.evaluate((element) => (element as HTMLElement).offsetHeight)
-}
+/** Số của phương án đang chọn, dưới ba nút của bộ chọn. */
+const figuresOf = (stage: Locator) => stage.locator('[data-stage-plan-figures]')
 
 /** Số draw call của khung hình vừa vẽ: renderer đặt lại bộ đếm mỗi lần vẽ. */
 function lastDrawCalls(page: Page): Promise<number> {
@@ -87,24 +85,17 @@ function scrollsSideways(page: Page): Promise<boolean> {
 test.describe('landing story at 1440 × 900', () => {
   test.use({ viewport: { width: 1440, height: 900 } })
 
-  test('the sample trip plays once to the end and the truck leaves the yard: 366 / 366 (no MOCK RESULT tag on the public page) fills a readout that keeps its height, and the resting overview stays under the draw-call cap', async ({ page, browserErrors }, testInfo) => {
+  test('the sample trip plays once to the end and the truck leaves the yard: the chosen plan figures (no MOCK RESULT tag on the public page), and the resting overview stays under the draw-call cap', async ({ page, browserErrors }, testInfo) => {
     await page.goto('/gioi-thieu')
     const stage = page.locator(STAGE)
-    const readout = stage.locator('[data-stage-readout]')
-    await expect(readout).toContainText('Số liệu của phương án mẫu hiện ra khi xếp xong.')
-    await page.evaluate(() => document.fonts.ready.then(() => undefined))
-    const pendingHeight = await layoutHeight(readout)
 
     await expect(stage).toHaveAttribute('data-story-status', 'ended', { timeout: STORY_WAIT_MS })
-    await expect(readout).not.toContainText('MOCK RESULT')
-    await expect(readout).toContainText('366 / 366')
-    await expect(readout).not.toContainText('Số liệu của phương án mẫu hiện ra khi xếp xong.')
-    expect(await layoutHeight(readout)).toBe(pendingHeight)
-    // Chuyện kết ở điểm 1 đã giao: thẻ chuyến vẫn Đang vận chuyển (còn ba điểm) kèm nhãn "Đã giao điểm 1"; dải số có hàng của điểm 1
+    await expect(stage).not.toContainText('MOCK RESULT')
+    await expect(figuresOf(stage)).toContainText(/Chưa xếp\s*0/)
+    // Chuyện kết ở điểm 1 đã giao: thẻ chuyến vẫn Đang vận chuyển (còn ba điểm) kèm nhãn "Đã giao điểm 1"
     await expect(stage).toHaveAttribute('data-story-phase', 'delivered')
     await expect(stage.getByText('Đang vận chuyển', { exact: true })).toBeVisible()
     await expect(stage.getByText('Đã giao điểm 1', { exact: true })).toBeVisible()
-    await expect(readout.locator('[data-stage-stop]')).toContainText('Ở điểm 1 · Siêu thị')
     await expect(stage.locator('[data-stage-arrival]')).toBeHidden()
     await expect(stage.getByRole('button', { name: 'Xếp lại thùng xe từ đầu', exact: true })).toBeVisible()
 
@@ -158,7 +149,7 @@ test.describe('landing story at 1440 × 900', () => {
     await expect.poll(async () => (await stage.getAttribute('data-story-status')) === 'ended' || ((await loadingCount(page)) ?? 0) > paused.count!).toBe(true)
     await expect(stage).toHaveAttribute('data-story-status', 'ended', { timeout: STORY_WAIT_MS })
     await expect(stage.getByRole('button', { name: 'Xếp lại thùng xe từ đầu', exact: true })).toBeFocused()
-    await expect(stage.locator('[data-stage-readout]')).toContainText('366 / 366')
+    await expect(figuresOf(stage)).toContainText(/Chưa xếp\s*0/)
     await expect(stage.getByText('Đang vận chuyển', { exact: true })).toBeVisible()
     await expect(stage.getByText('Đã giao điểm 1', { exact: true })).toBeVisible()
     expect(browserErrors).toStrictEqual([])
@@ -172,7 +163,8 @@ test.describe('landing story at 1440 × 900', () => {
     await expect(plans.getByRole('button', { name: 'Phương án C — Ít dỡ-xếp lại', exact: true })).toHaveAttribute('aria-pressed', 'true')
     const tops = await plans.getByRole('button').evaluateAll((buttons) => buttons.map((button) => Math.round(button.getBoundingClientRect().top)))
     expect(new Set(tops).size).toBe(1)
-    await expect(plans.getByText('Tốt nhất', { exact: true })).toHaveCount(2)
+    // Phương án C không dỡ-xếp lại kiện nào: đúng một nhãn "Tốt nhất" dưới bộ chọn
+    await expect(figuresOf(stage).getByText('Tốt nhất', { exact: true })).toHaveCount(1)
 
     const planA = plans.getByRole('button', { name: 'Phương án A — Tối đa thể tích', exact: true })
     await planA.click()
@@ -180,7 +172,7 @@ test.describe('landing story at 1440 × 900', () => {
     await expect(stage).toHaveAttribute('data-plan', 'A')
     await expect(stage).toHaveAttribute('data-story-status', 'ended', { timeout: STORY_WAIT_MS })
     await expect(stage).toHaveAttribute('data-story-phase', 'delivered')
-    await expect(stage.locator('[data-stage-readout]')).toContainText('Phương án A — Tối đa thể tích')
+    await expect(figuresOf(stage)).toContainText(/Dỡ-xếp lại\s*21/)
     expect(await scrollsSideways(page)).toBe(false)
     expect(browserErrors).toStrictEqual([])
   })
@@ -192,9 +184,8 @@ test.describe('landing story at 1440 × 900', () => {
     await expect(stage).toHaveAttribute('data-story-status', 'ended', { timeout: STORY_WAIT_MS })
     await expect(stage).toHaveAttribute('data-story-phase', 'ready')
     await expect(stage.getByText('Xếp xong — chờ xuất phát', { exact: true })).toBeVisible()
-    const readout = stage.locator('[data-stage-readout]')
-    await expect(readout).not.toContainText('MOCK RESULT')
-    await expect(readout).toContainText('366 / 366')
+    await expect(stage).not.toContainText('MOCK RESULT')
+    await expect(figuresOf(stage)).toContainText(/Chưa xếp\s*0/)
     await waitDemandIdle(page, 500)
     await expect(stage.getByRole('button', { name: /chuyến mẫu|Xếp lại/ })).toHaveCount(0)
     await expect(page.locator('[data-motion="on"]')).toHaveCount(0)
@@ -202,24 +193,35 @@ test.describe('landing story at 1440 × 900', () => {
     await stage.getByRole('button', { name: 'Phương án B — Cân bằng tải trục', exact: true }).click()
     await expect(stage).toHaveAttribute('data-plan', 'B')
     await expect(stage).toHaveAttribute('data-story-phase', 'ready')
-    await expect(readout).toContainText('Phương án B — Cân bằng tải trục')
+    await expect(figuresOf(stage)).toContainText(/Chênh tải hai trục\s*[\d,]+ điểm %\s*Tốt nhất/)
     expect(browserErrors).toStrictEqual([])
   })
 
-  test('the six checkable figures roll once and stop on exactly their formatted strings', async ({ page, browserErrors }) => {
+  test('"One trip" compares the three plans of the same sample run, and the truck follows the leg being read, only forward', async ({ page, browserErrors }) => {
     await page.goto('/gioi-thieu')
-    const facts = page.locator('#con-so')
-    const cells = facts.locator('.reveal-odo-cell')
-    await expect(page.locator('[data-motion="on"]')).toHaveCount(1)
-    // `#con-so` nằm dưới màn hình đầu: mỗi chữ số của sáu chuỗi đã có một ô, chờ cuộn tới mới lăn
-    await expect(cells).toHaveCount(7)
-    await facts.scrollIntoViewIfNeeded()
-    const items = facts.locator('dl > *')
-    await expect(items).toHaveCount(6)
-    for (const item of await items.all()) await item.scrollIntoViewIfNeeded()
-    await expect(cells).toHaveCount(0, { timeout: 10_000 })
-    const values = await facts.locator('dl > * > dd:first-of-type').allInnerTexts()
-    expect(values.map((value) => value.replace(/[  ]/g, ' ').trim())).toEqual(['3', '2 credit', '< 1 giây', '10', '3', '5'])
+    const journey = page.locator('#cach-hoat-dong')
+    await journey.scrollIntoViewIfNeeded()
+    // Cùng truy vấn với khung 3D: bảng có số của lần chạy mẫu, "Tốt nhất" ở B (cân trục) và C (không dỡ-xếp lại)
+    await expect(journey.locator('[data-journey-plans]')).toHaveAttribute('data-journey-plans', 'ready', { timeout: STORY_WAIT_MS })
+    const table = journey.getByRole('table', { name: 'So sánh ba phương án của lần chạy mẫu', exact: true })
+    await expect(table.getByText('Tốt nhất', { exact: true })).toHaveCount(2)
+    const stop = journey.locator('[data-journey-stop]')
+    await expect(stop).toHaveAttribute('data-journey-stop', 'ready')
+    await expect(stop.locator('dd').first()).toContainText('96')
+    await expect(journey).not.toContainText('MOCK RESULT')
+
+    // Từng chặng tới giữa khung nhìn: chặng đang đọc là chặng đó, tiến độ của thùng xe chỉ tăng
+    const legs = await journey.getByRole('list', { name: 'Năm chặng của một chuyến hàng', exact: true }).locator(':scope > li').all()
+    expect(legs).toHaveLength(5)
+    let previous = -1
+    for (const [index, leg] of legs.entries()) {
+      await leg.evaluate((element) => element.scrollIntoView({ block: 'center' }))
+      await expect(journey).toHaveAttribute('data-chapter', String(index))
+      const progress = Number(await journey.evaluate((element) => (element as HTMLElement).style.getPropertyValue('--p')))
+      expect(progress).toBeGreaterThan(previous)
+      previous = progress
+    }
+    expect(await scrollsSideways(page)).toBe(false)
     expect(browserErrors).toStrictEqual([])
   })
 
@@ -243,13 +245,13 @@ test('@phone at 390 px the page never scrolls sideways, the truck view is the de
 
   await stage.locator('[data-view]').scrollIntoViewIfNeeded()
   await expect(stage).toHaveAttribute('data-story-status', 'ended', { timeout: STORY_WAIT_MS })
-  await expect(stage.locator('[data-stage-readout]')).toContainText('366 / 366')
+  await expect(figuresOf(stage)).toContainText(/Chưa xếp\s*0/)
   // Bộ chọn trên điện thoại: ba nút cao ít nhất 56 px, số của phương án đang chọn nằm dưới
   const plans = page.getByRole('group', { name: 'Một lần chạy, ba phương án', exact: true })
   const heights = await plans.getByRole('button').evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().height))
   expect(heights).toHaveLength(3)
   for (const height of heights) expect(height).toBeGreaterThanOrEqual(56)
-  await expect(stage.locator('[data-stage-plan-figures]')).toContainText('Dỡ-xếp lại')
+  await expect(figuresOf(stage)).toContainText('Dỡ-xếp lại')
   expect(await scrollsSideways(page)).toBe(false)
   expect(browserErrors).toStrictEqual([])
 })
