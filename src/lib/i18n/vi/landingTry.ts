@@ -6,9 +6,15 @@
 export const landingTry = {
   title: 'Thử với hàng của bạn',
   lede: 'Nhập thùng xe và kiện hàng của bạn rồi bấm chạy: bộ tối ưu tính ba phương án ngay trên trình duyệt này — không cần tài khoản.',
+  tabs: {
+    label: 'Chọn bản thử',
+    pack: 'Xếp thử xe của bạn',
+    axle: 'Tải trục',
+  },
   form: {
     label: 'Thùng xe và kiện hàng của bạn',
     run: 'Tính ba phương án',
+    howSubject: 'bản thử',
     privacy: 'Số bạn nhập chỉ nằm trên trình duyệt này, không gửi lên máy chủ.',
   },
   truck: {
@@ -31,6 +37,7 @@ export const landingTry = {
     add: 'Thêm loại kiện',
     remove: 'Bỏ loại kiện {number}',
     total: 'Tổng {total} / {max} kiện',
+    rulesLabel: 'Kiện hàng',
     rules: 'Kiện giữ đứng, xoay được trên sàn và xếp chồng được — mỗi kiện chịu tối đa gấp ba khối lượng của nó đè lên. Điểm 1 giao trước.',
   },
   errors: {
@@ -71,7 +78,27 @@ export const landingTry = {
     timeout: 'Bộ tối ưu chạy quá {seconds} giây nên đã dừng.',
     service: 'Trình duyệt này chưa chạy được bộ tối ưu mô phỏng. Hãy thử tải lại trang.',
   },
+  /** Tab "Tải trục": kéo khối lượng và trọng tâm hàng, xem tải hai nhóm trục của xe mẫu (`try/TryAxleTab`). */
+  axle: {
+    title: 'Hàng dồn lên trục nào?',
+    vehicle: 'Xe mẫu: xe tải 3,5 tấn, lòng thùng dài {length}, tải trọng {payload}. Trục trước nằm dưới cabin, trước vách trước của thùng {frontAxle}; trục sau cách vách trước {rearAxle}.',
+    mass: 'Khối lượng hàng',
+    center: 'Trọng tâm hàng, tính từ vách trước',
+    centerHint: 'Số nhỏ là hàng dồn về phía cabin, số lớn là dồn về phía cửa sau.',
+    resultTitle: 'Tải lên hai trục',
+    groups: { front: 'Trục trước', rear: 'Trục sau' },
+    loadOfLimit: '{load} / {limit}',
+    percent: '{value} giới hạn',
+    over: 'Vượt {over}',
+    within: 'Cả hai trục trong giới hạn.',
+    overFront: 'Trục trước vượt giới hạn {over} — lùi hàng về phía cửa sau hoặc bớt hàng.',
+    overRear: 'Trục sau vượt giới hạn {over} — đưa hàng về phía cabin hoặc bớt hàng.',
+    overBoth: 'Cả hai trục vượt giới hạn — bớt hàng.',
+    source: 'Số tính theo mô hình đòn bẩy trên hai trục đã khai của xe mẫu. Đây là ước lượng: tải khi xe rỗng lấy theo số đã khai, không tính riêng nhiên liệu hay người lái.',
+    howSubject: 'tải trục',
+  },
   next: {
+    sample: 'Xem phương án mẫu ở dạng 3D',
     lead: 'Trong ứng dụng, điều phối viên chạy tối ưu với xe đã khai trục, kiện và điểm giao của chuyến thật.',
     trial: 'Đăng ký trải nghiệm',
     contact: 'Nhận tư vấn',

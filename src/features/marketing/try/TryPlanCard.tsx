@@ -4,6 +4,8 @@ import { Badge } from '@/components/ui/Badge'
 import { PLAN_LABELS, type PlanObjective } from '@/domain/models'
 import { useFormat, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+import type { HowMetric } from '../how/how-entries'
+import { PlanHow } from '../how/PlanHow'
 import type { TryMetric, TryOutcome, TryPlan } from './try-outcome'
 
 const ROW = 'flex items-baseline justify-between gap-3 border-t border-line-soft py-2'
@@ -13,6 +15,9 @@ const FIGURE = 'font-mono text-body whitespace-nowrap text-ink-strong tabular-nu
 /** Vạch giữ chỗ cho số chưa có (trước lần chạy đầu, trong lúc tính): `aria-hidden`, câu ở cột kết quả nói vì sao chưa có. */
 const BAR = 'block h-5 w-14 rounded-sm bg-n-100'
 const THUMB = 'h-[132px] rounded-md'
+/** Số của thẻ mà "Tính thế nào?" giải thích, theo đúng thứ tự các hàng. */
+const HOW_SINGLE = ['placed', 'volume', 'balance'] as const satisfies readonly HowMetric[]
+const HOW_MULTI = [...HOW_SINGLE, 'rehandling'] as const satisfies readonly HowMetric[]
 
 /** Đầu thẻ: chữ cái lớn và mục tiêu của phương án (`runs.objectives`) — `<h4>` để trình đọc màn hình nhảy giữa ba thẻ. */
 function PlanHeading({ objective, extra }: { objective: PlanObjective; extra?: ReactNode }) {
@@ -30,13 +35,13 @@ function PlanHeading({ objective, extra }: { objective: PlanObjective; extra?: R
   )
 }
 
-/** Thẻ giữ chỗ của một phương án trước khi có số: đầu thẻ thật, hình và số là vạch. */
+/** Thẻ giữ chỗ của một phương án trước khi có số: đầu thẻ thật, hình và số là vạch. Dưới 640 px chỉ còn đầu thẻ, không khung — cột kết quả xếp chúng thành hàng chữ: ba khối vạch chồng nhau dài hơn hai màn hình điện thoại mà không nói thêm gì. */
 export function TryPlanPlaceholder({ objective, rows }: { objective: PlanObjective; rows: readonly string[] }) {
   return (
-    <div className="flex min-w-0 flex-col gap-3 rounded-lg border border-border bg-bg p-4">
+    <div className="flex min-w-0 flex-col gap-3 sm:rounded-lg sm:border sm:border-border sm:bg-bg sm:p-4">
       <PlanHeading objective={objective} />
-      <span aria-hidden className={cn(THUMB, 'block bg-n-100')} />
-      <dl className="m-0">
+      <span aria-hidden className={cn(THUMB, 'hidden bg-n-100 sm:block')} />
+      <dl className="m-0 hidden sm:block">
         {rows.map((row) => (
           <div key={row} className={ROW}>
             <dt className={LABEL}>{row}</dt>
@@ -65,7 +70,7 @@ function Row({ label, value, best }: { label: string; value: string; best: boole
 /**
  * Một phương án của lần thử: chữ cái + mục tiêu, hình đẳng cự SVG dựng từ chỗ xếp thật (màu theo điểm giao), rồi các số của chính kết quả
  * — xếp được / tổng, lấp đầy thể tích, trọng tâm lệch giữa thùng, số kiện dỡ-xếp lại (chỉ khi hàng có từ hai điểm giao), kiện chưa xếp theo
- * loại kèm lý do. Hai mục tiêu chọn trùng một cách xếp thì thẻ nói "Giống hệt phương án …".
+ * loại kèm lý do; "Tính thế nào?" mở công thức của từng số. Hai mục tiêu chọn trùng một cách xếp thì thẻ nói "Giống hệt phương án …".
  */
 export function TryPlanCard({ outcome, plan }: { outcome: TryOutcome; plan: TryPlan }) {
   const t = useT()
@@ -106,6 +111,13 @@ export function TryPlanCard({ outcome, plan }: { outcome: TryOutcome; plan: TryP
           />
         ) : null}
       </dl>
+      <PlanHow
+        request={outcome.request}
+        result={plan.result}
+        metrics={outcome.multiStop ? HOW_MULTI : HOW_SINGLE}
+        subject={t('landingTry.results.plan', { label: plan.id })}
+        className="-my-2"
+      />
       {plan.unplaced.length > 0 ? (
         <div className="flex flex-col gap-1">
           <p className="m-0 text-small font-semibold text-ink-2 pointer-coarse:text-body-lg">{t('landingTry.results.unplacedTitle')}</p>

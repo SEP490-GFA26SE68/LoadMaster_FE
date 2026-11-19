@@ -23,6 +23,8 @@ export const PUBLIC_HOME = '/gioi-thieu'
 export const PUBLIC_PRICING = '/bang-gia'
 /** Chính sách bảo mật công khai — nói dữ liệu nào app thu, gửi đi đâu, lưu ở đâu; mở từ form liên hệ và chân trang. */
 export const PUBLIC_PRIVACY = '/chinh-sach-bao-mat'
+/** Phương án mẫu toàn màn hình: khung 3D xoay được của chuyến mẫu trang giới thiệu, trạng thái nằm trên URL để chia sẻ; ngoài `RequireAuth`. */
+export const PUBLIC_SAMPLE_PLAN = '/phuong-an-mau'
 /** Ba trang đăng ký công khai (chỉ khi nhóm `registration` nối backend; kho mẫu chuyển về trang giới thiệu); ngoài `RequireAuth`. */
 export const TRIAL_REGISTRATION = '/dang-ky-trai-nghiem'
 export const GUEST_REGISTRATION = '/dang-ky'

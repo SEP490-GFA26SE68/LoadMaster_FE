@@ -48,19 +48,21 @@ test('the trial truck is the visitor\'s body with a full-size rear door, no obst
   expect(tryRequestIssues(request)).toEqual([])
 })
 
-test('the default run loads all 124 cartons of three stops in three plans; B balances best and C rehandles least', () => {
+test('the default run loads all 100 cartons of two stops in three plans; B balances best and C rehandles least', () => {
   const outcome = run(DEFAULTS)
-  expect(outcome.totalCount).toBe(124)
+  expect(outcome.totalCount).toBe(100)
   expect(outcome.multiStop).toBe(true)
   expect(outcome.plans.map((plan) => [plan.id, plan.objective])).toEqual([['A', 'MAX_VOLUME'], ['B', 'AXLE_BALANCE'], ['C', 'MIN_REHANDLING']])
   for (const plan of outcome.plans) {
-    expect(plan.placedCount).toBe(124)
+    expect(plan.placedCount).toBe(100)
     expect(plan.unplaced).toEqual([])
     expect(plan.rehandlingCount).toEqual(expect.any(Number))
     expect(plan.result.isMockResult).toBe(true)
   }
-  // (48 × 96.000 + 60 × 60.000 + 16 × 240.000) cm³ = 12,048 m³ trên 520 × 200 × 200 cm = 20,8 m³
-  expect(outcome.plans[0]?.volumePercent).toBeCloseTo(57.92, 2)
+  // (80 × 96.000 + 20 × 240.000) cm³ = 12,48 m³ trên 520 × 200 × 200 cm = 20,8 m³
+  expect(outcome.plans[0]?.volumePercent).toBeCloseTo(60, 2)
+  // Phương án C không kiện nào nằm ngoài vùng điểm giao của mình
+  expect(outcome.plans[2]?.rehandlingCount).toBe(0)
   expect(outcome.best.placed).toBeUndefined()
   expect(outcome.best.volume).toBeUndefined()
   expect([...(outcome.best.balance ?? [])]).toEqual(['B'])
