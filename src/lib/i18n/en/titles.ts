@@ -47,6 +47,7 @@ export const titles = {
   support: 'Customer support',
   landing: 'About',
   pricing: 'Pricing',
+  privacy: 'Privacy policy',
   contacts: 'Guest contacts',
   trialRegistration: 'Try for free',
   guestRegistration: 'Get started',

@@ -31,6 +31,7 @@ const ERRORS = {
   phoneTooLong: 'landing.contact.form.errors.phoneTooLong',
   companyTooLong: 'landing.contact.form.errors.companyTooLong',
   messageTooLong: 'landing.contact.form.errors.messageTooLong',
+  consentRequired: 'landing.contact.form.errors.consentRequired',
 } as const satisfies Record<string, MessageKey>
 
 export const contactFormSchema = z.object({
@@ -42,6 +43,8 @@ export const contactFormSchema = z.object({
   requestType: z.enum(CONTACT_REQUEST_TYPES),
   planId: z.string(),
   message: z.string().trim().max(CONTACT_LIMITS.message, ERRORS.messageTooLong),
+  // Đồng ý với chính sách bảo mật: chỉ mở được nút gửi, không gửi đi (`toNewContact` bỏ qua)
+  consent: z.boolean().refine((value) => value, ERRORS.consentRequired),
 })
 export type ContactFormValues = z.infer<typeof contactFormSchema>
 
@@ -59,6 +62,7 @@ export function contactDefaults(search: URLSearchParams, plans: readonly Subscri
     requestType: contactTypeFromSlug(search.get('loai')) ?? 'INQUIRY',
     planId: plans.find((plan) => plan.id === planId && plan.active)?.id ?? NO_PLAN,
     message,
+    consent: false,
   }
 }
 
@@ -95,6 +99,21 @@ export function translateContactError(t: TFunction, message: string | undefined)
     case ERRORS.phoneTooLong: return t(ERRORS.phoneTooLong, { max: CONTACT_LIMITS.phoneNumber })
     case ERRORS.companyTooLong: return t(ERRORS.companyTooLong, { max: CONTACT_LIMITS.companyName })
     case ERRORS.messageTooLong: return t(ERRORS.messageTooLong, { max: CONTACT_LIMITS.message })
+    case ERRORS.consentRequired: return t(ERRORS.consentRequired)
     default: return undefined
   }
+}
+
+/**
+ * Lần gửi sớm hơn chừng này (ms) sau lúc form hiện ra là của chương trình tự động: người thật cần vài giây để điền họ tên, email và đánh
+ * dấu ô đồng ý. Tính từ lúc form hiện, không từ lần gõ đầu: trình duyệt tự điền họ tên, email cho người thật thì không có lần gõ nào.
+ */
+export const MIN_FILL_MS = 3_000
+
+/**
+ * Lần gửi trông như của chương trình tự động: ô bẫy (ô ẩn người thật không thấy, không tới được bằng phím Tab) có chữ, hoặc form gửi sớm
+ * hơn `MIN_FILL_MS`. Khi đúng, form không gửi gì — không gọi kho hay máy chủ, không báo thành công giả.
+ */
+export function looksAutomated({ trap, elapsedMs }: { trap: string; elapsedMs: number }): boolean {
+  return trap.trim() !== '' || elapsedMs < MIN_FILL_MS
 }

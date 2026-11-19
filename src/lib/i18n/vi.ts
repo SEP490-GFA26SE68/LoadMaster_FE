@@ -44,12 +44,14 @@ import { companyProfile } from './vi/companyProfile'
 import { support } from './vi/support'
 import { contacts } from './vi/contacts'
 import { landing } from './vi/landing'
+import { landingFaq } from './vi/landingFaq'
 import { landingFooter } from './vi/landingFooter'
 import { landingJourney } from './vi/landingJourney'
 import { landingMotion } from './vi/landingMotion'
 import { landingStage } from './vi/landingStage'
 import { landingStory } from './vi/landingStory'
 import { pricing } from './vi/pricing'
+import { privacy } from './vi/privacy'
 import { warehouseCustomers } from './vi/warehouseCustomers'
 import { backendTripRoute } from './vi/backendTripRoute'
 import { serverPlans } from './vi/serverPlans'
@@ -118,12 +120,14 @@ export const vi = {
   support,
   contacts,
   landing,
+  landingFaq,
   landingFooter,
   landingJourney,
   landingMotion,
   landingStage,
   landingStory,
   pricing,
+  privacy,
   warehouseCustomers,
   backendTripRoute,
   serverPlans,

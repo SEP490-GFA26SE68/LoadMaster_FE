@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 import { CONTACT_LIMITS, createMockDb } from '@/lib/mock-db'
-import { contactDefaults, contactFormSchema, NO_PLAN, type ContactFormValues } from './contact-form'
+import { contactDefaults, contactFormSchema, looksAutomated, MIN_FILL_MS, NO_PLAN, toNewContact, type ContactFormValues } from './contact-form'
 
 /**
  * Luật của form liên hệ công khai: cùng giới hạn độ dài và luật email với kho (`contacts.test.ts` kiểm phía kho), và giá trị chọn sẵn từ
@@ -14,6 +14,7 @@ const VALID: ContactFormValues = {
   requestType: 'INQUIRY',
   planId: NO_PLAN,
   message: '',
+  consent: true,
 }
 
 /** Mã lỗi đầu tiên của ô `field` khi ô đó nhận `value`; `undefined` là ô hợp lệ. */
@@ -64,4 +65,22 @@ test('the plan and request type come from the URL only when they are known and o
   // Gói đã ngừng bán không chọn sẵn được
   const retired = plans.map((plan) => (plan.id === 'PLAN-001' ? { ...plan, active: false } : plan))
   expect(pick('goi=PLAN-001&loai=bao-gia', retired)).toStrictEqual([NO_PLAN, 'PRICING'])
+})
+
+test('the privacy consent is required, starts unticked and is never sent', () => {
+  const unticked = contactFormSchema.safeParse({ ...VALID, consent: false })
+  expect(unticked.success ? [] : unticked.error.issues.map((issue) => [issue.path[0], issue.message])).toStrictEqual([
+    ['consent', 'landing.contact.form.errors.consentRequired'],
+  ])
+  expect(contactDefaults(new URLSearchParams(), []).consent).toBe(false)
+  expect(Object.keys(toNewContact(VALID))).toStrictEqual(['fullName', 'email', 'requestType'])
+})
+
+test('a filled trap field or a send within the minimum fill time looks automated', () => {
+  expect(MIN_FILL_MS).toBe(3000)
+  expect(looksAutomated({ trap: '', elapsedMs: 3000 })).toBe(false)
+  expect(looksAutomated({ trap: '', elapsedMs: 2999 })).toBe(true)
+  expect(looksAutomated({ trap: 'https://spam.example', elapsedMs: 60_000 })).toBe(true)
+  // Khoảng trắng do trình duyệt để lại không phải chữ
+  expect(looksAutomated({ trap: '   ', elapsedMs: 60_000 })).toBe(false)
 })

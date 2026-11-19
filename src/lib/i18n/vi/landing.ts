@@ -102,6 +102,17 @@ export const landing = {
       message: 'Nội dung',
       messagePlaceholder: 'Số xe, tuyến hay chạy, điều bạn muốn biết thêm.',
       submit: 'Gửi yêu cầu',
+      /** Ô đồng ý bắt buộc: chữ trước, liên kết tới chính sách bảo mật (mở thẻ mới để dữ liệu đang nhập còn nguyên), chữ sau. */
+      consent: {
+        before: 'Tôi đã đọc và đồng ý với ',
+        link: 'chính sách bảo mật',
+        after: '.',
+        newTab: '(mở trong thẻ mới)',
+      },
+      /** Ô bẫy ẩn — người thật không thấy, chương trình gửi tự động hay điền; chỉ để nhãn của ô không trống. */
+      trap: 'Để trống ô này',
+      /** Lần gửi bị chặn vì trông như chương trình tự động (ô bẫy có chữ, hoặc gửi ngay sau khi form hiện). Dữ liệu đang nhập giữ nguyên. */
+      blocked: 'Chưa gửi được: lần gửi này trông như của chương trình tự động. Bạn kiểm lại các ô rồi bấm "Gửi yêu cầu" lần nữa.',
       errors: {
         fullNameRequired: 'Nhập họ tên',
         fullNameTooLong: 'Họ tên tối đa {max} ký tự',
@@ -111,6 +122,7 @@ export const landing = {
         phoneTooLong: 'Số điện thoại tối đa {max} ký tự',
         companyTooLong: 'Tên công ty tối đa {max} ký tự',
         messageTooLong: 'Nội dung tối đa {max} ký tự',
+        consentRequired: 'Đánh dấu ô đồng ý để gửi yêu cầu',
       },
     },
     sent: {

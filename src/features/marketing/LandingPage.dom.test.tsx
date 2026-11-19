@@ -61,7 +61,17 @@ afterEach(() => {
   media = null
   sessionStorage.clear()
   vi.restoreAllMocks()
+  vi.useRealTimers()
 })
+
+/** Form liên hệ chỉ gửi khi đã hiện ít nhất 3 giây: test giả `Date` từ lúc mở trang rồi tua đồng hồ, `setTimeout` vẫn chạy thật. */
+function fakeClock() {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  return { wait: (ms: number) => vi.setSystemTime(Date.now() + ms) }
+}
+
+const BLOCKED = 'Chưa gửi được: lần gửi này trông như của chương trình tự động. Bạn kiểm lại các ô rồi bấm "Gửi yêu cầu" lần nữa.'
+const CONSENT = /^Tôi đã đọc và đồng ý với chính sách bảo mật/
 
 test('a guest sees what the app does and how to get in touch: sign-in in the header, no sign-up or purchase', async () => {
   renderLanding('/gioi-thieu')
@@ -71,7 +81,7 @@ test('a guest sees what the app does and how to get in touch: sign-in in the hea
   expect(screen.getByRole('link', { name: 'Bỏ qua tới nội dung chính' })).toHaveAttribute('href', '#noi-dung-chinh')
   expect(screen.getByRole('link', { name: 'Nhận tư vấn' })).toHaveAttribute('href', '/gioi-thieu#lien-he')
   expect(screen.getByRole('link', { name: 'Xem bảng giá' })).toHaveAttribute('href', '/bang-gia')
-  for (const name of ['Ba chuyện quen thuộc của một chuyến hàng', 'Một chuyến hàng trên LoadMaster', 'Liên hệ với LoadMaster']) {
+  for (const name of ['Ba chuyện quen thuộc của một chuyến hàng', 'Một chuyến hàng trên LoadMaster', 'Hỏi đáp', 'Liên hệ với LoadMaster']) {
     expect(screen.getByRole('heading', { level: 2, name })).toBeInTheDocument()
   }
   // Năm chặng của một chuyến, theo thứ tự, mỗi chặng một tiêu đề
@@ -125,7 +135,7 @@ test('with motion on, split text keeps every accessible name: the title, the sec
   // Chữ đã tách thành mảnh chỉ để nhìn; tên truy cập vẫn là đúng một câu
   expect(h1.querySelector('[aria-hidden="true"]')).not.toBeNull()
   expect(screen.getByRole('region', { name: title })).toBeInTheDocument()
-  for (const name of ['Ba chuyện quen thuộc của một chuyến hàng', 'Một chuyến hàng trên LoadMaster', 'Gói cước', 'Liên hệ với LoadMaster']) {
+  for (const name of ['Ba chuyện quen thuộc của một chuyến hàng', 'Một chuyến hàng trên LoadMaster', 'Gói cước', 'Hỏi đáp', 'Liên hệ với LoadMaster']) {
     expect(screen.getByRole('heading', { level: 2, name })).toBeInTheDocument()
   }
   for (const name of CHAPTER_TITLES) expect(screen.getByRole('heading', { level: 3, name })).toBeInTheDocument()
@@ -169,8 +179,10 @@ test('a malformed anchor (#%) does not break the page', () => {
   expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument()
 })
 
-test('the contact form needs a name and a valid email, keeps the input when sending fails, then sends a NEW request', async () => {
+test('the contact form needs a name, a valid email and the privacy consent, refuses a too-fast send, keeps the input when sending fails, then sends a NEW request', async () => {
+  const clock = fakeClock()
   const user = userEvent.setup()
+  const create = vi.spyOn(getMockDb(), 'createGuestContact')
   renderLanding('/gioi-thieu?goi=PLAN-002&loai=bao-gia#lien-he')
   // Tới qua neo: tiêu đề của phần nhận focus
   expect(screen.getByRole('heading', { level: 2, name: 'Liên hệ với LoadMaster' })).toHaveFocus()
@@ -184,6 +196,15 @@ test('the contact form needs a name and a valid email, keeps the input when send
   expect(await screen.findByText('Nhập họ tên')).toBeInTheDocument()
   expect(screen.getByText('Nhập email')).toBeInTheDocument()
   expect(name).toHaveAttribute('aria-invalid', 'true')
+  // Ô đồng ý bắt đầu trống và chặn gửi; câu lỗi nối vào ô
+  const consent = screen.getByRole('checkbox', { name: CONSENT })
+  expect(consent).not.toBeChecked()
+  expect(consent).toHaveAttribute('aria-invalid', 'true')
+  expect(consent).toHaveAccessibleDescription('Đánh dấu ô đồng ý để gửi yêu cầu')
+  // Nhãn dẫn tới chính sách bảo mật, mở ở thẻ mới cùng ngôn ngữ đang dùng
+  const policy = screen.getByRole('link', { name: /^chính sách bảo mật\s?\(mở trong thẻ mới\)$/ })
+  expect(policy).toHaveAttribute('href', '/chinh-sach-bao-mat?lang=vi')
+  expect(policy).toHaveAttribute('target', '_blank')
 
   await user.type(name, 'Trần Minh Quân')
   await user.type(email, 'quan@')
@@ -194,14 +215,32 @@ test('the contact form needs a name and a valid email, keeps the input when send
   await user.type(email, 'quan@vantaiminhquan.vn')
   await user.type(screen.getByRole('textbox', { name: 'Tên công ty' }), 'Vận tải Minh Quân')
   await user.type(screen.getByRole('textbox', { name: 'Nội dung' }), 'Đội 12 xe tải, cần báo giá gói Pro.')
+  // Chưa đánh dấu đồng ý: vẫn không gửi
+  await user.click(submit)
+  expect(screen.getByText('Đánh dấu ô đồng ý để gửi yêu cầu')).toBeInTheDocument()
+  expect(create).not.toHaveBeenCalled()
+  await user.click(consent)
+  expect(consent).toBeChecked()
+  await waitFor(() => expect(screen.queryByText('Đánh dấu ô đồng ý để gửi yêu cầu')).not.toBeInTheDocument())
 
-  // Kho từ chối: banner nói mục nào, dữ liệu đang nhập giữ nguyên
-  vi.spyOn(getMockDb(), 'createGuestContact').mockRejectedValueOnce(new MockDbError('CONTACT_INVALID', { field: 'email' }))
+  // Gửi ngay khi form vừa hiện (dưới 3 giây): coi như chương trình tự động — không gọi kho, không báo thành công, banner ngay trên nút
+  await user.click(submit)
+  const blocked = await screen.findByText(BLOCKED)
+  expect(blocked.closest('[role="alert"]')).not.toBeNull()
+  expect(create).not.toHaveBeenCalled()
+  expect(screen.queryByRole('heading', { name: /Đã ghi nhận yêu cầu/ })).not.toBeInTheDocument()
+  expect(name).toHaveValue('Trần Minh Quân')
+  expect(consent).toBeChecked()
+
+  // Đủ 3 giây. Kho từ chối: banner nói mục nào, dữ liệu đang nhập giữ nguyên
+  clock.wait(3000)
+  create.mockRejectedValueOnce(new MockDbError('CONTACT_INVALID', { field: 'email' }))
   await user.click(submit)
   const refused = await screen.findByText('Mục "Email" của yêu cầu liên hệ chưa hợp lệ. Kiểm tra lại mục đó rồi thử lại.')
   expect(refused.closest('[role="alert"]')).not.toBeNull()
   expect(name).toHaveValue('Trần Minh Quân')
   expect(email).toHaveValue('quan@vantaiminhquan.vn')
+  expect(screen.queryByText(BLOCKED)).not.toBeInTheDocument()
 
   await user.click(submit)
   const sent = await screen.findByRole('heading', { name: 'Đã ghi nhận yêu cầu LH-004' }, SLOW)
@@ -227,6 +266,41 @@ test('the contact form needs a name and a valid email, keeps the input when send
   })
   expect(await db.getGuestContact('LH-004')).not.toHaveProperty('phoneNumber')
   db.restoreSession(null)
+  // Ô đồng ý và ô bẫy không bao giờ đi theo yêu cầu
+  expect(create).toHaveBeenCalledTimes(2)
+  expect(Object.keys(create.mock.calls[1]?.[0] ?? {}).sort()).toStrictEqual(['companyName', 'email', 'fullName', 'interestedPlanId', 'message', 'requestType'])
+})
+
+test('a filled trap field blocks the send without calling the store; a real person sends again once it is empty', async () => {
+  const clock = fakeClock()
+  const user = userEvent.setup()
+  const create = vi.spyOn(getMockDb(), 'createGuestContact')
+  renderLanding('/gioi-thieu#lien-he')
+  const submit = await screen.findByRole('button', { name: 'Gửi yêu cầu' }, SLOW)
+
+  // Ô bẫy: ngoài khung nhìn, trình đọc màn hình không đọc, phím Tab không tới, trình duyệt không tự điền
+  const trap = document.querySelector<HTMLInputElement>('input[name="website"]')
+  expect(trap).not.toBeNull()
+  expect(trap?.closest('[aria-hidden]')).not.toBeNull()
+  expect(trap).toHaveAttribute('tabindex', '-1')
+  expect(trap).toHaveAttribute('autocomplete', 'off')
+  expect(screen.queryByRole('textbox', { name: 'Để trống ô này' })).not.toBeInTheDocument()
+
+  await user.type(screen.getByRole('textbox', { name: 'Họ tên' }), 'Phạm Thu Trang')
+  await user.type(screen.getByRole('textbox', { name: 'Email' }), 'trang@vantaicuulong.vn')
+  await user.click(screen.getByRole('checkbox', { name: CONSENT }))
+  clock.wait(60_000)
+  await user.type(trap as HTMLInputElement, 'https://spam.example')
+  await user.click(submit)
+  expect(await screen.findByText(BLOCKED)).toBeInTheDocument()
+  expect(create).not.toHaveBeenCalled()
+  expect(screen.getByRole('textbox', { name: 'Họ tên' })).toHaveValue('Phạm Thu Trang')
+
+  // Lần gửi bị chặn xoá ô bẫy: người thật bấm gửi lần nữa là đi
+  expect(trap).toHaveValue('')
+  await user.click(submit)
+  expect(await screen.findByRole('heading', { name: /^Đã ghi nhận yêu cầu LH-\d+$/ }, SLOW)).toHaveFocus()
+  expect(create).toHaveBeenCalledTimes(1)
 })
 
 test('a signed-in company admin is offered the app, not the sign-in screen', async () => {

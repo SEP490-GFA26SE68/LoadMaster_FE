@@ -3,7 +3,7 @@ import type { MessageKey } from '@/lib/i18n'
 import { CONTACT_ANCHOR } from './contact-form'
 
 /**
- * Phần dùng chung của hai trang công khai (`/gioi-thieu`, `/bang-gia`): cỡ chạm và mục điều hướng của đầu trang. Đầu trang hiện mục
+ * Phần dùng chung của các trang công khai (`/gioi-thieu`, `/bang-gia`, `/chinh-sach-bao-mat`): cỡ chạm và mục điều hướng của đầu trang. Đầu trang hiện mục
  * thành hàng từ 1.024 px (ba mục vừa cả tiếng Việt lẫn tiếng Anh), hẹp hơn thì gom vào nút menu (`PublicNavMenu`).
  */
 
