@@ -66,18 +66,30 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
 - **Điều phối viên duyệt phương án** (FE-0-07, D-80): `plans.approve` (chỉnh tay và Duyệt trong Planner) là của điều phối — lập chuyến, chạy tối ưu,
   chỉnh tay, rồi "Duyệt phương án" / "Duyệt bản chỉnh". Quản lý công ty chỉ đọc + xuất báo cáo: mở Planner ở chế độ chỉ xem, một dòng lý do. Không có hàng đợi `/duyet` hay quyền duyệt của quản lý.
 - Đường dẫn của các màn đã bỏ (`/lo-hang`, `/nhan-hang`, `/duyet`) là màn 404.
-- **Trang công khai** `/gioi-thieu` (giới thiệu + form liên hệ), `/bang-gia` và `/chinh-sach-bao-mat` (`features/marketing`, hằng `PUBLIC_HOME`,
-  `PUBLIC_PRICING`, `PUBLIC_PRIVACY` ở `auth/landing.ts`) nằm **ngoài** `RequireAuth`, không đòi quyền nào; người đã đăng nhập vẫn mở được (nút "Vào ứng dụng" thay "Đăng nhập"). Gốc
+- **Trang công khai** `/gioi-thieu` (giới thiệu + form liên hệ), `/bang-gia`, `/chinh-sach-bao-mat` và `/dieu-khoan-su-dung` (`features/marketing`,
+  hằng `PUBLIC_HOME`, `PUBLIC_PRICING`, `PUBLIC_PRIVACY`, `PUBLIC_TERMS` ở `auth/landing.ts`) nằm **ngoài** `RequireAuth`, không đòi quyền nào; người đã đăng nhập vẫn mở được (nút "Vào ứng dụng" thay "Đăng nhập"). Gốc
   `/` (`RootLandingPage`): khách sang `/gioi-thieu` (giữ query và neo), người đã đăng nhập sang màn chính của vai trò, lúc đang mở lại phiên Keycloak chưa quyết gì; mở trang khác khi chưa đăng
-  nhập vẫn về `/dang-nhap` (nhớ trang đó). **Chính sách bảo mật** `/chinh-sach-bao-mat` (`marketing/privacy/`, nhánh từ điển `privacy`): năm
-  mục — form liên hệ, đăng ký, khi dùng ứng dụng, trên trình duyệt, hỏi về dữ liệu —, mỗi câu nói đúng điều mã hôm nay làm và chọn theo nguồn
-  đang chạy (máy chủ hay bản demo: `usesBackend('contacts')`, `REGISTRATION_CAPABILITIES`, `backendConfig.authSource`) — người đọc yêu cầu
-  liên hệ theo `CONTACT_READER_ROLES` (`contacts/contact-readers.ts`: máy chủ cho thêm quản lý nền tảng), máy chủ trả lời qua email (Brevo),
-  email của máy chủ khi đăng ký, VNPay khi thanh toán thật, Goong khi tìm địa chỉ và tính tuyến; dấu tích đồng ý chỉ để form cho gửi, không
-  gửi đi. Không hạn lưu trữ, pháp
-  nhân, địa chỉ, mã số thuế, email hay cam kết tuân thủ nào chưa có — hỏi về dữ liệu đi qua form liên hệ. Sửa luật thu hay lưu dữ liệu (ô của
-  form, nơi lưu phiên, bản đồ, GPS) thì sửa trang này và ngày "Cập nhật lần cuối" cùng lúc. Bảng điều khiển ở `/tong-quan` (`/dashboard`
-  chuyển hướng sang đó). Ai đã đăng nhập
+  nhập vẫn về `/dang-nhap` (nhớ trang đó). **Hai trang pháp lý** dùng chung khung `marketing/legal/` (`LegalPage`: dải trời có bộ chuyển hai
+  tài liệu, ngày "Cập nhật lần cuối" và nút in; tóm tắt; mục lục dính từ 1.024 px với `aria-current`, hẹp hơn là `<details>` thu gọn; mục đánh
+  số có neo, chữ 16 px, dòng khoảng 75 ký tự; hai thẻ cuối "Đọc cùng" — trang kia — và "Còn câu hỏi?" — form liên hệ; không nút chính; bản in
+  bỏ đầu trang, chân trang, trợ lý, mục lục). **Chính sách bảo mật** `/chinh-sach-bao-mat` (`marketing/privacy/`, nhánh từ điển `privacy`):
+  mười hai mục, **Điều khoản sử dụng** `/dieu-khoan-su-dung` (`marketing/terms/`, nhánh `terms`): mười một mục. Mỗi câu nói đúng điều mã hôm
+  nay làm và chọn theo nguồn đang chạy (máy chủ hay bản demo: `usesBackend(…)`, `REGISTRATION_CAPABILITIES`, `backendConfig.authSource`) —
+  người đọc yêu cầu liên hệ theo `CONTACT_READER_ROLES` (`contacts/contact-readers.ts`: máy chủ cho thêm quản lý nền tảng), máy chủ trả lời
+  qua email (Brevo), email của máy chủ khi đăng ký, VNPay khi thanh toán thật, Goong khi tìm địa chỉ và tính tuyến; dấu tích đồng ý chỉ để
+  form cho gửi, không gửi đi. Mọi số là tham số từ hằng của code (credit, kỳ gói, ngưỡng sắp hết credit từ `BILLING_CONSTANTS`; hạn ký thoả
+  thuận dùng thử, ngày xoá và ngày cập nhật ở `legal/legal-facts.ts`). Hạn lưu trữ chỉ nói thứ code có (dùng thử: khoá sau 72 giờ, xoá 30 ngày
+  sau khi hết hạn); dữ liệu khác trên máy chủ ghi "chưa ấn định". Không pháp nhân, địa chỉ, mã số thuế, email hay cam kết tuân thủ nào chưa
+  có — hỏi về dữ liệu đi qua form liên hệ; thông tin liên hệ chỉ hiện khi `SITE_INFO` có giá trị. Sửa luật thu hay lưu dữ liệu (ô của form,
+  nơi lưu phiên, bản đồ, GPS), giá credit hay luật gói thì sửa trang tương ứng và `LEGAL_UPDATED_AT` cùng lúc.
+- **SEO** (`lib/seo/`): `index.html` mang thẻ mô tả, Open Graph, Twitter và ảnh chia sẻ `public/og-image.png` (1.200 × 630); `usePageMeta`
+  (`app/route-title.ts`, cùng nhịp với tiêu đề tab) đặt mô tả (nhánh `seo`), `robots`, `canonical` và `og:url` theo route. Chỉ năm trang được
+  lập chỉ mục (`SEO_PAGES` ở `lib/seo/site-files.ts`): `/gioi-thieu`, `/bang-gia`, `/chinh-sach-bao-mat`, `/dieu-khoan-su-dung`,
+  `/phuong-an-mau` (khi route đó có) — mọi màn khác (đăng nhập, đăng ký, trong ứng dụng, 403, 404) `noindex`. Tên miền không viết
+  trong code: `VITE_SITE_URL` (tuỳ chọn, `lib/site-config.ts`) bật `canonical`, `og:url`, ảnh chia sẻ tuyệt đối và `sitemap.xml`; plugin
+  `seo` của `vite.config.ts` sinh `robots.txt` (luôn) và `sitemap.xml` (khi có `VITE_SITE_URL`). JSON-LD: `SoftwareApplication` ở trang giới
+  thiệu và `FAQPage` từ Hỏi đáp (`FaqStructuredData`) — không đánh giá, giá, email hay số điện thoại.
+- Bảng điều khiển ở `/tong-quan` (`/dashboard` chuyển hướng sang đó). Ai đã đăng nhập
   trong lúc layout `RequireAuth` đang mở — kể cả phiên Keycloak mở lại **sau** khi layout mount — đăng xuất thì về `/dang-nhap`, không nhớ trang:
   "đã thấy người đăng nhập" là state ghi trong lúc vẽ, không chụp lúc mount. Màn đăng nhập có liên kết "Về trang giới thiệu" (dưới 640 px chỉ còn
   mũi tên, chữ vẫn là tên truy cập).
@@ -169,7 +181,8 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   form trái, kết quả phải (ba thẻ cạnh nhau từ 640 px); `e2e/landing-try.spec.ts` đo gọn trong 900 px ở 1.440 × 900 và điện thoại 390 px.
 - **Chân trang công khai** (`PublicFooter`, `marketing/footer/`): dải đường có xe tải chạy vào một lần, khối thương hiệu (logo, khẩu
   hiệu, nút tới form liên hệ, ngôn ngữ), bốn cột — Sản phẩm (hai neo của trang giới thiệu, Bảng giá) · Dành cho (năm vai trò công ty, là
-  chữ) · Hỗ trợ (Hỏi đáp → `#hoi-dap`, Liên hệ tư vấn → `#lien-he`, Chính sách bảo mật → `/chinh-sach-bao-mat`) · Tài khoản ("Đăng nhập" hay "Vào ứng dụng"; khách có thêm hai lối đăng ký khi nối backend)
+  chữ) · Hỗ trợ (Hỏi đáp → `#hoi-dap`, Liên hệ tư vấn → `#lien-he`, Chính sách bảo mật → `/chinh-sach-bao-mat`, Điều khoản sử dụng →
+  `/dieu-khoan-su-dung`; hàng cuối không lặp lại hai liên kết pháp lý) · Tài khoản ("Đăng nhập" hay "Vào ứng dụng"; khách có thêm hai lối đăng ký khi nối backend)
   — và nút "Lên đầu trang". Cột chỉ chứa liên kết tới thứ **đang có**. Thông tin liên hệ của công ty ở `lib/site-info.ts` (`SITE_INFO`):
   email, số điện thoại, địa chỉ, mã số thuế đều `null` tới khi chủ sản phẩm đưa số thật, và chân trang không vẽ dòng nào cho giá trị `null`
   — không viết email hay số điện thoại chưa xác nhận vào code.
@@ -479,9 +492,11 @@ src/
     billing/            gói cước và credit của công ty `/goi-cuoc`, trang thanh toán giả lập `/thanh-toan/gia-lap`
     platform/           màn của nền tảng: danh mục gói cước `/nen-tang/goi`, Công ty `/nen-tang/cong-ty`
     support/            yêu cầu hỗ trợ: màn `/ho-tro`, hộp thoại `SupportTicketDialog` của người dùng công ty, cuộc trao đổi dùng chung `TicketThread`
-    marketing/          ba trang công khai ngoài `RequireAuth`: giới thiệu `/gioi-thieu` (kèm form liên hệ của khách `ContactForm`), bảng giá
-                        `/bang-gia` và chính sách bảo mật `privacy/` (`PrivacyPage`, `/chinh-sach-bao-mat`); Hỏi đáp `faq/` (`LandingFaq`,
-                        chủ đề `faq-topics.ts`); khung chung `PublicPage` (đầu trang `PublicHeader`, chân trang `PublicFooter` + `footer/`, cuộn tới neo
+    marketing/          bốn trang công khai ngoài `RequireAuth`: giới thiệu `/gioi-thieu` (kèm form liên hệ của khách `ContactForm`), bảng giá
+                        `/bang-gia`, chính sách bảo mật `privacy/` (`PrivacyPage`, `/chinh-sach-bao-mat`) và điều khoản sử dụng `terms/`
+                        (`TermsPage`, `/dieu-khoan-su-dung`) trên khung pháp lý chung `legal/` (`LegalPage`, `LegalHeader`, `LegalToc`,
+                        `LegalFooterCards`, `useActiveSection`, số dùng chung `legal-facts.ts`); Hỏi đáp `faq/` (`LandingFaq`,
+                        chủ đề `faq-topics.ts`, JSON-LD `FaqStructuredData`); khung chung `PublicPage` (đầu trang `PublicHeader`, chân trang `PublicFooter` + `footer/`, cuộn tới neo
                         `useHashScroll`); khung 3D chuyến mẫu `LandingStage` (cổng `useStageGate`, phần 3D ở `viewer3d/LandingStageViewer`);
                         "Ba chuyện quen thuộc" `LandingProblems`; "Một chuyến hàng" `journey/` (`LandingJourney`, thùng xe `JourneyTruck`,
                         hình học + tiến độ thuần `journey-model.ts`, `useJourneyProgress`, `useJourneySample`); "Thử với hàng của bạn"
@@ -494,6 +509,8 @@ src/
     contacts/           yêu cầu liên hệ của khách `/lien-he-khach` (quản trị hệ thống, hỗ trợ khách hàng): bảng, khung xử lý `ContactPanel`
   lib/                  format, helper, mock dùng chung, api client
     i18n/               từ điển vi/en (mỗi nhánh một file trong vi/, en/), provider, hook
+    seo/                thẻ của trang công khai (mô tả, robots, canonical, Open Graph), JSON-LD, `robots.txt` / `sitemap.xml`
+                        (`site-files.ts` không import gì — `vite.config.ts` cũng dùng)
     mock-db/            kho in-memory (LM-026). Quy ước tên: `<x>-model.ts` kiểu + hằng số + luật thuần, `db-<x>.ts` hàm kho (mọi hàm
                         đọc/ghi qua `ctx.scope`), `db-api-<x>.ts` hàm công khai, `seed-<x>.ts` dữ liệu mẫu. Đáng biết: `tenancy.ts` (cách ly theo
                         công ty của phiên; `tenancy.test.ts` liệt kê mọi hàm công khai), `session-role.ts` (người đăng nhập và kiểm vai trò),
