@@ -6,8 +6,7 @@
 
 /**
  * Trang công khai được lập chỉ mục: khoá của nhánh `seo.pages` → đường dẫn. Mọi màn khác (đăng nhập, đăng ký, trong ứng dụng, 404) mang
- * `noindex`. Bốn đường dẫn đầu trùng hằng `PUBLIC_*` của `features/auth/landing.ts` (`site-files.test.ts` canh); `/phuong-an-mau` chỉ
- * được lập chỉ mục khi route đó có trong bảng route — đường dẫn chưa có route là màn 404, luôn `noindex`.
+ * `noindex`. Năm đường dẫn trùng hằng `PUBLIC_*` của `features/auth/landing.ts` (`site-files.test.ts` canh).
  */
 export const SEO_PAGES = {
   landing: '/gioi-thieu',

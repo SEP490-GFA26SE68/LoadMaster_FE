@@ -26,8 +26,10 @@ export const landingFooter = {
   },
   links: {
     how: 'Cách hoạt động',
+    try: 'Thử ngay',
     plans: 'Gói cước',
     pricing: 'Bảng giá',
+    samplePlan: 'Phương án mẫu 3D',
     faq: 'Hỏi đáp',
     contact: 'Liên hệ tư vấn',
     privacy: 'Chính sách bảo mật',

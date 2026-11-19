@@ -20,8 +20,10 @@ export const landingFooter = {
   },
   links: {
     how: 'How it works',
+    try: 'Try it',
     plans: 'Plans',
     pricing: 'Pricing',
+    samplePlan: '3D sample plan',
     faq: 'FAQ',
     contact: 'Ask for a consultation',
     privacy: 'Privacy policy',

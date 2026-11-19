@@ -54,8 +54,10 @@ test('the footer is a labelled landmark with one link column per area; anchors c
 
   expect(linksOf(within(footer).getByRole('navigation', { name: 'Sản phẩm' }))).toStrictEqual([
     ['Cách hoạt động', '/gioi-thieu#cach-hoat-dong'],
+    ['Thử ngay', '/gioi-thieu#thu-ngay'],
     ['Gói cước', '/gioi-thieu#goi-cuoc'],
     ['Bảng giá', '/bang-gia'],
+    ['Phương án mẫu 3D', '/phuong-an-mau'],
   ])
   expect(linksOf(within(footer).getByRole('navigation', { name: 'Hỗ trợ' }))).toStrictEqual([
     ['Hỏi đáp', '/gioi-thieu#hoi-dap'],
@@ -69,7 +71,7 @@ test('the footer is a labelled landmark with one link column per area; anchors c
   ])
   // Chỉ liên kết tới thứ đang có trong app — không trang nào chưa có, không ra ngoài app
   const hrefs = within(footer).getAllByRole('link').map((link) => link.getAttribute('href'))
-  expect(hrefs.every((href) => /^\/(gioi-thieu#(cach-hoat-dong|goi-cuoc|hoi-dap|lien-he)|bang-gia|chinh-sach-bao-mat|dieu-khoan-su-dung|dang-nhap)$/.test(href ?? ''))).toBe(true)
+  expect(hrefs.every((href) => /^\/(gioi-thieu#(cach-hoat-dong|thu-ngay|goi-cuoc|hoi-dap|lien-he)|bang-gia|phuong-an-mau|chinh-sach-bao-mat|dieu-khoan-su-dung|dang-nhap)$/.test(href ?? ''))).toBe(true)
   // Trang đang mở là trang riêng (Bảng giá); neo trong trang giới thiệu không phải "trang hiện tại"
   expect(within(footer).getByRole('link', { name: 'Bảng giá' })).toHaveAttribute('aria-current', 'page')
   expect(within(footer).getByRole('link', { name: 'Cách hoạt động' })).not.toHaveAttribute('aria-current')
@@ -131,8 +133,10 @@ test('reads in English', () => {
   ])
   expect(linksOf(within(footer).getByRole('navigation', { name: 'Product' }))).toStrictEqual([
     ['How it works', '/gioi-thieu#cach-hoat-dong'],
+    ['Try it', '/gioi-thieu#thu-ngay'],
     ['Plans', '/gioi-thieu#goi-cuoc'],
     ['Pricing', '/bang-gia'],
+    ['3D sample plan', '/phuong-an-mau'],
   ])
   expect(linksOf(within(footer).getByRole('navigation', { name: 'Support' }))).toStrictEqual([
     ['FAQ', '/gioi-thieu#hoi-dap'],

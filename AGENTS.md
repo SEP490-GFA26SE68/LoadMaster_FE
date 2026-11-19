@@ -201,7 +201,7 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   hẹp hơn khung ở trên, cột ở dưới, nút 56 px trên máy cảm ứng. Lối vào: nút "Toàn màn hình" của khung 3D mở đầu (giữ phương án đang chọn) và
   liên kết của bản thử. `e2e/sample-plan.spec.ts`.
 - **Chân trang công khai** (`PublicFooter`, `marketing/footer/`): dải đường có xe tải chạy vào một lần, khối thương hiệu (logo, khẩu
-  hiệu, nút tới form liên hệ, ngôn ngữ), bốn cột — Sản phẩm (hai neo của trang giới thiệu, Bảng giá) · Dành cho (năm vai trò công ty, là
+  hiệu, nút tới form liên hệ, ngôn ngữ), bốn cột — Sản phẩm (ba neo của trang giới thiệu, Bảng giá, Phương án mẫu 3D) · Dành cho (năm vai trò công ty, là
   chữ) · Hỗ trợ (Hỏi đáp → `#hoi-dap`, Liên hệ tư vấn → `#lien-he`, Chính sách bảo mật → `/chinh-sach-bao-mat`, Điều khoản sử dụng →
   `/dieu-khoan-su-dung`; hàng cuối không lặp lại hai liên kết pháp lý) · Tài khoản ("Đăng nhập" hay "Vào ứng dụng"; khách có thêm hai lối đăng ký khi nối backend)
   — và nút "Lên đầu trang". Cột chỉ chứa liên kết tới thứ **đang có**. Thông tin liên hệ của công ty ở `lib/site-info.ts` (`SITE_INFO`):

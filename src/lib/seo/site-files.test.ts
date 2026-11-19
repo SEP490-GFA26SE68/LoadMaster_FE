@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { PUBLIC_HOME, PUBLIC_PRICING, PUBLIC_PRIVACY, PUBLIC_TERMS } from '@/features/auth/landing'
+import { PUBLIC_HOME, PUBLIC_PRICING, PUBLIC_PRIVACY, PUBLIC_SAMPLE_PLAN, PUBLIC_TERMS } from '@/features/auth/landing'
 import { resolveSiteUrl, robotsTxt, SEO_PAGES, seoPageOf, sitemapXml, withAbsoluteShareImage } from './site-files'
 
 test('the indexable pages are the public pages of the app, by the same paths as the router', () => {
@@ -8,7 +8,7 @@ test('the indexable pages are the public pages of the app, by the same paths as 
     pricing: PUBLIC_PRICING,
     privacy: PUBLIC_PRIVACY,
     terms: PUBLIC_TERMS,
-    samplePlan: '/phuong-an-mau',
+    samplePlan: PUBLIC_SAMPLE_PLAN,
   })
 })
 
