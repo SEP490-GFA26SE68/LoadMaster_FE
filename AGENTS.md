@@ -207,7 +207,8 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   và không bao giờ nói mình là AI; câu mở đầu nói Lumo trả lời từ tài liệu của LoadMaster, không phải nhân viên tư vấn. Khớp câu hỏi bằng
   từ khoá vi + en không dấu (`assistant-match.ts`, dưới ngưỡng thì nói thẳng là chưa có câu trả lời). Lớp mạng `assistant-api.ts`
   (`askAssistant`, `POST /api/assistant/messages` — chưa có ở BE: khớp ở trình duyệt sau 500 ms) → `useAskAssistantMutation`. Nút mở góc
-  dưới phải (chữ từ 640 px, 48 px / 56 px cảm ứng, chừa vùng an toàn) nâng lên khi chạm phần tử mang `data-assistant-avoid` (nút chính của
+  dưới phải (chữ từ 640 px, 48 px / 56 px cảm ứng, chừa vùng an toàn) có **viền màu quay** (`animated gradient border`: `conic-gradient` thang cyan · xanh lam · xanh lá · hổ phách, không tím; quay hai vòng
+  ~4,8 s khi trang mở rồi đứng yên — dưới mốc 5 s của WCAG 2.2.2 —, rê chuột / focus thì quay tiếp, giảm chuyển động thì đứng yên) và nâng lên khi chạm phần tử mang `data-assistant-avoid` (nút chính của
   phần mở đầu, nút "Tạm dừng / Tiếp tục / Xếp lại" của khung 3D, bộ chọn phương án dưới khung, "Lên đầu trang" —
   `useLauncherLift`; nâng lên chạm phần tử khác thì nâng tiếp qua nó); khung chat là chunk lười: từ 768 px thẻ trắng không modal cạnh nút, hẹp hơn tờ phủ
   cả màn modal. Mỗi câu trả lời tối đa ba câu kèm liên kết tới phần của trang hay Bảng giá; lối đăng ký chỉ khi khách tự đăng ký được. Tính
@@ -875,7 +876,7 @@ Nguồn: `design/brand/` (`source/` là file người dùng giao; `logo-mark*.sv
 - Kính (blur nền, viền sáng) dùng **theo lớp**, không rải tuỳ ý. **Được** ở chrome điều hướng (`.glass-nav` trên dải trời) và panel điều khiển
   nổi đè lên khung 3D nền tối (`.glass-dark`): kính là kính **tối**. Ô số liệu là card nền đặc. **Không** ở bảng, form, inspector và mọi bề mặt
   người dùng đọc lâu — những chỗ đó giữ nền đặc, phân tách bằng viền 1px. Không lồng kính trong kính. Luôn có nền đặc dự phòng khi trình duyệt
-  thiếu `backdrop-filter`, và tôn trọng `prefers-reduced-transparency`. Viền phát sáng không dùng ngoài các chỗ kể trên. Màn kho và tài xế dùng
+  thiếu `backdrop-filter`, và tôn trọng `prefers-reduced-transparency`. Viền phát sáng không dùng ngoài các chỗ kể trên và viền màu quay của nút "Hỏi Lumo" (mục 1, `assistant.css`). Màn kho và tài xế dùng
   điều khiển đặc (mục 1); blur ở đó (tablet trong kho sáng, đeo găng; điện thoại ngoài nắng) chưa có số đo tương phản và FPS trên thiết bị thật,
   phải đo trước khi coi kính ở hai màn đó là đã chốt.
 - Toast nằm dưới thanh tiêu đề (`offset` trên 80 px): không che nút hành động ở góc phải header — rê chuột lên toast làm nó dừng đếm giờ

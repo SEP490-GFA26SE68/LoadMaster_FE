@@ -23,6 +23,37 @@
   }
 }
 
+/*
+ * Viền màu quay quanh nút ("animated gradient border"): một `conic-gradient` mà góc bắt đầu là biến `@property` được animate — hai lớp giả
+ * trên nút, không đổi bố cục: ::before là viền 2 px (mask cắt phần giữa), ::after là quầng mờ phía ngoài (blur trước, mask cắt phần trong
+ * sau, nên không nhuộm mặt nút). Màu chỉ lấy từ thang token (cyan, xanh lam, xanh lá, hổ phách — không tím). Quay hai vòng khi trang mở
+ * (~4,8 s, dưới mốc 5 s của WCAG 2.2.2) rồi đứng yên; rê chuột hay focus thì quay tiếp, rời đi thì dừng tại chỗ. Giảm chuyển động: đứng yên.
+ * `--lumo-spin` (lúc mở) và `--lumo-hover` (theo thao tác) là hai biến riêng để rời chuột không làm viền nhảy hay quay lại từ đầu.
+ */
+@property --lumo-spin {
+  syntax: '<angle>';
+  inherits: true;
+  initial-value: 0deg;
+}
+
+@property --lumo-hover {
+  syntax: '<angle>';
+  inherits: true;
+  initial-value: 0deg;
+}
+
+@keyframes lumo-intro {
+  to {
+    --lumo-spin: 360deg;
+  }
+}
+
+@keyframes lumo-hover {
+  to {
+    --lumo-hover: 360deg;
+  }
+}
+
 .assistant-launcher {
   position: fixed;
   right: var(--assistant-edge);
@@ -32,6 +63,63 @@
   transition:
     transform var(--dur-md) var(--ease-standard),
     background-color var(--dur-fast) var(--ease-standard);
+  --lumo-stops: var(--cyan-300), var(--azure-500), var(--green-500), var(--amber-500), var(--cyan-300);
+  animation:
+    lumo-intro 2.4s linear 2,
+    lumo-hover 3.2s linear infinite;
+  animation-play-state: running, paused;
+}
+
+.assistant-launcher::before,
+.assistant-launcher::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  box-sizing: border-box;
+  background: conic-gradient(from calc(var(--lumo-spin) + var(--lumo-hover)), var(--lumo-stops));
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+}
+
+/* Viền 2 px, cách mép nút 2 px (mép nút đã có viền 1 px) */
+.assistant-launcher::before {
+  inset: -3px;
+  padding: 2px;
+  border-radius: calc(var(--r-lg) + 2px);
+}
+
+/* Quầng: lớp nền mờ trước, mask cắt phần trong sau — chỉ còn khung 12 px ngoài nút */
+.assistant-launcher::after {
+  inset: -12px;
+  padding: 12px;
+  border-radius: calc(var(--r-lg) + 11px);
+  filter: blur(8px);
+  opacity: 0.4;
+  transition: opacity var(--dur-md) var(--ease-standard);
+}
+
+.assistant-launcher:is(:hover, :focus-visible) {
+  animation-play-state: running, running;
+}
+
+.assistant-launcher:is(:hover, :focus-visible)::after {
+  opacity: 0.7;
+}
+
+/* Vòng focus lùi ra ngoài viền màu */
+.assistant-launcher:focus-visible {
+  outline-offset: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .assistant-launcher {
+    animation: none;
+  }
 }
 
 .assistant-panel {
