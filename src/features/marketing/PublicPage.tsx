@@ -18,7 +18,7 @@ function handleSkip(event: MouseEvent<HTMLAnchorElement>) {
 }
 
 /**
- * Khung của hai trang công khai: chỗ dừng focus ở đầu trang (`PAGE_TOP_ID` — nút "Lên đầu trang" của chân trang đưa focus về đây, phím
+ * Khung của các trang công khai: chỗ dừng focus ở đầu trang (`PAGE_TOP_ID` — nút "Lên đầu trang" của chân trang đưa focus về đây, phím
  * Tab kế tiếp tới liên kết bỏ qua), liên kết bỏ qua đầu trang (chỉ hiện khi nhận focus bằng bàn phím), đầu trang dải trời, nội dung trên
  * nền `--app`, chân trang tối. Khác khung ứng dụng: trang cuộn cả tài liệu (màn không có dữ liệu vận hành), nên neo `#…` và chỗ cuộn khi
  * đổi trang do `useHashScroll` lo. `progress`: vạch tiến độ cuộn dưới đầu trang — chỉ trang giới thiệu bật. Góc dưới phải là nút "Hỏi Lumo"

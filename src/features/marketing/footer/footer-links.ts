@@ -1,12 +1,14 @@
-import { GUEST_REGISTRATION, PUBLIC_HOME, PUBLIC_PRICING, TRIAL_REGISTRATION } from '@/features/auth/landing'
+import { GUEST_REGISTRATION, PUBLIC_HOME, PUBLIC_PRICING, PUBLIC_PRIVACY, TRIAL_REGISTRATION } from '@/features/auth/landing'
 import type { MessageKey } from '@/lib/i18n'
 import type { Role } from '@/types/user'
 import { CONTACT_ANCHOR } from '../contact-form'
+import { FAQ_ANCHOR } from '../faq/faq-topics'
 import type { PublicLink } from '../public-chrome'
 
 /**
- * Liên kết của chân trang — chỉ trỏ tới thứ đang có: hai phần của trang giới thiệu, Bảng giá, form liên hệ và hai trang đăng ký. Neo đi
- * kèm `pathname` của trang giới thiệu nên bấm từ Bảng giá vẫn tới đúng phần (`useHashScroll` cuộn và đưa focus vào tiêu đề của phần đó).
+ * Liên kết của chân trang — chỉ trỏ tới thứ đang có: ba phần của trang giới thiệu, Bảng giá, Hỏi đáp, form liên hệ, chính sách bảo mật và
+ * hai trang đăng ký. Neo đi kèm `pathname` của trang giới thiệu nên bấm từ trang khác vẫn tới đúng phần (`useHashScroll` cuộn và đưa
+ * focus vào tiêu đề của phần đó).
  */
 function section(labelKey: MessageKey, anchor: string): PublicLink {
   return { labelKey, to: { pathname: PUBLIC_HOME, hash: `#${anchor}` } }
@@ -24,7 +26,11 @@ export const PRODUCT_LINKS: readonly PublicLink[] = [
 
 export const CONTACT_LINK: PublicLink = section('landingFooter.links.contact', CONTACT_ANCHOR)
 
-export const SUPPORT_LINKS: readonly PublicLink[] = [CONTACT_LINK]
+export const SUPPORT_LINKS: readonly PublicLink[] = [
+  section('landingFooter.links.faq', FAQ_ANCHOR),
+  CONTACT_LINK,
+  { labelKey: 'landingFooter.links.privacy', to: { pathname: PUBLIC_PRIVACY } },
+]
 
 /** Hai lối đăng ký của khách chưa đăng nhập; chỉ vẽ khi khách tự đăng ký được (`REGISTRATION_CAPABILITIES.publicSignUp`). */
 export const SIGN_UP_LINKS: readonly PublicLink[] = [

@@ -96,6 +96,14 @@ export const landing = {
       message: 'Message',
       messagePlaceholder: 'Number of vehicles, usual routes, what you would like to know.',
       submit: 'Send request',
+      consent: {
+        before: 'I have read and agree to the ',
+        link: 'privacy policy',
+        after: '.',
+        newTab: '(opens in a new tab)',
+      },
+      trap: 'Leave this field empty',
+      blocked: 'Not sent: this attempt looks like an automated sender. Check the fields and press “Send request” again.',
       errors: {
         fullNameRequired: 'Enter your full name',
         fullNameTooLong: 'The name can be at most {max} characters',
@@ -105,6 +113,7 @@ export const landing = {
         phoneTooLong: 'The phone number can be at most {max} characters',
         companyTooLong: 'The company name can be at most {max} characters',
         messageTooLong: 'The message can be at most {max} characters',
+        consentRequired: 'Tick the box to agree before sending',
       },
     },
     sent: {

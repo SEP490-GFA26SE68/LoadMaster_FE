@@ -46,12 +46,14 @@ import { companyProfile } from './en/companyProfile'
 import { support } from './en/support'
 import { contacts } from './en/contacts'
 import { landing } from './en/landing'
+import { landingFaq } from './en/landingFaq'
 import { landingFooter } from './en/landingFooter'
 import { landingJourney } from './en/landingJourney'
 import { landingMotion } from './en/landingMotion'
 import { landingStage } from './en/landingStage'
 import { landingStory } from './en/landingStory'
 import { pricing } from './en/pricing'
+import { privacy } from './en/privacy'
 import { warehouseCustomers } from './en/warehouseCustomers'
 import { backendTripRoute } from './en/backendTripRoute'
 import { serverPlans } from './en/serverPlans'
@@ -112,12 +114,14 @@ export const en = {
   support,
   contacts,
   landing,
+  landingFaq,
   landingFooter,
   landingJourney,
   landingMotion,
   landingStage,
   landingStory,
   pricing,
+  privacy,
   warehouseCustomers,
   backendTripRoute,
   serverPlans,

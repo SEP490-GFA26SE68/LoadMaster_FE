@@ -8,11 +8,13 @@ import { AssistantFact } from './AssistantFacts'
 import { CHAT_TOUCH } from './AssistantChips'
 
 /** Câu trả lời của một chủ đề: các phần theo thứ tự của bộ câu trả lời, rồi liên kết xem thêm. */
-export function TopicAnswer({ topicId, context, onNavigate }: {
+export function TopicAnswer({ topicId, context, onNavigate, actionClassName }: {
   topicId: TopicId
   context: AssistantContext
   /** Bấm một liên kết (đóng tờ chat trên điện thoại trước khi điều hướng). */
   onNavigate?: () => void
+  /** Cỡ của liên kết xem thêm khi câu trả lời nằm ngoài khung chat (phần Hỏi đáp: 56 px trên máy cảm ứng như mọi nút của trang công khai). */
+  actionClassName?: string
 }) {
   const t = useT()
   const { pathname } = useLocation()
@@ -28,7 +30,7 @@ export function TopicAnswer({ topicId, context, onNavigate }: {
       {actions.length > 0 ? (
         <div role="group" aria-label={t('assistant.actions.label')} className="flex flex-wrap gap-2 pt-1">
           {actions.map((action) => (
-            <Button key={action.id} asChild variant="secondary" size="sm" className={cn('pointer-coarse:h-12', CHAT_TOUCH)}>
+            <Button key={action.id} asChild variant="secondary" size="sm" className={cn('pointer-coarse:h-12', CHAT_TOUCH, actionClassName)}>
               <Link to={action.to} onClick={onNavigate}>
                 {t(`assistant.actions.${action.id}`)}
                 <ArrowRight aria-hidden />

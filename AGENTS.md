@@ -66,10 +66,15 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
 - **Điều phối viên duyệt phương án** (FE-0-07, D-80): `plans.approve` (chỉnh tay và Duyệt trong Planner) là của điều phối — lập chuyến, chạy tối ưu,
   chỉnh tay, rồi "Duyệt phương án" / "Duyệt bản chỉnh". Quản lý công ty chỉ đọc + xuất báo cáo: mở Planner ở chế độ chỉ xem, một dòng lý do. Không có hàng đợi `/duyet` hay quyền duyệt của quản lý.
 - Đường dẫn của các màn đã bỏ (`/lo-hang`, `/nhan-hang`, `/duyet`) là màn 404.
-- **Trang công khai** `/gioi-thieu` (giới thiệu + form liên hệ) và `/bang-gia` (`features/marketing`, hằng `PUBLIC_HOME`, `PUBLIC_PRICING` ở
-  `auth/landing.ts`) nằm **ngoài** `RequireAuth`, không đòi quyền nào; người đã đăng nhập vẫn mở được (nút "Vào ứng dụng" thay "Đăng nhập"). Gốc
+- **Trang công khai** `/gioi-thieu` (giới thiệu + form liên hệ), `/bang-gia` và `/chinh-sach-bao-mat` (`features/marketing`, hằng `PUBLIC_HOME`,
+  `PUBLIC_PRICING`, `PUBLIC_PRIVACY` ở `auth/landing.ts`) nằm **ngoài** `RequireAuth`, không đòi quyền nào; người đã đăng nhập vẫn mở được (nút "Vào ứng dụng" thay "Đăng nhập"). Gốc
   `/` (`RootLandingPage`): khách sang `/gioi-thieu` (giữ query và neo), người đã đăng nhập sang màn chính của vai trò, lúc đang mở lại phiên Keycloak chưa quyết gì; mở trang khác khi chưa đăng
-  nhập vẫn về `/dang-nhap` (nhớ trang đó). Bảng điều khiển ở `/tong-quan` (`/dashboard` chuyển hướng sang đó). Ai đã đăng nhập
+  nhập vẫn về `/dang-nhap` (nhớ trang đó). **Chính sách bảo mật** `/chinh-sach-bao-mat` (`marketing/privacy/`, nhánh từ điển `privacy`): năm
+  mục — form liên hệ, đăng ký, khi dùng ứng dụng, trên trình duyệt, hỏi về dữ liệu —, mỗi câu nói đúng điều mã hôm nay làm và chọn theo nguồn
+  đang chạy (máy chủ hay bản demo: `usesBackend('contacts')`, `REGISTRATION_CAPABILITIES`, `backendConfig.authSource`); không hạn lưu trữ, pháp
+  nhân, địa chỉ, mã số thuế, email hay cam kết tuân thủ nào chưa có — hỏi về dữ liệu đi qua form liên hệ. Sửa luật thu hay lưu dữ liệu (ô của
+  form, nơi lưu phiên, bản đồ, GPS) thì sửa trang này và ngày "Cập nhật lần cuối" cùng lúc. Bảng điều khiển ở `/tong-quan` (`/dashboard`
+  chuyển hướng sang đó). Ai đã đăng nhập
   trong lúc layout `RequireAuth` đang mở — kể cả phiên Keycloak mở lại **sau** khi layout mount — đăng xuất thì về `/dang-nhap`, không nhớ trang:
   "đã thấy người đăng nhập" là state ghi trong lúc vẽ, không chụp lúc mount. Màn đăng nhập có liên kết "Về trang giới thiệu" (dưới 640 px chỉ còn
   mũi tên, chữ vẫn là tên truy cập).
@@ -118,8 +123,11 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
 - **Trang giới thiệu** `/gioi-thieu`: khối mở đầu tối `.landing-cinema` (tiêu đề, nút chính "Nhận tư vấn" tới `#lien-he` — khi nối backend
   cho khách chưa đăng nhập là "Đăng ký trải nghiệm", mục "Đăng ký công khai" ở trên —, khung 3D chuyến mẫu,
   dải "Ba chuyện quen thuộc của một chuyến hàng" `LandingProblems` — ba chuyện, mỗi chuyện kèm việc ứng dụng làm thật, không số) · "Một chuyến
-  hàng trên LoadMaster" `#cach-hoat-dong` (mục dưới) · Gói cước `#goi-cuoc` (cùng truy vấn với Bảng giá) · dải liên hệ tối `.landing-closing`
-  `#lien-he` · chân trang. Menu đầu trang ba mục (`PUBLIC_LINKS`: Cách hoạt động, Bảng giá, Liên hệ). **Nhận hàng dọc đường không được giới
+  hàng trên LoadMaster" `#cach-hoat-dong` (mục dưới) · Gói cước `#goi-cuoc` (cùng truy vấn với Bảng giá) · Hỏi đáp `#hoi-dap` (`marketing/faq/`:
+  sáu chủ đề của trợ lý Lumo `FAQ_TOPICS` — câu hỏi là `chip`, câu trả lời và liên kết là `TopicAnswer` với cùng `useAssistantContext`, không
+  chữ riêng; mỗi câu một `<details>` gốc, dòng câu hỏi 44 px, 56 px trên máy cảm ứng, mũi tên xoay bằng CSS và không quay khi giảm chuyển động)
+  · dải liên hệ tối `.landing-closing` `#lien-he` · chân trang. Menu đầu trang ba mục (`PUBLIC_LINKS`: Cách hoạt động, Bảng giá, Liên hệ) —
+  Hỏi đáp mở từ chân trang. **Nhận hàng dọc đường không được giới
   thiệu** ở hai trang công khai, kể cả trợ lý Lumo (quyết định của chủ sản phẩm 19/11/2026); tính năng vẫn có trong ứng dụng. Cả trang nằm trong
   `RevealProvider`: chữ và thẻ hiện ra **một lần** khi cuộn tới (`features/marketing/reveal`, mục 8).
 - **"Một chuyến hàng trên LoadMaster"** (`marketing/journey/`, `LandingJourney`): năm chặng theo thứ tự (`CHAPTERS` ở `journey-model.ts`) —
@@ -136,7 +144,7 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   bật tiết kiệm dữ liệu thì không chạy — vạch giữ chỗ và một câu nói vì sao.
 - **Chân trang công khai** (`PublicFooter`, `marketing/footer/`): dải đường có xe tải chạy vào một lần, khối thương hiệu (logo, khẩu
   hiệu, nút tới form liên hệ, ngôn ngữ), bốn cột — Sản phẩm (hai neo của trang giới thiệu, Bảng giá) · Dành cho (năm vai trò công ty, là
-  chữ) · Hỗ trợ (Liên hệ tư vấn → `#lien-he`) · Tài khoản ("Đăng nhập" hay "Vào ứng dụng"; khách có thêm hai lối đăng ký khi nối backend)
+  chữ) · Hỗ trợ (Hỏi đáp → `#hoi-dap`, Liên hệ tư vấn → `#lien-he`, Chính sách bảo mật → `/chinh-sach-bao-mat`) · Tài khoản ("Đăng nhập" hay "Vào ứng dụng"; khách có thêm hai lối đăng ký khi nối backend)
   — và nút "Lên đầu trang". Cột chỉ chứa liên kết tới thứ **đang có**. Thông tin liên hệ của công ty ở `lib/site-info.ts` (`SITE_INFO`):
   email, số điện thoại, địa chỉ, mã số thuế đều `null` tới khi chủ sản phẩm đưa số thật, và chân trang không vẽ dòng nào cho giá trị `null`
   — không viết email hay số điện thoại chưa xác nhận vào code.
@@ -433,8 +441,9 @@ src/
     billing/            gói cước và credit của công ty `/goi-cuoc`, trang thanh toán giả lập `/thanh-toan/gia-lap`
     platform/           màn của nền tảng: danh mục gói cước `/nen-tang/goi`, Công ty `/nen-tang/cong-ty`
     support/            yêu cầu hỗ trợ: màn `/ho-tro`, hộp thoại `SupportTicketDialog` của người dùng công ty, cuộc trao đổi dùng chung `TicketThread`
-    marketing/          hai trang công khai ngoài `RequireAuth`: giới thiệu `/gioi-thieu` (kèm form liên hệ của khách `ContactForm`) và bảng giá
-                        `/bang-gia`; khung chung `PublicPage` (đầu trang `PublicHeader`, chân trang `PublicFooter` + `footer/`, cuộn tới neo
+    marketing/          ba trang công khai ngoài `RequireAuth`: giới thiệu `/gioi-thieu` (kèm form liên hệ của khách `ContactForm`), bảng giá
+                        `/bang-gia` và chính sách bảo mật `privacy/` (`PrivacyPage`, `/chinh-sach-bao-mat`); Hỏi đáp `faq/` (`LandingFaq`,
+                        chủ đề `faq-topics.ts`); khung chung `PublicPage` (đầu trang `PublicHeader`, chân trang `PublicFooter` + `footer/`, cuộn tới neo
                         `useHashScroll`); khung 3D chuyến mẫu `LandingStage` (cổng `useStageGate`, phần 3D ở `viewer3d/LandingStageViewer`);
                         "Ba chuyện quen thuộc" `LandingProblems`; "Một chuyến hàng" `journey/` (`LandingJourney`, thùng xe `JourneyTruck`,
                         hình học + tiến độ thuần `journey-model.ts`, `useJourneyProgress`, `useJourneySample`);
@@ -791,7 +800,7 @@ banner theo pha. Thanh 56 px của Planner vẫn là header riêng theo lề `px
 **Dải trời nối liền**: thanh điều hướng và `PageHero` là hai phần tử cùng lớp `.sky` gắn ảnh vào khung nhìn (`background-attachment: fixed`), không
 phải một khối bọc. **Nội dung không đè lên dải**: màn trong khung ứng dụng bắt đầu ngay dưới dải trời — vùng cuộn có lề trên 24 px (`py-6`),
 `PageHero` không còn prop `overlap`; dải có tab của màn chừa 16 px dưới tab. Card đè lên dải (V2.3) đã bỏ theo quyết định của chủ sản phẩm
-(13/11/2026): card trượt lên che tiến trình và tab khi cuộn, nhìn lệch. Utility `sky-overlap` chỉ còn ở hai trang công khai và trang tài liệu.
+(13/11/2026): card trượt lên che tiến trình và tab khi cuộn, nhìn lệch. Utility `sky-overlap` chỉ còn ở các trang công khai và trang tài liệu.
 
 Lề ngang của thanh điều hướng, thanh tiêu đề và vùng cuộn dùng utility `px-shell` (`index.css`): 24 px, và khi cột rộng hơn `--shell-max` thì nội
 dung dừng ở `--shell-max`, căn giữa. Là padding chứ không phải một div `max-w` bọc ngoài, để vùng cuộn vẫn rộng hết cột (thanh cuộn ở mép) và nền
@@ -2286,7 +2295,14 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   tối ưu) và câu "Bản demo hiện tối ưu ở hạng Cơ bản cho mọi gói."; mỗi gói một nút phụ "Liên hệ tư vấn" (tên gói chỉ cho trình đọc màn hình, nên
   tên truy cập "Liên hệ tư vấn gói Pro" bắt đầu bằng đúng chữ hiện ra) mở `/gioi-thieu?goi=<mã gói>&loai=bao-gia#lien-he` — form đọc `goi`,
   `loai` (slug ở `lib/contact-slugs.ts`, dùng chung với bộ lọc của màn) để chọn sẵn; gói lạ hoặc đã ngừng bán thì không chọn, loại lạ là "Hỏi
-  thông tin". Kho từ chối thì banner `danger` ngay trên nút gửi, dữ liệu đang nhập giữ nguyên. Gửi xong form nhường chỗ cho vùng
+  thông tin". **Ô đồng ý với chính sách bảo mật** (Checkbox Radix, bắt buộc — zod `consentRequired`; nhãn có liên kết tới `/chinh-sach-bao-mat?lang=…`
+  mở ở thẻ mới) chỉ mở được nút gửi, **không gửi đi** (`toNewContact` không có nó). **Chặn chương trình gửi tự động** (`looksAutomated`,
+  `contact-form.ts`): ô bẫy `name="website"` ngoài react-hook-form (đẩy ra ngoài khung nhìn, không `display: none`; `aria-hidden`, `tabIndex -1`,
+  `autoComplete="off"`) có chữ, hoặc gửi khi form hiện ra chưa đủ `MIN_FILL_MS` (3 giây, tính từ lúc form mount — không từ phím đầu tiên, vì trình
+  duyệt tự điền thì người thật không gõ phím nào; "Gửi yêu cầu khác" dựng lại form nên đếm lại) — thì không gọi kho hay máy chủ, không báo thành
+  công giả (D-20), chỉ banner `danger` ngay trên nút gửi; dữ liệu đang nhập giữ nguyên, ô bẫy được xoá để người thật bấm gửi lại là đi. Test DOM
+  giả `Date` (`vi.useFakeTimers({ toFake: ['Date'] })`) rồi tua 3 giây; E2E chờ 3 giây trước khi gửi. Kho từ chối thì banner `danger` ngay trên
+  nút gửi, dữ liệu đang nhập giữ nguyên. Gửi xong form nhường chỗ cho vùng
   `role="status"` "Đã ghi nhận yêu cầu LH-…" (tiêu đề nhận focus); "Gửi yêu cầu khác" đưa con trỏ về ô Họ tên. Nút chính của trang giới thiệu nằm
   ở phần mở đầu ("Nhận tư vấn", hay "Đăng ký trải nghiệm" khi nối backend), nên nút gửi của form là nút phụ. **`/lien-he-khach`** (`features/contacts`, `contacts.handle`): bảng mọi yêu cầu, mới nhất
   trước (lọc `trang-thai`, `loai`, tìm theo tên / email / điện thoại / công ty / mã — trên URL); bấm tên mở khung xử lý ở cột phải

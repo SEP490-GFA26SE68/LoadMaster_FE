@@ -7,7 +7,7 @@ import { Reveal } from './reveal'
 import './footer/footer.css'
 
 /**
- * Chân trang của hai trang công khai (giới thiệu, bảng giá): nền tối đặc `--panel-dark` nối liền dải liên hệ phía trên, dải đường có
+ * Chân trang của các trang công khai (giới thiệu, bảng giá, chính sách bảo mật): nền tối đặc `--panel-dark` nối liền dải liên hệ phía trên, dải đường có
  * xe tải chạy vào đỗ cạnh ghim điểm giao cuối (chỉ để nhìn), rồi khối thương hiệu và bốn cột — một cột ở 360 px, hai cột từ 640 px,
  * thương hiệu cạnh bốn cột từ 1.024 px — và hàng cuối (bản quyền, ghi công thiết kế, "Lên đầu trang"). Liên kết chỉ trỏ tới thứ đang có.
  * Liên hệ chỉ lấy từ `SITE_INFO`; không mạng xã hội, logo khách hàng hay số liệu sử dụng: chưa có nguồn nào cho chúng. Trên trang giới

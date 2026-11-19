@@ -203,11 +203,11 @@ async function scrollThrough(page: Page) {
 }
 
 /**
- * Hai trang công khai bằng `?lang=en`, khách chưa đăng nhập: không còn chữ tiếng Việt, không tràn chữ, không cuộn ngang — kể cả ở 390 px
+ * Ba trang công khai bằng `?lang=en` (giới thiệu, bảng giá, chính sách bảo mật), khách chưa đăng nhập: không còn chữ tiếng Việt, không tràn chữ, không cuộn ngang — kể cả ở 390 px
  * (khách mở trang giới thiệu trên điện thoại). Trang không có dữ liệu riêng nào ngoài tên ngôn ngữ trong nút chuyển.
  */
 for (const viewport of VIEWPORTS) {
-  test(`${viewport.name}: landing and pricing pages in English`, async ({ page, browserErrors }, testInfo) => {
+  test(`${viewport.name}: landing, pricing and privacy pages in English`, async ({ page, browserErrors }, testInfo) => {
     await page.setViewportSize({ width: viewport.width, height: viewport.height })
     await page.goto('/gioi-thieu?lang=en')
     await expect(page.getByRole('heading', { level: 1, name: 'At every stop, open the door and that stop’s cargo is right there.', exact: true }))
@@ -220,6 +220,11 @@ for (const viewport of VIEWPORTS) {
     await page.waitForURL((url) => url.pathname === '/bang-gia')
     await expect(page.getByRole('heading', { level: 2, name: 'Ultimate', exact: true })).toBeVisible()
     await check(page, testInfo, `${viewport.name}-pricing`, DATA_NAMES)
+
+    await page.getByRole('contentinfo').getByRole('link', { name: 'Privacy policy', exact: true }).click()
+    await page.waitForURL((url) => url.pathname === '/chinh-sach-bao-mat')
+    await expect(page.getByRole('heading', { level: 1, name: 'Privacy policy', exact: true })).toBeVisible()
+    await check(page, testInfo, `${viewport.name}-privacy`, DATA_NAMES)
     expect(browserErrors).toStrictEqual([])
   })
 }
