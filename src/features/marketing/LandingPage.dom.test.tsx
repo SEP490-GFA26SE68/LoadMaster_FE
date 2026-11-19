@@ -1,11 +1,13 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { AuthProvider } from '@/features/auth/AuthProvider'
 import { I18nProvider } from '@/lib/i18n'
 import { getMockDb, MockDbError } from '@/lib/mock-db'
+import { installFakeIntersectionObserver, type FakeIntersectionObserverControl } from '@/test/intersection-observer'
+import { installMatchMedia, type MatchMediaControl } from '@/test/match-media'
 import { signedInAs } from '@/test/signed-in'
 import { LandingPage } from './LandingPage'
 
@@ -44,8 +46,17 @@ function renderLanding(entry: string) {
   )
 }
 
+let io: FakeIntersectionObserverControl | null = null
+let media: MatchMediaControl | null = null
+
 beforeEach(() => sessionStorage.clear())
 afterEach(() => {
+  // Gỡ cây React trước, để effect dọn observer và người nghe `matchMedia` trên chính bản giả, rồi mới trả lại bản giả
+  cleanup()
+  io?.restore()
+  media?.restore()
+  io = null
+  media = null
   sessionStorage.clear()
   vi.restoreAllMocks()
 })
@@ -73,26 +84,68 @@ test('every number on the page has a source: code constants, the plan catalogue 
   renderLanding('/gioi-thieu')
   // jsdom không có WebGL: khung 3D nhường chỗ cho hình minh hoạ, không lần chạy nào nên không số nào của lần chạy
   expect(screen.getByText(/^Hình minh hoạ: hàng của điểm giao cuối nằm sâu nhất/)).toBeInTheDocument()
-  expect(screen.queryByText('MOCK RESULT')).not.toBeInTheDocument()
+  // Trang công khai không có nhãn MOCK RESULT ở đâu cả: mỗi số tự mang câu nguồn của nó
+  expect(screen.queryByText(/MOCK/)).not.toBeInTheDocument()
 
   const facts = within(screen.getByRole('region', { name: 'Con số kiểm được' }))
   expect(facts.getAllByRole('term').map((term) => term.textContent)).toStrictEqual([
-    'hướng đặt được thử cho mỗi kiện',
     'phương án cho mỗi lần chạy tối ưu',
-    'bước làm tròn kích thước',
-    'để xếp 1.000 kiện, đủ ba phương án',
+    'cho một lần chạy tối ưu 3D',
+    'để xếp 1.000 kiện thành đủ ba phương án',
     'luật kiểm trước khi nhận hàng dọc đường',
-    'vai trò, mỗi vai trò chỉ thấy việc của mình',
+    'cách đối chiếu một kiện',
+    'vai trò trong công ty của bạn',
   ])
-  // Mỗi số một câu nguồn: giá trị là định nghĩa thứ nhất của từng cặp
-  const values = facts.getAllByRole('definition').filter((_, index) => index % 2 === 0)
-  expect(values.map((value) => value.textContent)).toStrictEqual(['6', '3', '0,1 cm', '< 1 giây', '10', '8'])
+  // Mỗi số một câu nguồn: giá trị là định nghĩa thứ nhất của từng cặp, câu nguồn là định nghĩa thứ hai
+  const definitions = facts.getAllByRole('definition').map((definition) => definition.textContent)
+  expect(definitions.filter((_, index) => index % 2 === 0)).toStrictEqual(['3', '2 credit', '< 1 giây', '10', '3', '5'])
+  const sources = definitions.filter((_, index) => index % 2 === 1)
+  expect(sources).toHaveLength(6)
+  for (const source of sources) expect(source?.trim()).not.toBe('')
+  // Lumo nói các số này là số cố định của ứng dụng — một câu, đọc được bằng trình đọc màn hình
+  expect(facts.getByText(/Đây là các con số cố định của chính ứng dụng/)).toHaveTextContent(/^Lumo nói: /)
 
   const plans = within(screen.getByRole('region', { name: 'Gói cước' }))
   expect(await plans.findByRole('group', { name: 'Pro' }, SLOW)).toHaveTextContent('10.000 credit mỗi tháng')
   expect(plans.getByRole('group', { name: 'Ultimate' })).toHaveTextContent('Không giới hạn')
   expect(plans.getByRole('group', { name: 'Basic' })).toHaveTextContent('Giá trị tạm — chờ chốt')
   expect(plans.getByRole('link', { name: 'So sánh các gói' })).toHaveAttribute('href', '/bang-gia')
+})
+
+test('with motion on, split text keeps every accessible name: the title, the section headings and the numbered steps', () => {
+  io = installFakeIntersectionObserver()
+  media = installMatchMedia({})
+  renderLanding('/gioi-thieu')
+  expect(document.querySelector('[data-reveal-root]')).toHaveAttribute('data-motion', 'on')
+
+  const title = 'Tận dụng thùng xe, dỡ đúng thứ tự, theo dõi tới điểm giao cuối.'
+  const h1 = screen.getByRole('heading', { level: 1, name: title })
+  // Chữ đã tách thành mảnh chỉ để nhìn; tên truy cập vẫn là đúng một câu
+  expect(h1.querySelector('[aria-hidden="true"]')).not.toBeNull()
+  expect(screen.getByRole('region', { name: title })).toBeInTheDocument()
+  for (const name of ['Con số kiểm được', 'Tính năng chính', 'Cách hoạt động', 'Gói cước', 'Liên hệ với LoadMaster']) {
+    expect(screen.getByRole('heading', { level: 2, name })).toBeInTheDocument()
+  }
+  const steps = within(screen.getByRole('region', { name: 'Cách hoạt động' }))
+  expect(steps.getAllByRole('listitem')).toHaveLength(4)
+  // Tên của bước vẫn là "Bước n: tên bước". jsdom không nạp CSS nên thư viện tính tên coi tiền tố `sr-only` là chữ trong dòng và cắt
+  // khoảng trắng cuối của nó — ở cả hai chế độ —, nên khoảng trắng sau dấu hai chấm không so cứng.
+  for (const name of [
+    /^Bước 1:s?Nhập kiện và yêu cầu giao$/,
+    /^Bước 2:s?Lập chuyến, tối ưu tuyến$/,
+    /^Bước 3:s?Xếp 3D, so sánh, duyệt$/,
+    /^Bước 4:s?Soạn, xếp, giao, giám sát$/,
+  ]) {
+    expect(steps.getByRole('heading', { level: 3, name })).toBeInTheDocument()
+  }
+  expect(within(screen.getByRole('region', { name: 'Tính năng chính' })).getByRole('heading', { level: 3, name: 'Xếp hàng 3D theo điểm giao' })).toBeInTheDocument()
+
+  // Nội dung chờ ở trạng thái đầu tới khi cuộn tới; báo giao cắt thì mọi cổng mở, một lần
+  const gates = [...document.querySelectorAll('[data-reveal-gate]')]
+  expect(gates.length).toBeGreaterThan(0)
+  io.triggerAll()
+  expect(gates.every((gate) => gate.hasAttribute('data-shown'))).toBe(true)
+  expect(screen.queryByText(/MOCK/)).not.toBeInTheDocument()
 })
 
 test('the skip link moves focus to the main content without changing the address', async () => {

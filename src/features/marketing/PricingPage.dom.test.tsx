@@ -46,7 +46,8 @@ test('only the plans on sale are listed, each with its provisional tag, price, c
   expect(screen.getByRole('heading', { level: 1, name: 'Bảng giá' })).toBeInTheDocument()
   expect(screen.getByRole('status', { name: 'Đang tải bảng giá' })).toBeInTheDocument()
   await screen.findByRole('heading', { level: 2, name: 'Pro' }, SLOW)
-  expect(screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent)).toStrictEqual(['Pro', 'Ultimate'])
+  // Trong nội dung chính: chân trang có tiêu đề cột của riêng nó
+  expect(within(screen.getByRole('main')).getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent)).toStrictEqual(['Pro', 'Ultimate'])
 
   const pro = screen.getByRole('group', { name: 'Pro' })
   expect(within(pro).getByText('Giá trị tạm — chờ chốt')).toBeInTheDocument()

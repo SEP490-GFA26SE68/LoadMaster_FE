@@ -15,11 +15,12 @@ const SWATCHES = [
 
 const SIZES = ['size-4', 'size-6', 'size-8', 'size-12'] as const
 
+/** Mười bốn tư thế: hàng đầu là bảy tư thế của ứng dụng, hàng sau bảy tư thế của trang giới thiệu (toàn thân rồi bán thân). */
 const POSES = Object.keys(LUMO_POSES) as LumoPose[]
 
 /**
  * Thương hiệu (LM-105): bộ ghép logo trên nền sáng và trên dải trời, biểu tượng ở các cỡ dùng trong app (16 favicon · 24 · 32 thanh
- * điều hướng · 48) và bản một màu cho giấy in, ba màu gốc và luật dùng.
+ * điều hướng · 48) và bản một màu cho giấy in, ba màu gốc, các tư thế của Lumo và luật dùng.
  */
 export function BrandCard() {
   const t = useT()
@@ -66,7 +67,7 @@ export function BrandCard() {
         <ul className="m-0 grid list-none grid-cols-4 gap-2 p-0 sm:grid-cols-7">
           {POSES.map((pose) => (
             <li key={pose} className="flex flex-col items-center gap-1 text-center">
-              <Lumo pose={pose} className="size-16" />
+              <Lumo pose={pose} px={64} loading="lazy" />
               <span className="text-fine text-ink-2">{t(`designSystem.components.brand.poses.${pose}`)}</span>
             </li>
           ))}

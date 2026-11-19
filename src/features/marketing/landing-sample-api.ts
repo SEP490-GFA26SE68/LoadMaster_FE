@@ -9,7 +9,7 @@ import { LANDING_REQUEST } from './landing-sample.mock'
 
 /**
  * Chạy chuyến mẫu của khung 3D trên trang giới thiệu bằng đúng bộ tối ưu mô phỏng của ứng dụng — trong Web Worker khi trình duyệt có
- * (luồng chính vẫn rảnh), trên luồng gọi khi không có. Kết quả luôn `isMockResult`; khung 3D hiện MOCK RESULT cạnh mọi số của nó.
+ * (luồng chính vẫn rảnh), trên luồng gọi khi không có. Kết quả luôn `isMockResult`; trang công khai không hiện nhãn MOCK RESULT, câu dưới khung nói số do bộ tối ưu mô phỏng tính.
  */
 // không có endpoint — chạy trên trình duyệt
 export async function runLandingSample(): Promise<OptimizationResult> {

@@ -59,31 +59,32 @@ export const landing = {
   },
   facts: {
     title: 'Numbers you can check',
-    lede: 'Every number below comes straight from the app’s source code or from its own measurements — none of them is a guess.',
-    orientations: {
-      label: 'orientations tried for every package',
-      source: 'Packages that must stay upright use two; an orientation that does not fit through the door is ruled out.',
-    },
+    lede: 'Every number comes with its source: a constant in the app or the threshold of an automated test. None of them is a guess.',
     plans: {
       label: 'plans from every optimization run',
-      source: 'Most volume, balanced axle load, least re-handling — compared side by side, then one is approved.',
+      source: 'Maximize volume, balance axle load, least rehandling — compared side by side, then you approve one.',
     },
-    precision: {
-      label: 'rounding step for dimensions',
-      source: 'Weight is rounded to {kg}; two packages that only touch are never reported as overlapping because of rounding.',
+    credit: {
+      value: { one: '{count} credit', other: '{count} credits' },
+      label: 'per 3D optimization run',
+      source: 'All three plans count as one run, and optimizing the stop order uses no credits.',
     },
     speed: {
       value: '< {seconds} s',
-      label: 'to place {count} packages, all three plans',
-      source: 'Performance gate of the simulated optimizer, measured on a development machine.',
+      label: 'to place {count} packages into all three plans',
+      source: 'Threshold of the simulated optimizer’s automated performance test, measured on a development machine. Other machines may differ.',
     },
     pickup: {
-      label: 'rules checked before an on-the-way pickup',
-      source: 'Payload, axle load, centre of gravity, free space in the body, unloading order, deadlines…',
+      label: 'rules checked before an en-route pickup',
+      source: 'Payload, axle load, center of gravity, free space in the truck, unloading order, deadlines…',
+    },
+    verify: {
+      label: 'ways to verify a package',
+      source: 'Scan the QR code, type the code printed on the label, or confirm by hand for the dispatcher to approve when a label is damaged.',
     },
     roles: {
-      label: 'roles, each seeing only its own work',
-      source: 'Three platform roles and five roles for the transport company.',
+      label: 'roles in your company',
+      source: '{roles} — each sees only their own work.',
     },
   },
   features: {
@@ -127,7 +128,7 @@ export const landing = {
       dispatcher: 'Builds trips, runs the optimization, compares and approves plans.',
       warehouse: 'Stages and loads each package on a tablet, checked by QR code.',
       driver: 'Delivers stop by stop on a phone and sees where the cargo sits in the truck.',
-      companyManager: 'Creates delivery requirements, follows the dashboard and exports reports.',
+      companyManager: 'Follows the dashboard, monitors running trips and exports reports.',
     },
   },
   how: {
@@ -138,7 +139,7 @@ export const landing = {
     steps: {
       intake: {
         title: 'Packages and delivery requirements',
-        text: 'Import packages from a file or add them by hand and print QR labels. The manager creates delivery requirements with a destination and a deadline.',
+        text: 'The warehouse imports packages from a file or adds them by hand and prints QR labels. The dispatcher creates delivery requirements with a destination and a deadline.',
       },
       plan: {
         title: 'Build the trip, optimize the route',
@@ -167,6 +168,7 @@ export const landing = {
     title: 'Contact LoadMaster',
     lede: 'Leave your details and the LoadMaster team will get back to you about the plan and setup that fit your fleet.',
     signUpNote: 'Company accounts are created by the LoadMaster team after talking with you.',
+    signUpNoteSelf: 'When you are ready, you register the company account yourself: sign up for a trial, or get started right away by choosing a plan and paying.',
     loading: 'Loading the contact form',
     next: {
       title: 'After you send it',
@@ -201,15 +203,5 @@ export const landing = {
       text: 'The LoadMaster team will get back to you at the email you entered.',
       again: 'Send another request',
     },
-  },
-  footer: {
-    nav: 'Footer links',
-    product: 'Product',
-    account: 'Account',
-    landing: 'About',
-    pricing: 'Pricing',
-    contact: 'Contact',
-    signIn: 'Sign in',
-    note: 'This is a demo: the data in the app is sample data, and optimization results come from the simulated optimizer and always carry the MOCK RESULT label.',
   },
 } satisfies Dictionary<typeof source>

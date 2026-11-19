@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils'
 import { CONTACT_ANCHOR } from './contact-form'
 import { LandingStage } from './LandingStage'
 import { PUBLIC_TOUCH } from './public-chrome'
+import { FlowHeading, Reveal, RevealWords } from './reveal'
 
 /** Bốn vai trò vận hành làm việc trên cùng một phương án, theo thứ tự của chuyến hàng. */
 const HERO_ROLES = ['dispatcher', 'warehouse', 'driver', 'companyManager'] as const
@@ -19,7 +20,8 @@ const HERO_ROLES = ['dispatcher', 'warehouse', 'driver', 'companyManager'] as co
  * "Xem bảng giá" — vòng focus `--cyan-300` như mọi điều khiển trên dải trời; bên phải (dưới, khi màn hẹp) là khung 3D của chuyến mẫu
  * (`LandingStage`). Khi nối backend (`REGISTRATION_CAPABILITIES`) và khách chưa đăng nhập, nút chính là "Đăng ký trải nghiệm" — lối vào dễ
  * thấy nhất của luồng dùng thử — và "Nhận tư vấn" (cuộn tới form liên hệ) lùi thành nút kính; kho mẫu không có luồng đăng ký nên nút chính
- * vẫn là "Nhận tư vấn".
+ * vẫn là "Nhận tư vấn". Trên trang giới thiệu (trong `RevealProvider`) cột chữ là một cổng hiện một lần: dòng mở đầu chảy từng chữ sau
+ * vạch cyan, tiêu đề nhô lên từng từ, câu mô tả đậm dần, rồi hàng nút và hàng vai trò; tên truy cập của tiêu đề và vùng không đổi.
  */
 export function LandingHero() {
   const t = useT()
@@ -28,19 +30,23 @@ export function LandingHero() {
   return (
     <section aria-labelledby="landing-title">
       <div className="relative grid items-center gap-10 px-4 pt-10 pb-16 md:px-shell xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] xl:gap-14 xl:pt-8 xl:pb-20">
-        <div className="flex min-w-0 flex-col items-start gap-6">
-          <p className="m-0 flex items-center gap-3 text-small font-semibold text-cyan-300 pointer-coarse:text-body-lg">
-            <span aria-hidden className="h-px w-8 bg-cyan-300" />
-            {t('landing.hero.eyebrow')}
-          </p>
-          <h1
+        <Reveal group className="flex min-w-0 flex-col items-start gap-6">
+          <FlowHeading
+            as="p"
+            text={t('landing.hero.eyebrow')}
+            className="m-0 flex items-center gap-3 text-small font-semibold text-cyan-300 pointer-coarse:text-body-lg"
+            before={<Reveal as="span" kind="fill-x" aria-hidden className="h-px w-8 flex-none bg-cyan-300" />}
+          />
+          <RevealWords
+            as="h1"
             id="landing-title"
+            mode="rise"
+            delay={80}
+            text={t('landing.hero.title')}
             className="m-0 max-w-[15em] font-display text-hero font-bold tracking-[-0.02em] text-balance text-sky-text font-stretch-112%"
-          >
-            {t('landing.hero.title')}
-          </h1>
-          <p className="m-0 max-w-[36em] text-intro text-sky-text-2">{t('landing.hero.lede')}</p>
-          <div className="flex flex-wrap gap-3 pt-1">
+          />
+          <RevealWords as="p" mode="ink" delay={350} text={t('landing.hero.lede')} className="m-0 max-w-[36em] text-intro text-sky-text-2" />
+          <Reveal kind="rise" delay={500} className="flex flex-wrap gap-3 pt-1">
             {signUp ? (
               <Button asChild variant="primary" size="lg" className={cn(PUBLIC_TOUCH, SKY_FOCUS)}>
                 <Link to={TRIAL_REGISTRATION}>{t('landing.header.trial')}</Link>
@@ -52,22 +58,24 @@ export function LandingHero() {
             <Button asChild variant="glass" size="lg" className={cn(PUBLIC_TOUCH, SKY_FOCUS)}>
               <Link to={PUBLIC_PRICING}>{t('landing.hero.pricing')}</Link>
             </Button>
-          </div>
-          <div className="flex flex-col gap-3 border-t border-landing-hairline pt-5">
+          </Reveal>
+          <Reveal kind="fade" delay={650} className="flex flex-col gap-3 border-t border-landing-hairline pt-5">
             <p className="m-0 text-small text-sky-text-3 pointer-coarse:text-body-lg">{t('landing.hero.roles')}</p>
             <ul className="m-0 flex list-none flex-wrap gap-x-5 gap-y-2 p-0">
-              {HERO_ROLES.map((role) => {
+              {HERO_ROLES.map((role, index) => {
                 const Icon = ROLE_ICON[role]
                 return (
                   <li key={role} className="flex items-center gap-2 text-body font-medium text-sky-text-2 pointer-coarse:text-body-lg">
-                    <Icon aria-hidden className="size-4 text-cyan-300" strokeWidth={1.5} />
+                    <Reveal as="span" kind="pop" delay={200} index={index} aria-hidden className="flex">
+                      <Icon className="size-4 text-cyan-300" strokeWidth={1.5} />
+                    </Reveal>
                     {t(`roles.${role}`)}
                   </li>
                 )
               })}
             </ul>
-          </div>
-        </div>
+          </Reveal>
+        </Reveal>
 
         <LandingStage />
       </div>
