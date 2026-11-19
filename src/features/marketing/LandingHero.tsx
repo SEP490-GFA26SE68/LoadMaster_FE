@@ -22,6 +22,8 @@ const HERO_ROLES = ['dispatcher', 'warehouse', 'driver', 'companyManager'] as co
  * thấy nhất của luồng dùng thử — và "Nhận tư vấn" (cuộn tới form liên hệ) lùi thành nút kính; kho mẫu không có luồng đăng ký nên nút chính
  * vẫn là "Nhận tư vấn". Trên trang giới thiệu (trong `RevealProvider`) cột chữ là một cổng hiện một lần: dòng mở đầu chảy từng chữ sau
  * vạch cyan, tiêu đề nhô lên từng từ, câu mô tả đậm dần, rồi hàng nút và hàng vai trò; tên truy cập của tiêu đề và vùng không đổi.
+ * Từ 1.280 px cột phải (khung 3D, thứ tự giao, ba phương án, kết quả) cao hơn một màn hình: cột chữ bám đầu lưới — nút chính nằm trong màn
+ * đầu — và dính dưới đầu trang trong lúc khách cuộn qua cột phải, khi màn đủ cao (từ 704 px) để cả cột chữ vừa.
  */
 export function LandingHero() {
   const t = useT()
@@ -29,8 +31,8 @@ export function LandingHero() {
   const signUp = REGISTRATION_CAPABILITIES.publicSignUp && !user
   return (
     <section aria-labelledby="landing-title">
-      <div className="relative grid items-center gap-10 px-4 pt-10 pb-16 md:px-shell xl:grid-cols-[34rem_minmax(0,1fr)] xl:gap-6 xl:pt-8 xl:pb-16">
-        <Reveal group className="flex min-w-0 flex-col items-start gap-6">
+      <div className="relative grid items-center gap-10 px-4 pt-10 pb-16 md:px-shell xl:grid-cols-[34rem_minmax(0,1fr)] xl:items-start xl:gap-6 xl:pt-8 xl:pb-16">
+        <Reveal group className="flex min-w-0 flex-col items-start gap-6 xl:pt-10 xl:[@media(min-height:44rem)]:sticky xl:[@media(min-height:44rem)]:top-16">
           <FlowHeading
             as="p"
             text={t('landing.hero.eyebrow')}
