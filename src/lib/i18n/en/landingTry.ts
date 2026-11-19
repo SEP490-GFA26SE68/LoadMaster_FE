@@ -9,9 +9,15 @@ import type { landingTry as source } from '../vi/landingTry'
 export const landingTry = {
   title: 'Try it with your cargo',
   lede: 'Type your truck body and cartons, then run: the optimizer works out three plans right in this browser — no account needed.',
+  tabs: {
+    label: 'Choose what to try',
+    pack: 'Load your own truck',
+    axle: 'Axle load',
+  },
   form: {
     label: 'Your truck and cargo',
     run: 'Work out three plans',
+    howSubject: 'the trial',
     privacy: 'The figures you type stay in this browser; nothing is sent to a server.',
   },
   truck: {
@@ -34,6 +40,7 @@ export const landingTry = {
     add: 'Add a carton type',
     remove: 'Remove carton type {number}',
     total: '{total} / {max} cartons in total',
+    rulesLabel: 'Cartons',
     rules: 'Cartons stay upright, can turn on the floor and can be stacked — each carries at most three times its own weight on top. Stop 1 is delivered first.',
   },
   errors: {
@@ -73,7 +80,26 @@ export const landingTry = {
     timeout: 'The optimizer ran over {seconds} seconds and stopped.',
     service: 'This browser cannot run the simulated optimizer yet. Try reloading the page.',
   },
+  axle: {
+    title: 'Which axle carries the cargo?',
+    vehicle: 'Sample truck: a 3.5-tonne truck, body {length} long, payload {payload}. The front axle sits under the cab, {frontAxle} ahead of the body’s front wall; the rear axle is {rearAxle} behind the front wall.',
+    mass: 'Cargo weight',
+    center: 'Cargo centre of gravity, from the front wall',
+    centerHint: 'A small number puts the cargo towards the cab, a large one towards the rear door.',
+    resultTitle: 'Load on the two axles',
+    groups: { front: 'Front axle', rear: 'Rear axle' },
+    loadOfLimit: '{load} / {limit}',
+    percent: '{value} of limit',
+    over: 'Over by {over}',
+    within: 'Both axles are within their limits.',
+    overFront: 'The front axle is over its limit by {over} — move the cargo towards the rear door or take some off.',
+    overRear: 'The rear axle is over its limit by {over} — move the cargo towards the cab or take some off.',
+    overBoth: 'Both axles are over their limits — take some cargo off.',
+    source: 'Worked out with a lever model on the two declared axles of the sample truck. It is an estimate: the empty-truck load is the declared figure, with no separate allowance for fuel or the driver.',
+    howSubject: 'axle load',
+  },
   next: {
+    sample: 'See the sample plan in 3D',
     lead: 'In the app, dispatchers run the optimizer with trucks whose axles are set up, and the cartons and stops of real trips.',
     trial: 'Sign up for a trial',
     contact: 'Get advice',

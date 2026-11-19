@@ -49,6 +49,7 @@ export const titles = {
   pricing: 'Pricing',
   privacy: 'Privacy policy',
   terms: 'Terms of use',
+  samplePlan: 'Sample plan',
   contacts: 'Guest contacts',
   trialRegistration: 'Try for free',
   guestRegistration: 'Get started',

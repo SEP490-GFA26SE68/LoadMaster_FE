@@ -46,11 +46,13 @@ import { contacts } from './vi/contacts'
 import { landing } from './vi/landing'
 import { landingFaq } from './vi/landingFaq'
 import { landingFooter } from './vi/landingFooter'
+import { landingHow } from './vi/landingHow'
 import { landingJourney } from './vi/landingJourney'
 import { landingMotion } from './vi/landingMotion'
 import { landingStage } from './vi/landingStage'
 import { landingStory } from './vi/landingStory'
 import { landingTry } from './vi/landingTry'
+import { samplePlan } from './vi/samplePlan'
 import { pricing } from './vi/pricing'
 import { privacy } from './vi/privacy'
 import { terms } from './vi/terms'
@@ -126,11 +128,13 @@ export const vi = {
   landing,
   landingFaq,
   landingFooter,
+  landingHow,
   landingJourney,
   landingMotion,
   landingStage,
   landingStory,
   landingTry,
+  samplePlan,
   pricing,
   privacy,
   terms,

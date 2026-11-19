@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/Button'
 import { SelectField } from '@/components/ui/SelectField'
 import { useFormat, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+import { HowComputed } from '../how/HowComputed'
 import { PUBLIC_TOUCH } from '../public-chrome'
 import { addedCarton, CARTON_LIMITS, MAX_CARTON_KINDS, MAX_TOTAL_QUANTITY, STOP_CHOICES, totalQuantity, type TryFormValues } from './try-form'
-import { TRY_FIELDSET, TRY_LEGEND, TRY_NOTE, TryNumberInput } from './TryNumberInput'
+import { TRY_FIELDSET, TRY_LEGEND, TryNumberInput } from './TryNumberInput'
 
 const SIZE_FIELDS = ['lengthCm', 'widthCm', 'heightCm'] as const
 const LOAD_FIELDS = ['weightKg', 'quantity'] as const
@@ -59,7 +60,8 @@ function CartonFieldset({ form, index, count, onRemove }: { form: UseFormReturn<
             onClick={onRemove}
             aria-label={t('landingTry.cartons.remove', { number })}
             title={t('landingTry.cartons.remove', { number })}
-            className="pointer-coarse:size-14"
+            // Vùng chạm 56 px trên máy cảm ứng nhưng hàng tiêu đề giữ 36 px: phần thừa tràn vào khoảng trống trên và dưới hàng
+            className="pointer-coarse:-my-2.5 pointer-coarse:size-14"
           >
             <Trash2 aria-hidden strokeWidth={1.5} />
           </Button>
@@ -128,7 +130,15 @@ export function TryCartonFields({ form }: { form: UseFormReturn<TryFormValues> }
         </Button>
         <CartonTotal form={form} />
       </div>
-      <p className={TRY_NOTE}>{t('landingTry.cartons.rules')}</p>
+      {/* Bản thử giả định gì về thùng xe và kiện: một nút thay hai đoạn văn — điện thoại ngắn đi gần 150 px */}
+      <HowComputed
+        subject={t('landingTry.form.howSubject')}
+        entries={[
+          { key: 'truck', label: t('landingTry.truck.legend'), text: t('landingTry.truck.note') },
+          { key: 'cartons', label: t('landingTry.cartons.rulesLabel'), text: t('landingTry.cartons.rules') },
+        ]}
+        className="-mt-2"
+      />
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Rotate3d } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { useWatch, type Control } from 'react-hook-form'
 import { Link } from 'react-router'
@@ -7,7 +7,7 @@ import { StopDot } from '@/components/StopChip'
 import { Button } from '@/components/ui/Button'
 import { PLAN_OBJECTIVES } from '@/domain/models'
 import { useAuthSafe } from '@/features/auth/AuthProvider'
-import { TRIAL_REGISTRATION } from '@/features/auth/landing'
+import { PUBLIC_SAMPLE_PLAN, TRIAL_REGISTRATION } from '@/features/auth/landing'
 import { REGISTRATION_CAPABILITIES } from '@/features/registration/useRegistrationQuery'
 import { useFormat, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
@@ -74,7 +74,8 @@ function NextStep() {
 /**
  * Cột kết quả: ba thẻ A · B · C cạnh nhau (dưới 640 px xếp chồng), một vùng `status` ẩn đọc "đang tính" / "đã tính xong", rồi các câu
  * nói số đến từ đâu và hàng nào bị bỏ vì sao. Trước lần chạy đầu và trong lúc tính: thẻ giữ chỗ (vạch `aria-hidden`) kèm một câu. Không
- * nhãn MOCK RESULT trên trang công khai — câu nguồn nói số do bộ tối ưu mô phỏng chạy trên trình duyệt tính.
+ * nhãn MOCK RESULT trên trang công khai — câu nguồn nói số do bộ tối ưu mô phỏng chạy trên trình duyệt tính. Cạnh tiêu đề là liên kết
+ * sang trang phương án mẫu `/phuong-an-mau`.
  */
 export function TryResults({ control, run }: { control: Control<TryFormValues>; run: TryRun }) {
   const t = useT()
@@ -92,9 +93,19 @@ export function TryResults({ control, run }: { control: Control<TryFormValues>; 
     : outcome ? t('landingTry.announce.done', { total: format.integer(outcome.totalCount) }) : ''
   return (
     <div ref={root} className="flex scroll-mt-20 flex-col gap-4" data-try-state={run.isPending ? 'running' : outcome ? 'done' : failed ? 'failed' : 'idle'}>
-      <h3 className="m-0 font-display text-h3 leading-5.5 font-[650] text-ink-strong font-stretch-106%">{t('landingTry.results.title')}</h3>
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+        <h3 className="m-0 font-display text-h3 leading-5.5 font-[650] text-ink-strong font-stretch-106%">{t('landingTry.results.title')}</h3>
+        {/* Lối sang trang phương án mẫu (khung 3D xoay được của chuyến mẫu, xếp và dỡ theo điểm giao) — trên hàng tiêu đề để cột vừa một màn hình */}
+        <Button asChild variant="ghost" className={cn('text-primary max-sm:-ml-3 sm:-my-2 sm:-mr-3', PUBLIC_TOUCH)} data-assistant-avoid>
+          <Link to={PUBLIC_SAMPLE_PLAN}>
+            <Rotate3d aria-hidden strokeWidth={1.5} />
+            {t('landingTry.next.sample')}
+            <ArrowRight aria-hidden strokeWidth={1.5} />
+          </Link>
+        </Button>
+      </div>
       <p role="status" className="sr-only">{announcement}</p>
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className={cn('grid gap-3 sm:grid-cols-3', !outcome && 'max-sm:flex max-sm:flex-wrap max-sm:gap-x-5 max-sm:gap-y-2')}>
         {outcome
           ? outcome.plans.map((plan) => <TryPlanCard key={plan.id} outcome={outcome} plan={plan} />)
           : PLAN_OBJECTIVES.map((objective) => <TryPlanPlaceholder key={objective} objective={objective} rows={rows} />)}
@@ -110,8 +121,8 @@ export function TryResults({ control, run }: { control: Control<TryFormValues>; 
           <StaleNote control={control} outcome={outcome} />
           {outcome.multiStop ? <StopLegend outcome={outcome} /> : null}
           <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
-            <li className={TRY_NOTE}>{t('landingTry.results.source')}</li>
-            <li className={TRY_NOTE}>{t('landingTry.results.balanceNote')}</li>
+            {/* Nguồn của số và giả định của bản thử chung một đoạn: cột kết quả phải vừa một màn hình 1.280 × 768 */}
+            <li className={TRY_NOTE}>{t('landingTry.results.source')} {t('landingTry.results.balanceNote')}</li>
             {outcome.multiStop ? null : <li className={TRY_NOTE}>{t('landingTry.results.singleStopNote')}</li>}
           </ul>
         </>

@@ -55,6 +55,7 @@ export const titles = {
   pricing: 'Bảng giá',
   privacy: 'Chính sách bảo mật',
   terms: 'Điều khoản sử dụng',
+  samplePlan: 'Phương án mẫu',
   contacts: 'Liên hệ của khách',
   trialRegistration: 'Đăng ký trải nghiệm',
   guestRegistration: 'Đăng ký dùng ngay',

@@ -4,7 +4,9 @@ import { Badge } from '@/components/ui/Badge'
 import { PLAN_LABELS, PLAN_OBJECTIVES, type PlanLabel } from '@/domain/models'
 import { useFormat, useT, type MessageKey } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+import { PlanHow } from './how/PlanHow'
 import type { LandingPlan } from './landing-plans'
+import { LANDING_REQUEST } from './landing-sample.mock'
 import { STAGE_SURFACE } from './LandingStageParts'
 import { FIGURE_LABELS, FIGURE_ORDER, usePlanFigures } from './usePlanFigures'
 
@@ -40,7 +42,7 @@ function FigureCell({ label, value, best }: { label: MessageKey; value?: string;
 /**
  * Bộ chọn "Một lần chạy, ba phương án" dưới khung 3D: một lần chạy của bộ tối ưu mô phỏng ra ba phương án A · B · C theo ba mục tiêu;
  * ba nút 56 px (`aria-pressed`, tên truy cập "Phương án A — Tối đa thể tích"), chọn một thì khung 3D xếp lại theo nó, và dưới nút là số
- * của phương án đang chọn — mọi số đọc từ chính lần chạy đó. Bảng so cả ba phương án nằm ở chặng điều phối của "Một chuyến hàng".
+ * của phương án đang chọn — mọi số đọc từ chính lần chạy đó, và "Tính thế nào?" mở công thức của từng số (`PlanHow`). Bảng so cả ba phương án nằm ở chặng điều phối của "Một chuyến hàng".
  * `plans` rỗng: cùng bố cục, chỉ nhãn và vạch giữ chỗ (dải không nhảy khi số hiện ra).
  */
 export function StagePlans({ plans, selected, onSelect, total, className }: {
@@ -56,6 +58,7 @@ export function StagePlans({ plans, selected, onSelect, total, className }: {
   const titleId = useId()
   const figures = usePlanFigures(plans)
   const picked = figures?.get(selected)?.filter((figure) => figure.value !== null)
+  const plan = plans?.find((candidate) => candidate.id === selected)
 
   return (
     // Nút "Hỏi Lumo" nâng lên trên cả bộ chọn (nút phương án và dải số) khi chạm nó
@@ -92,6 +95,9 @@ export function StagePlans({ plans, selected, onSelect, total, className }: {
           <FigureCell key={row.metric} label={row.label} value={row.value ?? undefined} best={row.best} />
         ))}
       </div>
+      {plan ? (
+        <PlanHow key={plan.id} tone="dark" request={LANDING_REQUEST} result={plan.result} metrics={FIGURE_ORDER} subject={t('landingTry.results.plan', { label: plan.id })} className="-my-1" />
+      ) : null}
     </section>
   )
 }

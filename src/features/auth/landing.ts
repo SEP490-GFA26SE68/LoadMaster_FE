@@ -25,6 +25,8 @@ export const PUBLIC_PRICING = '/bang-gia'
 export const PUBLIC_PRIVACY = '/chinh-sach-bao-mat'
 /** Điều khoản sử dụng công khai — cùng khung với chính sách bảo mật (`marketing/legal`); mở từ chân trang và từ trang kia. */
 export const PUBLIC_TERMS = '/dieu-khoan-su-dung'
+/** Phương án mẫu toàn màn hình: khung 3D xoay được của chuyến mẫu trang giới thiệu, trạng thái nằm trên URL để chia sẻ; ngoài `RequireAuth`. */
+export const PUBLIC_SAMPLE_PLAN = '/phuong-an-mau'
 /** Ba trang đăng ký công khai (chỉ khi nhóm `registration` nối backend; kho mẫu chuyển về trang giới thiệu); ngoài `RequireAuth`. */
 export const TRIAL_REGISTRATION = '/dang-ky-trai-nghiem'
 export const GUEST_REGISTRATION = '/dang-ky'

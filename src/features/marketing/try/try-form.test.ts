@@ -26,13 +26,12 @@ function errorAt(form: TryFormValues, path: string): string | undefined {
   return parsed.error.issues.find((issue) => issue.path.join('.') === path)?.message
 }
 
-test('the defaults are a 3.5-tonne box truck with three carton types for three stops, ready to run', () => {
+test('the defaults are a 3.5-tonne box truck with two carton types for two stops, ready to run', () => {
   expect(toTryInput(TRY_DEFAULTS)).toEqual({
     truck: { lengthCm: 520, widthCm: 200, heightCm: 200, payloadKg: 3500 },
     cartons: [
-      { lengthCm: 60, widthCm: 40, heightCm: 40, weightKg: 15, quantity: 48, stop: 1 },
-      { lengthCm: 50, widthCm: 40, heightCm: 30, weightKg: 8, quantity: 60, stop: 2 },
-      { lengthCm: 80, widthCm: 60, heightCm: 50, weightKg: 30, quantity: 16, stop: 3 },
+      { lengthCm: 60, widthCm: 40, heightCm: 40, weightKg: 15, quantity: 80, stop: 1 },
+      { lengthCm: 80, widthCm: 60, heightCm: 50, weightKg: 30, quantity: 20, stop: 2 },
     ],
   })
 })
