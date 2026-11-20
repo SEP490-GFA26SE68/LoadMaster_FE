@@ -74,7 +74,8 @@ export const privacy = {
   local: {
     title: 'The try-out on the About page and the assistant',
     tryOut: 'The “Try it with your cargo” section and the 3D sample trip on the About page are computed in your browser: the package sizes and weights you enter are not sent anywhere and are gone when you reload.',
-    assistant: '{name} answers right in the browser from prepared material: what you type is not sent anywhere and is gone when you reload — unless you move your questions into the contact form and send it yourself.',
+    tryDescribe: 'The one exception is the “Describe your cargo in words” box of that section: when you press “Fill it in for me”, the description you type goes to the LoadMaster server, and the server sends it to Anthropic to read out the figures for the form. The assistant’s random code in sessionStorage goes with it, and the server counts requests per IP address to stop abuse. Figures you type straight into the form still stay in your browser.',
+    assistant:'{name} answers right in the browser from prepared material: what you type is not sent anywhere and is gone when you reload — unless you move your questions into the contact form and send it yourself.',
     assistantAi: '{name} is an AI assistant running on the LoadMaster server. What you type goes to the server; the server keeps the conversation and sends your message, together with the earlier turns of the conversation, to Anthropic to write the answer. Inside the app, {name} also receives the path and title of the screen you have open, and reads data you are allowed to see (trips, plan, support requests…) to answer — that data goes to Anthropic too. On the public pages, the browser keeps a random code for the conversation in sessionStorage so the server can tell your conversation apart, and the server counts questions per IP address to stop abuse. Do not type passwords or anything the question does not need.',
   },
   thirdParties: {
@@ -82,7 +83,7 @@ export const privacy = {
     intro: 'Apart from the parties below, the app sends your data to no one else:',
     brevo: 'Brevo — sends email on behalf of the LoadMaster server (confirmation codes, invoices, replies to contact requests).',
     vnpay: 'VNPay — the payment gateway, when the server uses a real gateway.',
-    anthropic: 'Anthropic — the AI model that writes the answers of the {name} assistant, when the server has the AI assistant turned on.',
+    anthropic: 'Anthropic — the AI model that writes the answers of the {name} assistant and reads the cargo description of the try-out, when the server has the AI assistant turned on.',
     goong: 'Goong — map tiles, address search and route planning.',
     google: 'Google Fonts — the interface fonts.',
     demo: 'This demo has no server, so nothing is sent to an email delivery service or a payment gateway.',

@@ -48,7 +48,7 @@ afterEach(() => sessionStorage.clear())
 test('the policy has a title, the last update date, a short summary and twelve numbered sections', () => {
   renderPrivacy()
   expect(screen.getByRole('heading', { level: 1, name: 'Chính sách bảo mật' })).toBeInTheDocument()
-  expect(screen.getByText('Cập nhật lần cuối: 20/11/2026')).toBeInTheDocument()
+  expect(screen.getByText('Cập nhật lần cuối: 21/11/2026')).toBeInTheDocument()
   expect(within(screen.getByRole('region', { name: 'Tóm tắt nhanh' })).getAllByRole('listitem')).toHaveLength(5)
   for (const [id, title] of SECTIONS) {
     const section = screen.getByRole('region', { name: title })
@@ -117,7 +117,9 @@ test('the demo build says what it does: no public sign-up, sample sign-in, sessi
   const browser = screen.getByRole('region', { name: 'Trên trình duyệt của bạn' })
   expect(browser).toHaveTextContent('Ứng dụng không dùng localStorage')
   expect(browser).toHaveTextContent('LoadMaster không gắn công cụ thống kê truy cập, quảng cáo hay theo dõi người xem nào.')
-  expect(screen.getByRole('region', { name: 'Bản thử trên trang giới thiệu và trợ lý' })).toHaveTextContent('Lumo trả lời ngay trên trình duyệt')
+  const local = screen.getByRole('region', { name: 'Bản thử trên trang giới thiệu và trợ lý' })
+  expect(local).toHaveTextContent('Lumo trả lời ngay trên trình duyệt')
+  expect(local).not.toHaveTextContent('Mô tả hàng bằng lời')
   expect(screen.getByRole('region', { name: 'Bên thứ ba nhận dữ liệu' })).not.toHaveTextContent('Anthropic')
   const retention = screen.getByRole('region', { name: 'Thời gian lưu' })
   expect(retention).toHaveTextContent('đóng hoặc tải lại mọi thẻ là mọi thứ trở về dữ liệu mẫu')
@@ -138,7 +140,7 @@ test('reads in English, with the date in English and the same anchors', () => {
   sessionStorage.setItem('loadmaster.ngon-ngu', 'en')
   renderPrivacy()
   expect(screen.getByRole('heading', { level: 1, name: 'Privacy policy' })).toBeInTheDocument()
-  expect(screen.getByText('Last updated: Nov 20, 2026')).toBeInTheDocument()
+  expect(screen.getByText('Last updated: Nov 21, 2026')).toBeInTheDocument()
   const [toc] = screen.getAllByRole('navigation', { name: 'Contents' })
   expect(toc).toBeDefined()
   expect(within(toc as HTMLElement).getAllByRole('link').map((link) => link.getAttribute('href'))).toStrictEqual(

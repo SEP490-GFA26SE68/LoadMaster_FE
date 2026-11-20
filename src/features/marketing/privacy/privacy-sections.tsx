@@ -144,6 +144,7 @@ export function usePrivacySections(): LegalSectionSpec[] {
       content: (
         <>
           <LegalText>{t('privacy.local.tryOut')}</LegalText>
+          {ASSISTANT_ON_SERVER ? <LegalText>{t('privacy.local.tryDescribe')}</LegalText> : null}
           <LegalText>{t(ASSISTANT_ON_SERVER ? 'privacy.local.assistantAi' : 'privacy.local.assistant', { name: LUMO_NAME })}</LegalText>
         </>
       ),

@@ -77,7 +77,9 @@ export const privacy = {
   local: {
     title: 'Bản thử trên trang giới thiệu và trợ lý',
     tryOut: 'Phần "Thử với hàng của bạn" và khung 3D chuyến mẫu của trang giới thiệu tính ngay trên trình duyệt của bạn: kích thước và khối lượng kiện bạn nhập không được gửi đi đâu, và mất khi tải lại trang.',
-    assistant: '{name} trả lời ngay trên trình duyệt từ tài liệu soạn sẵn: câu bạn gõ không được gửi đi và mất khi tải lại trang — trừ khi bạn chuyển câu hỏi sang form liên hệ rồi tự gửi form.',
+    /** Chỉ khi máy chủ bật trợ lý AI: ô "Mô tả hàng bằng lời" của bản thử. */
+    tryDescribe: 'Ngoại lệ duy nhất là ô "Mô tả hàng bằng lời" của phần đó: khi bạn bấm "Điền giúp tôi", mô tả bạn gõ đi tới máy chủ của LoadMaster, và máy chủ gửi nó tới Anthropic để đọc ra số điền vào form. Kèm theo là mã ngẫu nhiên của trợ lý trong sessionStorage, và máy chủ đếm số lượt theo địa chỉ IP để chặn lạm dụng. Số bạn nhập thẳng vào form vẫn chỉ ở trên trình duyệt.',
+    assistant:'{name} trả lời ngay trên trình duyệt từ tài liệu soạn sẵn: câu bạn gõ không được gửi đi và mất khi tải lại trang — trừ khi bạn chuyển câu hỏi sang form liên hệ rồi tự gửi form.',
     assistantAi: '{name} là trợ lý AI chạy trên máy chủ của LoadMaster. Câu bạn gõ đi tới máy chủ; máy chủ lưu cuộc trò chuyện và gửi câu đó, cùng các lượt trước của cuộc trò chuyện, tới Anthropic để soạn câu trả lời. Trong ứng dụng, {name} còn nhận đường dẫn và tiêu đề của màn đang mở, và đọc dữ liệu bạn được xem (chuyến, gói cước, yêu cầu hỗ trợ…) để trả lời — phần dữ liệu đó cũng đi tới Anthropic. Trên trang công khai, trình duyệt giữ một mã ngẫu nhiên của cuộc trò chuyện trong sessionStorage để máy chủ nhận ra cuộc trò chuyện của bạn, và máy chủ đếm số câu hỏi theo địa chỉ IP để chặn lạm dụng. Đừng gõ mật khẩu hay thông tin không cần cho câu hỏi.',
   },
   thirdParties: {
@@ -85,7 +87,7 @@ export const privacy = {
     intro: 'Ngoài các bên dưới đây, ứng dụng không gửi dữ liệu của bạn tới bên nào khác:',
     brevo: 'Brevo — gửi email thay máy chủ của LoadMaster (mã xác nhận, hoá đơn, trả lời yêu cầu liên hệ).',
     vnpay: 'VNPay — cổng thanh toán, khi máy chủ dùng cổng thật.',
-    anthropic: 'Anthropic — mô hình AI soạn câu trả lời của trợ lý {name}, khi máy chủ bật trợ lý AI.',
+    anthropic: 'Anthropic — mô hình AI soạn câu trả lời của trợ lý {name} và đọc mô tả hàng của bản thử, khi máy chủ bật trợ lý AI.',
     goong: 'Goong — ảnh nền bản đồ, tìm địa chỉ và tính tuyến.',
     google: 'Google Fonts — phông chữ của giao diện.',
     demo: 'Bản demo này không có máy chủ, nên không gửi gì tới dịch vụ gửi email hay cổng thanh toán.',

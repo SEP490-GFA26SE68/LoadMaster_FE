@@ -76,7 +76,7 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   mười hai mục, **Điều khoản sử dụng** `/dieu-khoan-su-dung` (`marketing/terms/`, nhánh `terms`): mười một mục. Mỗi câu nói đúng điều mã hôm
   nay làm và chọn theo nguồn đang chạy (máy chủ hay bản demo: `usesBackend(…)`, `REGISTRATION_CAPABILITIES`, `backendConfig.authSource`) —
   người đọc yêu cầu liên hệ theo `CONTACT_READER_ROLES` (`contacts/contact-readers.ts`: máy chủ cho thêm quản lý nền tảng), máy chủ trả lời
-  qua email (Brevo), email của máy chủ khi đăng ký, VNPay khi thanh toán thật, Goong khi tìm địa chỉ và tính tuyến, Anthropic khi trợ lý AI nối máy chủ (nhóm `assistant`); dấu tích đồng ý chỉ để
+  qua email (Brevo), email của máy chủ khi đăng ký, VNPay khi thanh toán thật, Goong khi tìm địa chỉ và tính tuyến, Anthropic khi trợ lý AI nối máy chủ (nhóm `assistant`: câu hỏi cho Lumo và mô tả hàng của bản thử); dấu tích đồng ý chỉ để
   form cho gửi, không gửi đi. Mọi số là tham số từ hằng của code (credit, kỳ gói, ngưỡng sắp hết credit từ `BILLING_CONSTANTS`; hạn ký thoả
   thuận dùng thử, ngày xoá và ngày cập nhật ở `legal/legal-facts.ts`). Hạn lưu trữ chỉ nói thứ code có (dùng thử: khoá sau 72 giờ, xoá 30 ngày
   sau khi hết hạn); dữ liệu khác trên máy chủ ghi "chưa ấn định". Không pháp nhân, địa chỉ, mã số thuế, email hay cam kết tuân thủ nào chưa
@@ -186,6 +186,17 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   không bắt đầu bằng 0 ("0,500" là lỗi, không phải 500); đổi một ô số kiện thì các ô số kiện khác được kiểm lại (`deps`), để lỗi quá trần
   tổng tự hết. Form cao hơn một màn hình nên từ 1.280 px (màn cao từ 768 px) cột kết quả dính dưới đầu trang, và tính xong thì cột được cuộn
   vào khung nhìn nếu đang bị cắt (`try/try-scroll.ts`; nhảy thẳng khi giảm chuyển động; cột cao hơn màn hình thì không cuộn).
+  **Mô tả hàng bằng lời** (`TryDescribe`, đầu cột form, **chỉ khi nhóm `assistant` nối máy chủ** — kho mẫu, CI, E2E không có ô này): khách
+  gõ mô tả (tối đa 1.000 ký tự, có bộ đếm; một dòng nói mô tả đi tới máy chủ LoadMaster và Anthropic, Lumo có thể đọc nhầm), bấm "Điền giúp
+  tôi" (nút phụ, mờ khi ô trống) → `try-extract-api.ts` (`POST /api/assistant/public/try-extract`, không token, `{ text, locale, guestKey }` —
+  cùng mã khách với trợ lý) → `useTryExtract` (mutation; ô và lượt điền giữ ở `LandingTry` qua `useTryDescribe`, đổi tab vẫn còn). Kết quả
+  thành chữ của form (`try-extract-values.ts`: không nhóm nghìn, dấu thập phân theo ngôn ngữ, `null` là ô trống; xe `null` giữ thùng xe đang
+  có; một tới bốn loại kiện thay loại cũ; điểm giao không đọc được tạm để điểm 1) rồi `form.reset` và chỉ kiểm các ô còn thiếu — `missing` của
+  máy chủ cộng ô trống, quá bốn loại, quá 1.000 kiện mà FE tự thấy. **Bộ tối ưu không chạy**: khách kiểm lại rồi tự bấm "Tính ba phương án";
+  đã có kết quả thì câu báo kết quả cũ hiện như khi sửa tay. Dưới ô: vùng `status` nói đã điền gì (không toast), "Lumo đã giả định" (chữ của
+  máy chủ, giữ nguyên) và "Cần bạn nhập thêm" (nhãn ô của form, `try-extract-text.ts`). Không nhận ra kiện nào, hay máy chủ lỗi (`ASSISTANT_*`,
+  `INVALID_INPUT`, lỗi mạng): form giữ nguyên, một dòng nói chưa điền được. Chính sách bảo mật nói mô tả đi qua máy chủ tới Anthropic; dòng
+  riêng tư cuối form khi có ô này là `form.privacyWithDescribe` (số trong form ở lại trình duyệt, chỉ mô tả được gửi khi bấm "Điền giúp tôi").
   Chỉ chạy khi bấm "Tính ba phương án" — **nút phụ**, nút chính của trang ở phần mở đầu —: `try-api.ts` → `useTryRun` (mutation; bấm lại
   thì huỷ lần cũ) gọi `optimizeCandidates` của chính bộ tối ưu mô phỏng (Web Worker khi có, luồng gọi khi không), một lần chạy ra ba phương
   án A · B · C; không tài khoản, kho mẫu, credit hay máy chủ. Xe của bản thử: cửa sau bằng lòng thùng, không vật cản, **không trục**; kiện theo
@@ -560,7 +571,8 @@ src/
                         xuể" `why/` (`LandingWhy`, phép đếm `why-count.ts`); "Một chuyến, bốn màn" `roles/` (`LandingRoles`, khung
                         `DeviceFrame`, bốn màn thu nhỏ, số mẫu `roles-model.ts`); "Thử với hàng của bạn"
                         `try/` (`LandingTry`, luật form `try-form.ts`, request `try-request.ts`, số của ba phương án `try-outcome.ts`,
-                        `try-api.ts` → `useTryRun`);
+                        `try-api.ts` → `useTryRun`; ô mô tả bằng lời `TryDescribe`, `try-extract-api.ts` → `useTryExtract`, giá trị
+                        điền form `try-extract-values.ts`);
                         chữ và khối hiện một lần `reveal/` (`RevealProvider` — một IntersectionObserver —, `Reveal`, `RevealWords`,
                         `FlowHeading`, `LineRise`, `TextRibbon`, `Odometer`, `LumoSays`, `split-text.ts` thuần, `reveal.css`); trợ lý "Hỏi Lumo"
                         `assistant/` (nút mở `AssistantLauncher`, khung chat lười `AssistantPanel`, bộ câu trả lời `assistant-kb.ts` + khớp
