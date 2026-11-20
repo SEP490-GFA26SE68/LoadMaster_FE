@@ -16,6 +16,8 @@ export const landingTry = {
     run: 'Tính ba phương án',
     howSubject: 'bản thử',
     privacy: 'Số bạn nhập chỉ nằm trên trình duyệt này, không gửi lên máy chủ.',
+    /** Khi có ô mô tả (trợ lý AI): số trong form vẫn ở lại trình duyệt, chỉ mô tả bằng lời được gửi đi. */
+    privacyWithDescribe: 'Số trong form chỉ nằm trên trình duyệt này. Chỉ mô tả bằng lời ở trên được gửi đi, và chỉ khi bạn bấm “Điền giúp tôi”.',
   },
   /**
    * Ô "Mô tả hàng bằng lời" đầu tab xếp thử (`try/TryDescribe`), chỉ khi nhóm `assistant` nối máy chủ: khách gõ mô tả, máy chủ đọc ra số

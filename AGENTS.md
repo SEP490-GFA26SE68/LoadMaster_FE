@@ -195,7 +195,8 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   máy chủ cộng ô trống, quá bốn loại, quá 1.000 kiện mà FE tự thấy. **Bộ tối ưu không chạy**: khách kiểm lại rồi tự bấm "Tính ba phương án";
   đã có kết quả thì câu báo kết quả cũ hiện như khi sửa tay. Dưới ô: vùng `status` nói đã điền gì (không toast), "Lumo đã giả định" (chữ của
   máy chủ, giữ nguyên) và "Cần bạn nhập thêm" (nhãn ô của form, `try-extract-text.ts`). Không nhận ra kiện nào, hay máy chủ lỗi (`ASSISTANT_*`,
-  `INVALID_INPUT`, lỗi mạng): form giữ nguyên, một dòng nói chưa điền được. Chính sách bảo mật nói mô tả đi qua máy chủ tới Anthropic.
+  `INVALID_INPUT`, lỗi mạng): form giữ nguyên, một dòng nói chưa điền được. Chính sách bảo mật nói mô tả đi qua máy chủ tới Anthropic; dòng
+  riêng tư cuối form khi có ô này là `form.privacyWithDescribe` (số trong form ở lại trình duyệt, chỉ mô tả được gửi khi bấm "Điền giúp tôi").
   Chỉ chạy khi bấm "Tính ba phương án" — **nút phụ**, nút chính của trang ở phần mở đầu —: `try-api.ts` → `useTryRun` (mutation; bấm lại
   thì huỷ lần cũ) gọi `optimizeCandidates` của chính bộ tối ưu mô phỏng (Web Worker khi có, luồng gọi khi không), một lần chạy ra ba phương
   án A · B · C; không tài khoản, kho mẫu, credit hay máy chủ. Xe của bản thử: cửa sau bằng lòng thùng, không vật cản, **không trục**; kiện theo

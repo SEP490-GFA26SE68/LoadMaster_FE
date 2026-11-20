@@ -79,6 +79,9 @@ test('the server reads the description and the form is filled, but nothing is co
   // Ô trống: nút mờ; có mô tả, bộ đếm và dòng nói mô tả đi đâu
   expect(section.getByRole('button', { name: 'Điền giúp tôi' })).toBeDisabled()
   expect(section.getByRole('textbox', { name: 'Mô tả hàng bằng lời' })).toHaveAccessibleDescription(/0 \/ 1\.000 ký tự.*máy chủ LoadMaster và Anthropic/)
+  // Dòng riêng tư dưới form không còn nói "không gửi lên máy chủ" khi ngay trên có ô gửi mô tả đi
+  expect(section.getByText(/^Số trong form chỉ nằm trên trình duyệt này\. Chỉ mô tả bằng lời ở trên được gửi đi/)).toBeInTheDocument()
+  expect(section.queryByText(/không gửi lên máy chủ/)).not.toBeInTheDocument()
 
   await describe()
 

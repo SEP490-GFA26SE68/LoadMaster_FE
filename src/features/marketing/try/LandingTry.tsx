@@ -77,7 +77,7 @@ export function LandingTry() {
                   </Button>
                   <p className={cn(TRY_NOTE, 'flex items-start gap-2')}>
                     <ShieldCheck aria-hidden strokeWidth={1.5} className="mt-0.5 size-4 flex-none text-primary" />
-                    {t('landingTry.form.privacy')}
+                    {t(TRY_DESCRIBE_AVAILABLE ? 'landingTry.form.privacyWithDescribe' : 'landingTry.form.privacy')}
                   </p>
                 </div>
               </form>

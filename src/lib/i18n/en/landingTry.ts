@@ -19,6 +19,7 @@ export const landingTry = {
     run: 'Work out three plans',
     howSubject: 'the trial',
     privacy: 'The figures you type stay in this browser; nothing is sent to a server.',
+    privacyWithDescribe: 'The figures in the form stay in this browser. Only the description above is sent, and only when you press “Fill it in for me”.',
   },
   describe: {
     label: 'Describe your cargo in words',
