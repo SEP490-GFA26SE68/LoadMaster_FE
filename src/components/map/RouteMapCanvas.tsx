@@ -19,7 +19,7 @@ const FALLBACK_CENTER: [number, number] = [106.8, 10.9]
 type Mounted = { pin: RouteMapPin; element: HTMLElement; marker: Marker }
 
 /** Nội dung mốc không đổi (cùng loại, số, nhãn): chỉ cần dời chỗ. */
-const sameLook = (a: RouteMapPin, b: RouteMapPin) => a.kind === b.kind && a.number === b.number && a.tag === b.tag
+const sameLook = (a: RouteMapPin, b: RouteMapPin) => a.kind === b.kind && a.number === b.number && a.tag === b.tag && a.heading === b.heading
 
 const lngLat = (point: GeoPoint): [number, number] => [point.lng, point.lat]
 const token = (element: Element, name: string) => getComputedStyle(element).getPropertyValue(name).trim()
@@ -200,7 +200,7 @@ export default function RouteMapCanvas({
       </div>
       {portals.map(({ pin, element }) =>
         createPortal(
-          pin.kind === 'stop' ? <StopMarker number={pin.number ?? 0} /> : pin.kind === 'depot' ? <DepotMarker /> : <VehicleMarker tag={pin.tag} muted={pin.kind === 'other'} />,
+          pin.kind === 'stop' ? <StopMarker number={pin.number ?? 0} /> : pin.kind === 'depot' ? <DepotMarker /> : <VehicleMarker tag={pin.tag} muted={pin.kind === 'other'} heading={pin.heading} />,
           element,
           pin.key,
         ),

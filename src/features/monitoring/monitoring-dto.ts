@@ -1,6 +1,6 @@
 import type { DeadlineStatus } from '@/domain/routing'
 import { isoFromBackend } from '@/lib/backend-time'
-import { LOCATION_SOURCES, type EtaRiskAlert, type LocationPoint, type TripLiveStop } from '@/lib/mock-db'
+import { LOCATION_SOURCES, type EtaRiskAlert, type LocationPoint, type RouteLegGeometry, type TripLiveStop } from '@/lib/mock-db'
 import type { LiveMonitoring, MonitoringBoard, MonitoringStop, MonitoringTrip } from './monitoring-api'
 import { exceptionOf, pick, rerouteOf, type TripExceptionDto, type TripRerouteDto } from './monitoring-exception-dto'
 
@@ -63,6 +63,16 @@ type EtaRiskAlertDto = {
   readonly deadline: string
 }
 
+type RouteLegGeometryDto = {
+  readonly legId?: number | null
+  readonly legSequence?: number | null
+  readonly startStopId?: number | null
+  readonly endStopId?: number | null
+  readonly distanceMeters?: number | null
+  readonly durationSeconds?: number | null
+  readonly polyline?: string | null
+}
+
 export type TripMonitoringDto = {
   readonly tripId: string
   readonly location: LocationPointDto | null
@@ -70,6 +80,8 @@ export type TripMonitoringDto = {
   readonly alerts?: readonly EtaRiskAlertDto[] | null
   readonly exceptions?: readonly TripExceptionDto[] | null
   readonly reroute?: TripRerouteDto | null
+  readonly activeRoutePlanId?: number | null
+  readonly routeLegs?: readonly RouteLegGeometryDto[] | null
   readonly refreshMs: number | null
   readonly isMockResult?: boolean | null
 }
@@ -157,9 +169,26 @@ function alertsOf(dto: EtaRiskAlertDto): EtaRiskAlert[] {
   }]
 }
 
+function routeLegsOf(dto: TripMonitoringDto): RouteLegGeometry[] | undefined {
+  const legs = (dto.routeLegs ?? []).flatMap((leg): RouteLegGeometry[] => {
+    if (typeof leg.legId !== 'number' || typeof leg.legSequence !== 'number') return []
+    return [{
+      legId: leg.legId,
+      legSequence: leg.legSequence,
+      startStopId: leg.startStopId ?? null,
+      endStopId: leg.endStopId ?? null,
+      ...(typeof leg.distanceMeters === 'number' ? { distanceMeters: leg.distanceMeters } : {}),
+      ...(typeof leg.durationSeconds === 'number' ? { durationSeconds: leg.durationSeconds } : {}),
+      polyline: leg.polyline ?? null,
+    }]
+  })
+  return legs.length > 0 ? legs : undefined
+}
+
 /** Nhịp đọc lại: backend trả 30 giây khi chuyến đang chạy, `null` khi không; màn đọc lại nhiều nhất mỗi giây. */
 export function liveOf(dto: TripMonitoringDto): LiveMonitoring {
   const reroute = dto.reroute ? rerouteOf(dto.reroute) : undefined
+  const routeLegs = routeLegsOf(dto)
   return {
     tripId: dto.tripId,
     location: dto.location ? locationOf(dto.location) : null,
@@ -167,6 +196,8 @@ export function liveOf(dto: TripMonitoringDto): LiveMonitoring {
     alerts: (dto.alerts ?? []).flatMap(alertsOf),
     exceptions: (dto.exceptions ?? []).map(exceptionOf),
     ...(reroute ? { reroute } : {}),
+    ...(typeof dto.activeRoutePlanId === 'number' ? { activeRoutePlanId: dto.activeRoutePlanId } : {}),
+    ...(routeLegs ? { routeLegs } : {}),
     refreshMs: typeof dto.refreshMs === 'number' && dto.refreshMs > 0 ? Math.max(1000, dto.refreshMs) : null,
     isMockResult: dto.isMockResult === true,
   }

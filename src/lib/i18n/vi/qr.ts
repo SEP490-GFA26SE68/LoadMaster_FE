@@ -49,5 +49,11 @@ export const qr = {
       noteTooLong: 'Ghi chú tối đa {max} ký tự.',
     },
     close: 'Đóng',
+    /** Hộp đối chiếu giữa màn: xem sơ đồ / thẻ kiện phía sau mà không đóng hộp, không mất chữ đang gõ. */
+    peek: 'Xem sơ đồ',
+    resume: 'Tiếp tục đối chiếu',
+    peekingHint: 'Sơ đồ đang hiện. Chữ đã gõ được giữ lại.',
+    /** Một kiện của bước hiện tại: tên và điểm giao, không kèm Package Code (tránh gõ chép từ màn hình). */
+    currentPackage: 'Kiện đang cầm: {name}',
   },
 } as const

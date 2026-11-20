@@ -1,7 +1,8 @@
 /**
  * Cấu hình nối backend thật. Mặc định app chạy hoàn toàn trên kho mẫu (`mock`) — dev, CI và test không cần backend. Đặt
  * `VITE_AUTH_SOURCE=keycloak` ở `.env.local` thì đăng nhập đi qua Keycloak của backend; dữ liệu của các màn vẫn theo `-api.ts` của
- * từng feature (feature nào chưa nối thì vẫn là kho mẫu). `VITE_API_FEATURES` chọn nhóm chức năng đã nối nào thật sự gọi backend —
+ * từng feature (feature nào chưa nối thì vẫn là kho mẫu). Màn tài xế và phiếu lương luôn gọi backend khi đăng nhập Keycloak — không
+ * để `VITE_API_FEATURES` tắt về kho mẫu / MOCK RESULT. `VITE_API_FEATURES` chọn nhóm chức năng đã nối nào thật sự gọi backend —
  * để tắt riêng một nhóm khi backend của nhóm đó hỏng mà không phải tắt cả đăng nhập.
  */
 export type AuthSource = 'mock' | 'keycloak'
@@ -33,6 +34,9 @@ export const BACKEND_FEATURES = [
 ] as const
 
 export type BackendFeature = (typeof BACKEND_FEATURES)[number]
+
+/** Màn tài xế (và phiếu lương) luôn gọi backend khi đăng nhập Keycloak — không dùng kho mẫu / MOCK RESULT. */
+export const DRIVER_API_FEATURES: readonly BackendFeature[] = ['driver', 'payroll']
 
 export type BackendEnv = {
   readonly VITE_AUTH_SOURCE?: string | undefined
@@ -69,16 +73,22 @@ function featuresOf(value: string | undefined): ReadonlySet<BackendFeature> {
   return new Set(BACKEND_FEATURES.filter((feature) => names.includes(feature)))
 }
 
+function withDriverApi(authSource: AuthSource, features: ReadonlySet<BackendFeature>): ReadonlySet<BackendFeature> {
+  if (authSource !== 'keycloak') return new Set()
+  const next = new Set(features)
+  for (const feature of DRIVER_API_FEATURES) next.add(feature)
+  return next
+}
+
 /** Giá trị lạ của `VITE_AUTH_SOURCE` hay `VITE_API_FEATURES` là lỗi ngay lúc mở app, không âm thầm quay về kho mẫu. */
 export function resolveBackendConfig(env: BackendEnv): BackendConfig {
   const source = env.VITE_AUTH_SOURCE?.trim().toLowerCase() || 'mock'
   const authSource = AUTH_SOURCES.find((item) => item === source)
   if (authSource === undefined) throw new Error(`VITE_AUTH_SOURCE phải là "mock" hoặc "keycloak", đang là "${env.VITE_AUTH_SOURCE}"`)
-  const features = featuresOf(env.VITE_API_FEATURES)
   return {
     authSource,
     apiUrl: trimmed(env.VITE_API_URL, 'http://localhost:8080'),
-    features: authSource === 'keycloak' ? features : new Set(),
+    features: withDriverApi(authSource, featuresOf(env.VITE_API_FEATURES)),
     keycloak: {
       url: trimmed(env.VITE_KEYCLOAK_URL, 'http://localhost:8180'),
       realm: env.VITE_KEYCLOAK_REALM?.trim() || 'loadmaster',

@@ -28,10 +28,13 @@ export function DepotMarker() {
  * Mốc vị trí xe: vòng trắng viền cyan có icon xe. `muted` là xe của chuyến khác (màn Giám sát): viền và icon xám, nhỏ hơn một bậc —
  * khác cả cỡ, không chỉ khác màu. `tag` là nhãn ngắn ngay dưới mốc (mã chuyến, nguồn vị trí); mốc vẫn neo đúng tâm vòng tròn.
  */
-export function VehicleMarker({ tag, muted = false }: { tag?: string; muted?: boolean }) {
+export function VehicleMarker({ tag, muted = false, heading }: { tag?: string; muted?: boolean; heading?: number }) {
   return (
     <span className="relative grid place-items-center">
-      <span className={`grid place-items-center rounded-full border-2 bg-bg shadow-e1 ${muted ? 'size-7 border-n-500 text-ink-2' : 'size-8 border-primary text-primary'}`}>
+      <span
+        className={`grid place-items-center rounded-full border-2 bg-bg shadow-e1 ${muted ? 'size-7 border-n-500 text-ink-2' : 'size-8 border-primary text-primary'}`}
+        style={heading === undefined ? undefined : { transform: `rotate(${heading - 90}deg)` }}
+      >
         <Truck className="size-4" strokeWidth={1.75} />
       </span>
       {tag ? (

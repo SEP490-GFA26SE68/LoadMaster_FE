@@ -136,7 +136,7 @@ export const monitoring = {
   reroute: {
     title: 'Find another route for trip {id}',
     description: 'Other roads to stop {number} · {name}, from the vehicle position at {time}.',
-    note: 'The order of the stops does not change. The map still draws straight lines; the routes differ only in distance and time.',
+    note: 'The order of the stops does not change. The options are suggested roads from the vehicle to the next undelivered stop; after you choose one, the server redraws the route on the map.',
     loading: 'Looking for routes…',
     options: 'Alternative routes',
     routes: { BYPASS: 'Nearby bypass', RING_ROAD: 'Ring road', HIGHWAY: 'Expressway' },

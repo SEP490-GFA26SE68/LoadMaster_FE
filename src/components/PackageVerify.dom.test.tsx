@@ -1,5 +1,6 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { useState } from 'react'
 import { MemoryRouter } from 'react-router'
 import { expect, test, vi } from 'vitest'
 import { I18nProvider } from '@/lib/i18n'
@@ -47,8 +48,12 @@ test('three levels as tabs with 56 px targets; without a camera the dialog opens
   const code = dialog.getByRole('textbox', { name: 'Mã QR hoặc mã bên gửi' })
   expect(code).toHaveFocus()
   expect(code).toHaveClass('h-14', 'text-body-lg')
-  expect(dialog.getByRole('button', { name: 'Đối chiếu mã' })).toHaveClass('h-14')
+  const submit = dialog.getByRole('button', { name: 'Đối chiếu mã' })
+  expect(submit).toHaveClass('h-14')
   expect(dialog.getByRole('button', { name: 'Đóng' })).toHaveClass('h-14')
+  expect(submit.closest('form')).toBeNull()
+  expect(dialog.getByRole('button', { name: 'Đóng' }).parentElement).toContainElement(submit)
+  expect(screen.getByRole('dialog').parentElement).not.toHaveClass('place-items-end')
 
   // Mức 1 trên máy không quét được: nói rõ lý do, không dựng khung camera
   await userEvent.click(dialog.getByRole('tab', { name: 'Quét QR' }))
@@ -172,6 +177,46 @@ test('a recorded package is a polite status; with nothing left to confirm the ma
   expect(dialog.getByText('Không có kiện nào để xác nhận tay ở bước này.')).toBeInTheDocument()
   await userEvent.click(dialog.getByRole('button', { name: 'Đóng' }))
   expect(onOpenChange).toHaveBeenCalledWith(false)
+})
+
+test('a single candidate shows its name in the sheet, not as a code to copy into the field', () => {
+  const { dialog } = renderVerify({ candidates: CANDIDATES.slice(0, 1) })
+  expect(dialog.getByText('Kiện đang cầm: Tủ lạnh Aqua 186 L · Dỡ thứ 1')).toBeInTheDocument()
+  expect(dialog.getByRole('textbox', { name: 'Mã QR hoặc mã bên gửi' })).toHaveValue('')
+})
+
+test('peeking hides the form without losing the typed code; resume puts it back', async () => {
+  const { dialog } = renderVerify()
+  await userEvent.type(dialog.getByRole('textbox', { name: 'Mã QR hoặc mã bên gửi' }), 'kh-778')
+  await userEvent.click(dialog.getByRole('button', { name: 'Xem sơ đồ' }))
+  expect(dialog.queryByRole('textbox', { name: 'Mã QR hoặc mã bên gửi' })).not.toBeInTheDocument()
+  expect(dialog.getByText('Sơ đồ đang hiện. Chữ đã gõ được giữ lại.')).toBeInTheDocument()
+  await userEvent.click(dialog.getByRole('button', { name: 'Tiếp tục đối chiếu' }))
+  expect(dialog.getByRole('textbox', { name: 'Mã QR hoặc mã bên gửi' })).toHaveValue('kh-778')
+})
+
+test('typed code is kept after close and reopen of the same packages; a new package clears it', async () => {
+  function Harness({ candidates }: { candidates: readonly VerifyCandidate[] }) {
+    const [open, setOpen] = useState(true)
+    return (
+      <I18nProvider>
+        <MemoryRouter>
+          {open ? null : <button type="button" onClick={() => setOpen(true)}>Mở lại</button>}
+          <PackageVerify open={open} onOpenChange={setOpen} title="Đối chiếu kiện dỡ tại điểm 1" onVerify={vi.fn()} onManual={vi.fn()} candidates={candidates} />
+        </MemoryRouter>
+      </I18nProvider>
+    )
+  }
+  const { rerender } = render(<Harness candidates={CANDIDATES} />)
+  const dialog = within(screen.getByRole('dialog', { name: 'Đối chiếu kiện dỡ tại điểm 1' }))
+  await userEvent.type(dialog.getByRole('textbox', { name: 'Mã QR hoặc mã bên gửi' }), 'kh-778')
+  await userEvent.click(dialog.getByRole('button', { name: 'Đóng' }))
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: 'Mở lại' }))
+  expect(within(screen.getByRole('dialog')).getByRole('textbox', { name: 'Mã QR hoặc mã bên gửi' })).toHaveValue('kh-778')
+
+  rerender(<Harness candidates={CANDIDATES.slice(1)} />)
+  expect(within(screen.getByRole('dialog')).getByRole('textbox', { name: 'Mã QR hoặc mã bên gửi' })).toHaveValue('')
 })
 
 test('codes sent while the previous one is still with the store wait their turn: none is lost, each goes once, in order', async () => {

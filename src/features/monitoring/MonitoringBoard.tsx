@@ -78,6 +78,7 @@ function FleetMap({ trips, fleet, selected }: { trips: readonly MonitoringTrip[]
       tag: t('monitoring.map.tag', { trip: live.tripId, source }),
       lat: live.location.lat,
       lng: live.location.lng,
+      heading: live.location.heading,
     }]
   })
   const stops = useMemo(

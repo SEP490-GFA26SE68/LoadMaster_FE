@@ -127,7 +127,7 @@ export function RequirementsPage() {
         actions={createButton}
       />
 
-      <div className={all.length > 0 ? 'sky-overlap min-h-0 flex-1 overflow-auto px-shell pb-6' : 'min-h-0 flex-1 overflow-auto px-shell py-6'}>
+      <div className="min-h-0 flex-1 overflow-auto px-shell py-6">
           <div className="flex flex-col gap-3">
             <section className="relative flex-none overflow-hidden rounded-lg border border-border bg-bg shadow-card">
               <FilterBar

@@ -46,5 +46,9 @@ export const qr = {
       noteTooLong: 'The note takes at most {max} characters.',
     },
     close: 'Close',
+    peek: 'View diagram',
+    resume: 'Continue verification',
+    peekingHint: 'The diagram is visible. Your typed code is kept.',
+    currentPackage: 'Package in hand: {name}',
   },
 } satisfies Dictionary<typeof source>

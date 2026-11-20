@@ -6,7 +6,7 @@ export type RouteMapPlace = GeoPoint & { readonly name: string }
 export type RouteMapStop = RouteMapPlace & { readonly id: string; readonly number: number }
 
 /** Xe trên bản đồ. `tag` là nhãn ngắn hiện ngay dưới mốc xe (mã chuyến, nguồn vị trí) — màn Giám sát có nhiều xe cùng lúc. */
-export type RouteMapVehicle = RouteMapPlace & { readonly tag?: string }
+export type RouteMapVehicle = RouteMapPlace & { readonly tag?: string; readonly heading?: number }
 
 export type RouteMapData = {
   /** Kho xuất phát; không có thì tuyến bắt đầu từ điểm giao đầu tiên. */
@@ -37,15 +37,22 @@ export function staticExtent(data: RouteMapData): readonly GeoPoint[] {
   return routeExtent({ ...data, vehicle: undefined, others: undefined })
 }
 
-export type RouteMapPin = { readonly key: string; readonly point: GeoPoint; readonly kind: 'depot' | 'stop' | 'vehicle' | 'other'; readonly number?: number; readonly tag?: string }
+export type RouteMapPin = {
+  readonly key: string
+  readonly point: GeoPoint
+  readonly kind: 'depot' | 'stop' | 'vehicle' | 'other'
+  readonly number?: number
+  readonly tag?: string
+  readonly heading?: number
+}
 
 /** Các mốc của bản đồ, mỗi mốc một khoá ổn định: dữ liệu đổi thì mốc cùng khoá chỉ dời chỗ, không dựng lại. */
 export function routePins(data: RouteMapData): RouteMapPin[] {
   return [
     ...(data.depot ? [{ key: 'depot', point: data.depot, kind: 'depot' as const }] : []),
     ...data.stops.map((stop) => ({ key: `stop:${stop.id}`, point: stop, kind: 'stop' as const, number: stop.number })),
-    ...(data.others ?? []).map((other) => ({ key: `other:${other.id}`, point: other, kind: 'other' as const, tag: other.tag })),
-    ...(data.vehicle ? [{ key: 'vehicle', point: data.vehicle, kind: 'vehicle' as const, tag: data.vehicle.tag }] : []),
+    ...(data.others ?? []).map((other) => ({ key: `other:${other.id}`, point: other, kind: 'other' as const, tag: other.tag, heading: other.heading })),
+    ...(data.vehicle ? [{ key: 'vehicle', point: data.vehicle, kind: 'vehicle' as const, tag: data.vehicle.tag, heading: data.vehicle.heading }] : []),
   ]
 }
 

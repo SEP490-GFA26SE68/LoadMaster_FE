@@ -144,11 +144,11 @@ export const monitoring = {
       list: 'Điểm chưa có toạ độ',
     },
   },
-  /** Hộp "Tìm tuyến khác" (mock): 2–3 lựa chọn, chỉ đổi đường tới điểm kế tiếp. */
+  /** Hộp "Tìm tuyến khác": gợi ý từ vị trí xe tới điểm chưa giao; chọn xong máy chủ vẽ lại tuyến. */
   reroute: {
     title: 'Tìm tuyến khác cho chuyến {id}',
     description: 'Đường khác tới điểm {number} · {name}, tính từ vị trí xe lúc {time}.',
-    note: 'Thứ tự điểm giao không đổi. Bản đồ vẫn vẽ đường nối thẳng; các tuyến chỉ khác nhau ở quãng đường và thời gian.',
+    note: 'Thứ tự điểm giao không đổi. Các lựa chọn là đường gợi ý từ vị trí xe tới điểm chưa giao; chọn xong máy chủ vẽ lại tuyến trên bản đồ.',
     loading: 'Đang tìm tuyến…',
     options: 'Tuyến thay thế',
     routes: { BYPASS: 'Đường tránh gần', RING_ROAD: 'Đường vành đai', HIGHWAY: 'Cao tốc' },
