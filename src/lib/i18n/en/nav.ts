@@ -24,7 +24,6 @@ export const nav = {
   companyProfile: 'Company details',
   support: 'Support',
   supportRequests: 'Support requests',
-  changeCustomerPlan: 'Change customer plan',
   companyWarehouses: 'Warehouses',
   contacts: 'Guest contacts',
   account: 'Account {name}',

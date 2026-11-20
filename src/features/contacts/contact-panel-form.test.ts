@@ -1,6 +1,7 @@
 import { expect, test } from 'vitest'
 import type { GuestContact } from '@/lib/mock-db'
-import { contactPanelValues, contactPatch, mailtoHref, NO_ASSIGNEE, type ContactPanelValues } from './contact-panel-form'
+import { createFormatter } from '@/lib/format'
+import { contactPanelValues, contactPatch, mailtoHref, NO_ASSIGNEE, readableNote, type ContactPanelValues } from './contact-panel-form'
 
 const CONTACT: GuestContact = {
   id: 'LH-002', fullName: 'Phạm Thu Trang', email: 'trang.pham@xanhlogistics.vn', requestType: 'DEMO_REQUEST', status: 'IN_PROGRESS',
@@ -31,4 +32,15 @@ test('the mail link encodes each side of the address, so a query cannot add reci
   expect(mailtoHref('trang.pham@xanhlogistics.vn')).toBe('mailto:trang.pham@xanhlogistics.vn')
   expect(mailtoHref('a@b.vn?cc=x%40y.vn&subject=hi')).toBe('mailto:a@b.vn%3Fcc%3Dx%2540y.vn%26subject%3Dhi')
   expect(mailtoHref('a+b?x@c.vn')).toBe('mailto:a%2Bb%3Fx@c.vn')
+})
+
+test('a server timestamp in the note reads as date and time in Vietnam time, like the time a support ticket was sent', () => {
+  const vi = createFormatter('vi-VN')
+  const note = 'Đã gọi khách.\n[Phản hồi email lúc 2026-11-19T13:59:23.530714200Z]: xin chào tôi đã xem\n[Phản hồi email lúc 2026-11-20T01:05:00Z]: gửi lại báo giá'
+  expect(readableNote(note, vi)).toBe(
+    'Đã gọi khách.\n[Phản hồi email lúc 19/11/2026 20:59]: xin chào tôi đã xem\n[Phản hồi email lúc 20/11/2026 08:05]: gửi lại báo giá',
+  )
+  // Ngày giờ người dùng tự gõ (không múi giờ) và ghi chú đã đọc được giữ nguyên
+  expect(readableNote('Hẹn 2026-11-21T09:00 gọi lại', vi)).toBe('Hẹn 2026-11-21T09:00 gọi lại')
+  expect(readableNote('', vi)).toBe('')
 })

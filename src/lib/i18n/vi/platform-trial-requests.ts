@@ -20,6 +20,7 @@ export const trialRequests = {
     customer: 'Khách hàng',
     contact: 'Liên hệ',
     plan: 'Gói quan tâm',
+    precheck: 'Kiểm tra AI',
     createdAt: 'Gửi lúc',
     status: 'Trạng thái',
     handler: 'Đảm nhận',

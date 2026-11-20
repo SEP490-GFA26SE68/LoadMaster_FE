@@ -335,7 +335,7 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   Thông tin công ty. Quản lý công ty: Bảng điều khiển · Yêu cầu giao · Kho kiện (chỉ đọc) · Chuyến hàng · Giám sát · Đội xe · Kho bãi (`/quan-ly-kho`; nhãn ngắn `nav.companyWarehouses` để thanh vừa 1.366 px ở cả hai ngôn ngữ) · Bảng lương (`/bang-luong`). Tám mục chỉ vừa 1.366 px khi lề mục là 8 px tới dưới 1.536 px (`2xl:px-3.5` từ 1.536 px). Điều phối
   viên: Chuyến hàng · Giám sát · Kho kiện (chỉ đọc) · Yêu cầu giao · Đội xe · Bảng điều khiển. Nhân viên kho: Kho · Kho kiện · Khách hàng. Tài xế: một
   mục về màn của mình (thanh chỉ hiện ở màn hồ sơ). Quản lý nền tảng: Gói cước · Lịch sử gói cước · Công ty (chỉ xem danh sách; tạo, sửa công ty là của quản trị hệ thống) · Đơn dùng thử. Hỗ trợ khách hàng: Hỗ trợ ·
-  Liên hệ của khách; nút "Đổi gói khách hàng" trên thanh. Màn chính của ba vai trò nền tảng vẫn là màn riêng của từng vai trò. Màn mới
+  Liên hệ của khách (không có nút đổi gói của khách trên thanh). Màn chính của ba vai trò nền tảng vẫn là màn riêng của từng vai trò. Màn mới
   thêm một dòng vào `NAV_SCREENS` và mã của nó vào `NAV_ITEMS`, trong issue của màn đó.
 - Loại kiện và In nhãn không có mục riêng, mở từ màn Kho kiện (nút "Loại kiện" trên dải tiêu đề, nút quay lại ở hai màn kia); Loại xe mở từ màn
   Đội xe; Tra cứu kiện: điều phối viên mở bằng nút "Tra cứu kiện" trên dải tiêu đề của Kho kiện, nhân viên kho bằng nút 56 px ở thanh màn chính `/kho`.
@@ -2363,8 +2363,8 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   trả lời (người, vai trò, nội dung, giờ — tên và vai trò cũng chụp lúc trả lời vì người của công ty không đọc được tài khoản nền tảng). Kho
   (`db-support.ts`, `ctx.scope.supportTickets` theo công ty rồi lọc tiếp theo người gửi): **người của công ty chỉ thấy và trả lời yêu cầu do chính
   mình gửi** — của đồng nghiệp hay của công ty khác đọc là `NOT_FOUND`, ghi vào yêu cầu của công ty khác `FORBIDDEN_COMPANY`; **hỗ trợ khách hàng
-  thấy mọi yêu cầu** và là người duy nhất đổi trạng thái (`setSupportTicketStatus`, kể cả mở lại) và đọc khung công ty (`getSupportCompanyPanel`: gói,
-  `planStatus` tính theo đồng hồ, số dư, 20 giao dịch credit gần nhất, qua `ctx.scope.platform*`); vai trò nền tảng khác `ROLE_NOT_ALLOWED`; gửi và
+  thấy mọi yêu cầu** và là người duy nhất đổi trạng thái (`setSupportTicketStatus`, kể cả mở lại); kho còn `getSupportCompanyPanel` (gói,
+  `planStatus` tính theo đồng hồ, số dư, 20 giao dịch credit gần nhất, qua `ctx.scope.platform*`) nhưng không màn nào đọc; vai trò nền tảng khác `ROLE_NOT_ALLOWED`; gửi và
   trả lời cần phiên (`NOT_SIGNED_IN`). Hỗ trợ khách hàng trả lời yêu cầu Mở thì yêu cầu sang Đang xử lý; yêu cầu Đóng không nhận trả lời
   (`TICKET_CLOSED`, mở lại bằng đổi trạng thái); sai dữ liệu `TICKET_INVALID`. Nhật ký nhóm `ticket` (`created` mang `ticketKind`, `replied` mang
   người gửi ở `requestedBy`, `statusChanged` mang `ticketStatus`) — **thuộc công ty của yêu cầu** (tham số `companyId` của `ctx.log`) dù người làm
@@ -2372,8 +2372,8 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   `SupportTicketDialog` mở từ mục "Yêu cầu hỗ trợ" của menu tài khoản (`NavRail`, và `AccountMenu` 56 px của kho, tài xế — cỡ cảm ứng ở nút, ô nhập,
   chữ) — danh sách yêu cầu của mình, gửi yêu cầu mới, đọc và trả lời. **`/ho-tro`** (`support.handle`, màn chính của hỗ trợ khách hàng): bảng mọi
   yêu cầu (hoạt động gần nhất trước; lọc `cong-ty`, `loai`, `trang-thai`, tìm theo tiêu đề / mã / người gửi — trên URL), `?ticket=<mã>` mở cuộc trao
-  đổi ở cột phải (trả lời, ô "Trạng thái yêu cầu") kèm `CompanyPanel` chỉ đọc; màn không có nút chính ngoài "Gửi trả lời". Khoá Query `['support',
-  'tickets' | 'panel', mã công ty]`, `staleTime: 0`; mọi lần ghi làm mới `['support']`, `['audit']`, `['notifications']`.
+  đổi ở cột phải (trả lời, ô "Trạng thái yêu cầu") — không có khung thông tin công ty, gói hay giao dịch credit của khách; màn không có nút chính
+  ngoài "Gửi trả lời". Khoá Query `['support', 'tickets']`, `['support', 'thread', mã yêu cầu]`, `staleTime: 0`; mọi lần ghi làm mới `['support']`, `['audit']`, `['notifications']`.
 - **Liên hệ của khách** (entity `ContactOfGuest` của backend; `contact-model.ts`, `db-contacts.ts`, `DbState.guestContacts`, seed `seed-contacts.ts`).
   `GuestContact` (`LH-NNN`): họ tên, email, số điện thoại / tên công ty / gói quan tâm / nội dung tuỳ chọn, loại `INQUIRY | DEMO_REQUEST | PRICING |
   CONTRACT | OTHER`, trạng thái `NEW | IN_PROGRESS | RESOLVED | CLOSED`, người nhận việc (mã + tên chụp lúc giao), ghi chú nội bộ, `resolvedAt` (lần
@@ -2409,7 +2409,9 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   tiêu đề của khung nhận focus; đóng khung thì focus về liên kết tên của dòng đó. Người đang nhận việc mà tài khoản đã khoá vẫn hiện tên trong ô
   (mục mờ, không chọn lại được); danh sách người nhận việc tải lỗi thì ô có gợi ý tải lại; tên gói không đọc được thì hiện mã gói. Danh sách người
   nhận việc (`listContactHandlers`, chỉ người đang hoạt động) nối backend đọc `GET /api/contact-guests/handlers`. Khoá `['contacts', …]`, `staleTime: 0`; gửi và sửa làm
-  mới `['contacts']`, `['audit']`.
+  mới `['contacts']`, `['audit']`. Máy chủ nối dòng `[Phản hồi email lúc <Instant>]: …` vào ghi chú nội bộ mỗi lần gửi email cho khách: khung
+  hiện mốc đó thành ngày giờ như giờ gửi của yêu cầu hỗ trợ (`readableNote`, "19/11/2026 20:59"), chỉ đổi cách hiện — chưa sửa gì thì không có gì
+  để lưu. Yêu cầu đăng ký dùng thử đã nhận việc kết thúc bằng "Đã giải quyết" như mọi loại, không chuyển sang đơn dùng thử của quản lý nền tảng.
 
 ### Kiểm thử
 
