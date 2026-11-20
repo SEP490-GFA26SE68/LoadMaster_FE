@@ -43,7 +43,8 @@ export const titles = {
   subscriptionHistory: 'Lịch sử gói cước',
   trialRequests: 'Đơn yêu cầu tạo tài khoản dùng thử',
   billing: 'Gói cước và credit',
-  payroll: 'Bảng lương tài xế',
+  payroll: 'Bảng lương',
+  dispatcherPayroll: 'Phiếu lương',
   payment: 'Thanh toán giả lập',
   paymentResult: 'Xác nhận thanh toán',
   // FE-8-06, FE-8-07

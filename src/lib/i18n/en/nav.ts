@@ -21,6 +21,7 @@ export const nav = {
   trialRequests: 'Trial requests',
   billing: 'Plan and credits',
   payroll: 'Payroll',
+  payrollOwn: 'Payslip',
   companies: 'Companies',
   companyProfile: 'Company details',
   support: 'Support',

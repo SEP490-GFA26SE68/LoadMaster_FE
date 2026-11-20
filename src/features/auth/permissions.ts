@@ -23,6 +23,7 @@ export const PERMISSIONS = [
   'subscriptionPlans.manage',
   'billing.manage',
   'payroll.manage',
+  'payroll.viewOwn',
   'support.create',
   'support.handle',
   'contacts.handle',
@@ -103,6 +104,7 @@ export const ROLE_PERMISSIONS: Readonly<Record<Role, readonly Permission[]>> = {
   ],
 
   dispatcher: [
+    'payroll.viewOwn',
     'support.create',
     'dashboard.view',
     'requirements.view',

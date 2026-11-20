@@ -2,7 +2,11 @@ import type { Dictionary } from '../types'
 import type { payroll as source } from '../vi/payroll'
 
 export const payroll = {
-  title: 'Driver payroll',
+  title: 'Payroll',
+  tabs: {
+    drivers: 'Drivers',
+    dispatchers: 'Dispatchers',
+  },
   unavailableTitle: 'Payroll is not enabled',
   unavailableDescription: 'Company payroll data is not available yet.',
   loading: 'Loading payroll',
@@ -81,5 +85,31 @@ export const payroll = {
     effectiveFromNextMonth: 'Effective from next month ({month})',
     saveBaseSalary: 'Save new salary',
     baseSalarySaved: 'Driver fixed salary saved for next month.',
+  },
+  dispatcher: {
+    rateTitle: 'Dispatcher pay rates',
+    baseSalary: 'Fixed salary per dispatcher',
+    overtimeHour: 'Overtime pay per hour',
+    overtimeHourUnit: 'VND/hour',
+    overtimeHoursPerDay: 'Hours per overtime day',
+    hoursUnit: 'hours/day',
+    hoursRange: 'Hours per overtime day must be between 0 and 24.',
+    overtimeDays: 'Overtime days',
+    overtimeDaysOf: 'Overtime days for {name}',
+    overtimeAmount: 'Overtime pay',
+    overtimeFormula: 'Overtime = {rate} × {hours} hours/day × {days} days',
+    kpi: 'Monthly KPI',
+    kpiOf: 'Monthly KPI for {name}',
+    dispatchers: 'Dispatchers',
+    person: 'Dispatcher',
+    noDispatchers: 'There are no active dispatchers for this month.',
+    noPeriodDescription: 'Select Calculate payroll to create a draft for active dispatchers this month.',
+    baseSalaryOverrideHelp: 'The new salary applies from the start of next month for this dispatcher.',
+    baseSalarySaved: 'Dispatcher fixed salary saved for next month.',
+  },
+  own: {
+    title: 'Payslip',
+    noPeriodDescription: 'There is no dispatcher payslip for this month yet. The company manager will calculate and lock payroll.',
+    draftNotice: 'This month’s payroll is still a draft and has not been locked.',
   },
 } satisfies Dictionary<typeof source>

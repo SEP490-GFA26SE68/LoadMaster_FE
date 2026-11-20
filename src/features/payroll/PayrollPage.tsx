@@ -9,8 +9,10 @@ import { PageHero } from '@/components/PageHero'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Spinner } from '@/components/ui/Spinner'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 
+import { DispatcherPayrollPanel } from './DispatcherPayrollPanel'
 import { nextMonthPeriod, PAYROLL_CAPABILITIES, type PayrollRate } from './payroll-api'
 import { payrollRateFormSchema, type PayrollRateFormInput, type PayrollRateFormValues } from './payroll-rate-form'
 import { PayrollRateSettings } from './PayrollRateSettings'
@@ -100,6 +102,12 @@ export function PayrollPage() {
         </main>
       ) : (
         <main className="flex min-h-0 flex-1 flex-col gap-5 overflow-auto px-shell py-6 max-sm:px-4">
+          <Tabs defaultValue="drivers" className="flex min-w-0 flex-col gap-5">
+            <TabsList aria-label={t('payroll.title')}>
+              <TabsTrigger value="drivers">{t('payroll.tabs.drivers')}</TabsTrigger>
+              <TabsTrigger value="dispatchers">{t('payroll.tabs.dispatchers')}</TabsTrigger>
+            </TabsList>
+            <TabsContent value="drivers" className="flex min-w-0 flex-col gap-5">
           <div className="grid items-start gap-5 xl:grid-cols-[minmax(320px,0.8fr)_minmax(0,1.2fr)]">
             <PayrollRateSettings
               form={rateForm}
@@ -220,6 +228,11 @@ export function PayrollPage() {
               })
             }}
           />
+            </TabsContent>
+            <TabsContent value="dispatchers">
+              <DispatcherPayrollPanel />
+            </TabsContent>
+          </Tabs>
         </main>
       )}
     </div>

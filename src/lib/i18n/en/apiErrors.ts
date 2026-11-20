@@ -91,6 +91,7 @@ VEHICLE_PRESENCE_CONFLICT: "Vehicle state or confirmation key conflict. Check th
   PAYROLL_INVALID_PERIOD: 'The payroll month is invalid. Choose a month in year-month format.',
   PAYROLL_INVALID_DRIVER_ASSIGNMENT: 'The drivers assigned to productivity pay are not valid.',
   PAYROLL_INVALID_AMOUNT: 'Weight, distance and pay rates must be non-negative numbers.',
+  PAYROLL_INVALID_OVERTIME_DAYS: 'Overtime days must be from 0 up to the number of days in the payroll month.',
   DELIVERY_REQUIREMENT_NOT_FOUND: 'The delivery requirement was not found.',
   DELIVERY_REQUIREMENT_NOT_PENDING: 'Only a requirement that is waiting for a trip and holds no packages can be deleted.',
   INVALID_DELIVERY_REQUIREMENT_TRANSITION: 'The delivery requirement cannot move to this status.',

@@ -26,6 +26,7 @@ const EXPECTED: Readonly<Record<Role, readonly Permission[]>> = {
     'companyWarehouses.manage',
   ],
   dispatcher: [
+    'payroll.viewOwn',
     'support.create', 'dashboard.view', 'requirements.view', 'requirements.edit', 'packages.view', 'packages.lookup', 'labels.print',
     'trips.view', 'trips.edit', 'routes.optimize', 'optimization.run', 'plans.approve', 'manualConfirm.approve', 'plans.view',
     'monitoring.view', 'fleet.view', 'fleet.edit', 'vehicleTypes.edit', 'exceptions.report', 'exceptions.resolve', 'pickups.create',
@@ -55,10 +56,10 @@ test('exactly the eight roles of the backend, each with its backend code; manufa
 })
 
 test('one table: 37 permissions, each granted to at least one role; a role lists each of its permissions once, in the order of the matrix rows', () => {
-  // 33 quyền của ma trận PRD v2 cộng `contacts.handle`, `companyProfile.manage`, `trialRequests.manage`, `companyWarehouses.manage`, `payroll.manage`; ba
+  // 33 quyền của ma trận PRD v2 cộng `contacts.handle`, `companyProfile.manage`, `trialRequests.manage`, `companyWarehouses.manage`, `payroll.manage`, `payroll.viewOwn`; ba
   // quyền của nhà sản xuất và logistics đã bỏ (FE-0-06), hai quyền đơn hàng tạm đã bỏ (FE-4b-01)
-  expect(PERMISSIONS).toHaveLength(38)
-  expect(new Set(PERMISSIONS).size).toBe(38)
+  expect(PERMISSIONS).toHaveLength(39)
+  expect(new Set(PERMISSIONS).size).toBe(39)
   expect(PERMISSIONS.filter((permission) => /^(packages\.register|shipments\.|receiving\.|orders\.)/.test(permission))).toStrictEqual([])
   expect(PERMISSIONS.slice(-2)).toStrictEqual(['warehouse.operate', 'driver.operate'])
   for (const permission of PERMISSIONS) expect(ROLES.some((role) => can(role, permission)), permission).toBe(true)

@@ -58,7 +58,7 @@ export const privacy = {
   company: {
     title: 'A company’s operational data',
     data: 'While using the app, a company enters its own operational data: vehicles, packages, shippers, delivery requirements (destination, address, coordinates, deadline), trips, load plans and loading and delivery progress.',
-    payroll: 'Company managers calculate and lock driver payroll on the server: the company’s rates, each driver’s base salary, the drivers of each trip and the amounts per month.',
+    payroll: 'Company managers calculate and lock payroll on the server: driver trip rates, each dispatcher’s fixed salary, overtime and monthly KPI, and the amounts per month.',
     support: 'Support requests that company users send from the account menu — subject, message and every reply — are read and answered by LoadMaster’s customer support; senders only see their own requests.',
     recipients: 'Information about destinations and the company’s customers is entered by the company, which is responsible for it; the app uses it only to run that company’s own features.',
     tenancy: 'A company account can only read its own company’s vehicles, packages, trips and users. The LoadMaster team can read the list of companies, every company’s accounts and audit log (to lock, unlock and reset passwords), and plans, credit and support requests while handling support; the team cannot open any company’s vehicles, packages or trips.',
