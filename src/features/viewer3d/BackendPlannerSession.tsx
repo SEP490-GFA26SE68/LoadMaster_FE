@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { EmptyState } from '@/components/EmptyState'
 import { Button } from '@/components/ui/Button'
 import { useCan } from '@/features/auth/useCan'
+import { PlannerAssistant } from '@/features/marketing/assistant/PlannerAssistant'
 import { ChangeVehicleDialog } from '@/features/trips/ChangeVehicleDialog'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import type { TripStatus } from '@/types/trip'
@@ -20,6 +21,7 @@ import { EditorToolbar } from './editor/EditorToolbar'
 import { useManualEditor } from './editor/useManualEditor'
 import { SceneHud } from './operations/SceneHud'
 import { useOperations } from './operations/useOperations'
+import { usePlannerAssistant } from './usePlannerAssistant'
 import { PlannerLockNotice } from './PlannerLockNotice'
 import { PlannerNoticeBar, PlannerNoticeLink } from './PlannerNoticeBar'
 import { PlannerSimulationControls } from './PlannerSimulationControls'
@@ -74,7 +76,8 @@ export function BackendResultSession() {
  * (`optimization.run`) và "Đổi xe" (`trips.edit`) ở góc dưới phải khung 3D. Chuyến còn Nháp thì ghim và chạy lại mờ kèm lý do (máy chủ
  * từ chối `TRIP_LOCKED`); pha vận hành khoá cả Planner. Phương án lỗi thời (máy chủ `stale`: đổi xe, đổi kiện của chuyến) có thanh cảnh báo,
  * không chỉnh tay, không Duyệt. Kết quả của máy chủ không mang MOCK RESULT. Quản lý công ty xem chỉ đọc (thiếu `plans.approve`). Phím tắt
- * như Planner của kho mẫu.
+ * như Planner của kho mẫu. Nhóm `assistant` nối máy chủ: nút "Trợ lý AI" ở góc dưới phải khung 3D, câu trả lời điều khiển được khung 3D
+ * (`usePlannerAssistant`).
  */
 function BackendPlannerSession({ tripCode, source }: { tripCode: string; source: BackendPlanSource & { plan: NonNullable<BackendPlanSource['plan']> } }) {
   const [searchParams] = useSearchParams()
@@ -159,6 +162,7 @@ function BackendPlannerSession({ tripCode, source }: { tripCode: string; source:
   function handleModeChange(mode: 'view' | 'edit') { operations.stop(); setFollow('off'); editor.setMode(mode) }
 
   const editing = editor.mode === 'edit'
+  usePlannerAssistant({ tripCode, planId: plan.id, state, operations, editing, onOpenPackages: () => setInspectorTab('packages') })
   const poseEdits = (editApproval?.edits.length ?? 0) > 0
   const rerunTo = stale && can('optimization.run') && phaseLock === null ? `/chuyen/${encodeURIComponent(tripCode)}/toi-uu` : undefined
   const simulation = { operations, stops: model.stops, preset: state.cameraPreset, onPreset: state.setCameraPreset }
@@ -191,14 +195,15 @@ function BackendPlannerSession({ tripCode, source }: { tripCode: string; source:
             onChangeVehicle={canChangeVehicle ? () => setVehicleOpen(true) : undefined}
             onRerunPinned={canRerun ? () => void navigate(keepPinsPath) : undefined} rerunBlockedReason={pinBlocked}
             onResetFocus={editor.focus ? () => { setFollow('off'); editor.resetFocus() } : undefined}
-            onFocus={(p) => { operations.pauseFollow(); if (p) editor.focusPlacement(p); else editor.focusSelected() }} onEdit={handleEdit} />}
+            onFocus={(p) => { operations.pauseFollow(); if (p) editor.focusPlacement(p); else editor.focusSelected() }} onEdit={handleEdit}
+            assistant={<PlannerAssistant />} />}
           {showPerf ? <DebugOverlay store={perfStore} /> : null}
           {editing && state.selected ? <EditorGestureHud placement={state.selected} editor={editor} /> : null}
         </div>
         {editing ? <EditorPanel state={state} editor={editor} /> : (
           <SceneInspector state={state} operations={operations} tripId={tripCode} colorContext={colorContext} issues={editApproval?.errors ?? []} pin={pin}
             onEdit={handleEdit} onFocus={editor.focusSelected} onSelect={(p) => { state.select(p.id); operations.pauseFollow(); editor.focusPlacement(p) }}
-            tab={inspectorTab} onTab={setInspectorTab} onClose={() => setInspectorTab(null)} />
+            tab={inspectorTab} onTab={setInspectorTab} onClose={() => setInspectorTab(null)} listSection={state.leftTab} />
         )}
       </div>
       {editing ? null : <Timeline

@@ -4,6 +4,7 @@ import type { Locale } from '@/lib/i18n'
 import type { AssistantMessageRequestDto, AssistantPublicMessageRequestDto, AssistantReplyDto } from './assistant-dto'
 import type { TopicId } from './assistant-kb'
 import { matchTopic } from './assistant-match'
+import type { ViewerContext } from './viewer-bridge'
 
 /**
  * Lớp mạng của trợ lý "Hỏi Lumo" — nơi duy nhất biết câu trả lời đến từ đâu.
@@ -39,6 +40,8 @@ export type AssistantAskContext = {
   /** Mã khách của phiên trình duyệt — bắt buộc ở trang công khai khi nối máy chủ. */
   readonly guestKey: string | null
   readonly page?: { readonly path: string; readonly title: string }
+  /** Planner bản máy chủ đang mở (`viewer-bridge.ts`); vắng khi không có. */
+  readonly viewer?: ViewerContext
 }
 
 /** Lệnh giao diện cho màn 3D (kỹ năng hỏi về phương án). */
@@ -96,7 +99,13 @@ async function post(question: string, context: AssistantAskContext, conversation
     const body: AssistantPublicMessageRequestDto = { ...continued, message: question, locale: context.locale, guestKey: context.guestKey }
     return replyOf(await api().post<AssistantReplyDto>('/api/assistant/public/messages', { body, timeoutMs: ASSISTANT_TIMEOUT_MS }))
   }
-  const body: AssistantMessageRequestDto = { ...continued, message: question, locale: context.locale, ...(context.page ? { page: context.page } : {}) }
+  const body: AssistantMessageRequestDto = {
+    ...continued,
+    message: question,
+    locale: context.locale,
+    ...(context.page ? { page: context.page } : {}),
+    ...(context.viewer ? { viewer: context.viewer } : {}),
+  }
   return replyOf(await api().post<AssistantReplyDto>('/api/assistant/messages', { body, timeoutMs: ASSISTANT_TIMEOUT_MS }))
 }
 

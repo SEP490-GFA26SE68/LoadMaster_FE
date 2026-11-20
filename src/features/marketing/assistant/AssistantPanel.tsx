@@ -13,6 +13,7 @@ import { AssistantAvatar } from './AssistantAvatar'
 import { AssistantComposer, focusAssistantInput } from './AssistantComposer'
 import { AssistantLog } from './AssistantLog'
 import { useAssistantChat, useAssistantContext } from './useAssistantChat'
+import type { AssistantDock } from './useAssistantLauncher'
 
 const PHONE_QUERY = '(max-width: 767.98px)'
 const hasMatchMedia = () => typeof window !== 'undefined' && typeof window.matchMedia === 'function'
@@ -33,9 +34,11 @@ const isPhone = () => hasMatchMedia() && window.matchMedia(PHONE_QUERY).matches
  * liệu, không phải nhân viên tư vấn (nối máy chủ: Lumo là trợ lý AI và có thể nhầm). Từ 768 px nút phóng to ở đầu khung mở khung rộng 720 px, cao gần hết màn để đọc câu trả lời dài; nhãn
  * của nút đổi theo trạng thái ("Phóng to" / "Thu nhỏ").
  */
-export default function AssistantPanel({ launcherRef, skipInitialFocus = false }: {
+export default function AssistantPanel({ launcherRef, skipInitialFocus = false, dock }: {
   launcherRef: RefObject<HTMLButtonElement | null>
   skipInitialFocus?: boolean
+  /** `planner`: khung neo góc dưới phải, trên hàng nút của khung 3D (Planner không có thanh điều hướng). */
+  dock?: AssistantDock
 }) {
   const t = useT()
   const { open, entries, pending, expanded } = useAssistantSession()
@@ -68,6 +71,7 @@ export default function AssistantPanel({ launcherRef, skipInitialFocus = false }
           data-expanded={expanded || undefined}
           // Trong ứng dụng khung neo góc trên phải, dưới nút "Trợ lý AI" của thanh điều hướng (assistant.css)
           data-surface={surface}
+          data-dock={dock}
           aria-modal={phone ? true : undefined}
           onOpenAutoFocus={(event) => {
             event.preventDefault()

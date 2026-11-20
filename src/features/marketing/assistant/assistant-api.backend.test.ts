@@ -51,6 +51,22 @@ test('in the app the question goes to the signed-in endpoint with the open scree
   ])
 })
 
+test('from the server Planner the question carries the open plan, and the reply keeps its interface commands without empty fields', async () => {
+  const uiActions = [
+    { type: 'selectPackage', packageCode: 'PK-7', preset: null, step: null, mode: null, tab: null },
+    { type: 'setCameraPreset', packageCode: null, preset: 'tren', step: null, mode: null, tab: null },
+  ]
+  const { calls } = stubBackend({ 'POST /api/assistant/messages': { body: reply('c-3', { uiActions }) } })
+  const viewer = { tripCode: 'TRIP-0007', loadPlanId: 41, selectedPackageCode: null }
+
+  const answer = await askAssistant({ question: 'Kiện PK-7 nằm đâu?' }, { ...APP, viewer })
+
+  expect(answer.kind === 'text' ? answer.uiActions : null).toStrictEqual([{ type: 'selectPackage', packageCode: 'PK-7' }, { type: 'setCameraPreset', preset: 'tren' }])
+  expect(calls.map((call) => call.body)).toStrictEqual([
+    { message: 'Kiện PK-7 nằm đâu?', locale: 'en', page: { path: '/chuyen', title: 'Chuyến hàng' }, viewer },
+  ])
+})
+
 test('a conversation the server no longer knows (another account, expired) is started over once, not reported as an error', async () => {
   const { calls } = stubBackend({
     'POST /api/assistant/messages': (call: FakeCall) =>
