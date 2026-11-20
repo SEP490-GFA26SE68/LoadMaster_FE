@@ -1,6 +1,7 @@
 /**
  * Trợ lý "Hỏi Lumo" của hai trang công khai `/gioi-thieu`, `/bang-gia` (`features/marketing/assistant`). Lumo trả lời từ bộ câu trả lời
- * soạn sẵn (`assistant-kb.ts`), không phải AI và không phải nhân viên — dòng nhỏ dưới ô gõ (`disclaimer`) nói rõ điều đó. Tên Lumo là tên riêng, không vào từ
+ * soạn sẵn (`assistant-kb.ts`), không phải AI và không phải nhân viên — dòng nhỏ dưới ô gõ (`disclaimer`) nói rõ điều đó. Khi nhóm
+ * `assistant` nối máy chủ, câu gõ do mô hình trả lời: dòng đó thành `disclaimerAi` / `disclaimerAiApp` (Lumo là trợ lý AI, có thể nhầm). Tên Lumo là tên riêng, không vào từ
  * điển: câu nói về Lumo nhận tham số `{name}`. Mỗi câu trả lời tối đa ba câu ngắn; số (credit, số luật, số mục tiêu) đi qua tham số từ
  * hằng của code, giá gói đọc từ danh mục gói.
  */
@@ -17,6 +18,10 @@ export const assistant = {
     log: 'Cuộc trò chuyện với {name}',
     /** Dòng nhỏ dưới ô gõ, cũng là mô tả của khung chat cho trình đọc màn hình. */
     disclaimer: '{name} trả lời từ tài liệu của LoadMaster — không phải nhân viên tư vấn.',
+    /** Hai câu thay `disclaimer` khi nhóm `assistant` nối máy chủ: Lumo là trợ lý AI và có thể nhầm. */
+    disclaimerAi: '{name} là trợ lý AI, trả lời từ tài liệu của LoadMaster và có thể nhầm — việc quan trọng hãy hỏi đội LoadMaster.',
+    disclaimerAiApp: '{name} là trợ lý AI, trả lời từ tài liệu và dữ liệu bạn được xem, và có thể nhầm — kiểm lại trước khi làm việc quan trọng.',
+    introHintApp: 'Hỏi mình về chuyến hàng, phương án xếp, kiện, đội xe hay cách dùng màn đang mở.',
     /** Màn chào khi chưa hỏi gì. */
     greeting: 'Chào bạn, mình là {name}.',
     introHint: 'Hỏi mình về gói cước, credit, cách LoadMaster xếp hàng hay cách dùng thử.',
@@ -149,6 +154,18 @@ export const assistant = {
     trial: 'Đăng ký trải nghiệm',
     registerNow: 'Đăng ký dùng ngay',
     requestTrial: 'Gửi yêu cầu dùng thử',
+  },
+  /** Câu trả lời của mô hình khi nhóm `assistant` nối máy chủ (`AssistantAiAnswer`). */
+  ai: {
+    links: 'Mở màn liên quan',
+    handoffQuestion: 'Chuyển câu hỏi cho đội hỗ trợ?',
+    handoffYes: 'Có, chuyển cho đội hỗ trợ',
+    handoffNo: 'Không cần',
+    /** Câu gửi đi khi bấm hai nút trên — trợ lý đọc như người dùng tự gõ. */
+    handoffYesMessage: 'Có, chuyển cho đội hỗ trợ.',
+    handoffNoMessage: 'Không cần chuyển.',
+    ticket: 'Đã tạo yêu cầu hỗ trợ {code}. Đội hỗ trợ trả lời ở mục “Yêu cầu hỗ trợ” của menu tài khoản.',
+    degraded: 'Trợ lý AI đang bận nên đây là câu trả lời soạn sẵn.',
   },
   fallback: 'Mình chưa có câu trả lời cho câu này trong tài liệu của LoadMaster. Bạn chọn một câu hỏi bên dưới, hoặc gửi câu hỏi cho đội LoadMaster.',
   handoff: {

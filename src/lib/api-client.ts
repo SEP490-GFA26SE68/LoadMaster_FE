@@ -69,6 +69,8 @@ export type QueryValue = string | number | boolean | null | undefined
 export type RequestOptions = {
   readonly query?: Readonly<Record<string, QueryValue>>
   readonly body?: unknown
+  /** Giới hạn thời gian của riêng lượt gọi này (mặc định của client: 15 giây) — trợ lý chờ mô hình trả lời lâu hơn. */
+  readonly timeoutMs?: number
 }
 
 export type DownloadOptions = RequestOptions & { readonly method?: 'GET' | 'POST' }
@@ -174,17 +176,19 @@ async function sendWithRetry(
 }
 
 export function createApiClient({ baseUrl, accessToken, refreshToken, onUnauthorized, fetch: fetchImpl = browserFetch, timeoutMs = DEFAULT_TIMEOUT_MS }: ApiClientOptions): ApiClient {
-  function send(method: string, path: string, query: RequestOptions['query'], body: Body, accept: string): Promise<Response> {
-    return sendWithRetry(accessToken, refreshToken, onUnauthorized, (token) => sendOnce(method, path, query, body, accept, token))
+  function send(method: string, path: string, query: RequestOptions['query'], body: Body, accept: string, limitMs = timeoutMs): Promise<Response> {
+    return sendWithRetry(accessToken, refreshToken, onUnauthorized, (token) => sendOnce(method, path, query, body, accept, token, limitMs))
   }
 
-  async function sendOnce(method: string, path: string, query: RequestOptions['query'], body: Body, accept: string, token: string | null): Promise<Response> {
+  async function sendOnce(
+    method: string, path: string, query: RequestOptions['query'], body: Body, accept: string, token: string | null, limitMs: number,
+  ): Promise<Response> {
     const headers: Record<string, string> = { Accept: accept }
     if (body !== null && 'json' in body) headers['Content-Type'] = 'application/json'
     if (token !== null) headers.Authorization = `Bearer ${token}`
 
     const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), timeoutMs)
+    const timer = setTimeout(() => controller.abort(), limitMs)
     try {
       return await fetchImpl(urlOf(baseUrl, path, query), {
         method,
@@ -200,16 +204,16 @@ export function createApiClient({ baseUrl, accessToken, refreshToken, onUnauthor
   }
 
   /** Gửi rồi kiểm thất bại; trả nguyên thân và phong bì (nếu có). */
-  async function exchange(method: string, path: string, query: RequestOptions['query'], body: Body) {
-    const response = await send(method, path, query, body, 'application/json')
+  async function exchange(method: string, path: string, query: RequestOptions['query'], body: Body, limitMs?: number) {
+    const response = await send(method, path, query, body, 'application/json', limitMs)
     const payload = await readJson(response)
     const envelope = envelopeOf(payload)
     if (!response.ok || envelope?.success === false) throw failureOf(response.status, envelope)
     return { payload, envelope }
   }
 
-  async function request<T>(method: string, path: string, { query, body }: RequestOptions = {}): Promise<T> {
-    const { payload, envelope } = await exchange(method, path, query, body === undefined ? null : { json: body })
+  async function request<T>(method: string, path: string, { query, body, timeoutMs: limitMs }: RequestOptions = {}): Promise<T> {
+    const { payload, envelope } = await exchange(method, path, query, body === undefined ? null : { json: body }, limitMs)
     return (envelope === null ? payload : envelope.data) as T
   }
 

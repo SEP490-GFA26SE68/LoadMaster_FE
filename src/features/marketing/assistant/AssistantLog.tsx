@@ -4,7 +4,9 @@ import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { FALLBACK_TOPICS, topicOf, type AssistantContext, type TopicId } from './assistant-kb'
 import type { AssistantEntry } from './assistant-session'
+import { useAssistantSurface } from './assistant-surface'
 import { AdvisorAsk, AdvisorResult } from './AssistantAdvisor'
+import { AiAnswer, DegradedNote } from './AssistantAiAnswer'
 import { TopicAnswer } from './AssistantAnswer'
 import { AssistantAvatar } from './AssistantAvatar'
 import { CHAT_TOUCH, HandoffButton, TopicChips } from './AssistantChips'
@@ -69,6 +71,8 @@ export function AssistantLog({ entries, pending, context, onAsk, onRuns, onHando
   const log = useRef<HTMLDivElement>(null)
   const name = LUMO_NAME
   const last = entries.at(-1)
+  // Lối "Hỏi đội LoadMaster" mở form liên hệ của trang giới thiệu: chỉ cho khách; trong ứng dụng trợ lý tự mời chuyển cho đội hỗ trợ
+  const guest = useAssistantSurface() === 'public'
 
   useEffect(() => {
     const box = scroller.current
@@ -91,7 +95,7 @@ export function AssistantLog({ entries, pending, context, onAsk, onRuns, onHando
   function followUps(topics: readonly TopicId[]) {
     return (
       <div className="flex flex-col gap-2 self-stretch pl-9">
-        <HandoffButton onHandoff={onHandoff} />
+        {guest ? <HandoffButton onHandoff={onHandoff} /> : null}
         <TopicChips label={t('assistant.panel.followUps')} topics={topics} onAsk={ask} disabled={pending} />
       </div>
     )
@@ -107,6 +111,7 @@ export function AssistantLog({ entries, pending, context, onAsk, onRuns, onHando
         return (
           <div key={entry.id} className="contents">
             <LumoBubble who={says}>
+              {entry.degraded ? <DegradedNote /> : null}
               <TopicAnswer topicId={entry.topicId} context={context} onNavigate={onNavigate} />
               {advisorAsk ? <AdvisorAsk onRuns={runs} disabled={pending} /> : null}
             </LumoBubble>
@@ -125,14 +130,24 @@ export function AssistantLog({ entries, pending, context, onAsk, onRuns, onHando
         return (
           <div key={entry.id} className="contents">
             <LumoBubble who={says}>
+              {entry.degraded ? <DegradedNote /> : null}
               <p className="m-0">{t('assistant.fallback')}</p>
-              <HandoffButton strong onHandoff={onHandoff} />
+              {guest ? <HandoffButton strong onHandoff={onHandoff} /> : null}
             </LumoBubble>
             {isLast && !pending ? (
               <div className="pl-9">
                 <TopicChips label={t('assistant.panel.followUps')} topics={FALLBACK_TOPICS} onAsk={ask} />
               </div>
             ) : null}
+          </div>
+        )
+      case 'ai':
+        return (
+          <div key={entry.id} className="contents">
+            <LumoBubble who={says}>
+              <AiAnswer entry={entry} isLast={isLast} pending={pending} onAsk={ask} onNavigate={onNavigate} />
+            </LumoBubble>
+            {isLast && !pending && guest ? <div className="pl-9"><HandoffButton onHandoff={onHandoff} /></div> : null}
           </div>
         )
       case 'error':

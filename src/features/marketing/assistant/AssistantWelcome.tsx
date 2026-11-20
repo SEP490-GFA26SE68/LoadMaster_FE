@@ -4,6 +4,7 @@ import { LUMO_NAME } from '@/components/brand/Lumo'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { STARTER_TOPICS, type TopicId } from './assistant-kb'
+import { useAssistantSurface } from './assistant-surface'
 import { AssistantAvatar } from './AssistantAvatar'
 import { CHAT_TOUCH } from './AssistantChips'
 
@@ -23,6 +24,7 @@ const STARTER_ICONS: Partial<Record<TopicId, LucideIcon>> = {
 export function AssistantWelcome({ onAsk, disabled }: { onAsk: (question: string, topicId: TopicId) => void; disabled?: boolean }) {
   const t = useT()
   const headingId = useId()
+  const inApp = useAssistantSurface() === 'app'
   return (
     <section aria-labelledby={headingId} className="my-auto flex flex-col gap-4 py-2">
       <div className="flex items-center gap-3">
@@ -31,7 +33,7 @@ export function AssistantWelcome({ onAsk, disabled }: { onAsk: (question: string
           <h3 id={headingId} className="m-0 font-display text-h2 font-[650] font-stretch-108% text-ink-strong">
             {t('assistant.panel.greeting', { name: LUMO_NAME })}
           </h3>
-          <p className="m-0 text-small text-ink-2 pointer-coarse:text-body-lg">{t('assistant.panel.introHint')}</p>
+          <p className="m-0 text-small text-ink-2 pointer-coarse:text-body-lg">{t(inApp ? 'assistant.panel.introHintApp' : 'assistant.panel.introHint')}</p>
         </div>
       </div>
       <div role="group" aria-label={t('assistant.panel.starters')} className="grid grid-cols-2 gap-2">

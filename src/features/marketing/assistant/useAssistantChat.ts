@@ -1,12 +1,15 @@
-import { useNavigate } from 'react-router'
+import { useLocation, useNavigate } from 'react-router'
 import { useAuthSafe } from '@/features/auth/AuthProvider'
 import { REGISTRATION_CAPABILITIES } from '@/features/registration/useRegistrationQuery'
 import { usesBackend } from '@/lib/backend-config'
+import { useLocale } from '@/lib/i18n'
 import { contactPath } from '../contact-form'
 import { parseRuns } from './assistant-advisor'
+import { ASSISTANT_USES_AI, type AssistantAskContext } from './assistant-api'
 import { handoffState } from './assistant-handoff'
 import type { AssistantContext, TopicId } from './assistant-kb'
 import { assistantSession } from './assistant-session'
+import { useAssistantSurface } from './assistant-surface'
 import { useAskAssistantMutation } from './useAssistantQuery'
 
 /** Giờ đến của app là mock tối ưu tuyến (có luật nghỉ bắt buộc) khi nhóm `trips` chưa nối máy chủ. */
@@ -20,12 +23,26 @@ export function useAssistantContext(): AssistantContext {
 
 /**
  * Việc của khung chat: gửi câu hỏi (gõ hay bấm gợi ý — gợi ý gửi kèm chủ đề của nó), trả lời ngay phép tính gói khi trợ lý vừa hỏi số lần
- * chạy và khách gõ một số, và chuyển câu hỏi sang form liên hệ. `onLeave` đóng khung chat trước khi điều hướng (không trả focus về nút mở:
+ * chạy và khách gõ một số, và chuyển câu hỏi sang form liên hệ. Câu gõ đi kèm bề mặt, ngôn ngữ, hội thoại đang nói tiếp, mã khách (trang
+ * công khai, khi nối máy chủ) và màn đang mở (trong ứng dụng). `onLeave` đóng khung chat trước khi điều hướng (không trả focus về nút mở:
  * trang đích đặt focus vào tiêu đề phần).
  */
 export function useAssistantChat(onLeave: () => void) {
   const { mutate } = useAskAssistantMutation()
   const navigate = useNavigate()
+  const { pathname, search } = useLocation()
+  const { locale } = useLocale()
+  const surface = useAssistantSurface()
+
+  function askContext(): AssistantAskContext {
+    return {
+      surface,
+      locale,
+      conversationId: assistantSession.conversationId(surface),
+      guestKey: ASSISTANT_USES_AI && surface === 'public' ? assistantSession.guestKey() : null,
+      ...(surface === 'app' ? { page: { path: `${pathname}${search}`, title: document.title } } : {}),
+    }
+  }
 
   function send(question: string, topicId?: TopicId) {
     const text = question.trim()
@@ -39,7 +56,7 @@ export function useAssistantChat(onLeave: () => void) {
     }
     assistantSession.append({ kind: 'user', text })
     assistantSession.setPending(true)
-    mutate({ question: text, topicId, generation: assistantSession.generation() })
+    mutate({ question: text, topicId, generation: assistantSession.generation(), context: askContext() })
   }
 
   function sendRuns(label: string, runs: number) {
