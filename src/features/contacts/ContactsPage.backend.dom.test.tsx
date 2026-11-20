@@ -29,6 +29,7 @@ const CONTACT = {
 const TAKEN = {
   ...CONTACT, id: 2, fullName: 'QA Khách đã giao', interestedPlanId: null, interestedPlanName: null, assignedToId: 3,
   assignedToName: 'Đinh Quang Huy', requestType: 'DEMO_REQUEST', status: 'IN_PROGRESS', createdAt: '2026-10-16T02:00:00Z',
+  note: 'Đã gọi khách.\n[Phản hồi email lúc 2026-11-19T13:59:23.530714200Z]: xin chào tôi đã xem',
 }
 const ME = {
   id: 4, keycloakId: 'kc-4', username: 'hotro@loadmaster.vn', email: 'hotro@loadmaster.vn', fullName: 'Tạ Thị Ngọc Ánh', phoneNumber: null,
@@ -95,14 +96,19 @@ test('rows come from the backend with the plan name it sends; claiming sends the
   expect(calls.some((call) => call.path.startsWith('/api/users?') || call.path.startsWith('/api/subscription'))).toBe(false)
 })
 
-test('a demo request already taken is forwarded to the platform manager as a trial request', async () => {
-  const user = userEvent.setup()
+test('a demo request already taken is resolved like any other: there is no hand-over to the platform manager', async () => {
   renderContacts('?lien-he=2')
   const panel = await screen.findByRole('region', { name: 'QA Khách đã giao' }, SLOW)
-  expect(within(panel).queryByRole('button', { name: 'Đã giải quyết' })).toBeNull()
-  await user.click(within(panel).getByRole('button', { name: 'Chuyển cho Quản lý nền tảng' }))
+  expect(within(panel).getByRole('button', { name: 'Đã giải quyết' })).toBeInTheDocument()
+  expect(within(panel).queryByRole('button', { name: 'Chuyển cho Quản lý nền tảng' })).toBeNull()
+  expect(calls.some((call) => call.path === '/api/trial-requests')).toBe(false)
+})
 
-  await waitFor(() => expect(calls.find((call) => call.method === 'POST' && call.path === '/api/trial-requests')?.body).toMatchObject({
-    contactId: 2, fullName: 'QA Khách đã giao', email: 'qa.khach@example.com', companyName: 'QA Vận tải',
-  }))
+test('the time the server writes into the note when an email is sent reads as date and time, like a support ticket', async () => {
+  renderContacts('?lien-he=2')
+  const panel = await screen.findByRole('region', { name: 'QA Khách đã giao' }, SLOW)
+  const note = within(panel).getByRole('textbox', { name: 'Ghi chú nội bộ' })
+  expect(note).toHaveValue('Đã gọi khách.\n[Phản hồi email lúc 19/11/2026 20:59]: xin chào tôi đã xem')
+  // Chỉ đổi cách hiện, chưa sửa gì: không có gì để lưu
+  expect(within(panel).getByRole('button', { name: 'Lưu ghi chú' })).toBeDisabled()
 })

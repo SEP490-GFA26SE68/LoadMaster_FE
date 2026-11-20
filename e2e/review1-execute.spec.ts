@@ -6,7 +6,7 @@ import { heightOf, MOCK_DB, navigateInApp } from './spec-flow-helpers'
 /**
  * LM-104, luồng 5 (Execute; FE-6-05, FE-6-06): kho đã soạn đủ thì xếp theo thứ tự, mỗi kiện phải đối chiếu bằng mã trên nhãn (đúng
  * kiện thì sang bước sau, sai kiện hoặc sai thứ tự thì nói rõ và không ghi; hộp đối chiếu ba mức từ FE-6-03 — máy chạy test không có
- * BarcodeDetector nên đi mức gõ mã), xếp xong ghi số seal; tài xế xuất phát, bấm Đã đến rồi đối chiếu khi dỡ (kiện của điểm khác được
+ * BarcodeDetector nên đi mức gõ mã), xếp xong; tài xế xuất phát, bấm Đã đến rồi đối chiếu khi dỡ (kiện của điểm khác được
  * giải thích); báo cáo chuyến TRIP-007 và bản in; danh mục loại xe (thêm, sửa, gắn xe,
  * xoá bị chặn khi còn xe, xoá). Kho dữ liệu nằm trong bộ nhớ trang: chỉ bấm trong app, không tải lại trang giữa chừng.
  */
@@ -35,7 +35,7 @@ async function twoCartonTrip(page: Page, stage: 'staged' | 'loaded') {
   return created
 }
 
-test('tablet: at the Loading step every package must be verified — a wrong package is explained and not recorded, the right ones load by sender code and QR code — then the seal is recorded', { tag: '@tablet' }, async ({ page, login, browserErrors }) => {
+test('tablet: at the Loading step every package must be verified — a wrong package is explained and not recorded, the right ones load by sender code and QR code — then the trip waits to depart', { tag: '@tablet' }, async ({ page, login, browserErrors }) => {
   await login('/kho', 'warehouse')
   await expect(page.getByRole('heading', { name: 'Chuyến cần xếp' })).toBeVisible()
   const { tripId, token } = await twoCartonTrip(page, 'staged')
@@ -86,25 +86,21 @@ test('tablet: at the Loading step every package must be verified — a wrong pac
   await expect(page.getByText('Xếp xong — chờ xuất phát. Đóng cửa thùng và bàn giao cho tài xế.', { exact: true })).toBeVisible()
   await expect(page.getByText('Đã đối chiếu bằng nhãn 2 kiện', { exact: true })).toBeVisible()
 
-  // Niêm phong: số seal không bắt buộc, ghi thì hiện trên màn xếp xong
-  const seal = page.getByRole('textbox', { name: 'Số seal' })
-  expect(await heightOf(seal)).toBeGreaterThanOrEqual(56)
-  await seal.fill('SEAL-240927')
-  await page.getByRole('button', { name: 'Ghi số seal', exact: true }).tap()
-  await expect(page.getByText(/^Số seal SEAL-240927 · ghi lúc \d\d:\d\d$/)).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Đổi số seal', exact: true })).toBeVisible()
+  // Xếp xong không hỏi thêm gì: lối về danh sách chuyến là nút 56 px duy nhất
+  await expect(page.getByRole('textbox')).toHaveCount(0)
+  expect(await heightOf(page.getByRole('link', { name: 'Về danh sách chuyến', exact: true }))).toBeGreaterThanOrEqual(56)
 
   const store = await page.evaluate(async ({ db, id }) => {
     const { getMockDb } = (await import(db)) as typeof import('@/lib/mock-db')
     const trip = await getMockDb().getTrip(id)
     return {
-      phase: trip.phase, seal: trip.loading?.seal?.number, via: trip.loading?.steps.map((step) => `${step.packageInstanceId}:${step.via}`),
+      phase: trip.phase, via: trip.loading?.steps.map((step) => `${step.packageInstanceId}:${step.via}`),
       verified: trip.verifications?.map((entry) => `${entry.packageInstanceId}:${entry.method}:${entry.by}`),
     }
   }, { db: MOCK_DB, id: tripId })
   // Mỗi lần đối chiếu ghi cách và người làm (FE-6-03): hai lần soạn bằng mã QR, hai lần xếp gõ mã, do nhân viên kho demo
   expect(store).toStrictEqual({
-    phase: 'loaded', seal: 'SEAL-240927', via: ['PKG-001-01:qr', 'PKG-002-01:qr'],
+    phase: 'loaded', via: ['PKG-001-01:qr', 'PKG-002-01:qr'],
     verified: ['PKG-001-01:QR:US-0003', 'PKG-002-01:QR:US-0003', 'PKG-001-01:CODE:US-0003', 'PKG-002-01:CODE:US-0003'],
   })
   expect(browserErrors).toStrictEqual([])

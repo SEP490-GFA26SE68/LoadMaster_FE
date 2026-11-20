@@ -1,4 +1,4 @@
-export { getMockDb, onRemoteDbChange } from './app-db'
+export { getMockDb, onRemoteDbChange, peekMockDb } from './app-db'
 export { MAINTENANCE_NOTE_MAX } from './db-vehicles'
 export { AUDIT_ACTIONS, AUDIT_GROUPS, auditGroup, type AuditAction, type AuditEvent, type AuditGroup, type AuditNames, type AuditTargetType } from './audit'
 export { addDays, CLOCK_SPEED_PARAM, clockSpeedFrom, MAX_CLOCK_SPEED, SEED_ANCHOR_DATE, vnClock, vnDate, vnTime } from './clock'
@@ -90,7 +90,6 @@ export type { TripPoolPackage, TripStopTarget } from './db-trip-pool'
 export type { TripEta, TripEtaStop } from './db-trip-route'
 export type { TripSegregation } from './db-trip-segregation'
 export { stopsWithoutCoordinates } from './trip-route'
-export { MAX_SEAL_LENGTH } from './db-scans'
 export { SHORTAGE_DECISIONS, type ShortageDecision } from './db-staging'
 export { normalizeQrToken } from './qr-token'
 export {

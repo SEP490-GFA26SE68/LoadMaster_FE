@@ -1,0 +1,68 @@
+/**
+ * Trang công khai "Phương án mẫu" `/phuong-an-mau` (`features/marketing/sample-plan`): khung 3D xoay được của chuyến mẫu trang giới thiệu,
+ * xếp theo thứ tự xếp và dỡ ở từng điểm giao, trạng thái nằm trên URL để chia sẻ. Không nhãn MOCK RESULT, không tên thuật toán.
+ */
+export const samplePlan = {
+  title: 'Phương án mẫu',
+  lede: 'Chuyến mẫu {count} kiện, {stops} điểm giao. Xoay khung 3D, bấm vào một kiện, xem xếp hàng và dỡ ở từng điểm.',
+  back: 'Trang giới thiệu',
+  backLabel: 'Về trang giới thiệu',
+  stageLabel: 'Khung 3D của phương án {label}',
+  views: 'Góc nhìn',
+  view: {
+    'goc-cheo': 'Góc chéo',
+    'cua-sau': 'Cửa sau',
+    'ben-hong': 'Bên hông',
+    tren: 'Trên',
+  },
+  mode: {
+    label: 'Xem',
+    load: 'Xếp hàng',
+    unload: 'Dỡ hàng',
+  },
+  stops: 'Dỡ ở điểm',
+  stopOption: 'Điểm {number} · {name}',
+  computing: 'Bộ tối ưu mô phỏng đang tính ba phương án ngay trên trình duyệt của bạn…',
+  failed: 'Trình duyệt này không tính được chuyến mẫu. Tải lại trang để thử lại.',
+  fallback: 'Trình duyệt này không vẽ được khung 3D, nên đây là hình minh hoạ; số bên cạnh vẫn là của lần chạy vừa tính.',
+  source: 'Mọi số do bộ tối ưu mô phỏng của LoadMaster tính ngay trên trình duyệt của bạn — không máy chủ, không tài khoản.',
+  trip: {
+    title: 'Phương án {label}',
+    placed: 'Xếp được',
+    placedValue: '{placed} / {total} kiện',
+    payload: 'Tải trọng đã dùng',
+    payloadValue: '{used} / {max}',
+    howSubject: 'phương án {label}',
+  },
+  stop: {
+    title: 'Ở điểm {number} · {name}',
+    count: 'Kiện dỡ ra',
+    moved: 'Kiện của điểm sau phải dời',
+    outOfZone: 'Kiện nằm sai vùng',
+    outOfZoneValue: '{foreign} lạ vào · {stray} lạc ra',
+    note: 'Đếm từ chính các chỗ xếp của phương án {label}: kiện của điểm sau nằm giữa hàng của điểm này và cửa sau thì phải dời ra trước.',
+    outOfZoneHow: 'Sàn thùng chia vùng theo điểm giao, điểm giao đầu sát cửa. {foreign} kiện của điểm khác có tâm nằm trong vùng của điểm {number}; {stray} kiện của điểm {number} nằm ngoài vùng của nó — mỗi kiện là một lần dỡ-xếp lại.',
+    howSubject: 'điểm {number}',
+  },
+  share: {
+    copy: 'Sao chép liên kết',
+    share: 'Chia sẻ liên kết',
+    copied: 'Đã sao chép liên kết tới đúng cảnh đang xem.',
+    shared: 'Đã chia sẻ liên kết tới đúng cảnh đang xem.',
+    failed: 'Chưa sao chép được — hãy chép địa chỉ trên thanh trình duyệt.',
+    title: 'Phương án mẫu — LoadMaster',
+    note: 'Liên kết giữ phương án, chế độ, điểm giao và góc nhìn đang chọn.',
+  },
+  player: {
+    loading: 'Xếp theo thứ tự xếp của phương án',
+    unloading: 'Dỡ ở điểm {number} · {name} theo thứ tự dỡ',
+    current: 'Kiện đang dỡ: {id}',
+    blockers: '{count} kiện của điểm sau chắn lối, có viền cảnh báo.',
+    paused: 'Dừng lại: kiện đang dỡ bị kiện của điểm sau che kín mặt sau.',
+    skip: 'Bỏ qua kiện này',
+    keys: 'Phím: Space phát / dừng · ← → lùi / tiến một bước · Home về đầu.',
+  },
+  /** Lối vào từ khung 3D ở phần mở đầu của trang giới thiệu. */
+  open: 'Toàn màn hình',
+  openLabel: 'Mở phương án mẫu toàn màn hình',
+} as const

@@ -1,9 +1,7 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { connectApiAuth, isApiError } from '@/lib/api-client'
 import {
-  assignCompanyPlan,
   createSupportTicket,
-  getSupportCompanyPanel,
   getSupportTicketThread,
   listSupportTickets,
   replyToSupportTicket,
@@ -185,67 +183,4 @@ test('a closed ticket refuses a reply with the code of the server', async () => 
   }
   const error = await replyToSupportTicket('2', 'Còn ai không?').catch((caught: unknown) => caught)
   expect(isApiError(error) && error.code).toBe('SUPPORT_TICKET_CLOSED')
-})
-
-test('the company panel reads the contract, balance and transactions of that company; a balance that cannot be read is not shown as 0', async () => {
-  routes = {
-    'GET /api/contracts?companyId=1': envelope([
-      { id: 2, companyId: 1, companyName: 'Vận tải Long Bình', planId: 2, planName: 'Pro', planTier: 'PRO', status: 'ACTIVE', startedAt: '2026-10-01T00:00:00', expiresAt: '2099-01-01T00:00:00', autoRenew: true },
-    ]),
-    'GET /api/credits/transactions?companyId=1&page=0&size=20': envelope({ content: [
-      { id: 101, amount: 500, type: 'PURCHASE', reference: 'PAY-1', refunded: false, createdAt: '2026-10-19T10:00:00' },
-    ], last: true }),
-  }
-  const panel = await getSupportCompanyPanel('1', 'Tên kèm yêu cầu')
-  expect(panel).toStrictEqual({
-    companyName: 'Vận tải Long Bình',
-    plan: { id: '2', name: 'Pro', tier: 'PRO' },
-    planStatus: 'ACTIVE',
-    credit: null,
-    transactions: [{ id: '101', companyId: '', type: 'PURCHASE', amount: 500, reference: 'PAY-1', refunded: false, createdAt: '2026-10-19T03:00:00.000Z' }],
-  })
-})
-
-test('the company panel leaves out a part the server forbids, but a server error fails the read instead of hiding the part', async () => {
-  const contracts = envelope([])
-  const transactions = envelope({ content: [], last: true })
-  routes = {
-    'GET /api/contracts?companyId=1': contracts,
-    'GET /api/credits/balance?companyId=1': () => new Response('{}', { status: 403 }),
-    'GET /api/credits/transactions?companyId=1&page=0&size=20': transactions,
-  }
-  expect((await getSupportCompanyPanel('1', 'Công ty A')).credit).toBeNull()
-
-  routes = {
-    'GET /api/contracts?companyId=1': contracts,
-    'GET /api/credits/balance?companyId=1': () => new Response('{}', { status: 503 }),
-    'GET /api/credits/transactions?companyId=1&page=0&size=20': transactions,
-  }
-  const error = await getSupportCompanyPanel('1', 'Công ty A').catch((caught: unknown) => caught)
-  expect(isApiError(error) && [error.code, error.status]).toStrictEqual(['SERVER_ERROR', 503])
-})
-
-test('assigning a plan posts the contract and reads back what the backend applied', async () => {
-  routes = {
-    'POST /api/contracts': envelope({ id: 2, companyId: 1, companyName: 'Vận tải Long Bình', planId: 3, planName: 'Ultimate', planTier: 'ULTIMATE', status: 'ACTIVE', startedAt: null, expiresAt: null, autoRenew: true }),
-  }
-  expect(await assignCompanyPlan('1', '3')).toStrictEqual({
-    companyId: '1', companyName: 'Vận tải Long Bình', plan: { id: '3', name: 'Ultimate', tier: 'ULTIMATE' }, status: 'ACTIVE',
-  })
-  expect(calls.map(({ key, body }) => ({ key, body }))).toStrictEqual([{ key: 'POST /api/contracts', body: { companyId: 1, planId: 3, autoRenew: true } }])
-})
-
-
-test('the recent transaction preview intentionally reads one page without claiming a complete ledger',async()=>{
- routes={
-  'GET /api/contracts?companyId=1':envelope([]),
-  'GET /api/credits/balance?companyId=1':()=>new Response('{}',{status:403}),
-  'GET /api/credits/transactions?companyId=1&page=0&size=20':envelope({content:[
-   {id:101,amount:500,type:'PURCHASE',reference:'fixture',refunded:false,createdAt:'2026-10-19T10:00:00'},
-  ],number:0,totalPages:2,totalElements:21,last:false}),
- }
- const result=await getSupportCompanyPanel('1')
- expect(result.transactions).toHaveLength(1)
- expect(calls.filter(call=>call.key.startsWith('GET /api/credits/transactions'))).toHaveLength(1)
- expect(calls.every(call=>call.key.startsWith('GET '))).toBe(true)
 })

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Spinner } from '@/components/ui/Spinner'
 import { useCan } from '@/features/auth/useCan'
+import { REGISTRATION_CAPABILITIES } from '@/features/registration/useRegistrationQuery'
 import { useT } from '@/lib/i18n'
 import { BILLING_CONSTANTS } from '@/lib/mock-db'
 import { cn } from '@/lib/utils'
@@ -15,17 +16,22 @@ import { PublicPage } from './PublicPage'
 import { PUBLIC_TOUCH } from './public-chrome'
 import { usePublicPlansQuery } from './useMarketingQuery'
 
-/** Ghi chú dưới các thẻ gói: credit là gì, bản demo tối ưu ở hạng nào, và cách có tài khoản. */
 /**
  * Số cột theo số gói từ 768 px, để không hàng nào lẻ một thẻ ở 768, 1.024 hay 1.280 px: kho giữ mỗi hạng một gói đang bán nên có tối
  * đa ba thẻ. Một gói thì thẻ không giãn hết bề ngang.
  */
 const GRID_COLUMNS = ['', 'md:max-w-120', 'md:grid-cols-2', 'md:grid-cols-3'] as const
 
-const NOTES: readonly { icon: LucideIcon; key: 'pricing.creditNote' | 'pricing.tierNote' | 'pricing.signUpNote' }[] = [
+type NoteKey = 'pricing.creditNote' | 'pricing.tierNote' | 'pricing.signUpNote' | 'pricing.signUpNoteSelf'
+
+/**
+ * Ghi chú dưới các thẻ gói: credit là gì, bản demo tối ưu ở hạng nào, và cách có tài khoản — khách tự đăng ký khi nối backend
+ * (`REGISTRATION_CAPABILITIES`), còn kho mẫu thì đội LoadMaster mở tài khoản sau yêu cầu liên hệ.
+ */
+const NOTES: readonly { icon: LucideIcon; key: NoteKey }[] = [
   { icon: Coins, key: 'pricing.creditNote' },
   { icon: Info, key: 'pricing.tierNote' },
-  { icon: Building2, key: 'pricing.signUpNote' },
+  { icon: Building2, key: REGISTRATION_CAPABILITIES.publicSignUp ? 'pricing.signUpNoteSelf' : 'pricing.signUpNote' },
 ]
 
 /** Các gói đang bán, hoặc trạng thái tải / lỗi / rỗng — luôn là card nền đặc vì phần này đè lên dải trời (`sky-overlap`). */
@@ -73,7 +79,8 @@ function PlanGrid() {
 /**
  * Bảng giá công khai `/bang-gia`: dải trời có tiêu đề và nút chính "Nhận tư vấn" (mở form liên hệ, loại "Báo giá"), thẻ các gói đang
  * bán đè lên dải, rồi ghi chú. Giá là giá trị tạm (`common.provisionalPlan`). Người đã đăng nhập có quyền `billing.manage` (quản trị
- * công ty) thấy thêm lối về màn gói cước của công ty; không ai đăng ký hay mua gói ở đây.
+ * công ty) thấy thêm lối về màn gói cước của công ty. Kho mẫu không có lối đăng ký hay mua gói nào ở đây; khi nối backend, khách chưa
+ * đăng nhập đăng ký từ nút của thẻ gói (`PlanCard`) và từ đầu trang.
  */
 export function PricingPage() {
   const t = useT()

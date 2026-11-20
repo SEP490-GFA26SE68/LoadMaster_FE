@@ -1,10 +1,8 @@
 import type { Dictionary } from '../types'
 import type { support as source } from '../vi/support'
-import { customerPlan } from './support-customer-plan'
 import { subscriptionLocked, trialLocked } from './support-trial-locked'
 
 export const support = {
-  customerPlan,
   trialLocked,
   subscriptionLocked,
   kinds: { TECHNICAL: 'Technical', BILLING: 'Billing', TRIAL_ACCOUNT_UNLOCK: 'Trial Account Unlock' },
@@ -67,8 +65,7 @@ export const support = {
     search: 'Search by title, code, sender',
     empty: 'No support requests yet.',
     noMatch: 'No request matches the filters.',
-    selectHint: 'Select a request to see the conversation and the company information.',
-    selectHintStatusOnly: 'Select a request to read it and change its status.',
+    selectHint: 'Select a request to read the conversation and change its status.',
     filters: {
       company: 'Company',
       allCompanies: 'All companies',
@@ -80,19 +77,6 @@ export const support = {
     columns: { ticket: 'Request', company: 'Company', kind: 'Type', status: 'Status', updated: 'Updated', sent: 'Sent' },
     statusLabel: 'Request status',
     statusChanged: 'Request {id} is now {status}',
-    panel: {
-      title: 'Company information',
-      company: 'Company',
-      readOnly: 'Read only',
-      plan: 'Plan',
-      planStatus: 'Plan status',
-      noPlan: 'The company has no subscription plan.',
-      balance: 'Credit balance',
-      recent: 'Latest credit transactions',
-      noTransactions: 'No credit transactions yet.',
-      notLoaded: 'Could not be read',
-      loading: 'Loading company information',
-    },
     chat: {
       title: 'Recent messages of the company',
       hint: 'The two most recent days with activity',

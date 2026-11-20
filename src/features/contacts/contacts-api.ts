@@ -4,7 +4,6 @@
  *   updateGuestContact    → PATCH /api/contact-guests/{id} (bỏ người nhận việc: `unassign: true`)
  *   claimGuestContact     → PATCH /api/contact-guests/{id} (người đang đăng nhập nhận việc, trạng thái Đang xử lý)
  *   replyGuestContact     → POST /api/contact-guests/{id}/reply (chỉ backend)
- *   forwardContactToTrial → POST /api/trial-requests (chỉ backend)
  *   listContactHandlers   → GET /api/contact-guests/handlers
  *   listContactPlanNames  → GET /api/subscription/plans (nối backend: tên gói đi kèm yêu cầu, không gọi)
  */
@@ -13,7 +12,6 @@ import { fetchBackendMe } from '@/features/auth/me-api'
 import { roleOfBackend } from '@/features/auth/backend-user'
 import { api, ApiError } from '@/lib/api-client'
 import { usesBackend } from '@/lib/backend-config'
-import { createTrialRequest, TRIAL_REQUESTS_SOURCE } from '@/features/platform/trial-requests-api'
 import { CONTACT_HANDLER_ROLES, getMockDb, type GuestContact, type GuestContactPatch } from '@/lib/mock-db'
 import type { Role } from '@/types/user'
 import { contactPatchBody, guestContactOf, type ContactHandlerDto, type ContactOfGuestDto } from './contact-dto'
@@ -21,13 +19,10 @@ import { contactPatchBody, guestContactOf, type ContactHandlerDto, type ContactO
 const ON_BACKEND = usesBackend('contacts')
 
 /**
- * Việc màn làm được theo nguồn dữ liệu: gửi email trả lời khách và chuyển đơn dùng thử sang quản lý nền tảng chỉ backend có (kho mẫu không
- * gửi email, không có yêu cầu dùng thử).
+ * Việc màn làm được theo nguồn dữ liệu: gửi email trả lời khách chỉ backend có (kho mẫu không gửi email).
  */
 export const CONTACTS_SOURCE = {
   canReply: ON_BACKEND,
-  // Yêu cầu dùng thử thuộc nhóm `companies`: chỉ chuyển được khi nhóm đó cũng nối backend
-  canForwardTrial: ON_BACKEND && TRIAL_REQUESTS_SOURCE.available,
 } as const
 
 /** Mọi yêu cầu liên hệ của khách, mới nhất trước. Chỉ quản trị hệ thống và hỗ trợ khách hàng đọc được (kho: `ROLE_NOT_ALLOWED`, backend: 403). */
@@ -64,25 +59,6 @@ export async function replyGuestContact(contactId: string, subject: string, mess
   )
   if (contact === null) throw new ApiError('SERVER_ERROR')
   return contact
-}
-
-/** Chuyển yêu cầu đăng ký dùng thử sang quản lý nền tảng duyệt tạo tài khoản (chỉ backend — `CONTACTS_SOURCE.canForwardTrial`). */
-// POST /api/trial-requests
-export async function forwardContactToTrialRequest(contact: GuestContact, note: string): Promise<void> {
-  if (!ON_BACKEND) throw new ApiError('NOT_SUPPORTED')
-  const contactId = Number(contact.id)
-  const planId = contact.interestedPlanId === undefined ? Number.NaN : Number(contact.interestedPlanId)
-  await createTrialRequest({
-    ...(Number.isInteger(contactId) ? { contactId } : {}),
-    fullName: contact.fullName,
-    email: contact.email,
-    ...(contact.phoneNumber ? { phoneNumber: contact.phoneNumber } : {}),
-    ...(contact.companyName ? { companyName: contact.companyName } : {}),
-    ...(contact.companyCode ? { companyCode: contact.companyCode } : {}),
-    ...(contact.taxCode ? { taxCode: contact.taxCode } : {}),
-    ...(Number.isInteger(planId) ? { interestedPlanId: planId } : {}),
-    note,
-  })
 }
 
 export type ContactHandler = { readonly id: string; readonly name: string; readonly role: Role }

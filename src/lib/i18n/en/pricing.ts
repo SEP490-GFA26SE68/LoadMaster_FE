@@ -25,6 +25,7 @@ export const pricing = {
   contactPlanName: 'about the {name} plan',
   manage: 'Manage your company plan',
   signUpNote: 'Want to use a plan? Send a contact request and the LoadMaster team opens a company account after talking with you.',
+  signUpNoteSelf: 'Want to use a plan? You register the company account yourself: get started right away by choosing a plan and paying, or try the Basic plan for free — the LoadMaster team reviews trial requests before the account opens.',
   loading: 'Loading pricing',
   empty: 'No plan is on sale right now.',
   error: 'Could not load the pricing.',

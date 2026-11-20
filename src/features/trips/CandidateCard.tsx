@@ -9,7 +9,7 @@ import { plannerPath } from '@/lib/planner-path'
 import { cn } from '@/lib/utils'
 import type { AxleGauge, CandidateCardModel, CandidateMetric } from './candidate-comparison'
 import { Highlight } from './ComparisonRows'
-import { PlanThumbnail } from './PlanThumbnail'
+import { PlanThumbnail } from '@/components/PlanThumbnail'
 
 const MONO = 'font-mono tabular-nums'
 const TEXT_LINK = 'rounded-sm text-small font-medium text-primary hover:text-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary'

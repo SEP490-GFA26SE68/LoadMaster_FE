@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import type { Formatter } from '@/lib/format'
 import { CONTACT_LIMITS, CONTACT_STATUSES, type GuestContact, type GuestContactPatch } from '@/lib/mock-db'
 
 /**
@@ -47,4 +48,21 @@ export function mailtoHref(email: string): string {
   const at = email.lastIndexOf('@')
   if (at < 0) return `mailto:${encodeURIComponent(email)}`
   return `mailto:${encodeURIComponent(email.slice(0, at))}@${encodeURIComponent(email.slice(at + 1))}`
+}
+
+/**
+ * Mốc giờ máy chủ ghi kèm múi giờ (`Instant`, ví dụ `2026-11-19T13:59:23.530714200Z`). Phần lẻ của giây (tới 9 chữ số) bị bỏ trước khi đọc:
+ * giờ hiện ra chỉ tới phút, và không phải trình duyệt nào cũng đọc được 9 chữ số lẻ.
+ */
+const SERVER_INSTANT = /(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?)(?:\.\d+)?(Z|[+-]\d{2}:\d{2})/g
+
+/**
+ * Ghi chú nội bộ để hiện và sửa: máy chủ nối dòng `[Phản hồi email lúc <Instant>]: …` vào ghi chú mỗi lần gửi email cho khách, nên mốc
+ * giờ thô đổi thành ngày giờ như giờ gửi của yêu cầu hỗ trợ ("19/11/2026 20:59"). Chỉ đổi mốc có múi giờ; chữ người dùng gõ giữ nguyên.
+ */
+export function readableNote(note: string, format: Formatter): string {
+  return note.replace(SERVER_INSTANT, (match, local: string, zone: string) => {
+    const at = new Date(`${local}${zone}`)
+    return Number.isNaN(at.getTime()) ? match : `${format.date(at)} ${format.time(at)}`
+  })
 }

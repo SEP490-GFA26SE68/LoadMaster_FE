@@ -22,7 +22,7 @@ import { useTripReportQuery } from './useTripExtrasQuery'
 /**
  * Báo cáo chuyến `/chuyen/:tripId/bao-cao` (luồng 5 Review 1, LM-104; luồng mới FE-6-14) cho điều phối viên và quản lý công ty. Mọi
  * số suy từ tiến độ kho và giao hàng ghi trong kho (`tripReport`): năm ô số liệu, bảng theo điểm giao (giờ đến dự kiến và thật, mức
- * hạn, kiện hoàn trả), thông tin chuyến (xe, tài xế, số seal, lý do chở chung khác loại hàng, mốc giờ), cách đối chiếu kiện, sự cố cấp
+ * hạn, kiện hoàn trả), thông tin chuyến (xe, tài xế, lý do chở chung khác loại hàng, mốc giờ), cách đối chiếu kiện, sự cố cấp
  * chuyến và tuyến đã đổi, xác nhận tay kèm người duyệt, sự cố giao hàng. Chuyến chưa hoàn thành vẫn mở được, kèm banner nói báo cáo
  * chưa đủ; chuyến đã huỷ có banner nói lúc huỷ và lý do. "In báo cáo" in một bản phẳng không có khung ứng dụng (`TripReportPrint`).
  * Nhóm `trips` nối backend thì màn là `ServerTripReportPage` (báo cáo máy chủ đếm).

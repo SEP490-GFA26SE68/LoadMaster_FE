@@ -5,7 +5,7 @@ import type { BackendObstacle } from '@/features/fleet/fleet-dto'
 
 /**
  * DTO của `WarehouseController` và `WarehouseStagingController` backend (`WarehouseTaskResponse`, `StartLoadingResponse`,
- * `PlacementStepResponse`, `StagingResponse`, `StagingShortageResponse`, `DamageResponse`, `SealResponse`) và hàm đổi sang kiểu của màn kho; chỉ
+ * `PlacementStepResponse`, `StagingResponse`, `StagingShortageResponse`, `DamageResponse`) và hàm đổi sang kiểu của màn kho; chỉ
  * `warehouse-backend-api.ts` import file này. Toạ độ, kích thước kiện và lòng thùng là cm, gốc ở góc trong cùng bên trái sàn thùng (như
  * phương án).
  */
@@ -89,9 +89,6 @@ export type StartLoadingDto = {
   readonly stagingRequired?: boolean | null
   readonly stagingComplete?: boolean | null
   readonly pendingManualCount?: number | null
-  readonly sealNumber?: string | null
-  readonly sealedAt?: string | null
-  readonly sealedByName?: string | null
 }
 
 /** `POST …/staging/packages/{packageId}/confirm` và `…/manual`. */
@@ -174,9 +171,6 @@ export type ServerStagingState = {
   readonly manual: ServerManualState | null
 }
 
-/** Số seal đã ghi sau khi xếp xong. */
-export type ServerSeal = { readonly number: string; readonly at: string | null; readonly byName: string | null }
-
 /** Lòng thùng và cửa xe của phiên, cm; `null` khi xe chưa gắn loại hoặc loại chưa khai lòng thùng — khi đó không có khung 3D. */
 export type ServerCargoBox = {
   readonly innerLengthCm: number
@@ -210,7 +204,6 @@ export type ServerLoadingSession = {
   readonly stagingComplete: boolean
   /** Xác nhận tay của kho còn chờ điều phối viên duyệt: còn thì chưa hoàn tất xếp được. */
   readonly pendingManual: number
-  readonly seal: ServerSeal | null
   readonly completed: boolean
 }
 
@@ -299,12 +292,6 @@ function stagingOf(dto: PlacementStepDto): ServerStagingState {
   return { staged: dto.staged === true, shortage, manual: manualOf(dto) }
 }
 
-function sealOf(dto: StartLoadingDto): ServerSeal | null {
-  const number = dto.sealNumber?.trim()
-  if (!number) return null
-  return { number, at: dto.sealedAt ? isoFromBackend(dto.sealedAt) : null, byName: dto.sealedByName?.trim() || null }
-}
-
 function warehouseObstacleOf(dto: BackendObstacle): VehicleObstacle {
   const number = (value: number | string | null | undefined, positive: boolean) => {
     if (value == null || value === '') throw new ApiError('WAREHOUSE_GEOMETRY_INVALID')
@@ -320,6 +307,7 @@ function warehouseObstacleOf(dto: BackendObstacle): VehicleObstacle {
     loadBearing: dto.loadBearing === true,
   }
 }
+
 
 export function sessionOf(dto: StartLoadingDto): ServerLoadingSession {
   const id = String(dto.tripId)
@@ -350,7 +338,6 @@ export function sessionOf(dto: StartLoadingDto): ServerLoadingSession {
     stagingRequired,
     stagingComplete: !stagingRequired || dto.stagingComplete === true,
     pendingManual,
-    seal: sealOf(dto),
     completed: dto.status === 'COMPLETED',
   }
 }

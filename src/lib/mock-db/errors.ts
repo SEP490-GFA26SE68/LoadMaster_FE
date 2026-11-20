@@ -135,8 +135,6 @@ export type MockDbErrorParams = {
   WRONG_PACKAGE_SCANNED: { expected: string; scanned: string }
   /** Kiện quét được thuộc điểm giao khác. */
   QR_WRONG_STOP: { packageInstanceId: string; stopNumber: number }
-  /** Số seal trống hoặc dài quá. */
-  SEAL_INVALID: { max: number }
 
   // Kho kiện (FE-3b-01)
   /** Kiện sai dữ liệu ở trường `field`: kích thước hoặc khối lượng không dương, loại hàng lạ, thiếu điểm đến. */

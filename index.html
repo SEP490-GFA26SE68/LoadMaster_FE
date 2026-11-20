@@ -13,7 +13,28 @@
       href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
-    <title>LoadMaster</title>
+    <!-- Thẻ tĩnh cho bộ cào không chạy JavaScript (Zalo, Facebook): mô tả chung của sản phẩm, trùng seo.pages.landing của từ điển vi.
+         Thẻ theo trang (mô tả riêng, canonical, og:url, robots, JSON-LD) do app ghi lúc chạy: src/lib/seo, app/route-title.ts.
+         Bản build có VITE_SITE_URL thì ảnh chia sẻ thành địa chỉ tuyệt đối (plugin seo của vite.config.ts). -->
+    <meta
+      name="description"
+      content="LoadMaster giúp doanh nghiệp vận tải vừa và nhỏ lập chuyến, tối ưu tuyến và xếp hàng 3D lên thùng xe; kho xếp và tài xế dỡ theo cùng một phương án đã duyệt."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="LoadMaster" />
+    <meta property="og:title" content="LoadMaster — Lập kế hoạch và tối ưu xếp hàng 3D" />
+    <meta
+      property="og:description"
+      content="LoadMaster giúp doanh nghiệp vận tải vừa và nhỏ lập chuyến, tối ưu tuyến và xếp hàng 3D lên thùng xe; kho xếp và tài xế dỡ theo cùng một phương án đã duyệt."
+    />
+    <meta property="og:locale" content="vi_VN" />
+    <meta property="og:locale:alternate" content="en_US" />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="LoadMaster — Plan smarter. Load further." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <title>LoadMaster — Lập kế hoạch và tối ưu xếp hàng 3D</title>
   </head>
   <body>
     <div id="root"></div>

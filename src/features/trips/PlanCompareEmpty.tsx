@@ -9,7 +9,7 @@ import { useFormat, useT } from '@/lib/i18n'
 import { plannerPath } from '@/lib/planner-path'
 import { RevisionCreatedAt, RevisionTags } from './ComparisonColumnHeader'
 import { comparisonGroups, ComparisonValue } from './ComparisonRows'
-import { PlanThumbnail } from './PlanThumbnail'
+import { PlanThumbnail } from '@/components/PlanThumbnail'
 import type { RevisionCardModel } from './revision-comparison'
 
 /**

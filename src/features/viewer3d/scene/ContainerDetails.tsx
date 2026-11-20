@@ -24,14 +24,14 @@ export function FloorScale({ length, width, color }: { length: number; width: nu
 
 /**
  * Door opening is presentation only; no state is written to the domain plan. `width` × `height` là cả ô cửa (hai cánh),
- * `hingeZ` là vị trí bản lề của cánh này theo chiều ngang thùng.
+ * `hingeZ` là vị trí bản lề của cánh này theo chiều ngang thùng. `closed` (mặc định tắt) cho cánh quay về 0° — đóng kín mặt sau.
  */
-export function ContainerDoor({ length, height, width, hingeZ, side, materials, detail, reducedMotion }: {
+export function ContainerDoor({ length, height, width, hingeZ, side, materials, detail, reducedMotion, closed = false }: {
   length: number; height: number; width: number; hingeZ: number; side: -1 | 1
-  materials: SceneMaterials; detail: boolean; reducedMotion: boolean
+  materials: SceneMaterials; detail: boolean; reducedMotion: boolean; closed?: boolean
 }) {
   const invalidate = useThree((state) => state.invalidate)
-  const spring = useSpring({ from: { angle: side * Math.PI / 2 }, angle: side * 110 * Math.PI / 180,
+  const spring = useSpring({ from: { angle: side * Math.PI / 2 }, angle: closed ? 0 : side * 110 * Math.PI / 180,
     immediate: reducedMotion, config: { duration: 500, easing: easings.easeOutCubic }, onChange: () => invalidate() })
   const hardware = useMemo(() => {
     const pieces: BoxGeometry[] = []

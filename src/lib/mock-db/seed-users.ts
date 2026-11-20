@@ -52,6 +52,31 @@ const USERS: readonly UserSeed[] = [
 export function seedUsers(today: string): User[] {
   return USERS.map(({ lastActive, ...user }) => ({
     ...user,
+    companyName:
+      user.companyId === LONG_BINH
+        ? 'Công ty TNHH Vận tải Long Bình'
+        : user.companyId === PHUONG_NAM
+          ? 'Công ty CP Giao nhận Phương Nam'
+          : undefined,
+    companyCode:
+      user.companyId === LONG_BINH
+        ? 'LOG-001'
+        : user.companyId === PHUONG_NAM
+          ? 'LOG-002'
+          : undefined,
+    companyTaxCode:
+      user.companyId === LONG_BINH
+        ? '3600123456'
+        : user.companyId === PHUONG_NAM
+          ? '0300654321'
+          : undefined,
+    companyBillingEmail:
+      user.companyId === LONG_BINH
+        ? 'ketoan@longbinh.vn'
+        : user.companyId === PHUONG_NAM
+          ? 'billing@phuongnam.vn'
+          : undefined,
+    companyStatus: user.companyId ? 'ACTIVE' : undefined,
     lastActiveAt: lastActive === null ? null : vnTime(addDays(today, -lastActive[0]), lastActive[1]),
   }))
 }

@@ -128,18 +128,23 @@ export function TrialRequestsPage() {
           onClear={list.clearAll}
         />
         <OpenTrialContext value={handleOpen}>
-          <DataTable
-            data={rows}
-            columns={columns}
-            getRowId={(request) => request.id}
-            density="roomy"
-            appearance="paper"
-            pagination={{ pageIndex: list.pageIndex, pageSize: list.pageSize, onPageChange: list.setPage, onPageSizeChange: list.setPageSize }}
-            emptyMessage={t('platform.trialRequests.empty')}
-            isFiltering={list.isFiltering}
-            onClearFilters={list.clearAll}
-            noMatchMessage={t('platform.trialRequests.noMatch')}
-          />
+          {/* Màn nền tảng là màn desktop: khung hẹp hơn bảng thì cuộn ngang trong khung, không bóp cột (như Nhật ký) */}
+          <div className="relative overflow-x-auto">
+            <div className="min-w-330">
+              <DataTable
+                data={rows}
+                columns={columns}
+                getRowId={(request) => request.id}
+                density="roomy"
+                appearance="paper"
+                pagination={{ pageIndex: list.pageIndex, pageSize: list.pageSize, onPageChange: list.setPage, onPageSizeChange: list.setPageSize }}
+                emptyMessage={t('platform.trialRequests.empty')}
+                isFiltering={list.isFiltering}
+                onClearFilters={list.clearAll}
+                noMatchMessage={t('platform.trialRequests.noMatch')}
+              />
+            </div>
+          </div>
         </OpenTrialContext>
       </section>
     )

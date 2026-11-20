@@ -19,8 +19,8 @@ tảng, năm vai trò của công ty logistics (khách hàng của app); `ROLES`
 | Quản trị hệ thống (`systemAdmin` · `SYSTEM_ADMIN`) | Desktop | Nền tảng: công ty `/nen-tang/cong-ty` (FE-8-06), người dùng, nhật ký, ma trận quyền, liên hệ của khách `/lien-he-khach`; không có quyền vận hành |
 | Quản lý nền tảng (`systemManager` · `SYSTEM_MANAGER`) | Desktop | Nền tảng: danh mục gói cước `/nen-tang/goi` (FE-8-02), lịch sử gói `/nen-tang/lich-su-goi`, công ty, yêu cầu dùng thử |
 | Hỗ trợ khách hàng (`systemSupporter` · `SYSTEM_SUPPORTER`) | Desktop | Nền tảng: yêu cầu hỗ trợ của mọi công ty `/ho-tro` (FE-8-07), liên hệ của khách `/lien-he-khach` |
-| Quản trị công ty (`companyAdmin` · `COMPANY_ADMIN`) | Desktop | Người dùng, nhật ký, gói cước và credit `/goi-cuoc` (FE-8-03), bảng lương tài xế `/bang-luong`, thông tin công ty `/cong-ty` |
-| Quản lý công ty (`companyManager` · `MANAGER`) | Desktop / tablet | Dashboard `/tong-quan`, biểu đồ, xuất báo cáo; kho của công ty `/quan-ly-kho`; xem yêu cầu giao, chuyến và phương án chỉ đọc |
+| Quản trị công ty (`companyAdmin` · `COMPANY_ADMIN`) | Desktop | Người dùng, nhật ký, gói cước và credit `/goi-cuoc` (FE-8-03), thông tin công ty `/cong-ty` |
+| Quản lý công ty (`companyManager` · `MANAGER`) | Desktop / tablet | Dashboard `/tong-quan`, biểu đồ, xuất báo cáo; kho của công ty `/quan-ly-kho`; bảng lương tài xế `/bang-luong`; xem yêu cầu giao, chuyến và phương án chỉ đọc |
 | Điều phối viên (`dispatcher` · `DISPATCHER`) | Desktop | Dữ liệu dày, phiên làm việc dài, bảng nhiều cột; lập yêu cầu giao, lập chuyến, tối ưu, duyệt phương án, in nhãn QR |
 | Nhân viên kho (`warehouse` · `WAREHOUSE_WORKER`) | Tablet tại kho | Sáng, đeo găng, nhìn xa, một thao tác mỗi màn; quản lý kho kiện (thêm kiện, nhập file), loại kiện, khách gửi hàng |
 | Tài xế (`driver` · `DRIVER`) | Điện thoại ngoài trời | Nắng, một tay, mạng yếu |
@@ -38,11 +38,11 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
 
 **Phân quyền**
 
-- Ma trận `features/auth/permissions.ts`: **một bảng** `ROLE_PERMISSIONS` theo PRD v2 mục 5.2 cộng `contacts.handle`, `companyProfile.manage`, `trialRequests.manage`, `companyWarehouses.manage`, đúng 37 quyền; đọc quyền qua
+- Ma trận `features/auth/permissions.ts`: **một bảng** `ROLE_PERMISSIONS` theo PRD v2 mục 5.2 cộng `contacts.handle`, `companyProfile.manage`, `trialRequests.manage`, `companyWarehouses.manage`, `payroll.manage`, đúng 38 quyền; đọc quyền qua
   `can`/`permissionsOf`; thứ tự `PERMISSIONS` là thứ tự dòng của Ma trận quyền. Ba vai trò nền tảng **không có quyền vận hành**: quản trị hệ
   thống có `companies.manage`, `users.manage`, `audit.view`, `contacts.handle`, `trialRequests.manage`; quản lý nền tảng `subscriptionPlans.manage`,
   `companies.manage`, `trialRequests.manage`; hỗ trợ khách hàng `support.handle`, `contacts.handle`. Quản trị công ty có `companyProfile.manage`,
-  `users.manage`, `audit.view`, `billing.manage`, `support.create`. Quản lý công ty thêm `companyWarehouses.manage` (`/quan-ly-kho`).
+  `users.manage`, `audit.view`, `billing.manage`, `support.create`. Quản lý công ty thêm `companyWarehouses.manage` (`/quan-ly-kho`) và `payroll.manage` (`/bang-luong`).
 - Mỗi nhóm route bọc `RequirePermission` trong `app/App.tsx`, thiếu quyền là màn 403 (`app/ForbiddenPage.tsx`) có nút về màn chính; thanh
   điều hướng chỉ hiện mục có quyền; nút ghi ẩn qua `useCan()`. Backend thật phải kiểm lại ở server. Màn mới thêm route vào đúng nhóm quyền.
 - **Quyền theo màn:** `requirements.view` mở `/yeu-cau-giao` (quản lý công ty, điều phối viên; `/don-hang` chuyển hướng sang đó), tạo, sửa, xoá theo
@@ -58,7 +58,7 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   `routes.optimize`: nút "Tối ưu tuyến" ở Chi tiết chuyến (điều phối viên, FE-4b-09). `manualConfirm.approve`: Duyệt / Từ chối ở thẻ "Xác nhận
   tay chờ duyệt" (điều phối viên, FE-6-04). `pickups.create`: nút "Nhận hàng dọc đường" ở Chi tiết chuyến và `/giam-sat` (điều phối viên) và ở
   màn điểm giao (tài xế, FE-7-03); `pickups.approve`: Từ chối / Duyệt (điều phối viên, FE-7-04). `subscriptionPlans.manage`: `/nen-tang/goi`
-  (FE-8-02). `billing.manage`: `/goi-cuoc`, `/bang-luong`, `/thanh-toan/gia-lap` và `/thanh-toan/ket-qua` (FE-8-03, FE-8-04). `companies.manage`: `/nen-tang/cong-ty`
+  (FE-8-02). `payroll.manage`: `/bang-luong` (quản lý công ty). `billing.manage`: `/goi-cuoc`, `/thanh-toan/gia-lap` và `/thanh-toan/ket-qua` (FE-8-03, FE-8-04). `companies.manage`: `/nen-tang/cong-ty`
   (FE-8-06). `companyProfile.manage`: `/cong-ty` (quản trị công ty).
   `support.create`: mục "Yêu cầu hỗ trợ" của menu tài khoản (năm vai trò công ty); `support.handle`: `/ho-tro` (FE-8-07). `contacts.handle`:
   `/lien-he-khach` (quản trị hệ thống, hỗ trợ khách hàng; gửi yêu cầu liên hệ không cần quyền). Giám sát (FE-6-10 → FE-6-12):
@@ -68,10 +68,30 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
 - **Điều phối viên duyệt phương án** (FE-0-07, D-80): `plans.approve` (chỉnh tay và Duyệt trong Planner) là của điều phối — lập chuyến, chạy tối ưu,
   chỉnh tay, rồi "Duyệt phương án" / "Duyệt bản chỉnh". Quản lý công ty chỉ đọc + xuất báo cáo: mở Planner ở chế độ chỉ xem, một dòng lý do. Không có hàng đợi `/duyet` hay quyền duyệt của quản lý.
 - Đường dẫn của các màn đã bỏ (`/lo-hang`, `/nhan-hang`, `/duyet`) là màn 404.
-- **Trang công khai** `/gioi-thieu` (giới thiệu + form liên hệ) và `/bang-gia` (`features/marketing`, hằng `PUBLIC_HOME`, `PUBLIC_PRICING` ở
-  `auth/landing.ts`) nằm **ngoài** `RequireAuth`, không đòi quyền nào; người đã đăng nhập vẫn mở được (nút "Vào ứng dụng" thay "Đăng nhập"). Gốc
+- **Trang công khai** `/gioi-thieu` (giới thiệu + form liên hệ), `/bang-gia`, `/chinh-sach-bao-mat`, `/dieu-khoan-su-dung` và `/phuong-an-mau` (`features/marketing`,
+  hằng `PUBLIC_HOME`, `PUBLIC_PRICING`, `PUBLIC_PRIVACY`, `PUBLIC_TERMS`, `PUBLIC_SAMPLE_PLAN` ở `auth/landing.ts`) nằm **ngoài** `RequireAuth`, không đòi quyền nào; người đã đăng nhập vẫn mở được (nút "Vào ứng dụng" thay "Đăng nhập"). Gốc
   `/` (`RootLandingPage`): khách sang `/gioi-thieu` (giữ query và neo), người đã đăng nhập sang màn chính của vai trò, lúc đang mở lại phiên Keycloak chưa quyết gì; mở trang khác khi chưa đăng
-  nhập vẫn về `/dang-nhap` (nhớ trang đó). Bảng điều khiển ở `/tong-quan` (`/dashboard` chuyển hướng sang đó). Ai đã đăng nhập
+  nhập vẫn về `/dang-nhap` (nhớ trang đó). **Hai trang pháp lý** dùng chung khung `marketing/legal/` (`LegalPage`: dải trời có bộ chuyển hai
+  tài liệu, ngày "Cập nhật lần cuối" và nút in; tóm tắt; mục lục dính từ 1.024 px với `aria-current`, hẹp hơn là `<details>` thu gọn; mục đánh
+  số có neo, chữ 16 px, dòng khoảng 75 ký tự; hai thẻ cuối "Đọc cùng" — trang kia — và "Còn câu hỏi?" — form liên hệ; không nút chính; bản in
+  bỏ đầu trang, chân trang, trợ lý, mục lục). **Chính sách bảo mật** `/chinh-sach-bao-mat` (`marketing/privacy/`, nhánh từ điển `privacy`):
+  mười hai mục, **Điều khoản sử dụng** `/dieu-khoan-su-dung` (`marketing/terms/`, nhánh `terms`): mười một mục. Mỗi câu nói đúng điều mã hôm
+  nay làm và chọn theo nguồn đang chạy (máy chủ hay bản demo: `usesBackend(…)`, `REGISTRATION_CAPABILITIES`, `backendConfig.authSource`) —
+  người đọc yêu cầu liên hệ theo `CONTACT_READER_ROLES` (`contacts/contact-readers.ts`: máy chủ cho thêm quản lý nền tảng), máy chủ trả lời
+  qua email (Brevo), email của máy chủ khi đăng ký, VNPay khi thanh toán thật, Goong khi tìm địa chỉ và tính tuyến; dấu tích đồng ý chỉ để
+  form cho gửi, không gửi đi. Mọi số là tham số từ hằng của code (credit, kỳ gói, ngưỡng sắp hết credit từ `BILLING_CONSTANTS`; hạn ký thoả
+  thuận dùng thử, ngày xoá và ngày cập nhật ở `legal/legal-facts.ts`). Hạn lưu trữ chỉ nói thứ code có (dùng thử: khoá sau 72 giờ, xoá 30 ngày
+  sau khi hết hạn); dữ liệu khác trên máy chủ ghi "chưa ấn định". Không pháp nhân, địa chỉ, mã số thuế, email hay cam kết tuân thủ nào chưa
+  có — hỏi về dữ liệu đi qua form liên hệ; thông tin liên hệ chỉ hiện khi `SITE_INFO` có giá trị. Sửa luật thu hay lưu dữ liệu (ô của form,
+  nơi lưu phiên, bản đồ, GPS), giá credit hay luật gói thì sửa trang tương ứng và `LEGAL_UPDATED_AT` cùng lúc.
+- **SEO** (`lib/seo/`): `index.html` mang thẻ mô tả, Open Graph, Twitter và ảnh chia sẻ `public/og-image.png` (1.200 × 630); `usePageMeta`
+  (`app/route-title.ts`, cùng nhịp với tiêu đề tab) đặt mô tả (nhánh `seo`), `robots`, `canonical` và `og:url` theo route. Chỉ năm trang được
+  lập chỉ mục (`SEO_PAGES` ở `lib/seo/site-files.ts`): `/gioi-thieu`, `/bang-gia`, `/chinh-sach-bao-mat`, `/dieu-khoan-su-dung`,
+  `/phuong-an-mau` (khi route đó có) — mọi màn khác (đăng nhập, đăng ký, trong ứng dụng, 403, 404) `noindex`. Tên miền không viết
+  trong code: `VITE_SITE_URL` (tuỳ chọn, `lib/site-config.ts`) bật `canonical`, `og:url`, ảnh chia sẻ tuyệt đối và `sitemap.xml`; plugin
+  `seo` của `vite.config.ts` sinh `robots.txt` (luôn) và `sitemap.xml` (khi có `VITE_SITE_URL`). JSON-LD: `SoftwareApplication` ở trang giới
+  thiệu và `FAQPage` từ Hỏi đáp (`FaqStructuredData`) — không đánh giá, giá, email hay số điện thoại.
+- Bảng điều khiển ở `/tong-quan` (`/dashboard` chuyển hướng sang đó). Ai đã đăng nhập
   trong lúc layout `RequireAuth` đang mở — kể cả phiên Keycloak mở lại **sau** khi layout mount — đăng xuất thì về `/dang-nhap`, không nhớ trang:
   "đã thấy người đăng nhập" là state ghi trong lúc vẽ, không chụp lúc mount. Màn đăng nhập có liên kết "Về trang giới thiệu" (dưới 640 px chỉ còn
   mũi tên, chữ vẫn là tên truy cập).
@@ -82,7 +102,8 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   chưa đăng nhập, dễ thấy nhất trước: **nút chính** của khối mở đầu `/gioi-thieu` là "Đăng ký trải nghiệm" ("Nhận tư vấn" lùi thành nút kính
   cạnh nó); đầu trang có nút kính "Đăng ký trải nghiệm" từ 768 px và "Đăng ký dùng ngay" từ 1.280 px (hẹp hơn hai mục nằm trong nút menu); màn
   đăng nhập có hai nút phụ dưới form (`LoginSignUp`); thẻ gói có nút phụ ("Đăng ký trải nghiệm" chỉ ở gói Basic). Người đã đăng nhập không thấy
-  lối vào nào. Kho mẫu (D-20) ẩn mọi lối vào, ba route chuyển về form liên hệ
+  lối vào nào (đầu trang, khối mở đầu, thẻ gói, chân trang). Câu dưới bảng gói và bước cuối của dải liên hệ (ba bước "Sau khi bạn gửi", chỉ từ 640 px)
+  nói đúng theo nguồn: khách tự đăng ký được thì là `signUpNoteSelf`, kho mẫu thì "tài khoản do đội LoadMaster tạo". Kho mẫu (D-20) ẩn mọi lối vào, ba route chuyển về form liên hệ
   của `/gioi-thieu` (dùng thử / báo giá, giữ gói) hoặc trang giới thiệu, và tài khoản công ty do đội LoadMaster mở sau yêu cầu liên hệ. Tài khoản
   dùng thử phải ký thoả thuận dịch vụ trong 72 giờ; quá hạn thì bị gắn cờ (màn khoá `TrialAccountLockedView`, gửi yêu cầu mở khoá) và bị xoá hẳn
   30 ngày sau khi hết hạn dùng thử. Chỉ quản trị công ty đọc và ký thoả thuận (`GET /api/agreements/my-agreement`, máy chủ chỉ cho vai trò
@@ -102,8 +123,13 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
 - **Đầu trang công khai** (`PublicHeader`, dải trời dính trên cùng): mục của trang thành hàng từ 1.024 px với chuột, từ 1.366 px trên máy cảm
   ứng (điều khiển 56 px: ở 1.024–1.365 px hàng mục đè lên nút ngôn ngữ khi có nút đăng ký) — nơi bốn mục vừa cả hai ngôn ngữ —, hẹp hơn thì gom
   vào nút menu `PublicNavMenu` (40 px, 56 px trên máy cảm ứng, mỗi mục 56 px; chọn một mục thì focus tới tiêu đề của phần đó, không về nút menu).
-  Đổi mốc nào ở đầu trang thì đo lại 360 → 1.440 px, vi / en, chuột / cảm ứng, khi nhóm `registration` nối backend (không điều khiển nào tràn,
-  chồng nhau hay xuống dòng). Ngôn ngữ là `LanguageSwitch` từ 640 px, hẹp hơn là `LanguageMenu`; logo có vùng bấm 48 px (56 px cảm ứng). Trang có liên kết "Bỏ
+  Hàng mục nằm trong khay kính `.glass-nav` có chỉ báo trượt `.glass-follow` (`components/useGlassFollow`): chỉ báo đứng ở trang đang mở,
+  và trên `/gioi-thieu` ở phần đang đọc (`useHeaderScroll`, `data-active` — chỉ là hình, không `aria-current`). Qua khỏi khối mở đầu thì
+  đầu trang đặc lại (`data-scrolled`, `public-header.css`); trang giới thiệu có vạch tiến độ cuộn 2 px (`PublicPage progress`,
+  `.landing-progress`), trang khác không. Để đủ chỗ cho nút đăng ký: lề mục 8 px tới dưới 1.536 px, khe giữa các nhóm 12 px và khe giữa các
+  nút 8 px tới dưới 1.280 px. `e2e/public-header.spec.ts` đo đầu trang của khách **có nút đăng ký** ở 360 → 1.440 px, vi / en, chuột / cảm
+  ứng (không điều khiển nào tràn khỏi hàng, chồng nhau hay xuống dòng; trang không cuộn ngang) — spec trả lời thay dev server cho module
+  `registration-capabilities.ts`, nên dời hay đổi tên module đó thì sửa spec. Đổi mốc, nhãn hay lề ở đầu trang thì chạy lại spec này. Ngôn ngữ là `LanguageSwitch` từ 640 px, hẹp hơn là `LanguageMenu`; logo có vùng bấm 48 px (56 px cảm ứng). Trang có liên kết "Bỏ
   qua tới nội dung chính" (chỉ hiện khi nhận focus; đưa focus vào `<main>` mà không đổi neo). Tới một phần qua neo thì tiêu đề `<h2>` của phần
   nhận focus (`useHashScroll`; neo mã hoá hỏng như `#%` coi như không có neo). Điều khiển trên dải trời của hai trang công khai và màn đăng nhập
   (nút chính, nút kính, nút về, "Đăng nhập") ghép `SKY_FOCUS` (`components/sky-focus.ts`): vòng focus `--cyan-300` thay `--primary` ngay ở
@@ -112,16 +138,160 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   dòng được trên máy cảm ứng. Hình `CargoArtwork` của màn đăng nhập xếp đầy **một lần** (khoảng 4 giây) rồi đứng yên — không lặp, vì không có
   nút dừng (WCAG 2.2.2); người chọn giảm chuyển động thấy ngay thùng đầy.
 - **Trang giới thiệu** `/gioi-thieu`: khối mở đầu tối `.landing-cinema` (tiêu đề, nút chính "Nhận tư vấn" tới `#lien-he` — khi nối backend
-  cho khách chưa đăng nhập là "Đăng ký trải nghiệm", mục "Đăng ký công khai" ở trên —, khung 3D chuyến mẫu,
-  "Con số kiểm được" `#con-so`) · Tính năng chính `#tinh-nang` · Cách hoạt động `#cach-hoat-dong` · Gói cước `#goi-cuoc` (cùng truy vấn với
-  Bảng giá) · dải liên hệ tối `.landing-closing` `#lien-he` · chân trang. Menu đầu trang vẫn bốn mục (`PUBLIC_LINKS`).
-- **Khung 3D chuyến mẫu** (`LandingStage`; Three.js chỉ ở `viewer3d/LandingStageViewer`, tải lười): bộ tối ưu mô phỏng tính chuyến mẫu 366
-  kiện, bốn điểm giao ngay trên trình duyệt (Web Worker khi có), không backend, không credit; mọi số kèm MOCK RESULT. Xếp **một lần** (khoảng 3
-  giây) rồi đứng yên; "Xếp lại" xếp từ đầu; giảm chuyển động thì đầy ngay, không có "Xếp lại". Khung không nhận thao tác, camera chỉ theo ba nút
-  góc nhìn. Không WebGL, không tạo được ngữ cảnh, bật tiết kiệm dữ liệu, lỗi tải hay mất ngữ cảnh: `CargoArtwork`, không số nào; `useStageGate`
-  biết trước thì không tải Three.js, không chạy bộ tối ưu.
-- **Số trên trang giới thiệu** đều có nguồn: mỗi số của `#con-so` kèm câu nguồn (hằng số code, cổng bench), giá và credit từ danh mục gói, số
-  của khung 3D từ lần chạy vừa tính. Không lời khen, logo khách hay thống kê sử dụng.
+  cho khách chưa đăng nhập là "Đăng ký trải nghiệm", mục "Đăng ký công khai" ở trên —, nút kính "Thử với hàng của bạn" tới `#thu-ngay`,
+  khung 3D chuyến mẫu,
+  dải "Ba chuyện quen thuộc của một chuyến hàng" `LandingProblems` — ba chuyện, mỗi chuyện kèm việc ứng dụng làm thật, không số —, dải "Vì sao
+  xếp tay không xuể" (mục dưới)) · "Một chuyến hàng trên LoadMaster" `#cach-hoat-dong` (mục dưới) · "Một chuyến, bốn màn" `#vai-tro` (mục
+  dưới) · "Thử với hàng của bạn" `#thu-ngay` (mục dưới) · Gói cước `#goi-cuoc` (cùng truy vấn
+  với Bảng giá; gói mang cờ tạm được nói bằng **một câu** dưới tiêu đề kèm tên các gói đó — `landing.plans.provisional` —, không nhãn trên
+  từng thẻ như Bảng giá) · Hỏi đáp `#hoi-dap` (`marketing/faq/`: sáu chủ đề của trợ lý Lumo `FAQ_TOPICS` — câu hỏi là `chip`, câu trả lời và liên kết
+  là `TopicAnswer` với cùng `useAssistantContext`, không chữ riêng; mỗi câu một `<details>` gốc, dòng câu hỏi 44 px, 56 px trên máy cảm
+  ứng, mũi tên xoay bằng CSS và không quay khi giảm chuyển động) · dải liên hệ tối `.landing-closing` `#lien-he` · chân trang. Menu đầu
+  trang bốn mục (`PUBLIC_LINKS`: Cách hoạt động, Thử ngay — tới `#thu-ngay`, neo ở module thuần `try/try-anchor.ts` —, Bảng giá, Liên hệ) —
+  Hỏi đáp mở từ chân trang. **Nhận hàng dọc đường không được giới
+  thiệu** ở hai trang công khai, kể cả trợ lý Lumo (quyết định của chủ sản phẩm 19/11/2026); tính năng vẫn có trong ứng dụng. Cả trang nằm trong
+  `RevealProvider`: chữ và thẻ hiện ra **một lần** khi cuộn tới (`features/marketing/reveal`, mục 8). Trên điện thoại cảm ứng 390 px cả trang
+  không quá 14 màn hình (đo 20/11/2026: 13,7 tiếng Việt, 14 tiếng Anh): dưới 640 px các phần sáng và dải liên hệ có lề trên dưới 32 px, câu mô
+  tả dưới tiêu đề phần 16 px (`SectionHeading`), thẻ gói lề 16 px, hai nút mở đầu cách nhau 8 px để cùng một hàng.
+- **"Một chuyến hàng trên LoadMaster"** (`marketing/journey/`, `LandingJourney`): năm chặng theo thứ tự (`CHAPTERS` ở `journey-model.ts`) —
+  Lập chuyến và chọn phương án (điều phối viên) · Soạn và xếp ở kho (nhân viên kho) · Trên đường (điều phối viên) · Tại điểm giao (tài xế) ·
+  Giao xong, báo cáo và tính lương (quản lý công ty) —, mỗi chặng một `RoleBadge`, một đoạn chữ và một hình dựng từ chính ứng dụng: bảng so ba
+  phương án của lần chạy mẫu (`JourneyPlans`, "Tốt nhất" trung tính như màn So sánh) kèm hai số cố định của một lần chạy, ba cách đối chiếu,
+  sơ đồ tuyến kèm mức hạn, số của điểm 1 (`JourneyStop`), phiếu lương chỉ có tên dòng (`payroll.statement.*`, không số). Cạnh danh sách là
+  thùng xe SVG dính theo cuộn (`JourneyTruck`, `aria-hidden`; từ 1.024 px là cột phải, hẹp hơn là dải dính dưới đầu trang): 35 kiện trong vùng
+  của bốn điểm giao, lên xe ở chặng kho (điểm cuối trước, từ sàn lên), xuống xe ở chặng điểm giao (điểm 1 trước, từ trên xuống) — hình học
+  thuần `truckBoxes`, có test. Từ 1.024 px mỗi chặng cao ít nhất 40 % khung nhìn (chặng cuối không) để thùng xe có quãng cuộn mà không để
+  khoảng trống lớn giữa các chặng; dưới 640 px chặng cao theo nội dung, không vạch nối và ô icon (còn `RoleBadge`, chữ 16 px trên máy cảm
+  ứng), sơ đồ tuyến chỉ còn chip mức hạn, bảng so tràn hết bề ngang, chặng cuối không có phiếu lương — cả phần không quá 2.200 px ở 390 px. `useJourneyProgress` (IntersectionObserver, một khung hình mỗi lần cuộn, mốc 55 % chiều cao khung nhìn) ghi
+  thẳng vào DOM `--p`, `data-chapter`, `data-reached` — không state React theo cuộn. Không IntersectionObserver thì không ghi gì, CSS giữ thùng
+  đầy (`--p` mặc định 0,5); giảm chuyển động thì hình đổi theo chặng, không theo từng điểm cuộn; chữ không bao giờ ẩn chờ cuộn. Bảng và số của
+  điểm 1 đọc **cùng truy vấn** lần chạy mẫu với khung 3D (`useJourneySample`, khoá `['landing', 'sample-candidates']`); không Web Worker hay
+  bật tiết kiệm dữ liệu thì không chạy — vạch giữ chỗ và một câu nói vì sao.
+- **"Vì sao xếp tay không xuể"** (`marketing/why/`, `LandingWhy`, cuối `.landing-cinema`): khách chọn số điểm giao (thanh kéo gốc, 1–8) và
+  số kiện (nhóm radio, mốc cuối là 366 kiện của chuyến mẫu); trang đếm tại chỗ số thứ tự đi qua các điểm (n!) và số cách chọn hướng đặt (6^k)
+  — phép đếm thuần `why-count.ts`, có test, không phải số đo; số lớn viết "≈ a × 10^b" kèm số chữ số, trình đọc màn hình đọc thành lời. Không
+  nút chính. Cao tối đa 520 px ở 390 px.
+- **"Một chuyến, bốn màn"** (`marketing/roles/`, `LandingRoles`, `#vai-tro`, ngay sau "Một chuyến hàng"): bốn vai trò của một chuyến là bốn
+  tab Radix (cao 56 px, dưới 640 px lưới 2 × 2) — điều phối viên (màn Giám sát trên máy tính: sơ đồ tuyến, chip mức hạn, nguồn "Mô phỏng",
+  dòng giờ nghỉ bắt buộc, tính bằng `@/domain/routing` trên tuyến mẫu `roleRoute`), nhân viên kho (màn xếp trên máy tính bảng), tài xế (màn
+  điểm giao trên điện thoại, kèm **một câu** về ứng dụng di động — không huy hiệu, liên kết cửa hàng hay QR), quản lý công ty (KPI và biểu đồ
+  khối lượng theo điểm). Mỗi khung thiết bị dựng lại màn thật thu nhỏ theo `em` (`roles.css`), `aria-hidden` kèm bản chữ `sr-only`, không
+  nút bấm được trong hình; bốn bảng luôn dựng và chồng một ô lưới nên đổi tab không làm trang nhảy. Số tính từ chuyến mẫu (`roles-model.ts`)
+  kèm một câu nguồn, không MOCK RESULT. Cao tối đa 800 px ở 390 px.
+- **"Thử với hàng của bạn"** (`marketing/try/`, `LandingTry`, `#thu-ngay`, ngay sau "Một chuyến, bốn màn"): hai tab — "Xếp thử xe của bạn"
+  (dưới) và "Tải trục" (`TryAxleTab`: xe mẫu 3,5 tấn có hai trục, hai thanh kéo khối lượng hàng và trọng tâm, số là `axleLoadsOf` của ứng
+  dụng, vượt có chữ "Vượt"). Tab xếp thử: khách nhập lòng thùng (cm) và tải
+  trọng (kg), một tới bốn loại kiện (cm, kg, số kiện, điểm giao 1–4; tổng tối đa 1.000 kiện — cổng hiệu năng của bộ tối ưu mô phỏng), form
+  react-hook-form + zod, lỗi là mã (`try-form.ts`); mở ra với xe 3,5 tấn 520 × 200 × 200 cm và hai loại thùng cho hai điểm giao (80 thùng 60 × 40 × 40 cm,
+  20 thùng 80 × 60 × 50 cm — 100 kiện, 1.800 kg) để chạy được ngay và lần chạy đầu đã có màu hai điểm giao, số kiện dỡ-xếp lại. Giả định của
+  bản thử (cửa bằng lòng thùng, không vật cản, không trục; luật kiện mặc định) nằm trong "Tính thế nào?" cuối form, không thành đoạn văn. Nhóm nghìn của ô số
+  không bắt đầu bằng 0 ("0,500" là lỗi, không phải 500); đổi một ô số kiện thì các ô số kiện khác được kiểm lại (`deps`), để lỗi quá trần
+  tổng tự hết. Form cao hơn một màn hình nên từ 1.280 px (màn cao từ 768 px) cột kết quả dính dưới đầu trang, và tính xong thì cột được cuộn
+  vào khung nhìn nếu đang bị cắt (`try/try-scroll.ts`; nhảy thẳng khi giảm chuyển động; cột cao hơn màn hình thì không cuộn).
+  Chỉ chạy khi bấm "Tính ba phương án" — **nút phụ**, nút chính của trang ở phần mở đầu —: `try-api.ts` → `useTryRun` (mutation; bấm lại
+  thì huỷ lần cũ) gọi `optimizeCandidates` của chính bộ tối ưu mô phỏng (Web Worker khi có, luồng gọi khi không), một lần chạy ra ba phương
+  án A · B · C; không tài khoản, kho mẫu, credit hay máy chủ. Xe của bản thử: cửa sau bằng lòng thùng, không vật cản, **không trục**; kiện theo
+  mặc định của kiện thêm lẻ (`cargoFromPackage`), không bắt buộc xếp. Mỗi thẻ phương án: chữ cái + mục tiêu, hình SVG `PlanThumbnail` (không
+  Three.js), xếp được / tổng, lấp đầy thể tích, trọng tâm lệch giữa thùng (thay chênh tải trục: xe không trục thì không có số tải trục — câu
+  dưới kết quả nói vậy), số kiện dỡ-xếp lại **chỉ khi** hàng có từ hai điểm giao (một điểm thì luôn 0 — bỏ hàng, kèm câu), kiện chưa xếp theo
+  loại kèm lý do (`viewer.unplacedReasons`; riêng `DOOR_TOO_SMALL` là "Cao hoặc rộng hơn lòng thùng" — cửa của bản thử bằng lòng thùng,
+  nên không nói "lọt cửa"); hai mục tiêu chọn trùng một cách xếp thì thẻ ghi "Giống hệt phương án …" (`try-outcome.ts`).
+  "Tốt nhất" trung tính như màn So sánh. Không nhãn MOCK RESULT: câu nguồn nói số do bộ tối ưu mô phỏng chạy trên trình duyệt tính. Form đổi
+  sau lần tính thì có câu báo kết quả cũ. Dưới kết quả: "Đăng ký trải nghiệm" khi khách tự đăng ký được, không thì "Nhận tư vấn"; cạnh tiêu
+  đề kết quả là liên kết "Xem phương án mẫu ở dạng 3D" (`/phuong-an-mau`). Từ 1.280 px
+  form trái, kết quả phải (ba thẻ cạnh nhau từ 640 px); `e2e/landing-try.spec.ts` đo cột kết quả gọn trong một màn hình ở 1.440 × 900 và
+  1.280 × 768, cả phần không quá 1.335 px (1.440) / 1.900 px (390, trước lần chạy).
+- **"Tính thế nào?"** (`marketing/how/`: `HowComputed` — nút `aria-expanded` mở danh sách nhãn + câu; `PlanHow` + `how-entries.ts` dựng câu
+  từ số của **chính lần chạy**, nhánh từ điển `landingHow`): dưới số của khung 3D mở đầu, thẻ phương án và tab Tải trục của bản thử, và trang
+  `/phuong-an-mau`. Câu nói công thức bằng lời thường kèm số đã tính; số nào phương án không có (xe không trục, không chia vùng) thì bỏ dòng.
+  Không tên thuật toán. Giả định của bản thử cũng nằm ở đây thay cho đoạn văn.
+- **Phương án mẫu** `/phuong-an-mau` (`marketing/sample-plan/`, `SamplePlanPage`; phần 3D `viewer3d/SamplePlanViewer` tải lười): chuyến mẫu
+  366 kiện, bốn điểm giao, **cùng truy vấn** lần chạy mẫu với khung 3D mở đầu (`useLandingSample`) trong khung 3D xoay được, bấm vào kiện
+  được (cùng `SceneCanvas`, InstancedMesh). Chọn phương án A · B · C (`StagePlans`), "Xếp hàng" theo `loadingOrder` hoặc "Dỡ hàng" ở điểm 1–4
+  theo `unloadingOrder` (`viewer3d/sample/useSamplePlayback`, `useUnloadPlayback`: kiện điểm sau chắn lối có viền cảnh báo, che kín thì dừng
+  kèm nút bỏ qua); `Timeline` phát / dừng / từng bước, phím Space · ← · → · Home trên cả trang; bốn góc nhìn; số của chuyến và của điểm kèm
+  "Tính thế nào?". Trạng thái trên URL, slug không dấu (`sample-plan-url.ts`): `phuong-an=a|b|c`, `che-do=xep|do`, `diem=1–4`, `goc=…`
+  (mặc định C · xếp · góc chéo không ghi), giữ tham số khác (`lang`, `debug`). "Sao chép liên kết" (`ShareLink`): có `navigator.share` thì
+  "Chia sẻ liên kết", không thì bộ nhớ tạm, phản hồi ở `role="status"`; không có cả hai thì không có nút. Không MOCK RESULT: một câu nguồn.
+  Lối ra là logo kèm mũi tên về `/gioi-thieu`; một nút chính như khối mở đầu (`SampleCta`). Không WebGL / tiết kiệm dữ liệu / lỗi: `CargoArtwork`
+  kèm câu, số vẫn đủ. Giảm chuyển động: không tự phát, thùng đầy. Từ 1.024 px khung 3D trái, cột số phải tự cuộn (trang cao đúng khung nhìn);
+  hẹp hơn khung ở trên, cột ở dưới, nút 56 px trên máy cảm ứng. Lối vào: nút "Toàn màn hình" của khung 3D mở đầu (giữ phương án đang chọn) và
+  liên kết của bản thử. `e2e/sample-plan.spec.ts`.
+- **Chân trang công khai** (`PublicFooter`, `marketing/footer/`): dải đường có xe tải chạy vào một lần, khối thương hiệu (logo, khẩu
+  hiệu, nút tới form liên hệ, ngôn ngữ), bốn cột — Sản phẩm (ba neo của trang giới thiệu, Bảng giá, Phương án mẫu 3D) · Dành cho (năm vai trò công ty, là
+  chữ) · Hỗ trợ (Hỏi đáp → `#hoi-dap`, Liên hệ tư vấn → `#lien-he`, Chính sách bảo mật → `/chinh-sach-bao-mat`, Điều khoản sử dụng →
+  `/dieu-khoan-su-dung`; hàng cuối không lặp lại hai liên kết pháp lý) · Tài khoản ("Đăng nhập" hay "Vào ứng dụng"; khách có thêm hai lối đăng ký khi nối backend)
+  — và nút "Lên đầu trang", cùng hàng với bản quyền ở mọi bề rộng. Dưới 640 px không có câu mô tả của khối thương hiệu và cột "Dành cho"
+  (phần "Một chuyến, bốn màn" đã nói các vai trò). Cột chỉ chứa liên kết tới thứ **đang có**. Thông tin liên hệ của công ty ở `lib/site-info.ts` (`SITE_INFO`):
+  email, số điện thoại, địa chỉ, mã số thuế đều `null` tới khi chủ sản phẩm đưa số thật, và chân trang không vẽ dòng nào cho giá trị `null`
+  — không viết email hay số điện thoại chưa xác nhận vào code.
+- **Khung 3D chuyến mẫu** (`LandingStage`; Three.js chỉ ở `viewer3d/LandingStageViewer` và `viewer3d/landing/`, tải lười): bộ tối ưu mô phỏng tính
+  chuyến mẫu 366 kiện, bốn điểm giao ngay trên trình duyệt (Web Worker khi có), không backend, không credit: **một lần chạy ba phương án**
+  (`optimizeCandidates`, `landing-plans.ts`; xe mẫu khai hai trục theo số của xe seed để có tải trục). **Hai trang công khai không hiện nhãn MOCK RESULT** (quyết định của chủ sản phẩm 19/11/2026): câu mô
+  tả khung và câu nguồn dưới bảng ba phương án nói số do bộ tối ưu mô phỏng tính. Dưới khung là bộ chọn **"Một lần chạy, ba phương án"**
+  (`StagePlans`): ba nút 56 px (`aria-pressed`, tên "Phương án A — Tối đa thể tích"), dưới nút là số của phương án đang chọn (lấp đầy, chênh tải
+  hai trục, dỡ-xếp lại, chưa xếp — `usePlanFigures`); chưa tính xong thì cùng bố cục, chỉ nhãn và vạch giữ chỗ. Bảng so cả ba phương án nằm ở
+  chặng đầu của "Một chuyến hàng". Giá trị tốt nhất đánh dấu trung tính như màn So sánh
+  (`bestCandidates` ở `lib/candidate-metrics.ts`: in đậm + nhãn xám "Tốt nhất"; số bằng nhau hay thiếu ở một phương án thì không đánh dấu).
+  Mặc định là C; chọn phương án khác thì xe xếp lại theo nó từ pha xếp (`replayFrom(LOADING_AT)`), giảm chuyển động thì đổi ngay sang thùng đầy.
+  Mọi số trên bộ chọn là của lần chạy. Cảnh là một sân kho thu nhỏ — xe, sàn
+  dock, bốn làn chờ theo màu điểm giao, nhà kho — chỉ để minh hoạ, không chữ, không số. Mỗi kiện của lần chạy là **đúng một hộp**: chờ ở làn của điểm
+  giao mình tới bước xếp của nó thì rời làn và hiện trong thùng (`laneSlots`); kiện chưa xếp được ở lại làn. Chuyện chạy **một lần**, khoảng 24 giây
+  (`STORY_MS`, kịch bản thuần ở `viewer3d/landing/story-timeline.ts`), theo đồng hồ `story-clock` (mỗi nhịp tiến tối đa 250 ms): nhập kiện 0–2 s →
+  tối ưu 2–4 s (dải vùng điểm giao hiện ra) → xếp 4–9 s (`fillStep`, `LANDING_FILL_MS`) → xếp xong, chờ xuất phát → xuất phát 11–15 s: cửa thùng
+  đóng, khói ở ống xả, xe lăn bánh 1,3 m (`DEPART_M`) về phía đầu xe, nhún một nhịp → tới điểm 1 15–19 s: khung tối dần, thẻ "Tới điểm 1 ·
+  <tên>" giữa khung (`StageArrival`, DOM, `aria-hidden` — thẻ chuyến đã nói điều đó), sáng lại, xe lùi vào chỗ dỡ, cửa mở → dỡ 19–23 s: chỉ kiện
+  của điểm 1 rời thùng theo `unloadingOrder` của phương án, thành chồng ở làn của điểm 1; khung 3D dùng `deriveSceneSemantics` kiểu `unloading`
+  (kiện đã dỡ ẩn, điểm khác mờ — không thêm draw call) → đã giao điểm 1 (23–24 s). Số của điểm 1 (số kiện của điểm, số kiện phải dời để lấy ra
+  theo `checkStopReorder`, số kiện nằm sai vùng theo `locateInZones` — `firstStopFacts`, trên phương án C) nằm ở chặng "Tại điểm giao". "Xếp lại" đưa xe về chỗ cũ và chạy lại từ đầu.
+  Bắt đầu khi khung đã vẽ, phương án đã tính, khung lộ ít nhất 40 % và trang đã mở 1,2 giây; giữ lại khi
+  khung lộ dưới 20 %, khi tab ẩn, hoặc khi người xem bấm. Giữ lại chỉ dừng khung 3D: câu Lumo đang gõ vẫn gõ xong; chỉ nút tạm dừng làm chữ đứng
+  lại. Một nút ba trạng thái "Tạm dừng" / "Tiếp tục" / "Xếp lại" (một phần tử, focus giữ nguyên, bề
+  rộng giữ chỗ cho cả ba chữ). Ba góc nhìn: Toàn cảnh, Thùng xe (mặc định dưới 768 px), Vùng điểm giao (có nhãn vùng); camera không tự đổi khi chuyện
+  chạy. Thẻ chuyến: hai chip đầu chỉ có ở trang giới thiệu, xám trung tính: "Đang tính phương án mẫu…" (chấm quay), rồi "Đã tính phương án"
+  (vòng rỗng: chờ kho; không trùng chip trạng thái nào của ứng dụng). Sau đó là đúng chip của ứng dụng: `StatusBadge` Đang xếp hàng kèm
+  `TripSubStatusTag` "Đang xếp n / 366" và "Xếp xong — chờ xuất phát"; xe rời kho thì `StatusBadge` Đang vận chuyển kèm nhãn "Đã rời kho" →
+  "Tới điểm 1" → "Đang dỡ n / tổng ở điểm 1" → "Đã giao điểm 1" (`landingStage.*`, chỉ trang giới thiệu dùng); không có chip Đã lập kế hoạch vì chuyến mẫu không có tuyến. Giảm chuyển
+  động: dừng ngay ở xếp xong (`READY_AT`) — xe đứng chỗ cũ, cửa mở, không lăn bánh, không khói, không dỡ, không nút. Sân kho tốn tối đa ba
+  draw call; khung nghỉ ≤ 40 ở mọi tier (`e2e/landing-story.spec.ts`). Lúc tải: hình `DioramaPoster` (SVG, cùng góc nhìn, không số). Không WebGL, không tạo được ngữ cảnh, bật tiết kiệm dữ liệu, lỗi tải, mất ngữ cảnh,
+  hoặc tab đang hiện 15 giây mà chưa có khung hình đầu (tab ẩn không tính giờ): `CargoArtwork` kèm Lumo `point` nói một câu, không số nào; `useStageGate` biết trước thì không tải Three.js, không chạy bộ tối ưu. Cổng chỉ mở khi khung cách khung nhìn không quá 250 px
+  **và** trình duyệt rảnh: điện thoại (khung nằm dưới chữ) hay khách mở thẳng một neo bên dưới thì chưa tải Three.js.
+  `useStageGate` còn chờ khung vào gần khung nhìn (IntersectionObserver, lề 250 px) rồi mới thử WebGL, tải Three.js và chạy bộ tối ưu; tiêu đề và
+  câu mô tả vẽ ngay, không chờ phần 3D. Câu mô tả khung
+  (`landing.stage.caption`) là `sr-only`, nối bằng `aria-describedby`; canvas `aria-hidden`.
+- **Trợ lý "Hỏi Lumo"** (`marketing/assistant/`, gắn ở `PublicPage` nên có ở cả hai trang công khai): trợ lý **thụ động** — không tự mở, không
+  lời mời bật lên — trả lời từ **bộ câu trả lời soạn sẵn** (`assistant-kb.ts`, 16 chủ đề; câu ở nhánh `assistant` của từ điển), **không phải AI**
+  và không bao giờ nói mình là AI; dòng nhỏ dưới ô gõ — cũng là mô tả của hộp thoại — nói Lumo trả lời từ tài liệu của LoadMaster, không phải nhân viên tư vấn. Khớp câu hỏi bằng
+  từ khoá vi + en không dấu (`assistant-match.ts`, dưới ngưỡng thì nói thẳng là chưa có câu trả lời). Lớp mạng `assistant-api.ts`
+  (`askAssistant`, `POST /api/assistant/messages` — chưa có ở BE: khớp ở trình duyệt sau 500 ms) → `useAskAssistantMutation`. Nút mở góc
+  dưới phải (chữ từ 640 px, 48 px / 56 px cảm ứng, chừa vùng an toàn) có **viền gradient quay** kiểu nút trợ lý AI của AWS (`animated gradient border`: `conic-gradient` theo gradient AI của AWS Cloudscape —
+  token `--genai-1…5` ở `index.css`, xanh nhạt → xanh dương → chàm → tím, ngoại lệ duy nhất của luật không tím, quyết định của chủ sản phẩm
+  19/11/2026 —, viền 2 px thay viền xám + quầng màu ngoài nút; đứng yên lúc nghỉ, quay khi rê chuột / focus và khi Lumo đang trả lời
+  `data-thinking`; khi trang mở quay hai vòng ~4,8 s — dưới mốc 5 s của WCAG 2.2.2; giảm chuyển động thì đứng yên); khung chat có vạch
+  gradient 2 px chạy ngang dưới đầu khung chỉ trong lúc đang trả lời (`assistant-thinking-bar`). Khung chat: chưa hỏi gì thì là màn chào
+  (`AssistantWelcome`: Lumo `idea` chào một câu, bốn câu hỏi gợi ý thành lưới 2 × 2 có icon); câu trả lời có ảnh Lumo nhỏ bên trái; ảnh ở
+  đầu khung có vòng gradient 2 px, quay khi đang trả lời (`assistant-avatar-ring`); chữ "Lumo đang trả lời…" có dải gradient chạy ngang
+  (`assistant-shimmer`, phần lớn chữ vẫn `--ink-3`; giảm chuyển động thì chữ xám đứng yên). Ô gõ là một khung bo góc chứa ô gõ tự cao tới
+  bốn dòng (Enter gửi, Shift + Enter xuống dòng, xuống dòng gửi đi thành dấu cách) và nút gửi — nút chính của khung chat, mờ khi ô trống;
+  focus là viền khung đổi cyan và dày thêm 1 px. Bấm một nút gợi ý (nút biến mất cùng lượt cũ) thì focus vào vùng trò chuyện, không về ô
+  gõ (khỏi bật bàn phím ảo). Khung đang mở thì nút mở thành nút thu gọn (mũi tên xuống); tên truy cập vẫn là "Hỏi Lumo", trạng thái nằm ở
+  `aria-expanded`. Nút nâng lên khi chạm phần tử mang `data-assistant-avoid` (nút chính của
+  phần mở đầu, nút "Tạm dừng / Tiếp tục / Xếp lại" của khung 3D, bộ chọn phương án dưới khung, "Lên đầu trang" —
+  `useLauncherLift`; nâng lên chạm phần tử khác thì nâng tiếp qua nó); khung chat là chunk lười: từ 768 px thẻ trắng không modal cạnh nút, hẹp hơn tờ phủ
+  cả màn modal. Từ 768 px đầu khung có nút "Phóng to khung chat" / "Thu nhỏ khung chat" (nhãn đổi theo trạng thái): khung rộng 720 px, cao
+  tới dưới đầu trang (đỉnh khung cách mép trên 5 rem, không che nút nào của đầu trang); trạng thái `expanded` nằm trong phiên trò chuyện —
+  giữ khi đóng mở lại và qua "Bắt đầu lại". Mỗi câu trả lời tối đa ba câu kèm liên kết tới phần của trang hay Bảng giá; lối đăng ký chỉ khi khách tự đăng ký được. Tính
+  gói: số lần chạy × `BILLING_CONSTANTS.optimizationCost` → gói đang bán rẻ nhất đủ credit (`assistant-advisor.ts`), không nói tiết kiệm.
+  Phần Gói cước của trang giới thiệu dùng cùng phép tính cho thanh kéo "số lần chạy mỗi tháng" (`PlanAdvisorSlider`: thanh kéo gốc của
+  trình duyệt, 15 mức từ 50 tới 10.000, đứng sẵn ở 300); thẻ gói rẻ nhất đủ dùng có viền `--primary` kèm nhãn chữ "Rẻ nhất đủ dùng".
+  "Hỏi đội LoadMaster" mở form liên hệ (Hỏi thông tin) và điền sẵn câu hỏi qua `state` của điều hướng (không lên URL;
+  `ContactSection` đọc một lần mỗi lần điều hướng) — không hứa thời gian trả lời. Cuộc trò chuyện chỉ trong bộ nhớ
+  (`assistant-session.ts`): giữ qua hai trang, tải lại là mất; không `localStorage`. Thêm điều sản phẩm làm được thì thêm chủ đề, chỉ nói
+  điều đang đúng; điều theo nguồn dữ liệu đi qua `AssistantContext` (luật nghỉ bắt buộc chỉ khi giờ đến là của mock).
+- **Số trên trang giới thiệu** đều có nguồn, mỗi số kèm câu nguồn: số dưới bộ chọn của khung 3D, bảng ba phương án và số của điểm 1 ở "Một
+  chuyến hàng" — đều của lần chạy mẫu vừa tính; hai số cố định cạnh bảng — credit một lần chạy (`BILLING_CONSTANTS.optimizationCost`) và cổng
+  bench 1.000 kiện, đủ ba phương án, dưới 1 giây (chép từ `services/optimization/mock-optimization.bench.ts`; đổi cổng thì sửa `JourneyPlans`
+  cùng lúc); giá và credit từ danh mục gói. Không lời khen, logo khách hay thống kê sử dụng.
 - E2E đăng nhập bằng `login(route, role)` (`login('/')` mở thẳng `/dang-nhap`, vì khách mở `/` là sang trang giới thiệu); không còn vai trò toàn
   quyền nên kịch bản đi qua nhiều vai trò **đăng nhập đúng vai trò của từng bước**, đổi người trong app bằng `switchUser`
   (`e2e/spec-flow-helpers.ts` — tải lại trang là mất kho); test DOM đăng nhập đúng người bằng `signedInAs(vai trò | mã người dùng seed)`.
@@ -164,10 +334,10 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
 - Mục điều hướng khai **theo vai trò** ở `app/nav-items.ts` (FE-0-04): `NAV_SCREENS` là các màn có mục — chỉ màn đang có route (D-20) — và
   `NAV_ITEMS` là danh sách của từng vai trò theo thứ tự của vai trò đó, màn chính đứng đầu; quyền vẫn là cổng (`navItemsFor` bỏ mục thiếu quyền).
   Quản trị hệ thống: Công ty · Người dùng · Nhật ký · Liên hệ của khách · Đơn dùng thử. Quản trị công ty: Người dùng · Nhật ký · Gói và credit ·
-  Thông tin công ty. Quản lý công ty: Bảng điều khiển · Yêu cầu giao · Kho kiện (chỉ đọc) · Chuyến hàng · Giám sát · Đội xe · Kho bãi (`/quan-ly-kho`; nhãn ngắn `nav.companyWarehouses` để thanh vừa 1.366 px ở cả hai ngôn ngữ). Điều phối
+  Thông tin công ty. Quản lý công ty: Bảng điều khiển · Yêu cầu giao · Kho kiện (chỉ đọc) · Chuyến hàng · Giám sát · Đội xe · Kho bãi (`/quan-ly-kho`; nhãn ngắn `nav.companyWarehouses` để thanh vừa 1.366 px ở cả hai ngôn ngữ) · Bảng lương (`/bang-luong`). Tám mục chỉ vừa 1.366 px khi lề mục là 8 px tới dưới 1.536 px (`2xl:px-3.5` từ 1.536 px). Điều phối
   viên: Chuyến hàng · Giám sát · Kho kiện (chỉ đọc) · Yêu cầu giao · Đội xe · Bảng điều khiển. Nhân viên kho: Kho · Kho kiện · Khách hàng. Tài xế: một
   mục về màn của mình (thanh chỉ hiện ở màn hồ sơ). Quản lý nền tảng: Gói cước · Lịch sử gói cước · Công ty (chỉ xem danh sách; tạo, sửa công ty là của quản trị hệ thống) · Đơn dùng thử. Hỗ trợ khách hàng: Hỗ trợ ·
-  Liên hệ của khách; nút "Đổi gói khách hàng" trên thanh. Màn chính của ba vai trò nền tảng vẫn là màn riêng của từng vai trò. Màn mới
+  Liên hệ của khách (không có nút đổi gói của khách trên thanh). Màn chính của ba vai trò nền tảng vẫn là màn riêng của từng vai trò. Màn mới
   thêm một dòng vào `NAV_SCREENS` và mã của nó vào `NAV_ITEMS`, trong issue của màn đó.
 - Loại kiện và In nhãn không có mục riêng, mở từ màn Kho kiện (nút "Loại kiện" trên dải tiêu đề, nút quay lại ở hai màn kia); Loại xe mở từ màn
   Đội xe; Tra cứu kiện: điều phối viên mở bằng nút "Tra cứu kiện" trên dải tiêu đề của Kho kiện, nhân viên kho bằng nút 56 px ở thanh màn chính `/kho`.
@@ -187,7 +357,7 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   chuyến đã mở màn đó (`exitAction` hỏi quyền `trips.view`, không hỏi tên vai trò).
 - **Thanh ngang 60 px trên dải trời** (`app/NavRail.tsx`, V2.3): logo trái, nhóm mục giữa trên kính tối (`.glass-nav`), tìm nhanh · ngôn ngữ ·
   chuông · tài khoản phải. Mục đang mở nằm dưới kính cyan (trong + viền + quầng, `--nav-on`), và kính đó là **chỉ báo trượt theo con trỏ**
-  (`useGlassFollow`, `.glass-follow`): bám mục đang rê / focus, về mục đang mở khi con trỏ rời thanh. Chỉ báo là phản hồi nền duy nhất; mục
+  (`components/useGlassFollow` — dùng chung với đầu trang công khai, `activeSelector` chọn mục nghỉ —, `.glass-follow`): bám mục đang rê / focus, về mục đang mở khi con trỏ rời thanh. Chỉ báo là phản hồi nền duy nhất; mục
   đang mở chỉ có chữ trắng 600, **không** nền riêng, nếu không sẽ thành hai lớp chồng nhau. Ngôn ngữ trên thanh là một nút quả địa cầu kèm mã
   ngôn ngữ ("VI") mở menu chọn (`components/LanguageMenu.tsx`); màn toàn màn hình kho/tài xế giữ hai nút `LanguageSwitch` 56 px. Mọi chỗ chọn
   ngôn ngữ — `LanguageMenu`, `LanguageSwitch`, và `LanguageSwitch` của app mobile — dùng icon `Globe` của Lucide, không dùng `Languages`. Vòng focus trên dải trời là `--cyan-300`
@@ -253,7 +423,8 @@ cùng ý đó, trừ sự kiện máy chủ chưa ghi (mục 9 "Nối backend").
 - **Bắt buộc theo Spec** ([docs/build-spec.md](docs/build-spec.md); quyết định ở [docs/prd.md](docs/prd.md) D-01 → D-39): đơn vị cm/kg, hệ toạ độ, mô hình
   dữ liệu và contract `OptimizationService`, validation, nhãn **MOCK RESULT**, acceptance criteria mục 15. Khi luật trong file này mâu thuẫn
   với phần bắt buộc của Spec, Spec thắng và phải sửa luật. Cấu trúc thư mục, component, thư viện được điều chỉnh cho khớp repo.
-- Mọi kết quả từ mock có badge **MOCK RESULT** (không dịch). Không có chữ kiểu "AI optimized", không đặt tên service là `AIService`.
+- Mọi kết quả từ mock có badge **MOCK RESULT** (không dịch). Ngoại lệ: hai trang công khai `/gioi-thieu`, `/bang-gia` không hiện nhãn
+  (mục 1 "Khung 3D chuyến mẫu") — số ở đó vẫn kèm câu nguồn. Không có chữ kiểu "AI optimized", không đặt tên service là `AIService`.
 - Giao diện chuyển được **vi / en** (D-07); tiếng Việt là ngôn ngữ mặc định và nguồn chuẩn của từ điển.
 - Quyết định và issue của giai đoạn sau Review 1 nằm ở [docs/prd-v2.md](docs/prd-v2.md) và [docs/issues-2-fe/](docs/issues-2-fe/README.md) — tài liệu
   nội bộ, chỉ có trên máy của nhóm (mục 13); đọc hai tài liệu đó trước khi làm việc thuộc giai đoạn này. Luật ở các mục dưới mô tả code hiện tại;
@@ -360,19 +531,34 @@ src/
     billing/            gói cước và credit của công ty `/goi-cuoc`, trang thanh toán giả lập `/thanh-toan/gia-lap`
     platform/           màn của nền tảng: danh mục gói cước `/nen-tang/goi`, Công ty `/nen-tang/cong-ty`
     support/            yêu cầu hỗ trợ: màn `/ho-tro`, hộp thoại `SupportTicketDialog` của người dùng công ty, cuộc trao đổi dùng chung `TicketThread`
-    marketing/          hai trang công khai ngoài `RequireAuth`: giới thiệu `/gioi-thieu` (kèm form liên hệ của khách `ContactForm`) và bảng giá
-                        `/bang-gia`; khung chung `PublicPage` (đầu trang `PublicHeader`, chân trang `PublicFooter`, cuộn tới neo `useHashScroll`);
-                        khung 3D chuyến mẫu `LandingStage` (cổng `useStageGate`, phần 3D ở `viewer3d/LandingStageViewer`)
+    marketing/          bốn trang công khai ngoài `RequireAuth`: giới thiệu `/gioi-thieu` (kèm form liên hệ của khách `ContactForm`), bảng giá
+                        `/bang-gia`, chính sách bảo mật `privacy/` (`PrivacyPage`, `/chinh-sach-bao-mat`) và điều khoản sử dụng `terms/`
+                        (`TermsPage`, `/dieu-khoan-su-dung`) trên khung pháp lý chung `legal/` (`LegalPage`, `LegalHeader`, `LegalToc`,
+                        `LegalFooterCards`, `useActiveSection`, số dùng chung `legal-facts.ts`); Hỏi đáp `faq/` (`LandingFaq`,
+                        chủ đề `faq-topics.ts`, JSON-LD `FaqStructuredData`); khung chung `PublicPage` (đầu trang `PublicHeader`, chân trang `PublicFooter` + `footer/`, cuộn tới neo
+                        `useHashScroll`); khung 3D chuyến mẫu `LandingStage` (cổng `useStageGate`, phần 3D ở `viewer3d/LandingStageViewer`);
+                        "Ba chuyện quen thuộc" `LandingProblems`; "Một chuyến hàng" `journey/` (`LandingJourney`, thùng xe `JourneyTruck`,
+                        hình học + tiến độ thuần `journey-model.ts`, `useJourneyProgress`, `useJourneySample`); "Vì sao xếp tay không
+                        xuể" `why/` (`LandingWhy`, phép đếm `why-count.ts`); "Một chuyến, bốn màn" `roles/` (`LandingRoles`, khung
+                        `DeviceFrame`, bốn màn thu nhỏ, số mẫu `roles-model.ts`); "Thử với hàng của bạn"
+                        `try/` (`LandingTry`, luật form `try-form.ts`, request `try-request.ts`, số của ba phương án `try-outcome.ts`,
+                        `try-api.ts` → `useTryRun`);
+                        chữ và khối hiện một lần `reveal/` (`RevealProvider` — một IntersectionObserver —, `Reveal`, `RevealWords`,
+                        `FlowHeading`, `LineRise`, `TextRibbon`, `Odometer`, `LumoSays`, `split-text.ts` thuần, `reveal.css`); trợ lý "Hỏi Lumo"
+                        `assistant/` (nút mở `AssistantLauncher`, khung chat lười `AssistantPanel`, bộ câu trả lời `assistant-kb.ts` + khớp
+                        `assistant-match.ts` + tính gói `assistant-advisor.ts` thuần, `assistant-api.ts`, `assistant-session.ts`)
     contacts/           yêu cầu liên hệ của khách `/lien-he-khach` (quản trị hệ thống, hỗ trợ khách hàng): bảng, khung xử lý `ContactPanel`
   lib/                  format, helper, mock dùng chung, api client
     i18n/               từ điển vi/en (mỗi nhánh một file trong vi/, en/), provider, hook
+    seo/                thẻ của trang công khai (mô tả, robots, canonical, Open Graph), JSON-LD, `robots.txt` / `sitemap.xml`
+                        (`site-files.ts` không import gì — `vite.config.ts` cũng dùng)
     mock-db/            kho in-memory (LM-026). Quy ước tên: `<x>-model.ts` kiểu + hằng số + luật thuần, `db-<x>.ts` hàm kho (mọi hàm
                         đọc/ghi qua `ctx.scope`), `db-api-<x>.ts` hàm công khai, `seed-<x>.ts` dữ liệu mẫu. Đáng biết: `tenancy.ts` (cách ly theo
                         công ty của phiên; `tenancy.test.ts` liệt kê mọi hàm công khai), `session-role.ts` (người đăng nhập và kiểm vai trò),
                         `db-revisions.ts` + `revisions.ts` (revision bất biến, Duyệt, lần chạy tối ưu), `seed-phuong-nam.ts`, `seed-shift.ts`, `clock.ts` (đồng hồ mô phỏng), `tab-sync.ts` + `tab-sync-tables.ts` (đồng bộ
                         kho giữa các tab cùng trình duyệt; `app-db.ts` nối nó vào kho của app), `trip-stops.ts` (điểm giao tự sinh, thuần),
                         `trip-route.ts` (tuyến của chuyến), `trip-report.ts` (báo cáo chuyến, thuần), `verify-model.ts` (đối chiếu kiện ba
-                        mức), `source-types.ts` + `db-api-review1.ts` (kiểu và hàm của loại kiện, loại xe, lần chạy, nhãn QR, seal)
+                        mức), `source-types.ts` + `db-api-review1.ts` (kiểu và hàm của loại kiện, loại xe, lần chạy, nhãn QR)
   types/                type dùng từ hai feature trở lên
   domain/               logic nghiệp vụ THUẦN theo Spec — không React, không Three.js
     geometry/           số (roundCm, EPSILON), hộp, chồng lấn, biên thùng, 6 hướng đặt, lưới không gian
@@ -393,7 +579,8 @@ src/
     optimization/       interface OptimizationService, MockOptimizationService, worker; mock xếp kệ theo vùng điểm giao (`shelf-packer.ts`,
                         `shelf-walls.ts`); ba phương án ứng viên một job (`mock-candidates.ts`, `candidate-layouts.ts`, `mock-plan.ts`); xếp kiện
                         nhận dọc đường vào vùng trống `reoptimize-freed-zone.ts`
-  test/                 setup và dữ liệu test dùng chung (setup-dom.ts, spec-13.ts, placements.ts, engine-plans.ts)
+  test/                 setup và dữ liệu test dùng chung (setup-dom.ts, spec-13.ts, placements.ts, engine-plans.ts; `intersection-observer.ts`,
+                        `match-media.ts` giả hai API trình duyệt cho test chuyển động)
 tests/                  unit test của viewer3d (Vitest)
 e2e/                    Playwright
 ```
@@ -613,7 +800,8 @@ Mẫu: `design/v2.3/screens/web/ThanhPhan.jpg`, `TrangThaiChung.jpg`, `MenuToanC
   hoàn thành, đã huỷ chip đỏ trọn (không gạch chữ). Xe: sẵn sàng xanh lá, đang phục vụ chuyến xanh lam có quầng, bảo dưỡng xám. Tài khoản: đang
   hoạt động xanh lá, đã khoá xám. `shape="tag"` (20 px) cho phiên bản, "Đã chỉnh tay" (xanh lam) và **MOCK RESULT** (`tone="mock"`).
   Thang **xanh lam** `--azure-*` (khác hẳn cyan thương hiệu) cho "đang chạy"; `@theme` xoá thang `violet`/`purple` của Tailwind: không dùng tím ở
-  đâu trong app. "Đã huỷ" là chip đỏ trọn, không gạch chữ.
+  đâu trong app — ngoại lệ duy nhất: gradient trợ lý `--genai-*` của trợ lý "Hỏi Lumo" (viền nút mở, vòng ảnh đầu khung chat, vạch và chữ
+  "đang trả lời" — mục 1). "Đã huỷ" là chip đỏ trọn, không gạch chữ.
   Chuyến có **6 trạng thái của backend** (`DRAFT`, `PLANNED`, `LOADING`, `IN_TRANSIT`,
   `DELIVERED`, `CANCELLED`): nháp xám đặc · đã lập kế hoạch cyan đặc · đang xếp hàng và đang vận chuyển xanh lam có quầng · đã giao
   xanh lá đặc · đã huỷ đỏ đặc. "Đang tối ưu" là tiến trình job (hộp thoại tối ưu), không phải trạng thái. Phương án và tiến độ kho là
@@ -639,7 +827,7 @@ Mẫu: `design/v2.3/screens/web/ThanhPhan.jpg`, `TrangThaiChung.jpg`, `MenuToanC
   chân hộp thoại `sticky bottom-0`), từ 768 px vẫn ở giữa màn; focus trap, Esc, tiêu đề có nhãn không đổi, reduced-motion theo luật chung. Dùng ở màn tài xế:
   "Báo sự cố" của kiện (`ReportIssueDialog`), "Sự cố trên đường" (`ReportExceptionDialog touch`), tờ "Thêm" (`StopMoreActions`), hộp đối chiếu ba mức (`PackageVerify`, cũng dùng ở kho: máy tính bảng từ 768 px vẫn là hộp giữa màn) và hộp nhận hàng dọc đường
   (`PickupRequestDialog`, điều phối viên trên desktop vẫn là hộp giữa màn). **Toast ở màn cảm ứng của kho và tài xế**: không có toast thành công khi chính
-  màn đã cho thấy kết quả (banner giờ đến, dòng kiện đổi trạng thái, số liệu tiến độ, sang điểm giao kế tiếp, vùng kết quả trong hộp đối chiếu, số seal đã ghi);
+  màn đã cho thấy kết quả (banner giờ đến, dòng kiện đổi trạng thái, số liệu tiến độ, sang điểm giao kế tiếp, vùng kết quả trong hộp đối chiếu);
   nơi thay toast là vùng đọc được bằng trình đọc màn hình (`role="status"` / `aria-live`). Lỗi và cảnh báo (khách từ chối, xác nhận tay chờ duyệt, báo thiếu,
   kiện hỏng) luôn có toast. Toast thành công chỉ giữ khi màn không cho thấy gì khác.
 - **Toast**: bo 14, ô icon 30 px tô theo nghĩa; đặt dưới nút hành động của dải trời (`offset` 152).
@@ -711,7 +899,7 @@ banner theo pha. Thanh 56 px của Planner vẫn là header riêng theo lề `px
 **Dải trời nối liền**: thanh điều hướng và `PageHero` là hai phần tử cùng lớp `.sky` gắn ảnh vào khung nhìn (`background-attachment: fixed`), không
 phải một khối bọc. **Nội dung không đè lên dải**: màn trong khung ứng dụng bắt đầu ngay dưới dải trời — vùng cuộn có lề trên 24 px (`py-6`),
 `PageHero` không còn prop `overlap`; dải có tab của màn chừa 16 px dưới tab. Card đè lên dải (V2.3) đã bỏ theo quyết định của chủ sản phẩm
-(13/11/2026): card trượt lên che tiến trình và tab khi cuộn, nhìn lệch. Utility `sky-overlap` chỉ còn ở hai trang công khai và trang tài liệu.
+(13/11/2026): card trượt lên che tiến trình và tab khi cuộn, nhìn lệch. Utility `sky-overlap` chỉ còn ở các trang công khai và trang tài liệu.
 
 Lề ngang của thanh điều hướng, thanh tiêu đề và vùng cuộn dùng utility `px-shell` (`index.css`): 24 px, và khi cột rộng hơn `--shell-max` thì nội
 dung dừng ở `--shell-max`, căn giữa. Là padding chứ không phải một div `max-w` bọc ngoài, để vùng cuộn vẫn rộng hết cột (thanh cuộn ở mép) và nền
@@ -745,9 +933,13 @@ Nguồn: `design/brand/` (`source/` là file người dùng giao; `logo-mark*.sv
 - **Lumo** (`components/brand/Lumo.tsx`, `pose`; ảnh WebP 320 px khoảng 20 KB mỗi tư thế ở `src/assets/brand/lumo/`, tải theo màn):
   mỗi tư thế **một nghĩa cố định** — `greet` chào (đăng nhập) · `empty` chưa có dữ liệu (danh sách rỗng) · `notFound` không tìm thấy (404)
   · `error` có sự cố (lỗi tải, 403, lỗi render, chuyến đã huỷ ở kho / tài xế) · `done` xong việc lớn (kho xếp xong, tài xế giao xong)
-  · `warehouseWaiting` kho chờ hàng · `driverWaiting` tài xế chờ chuyến. Trạng thái rỗng dùng `EmptyState mascot`
+  · `warehouseWaiting` kho chờ hàng · `driverWaiting` tài xế chờ chuyến. Bảy tư thế **chỉ của hai trang công khai**: toàn thân `point`
+  chỉ vào việc đang diễn ra · `carry` mang kiện · `scan` đối chiếu kiện · `tablet` phương án trên máy tính bảng; bán thân ló lên trên một
+  cạnh ngang `explain` giải thích · `idea` gợi ý · `wink` mời liên hệ. Ảnh không lật gương (mũ và áo có chữ). Trạng thái rỗng dùng `EmptyState mascot`
   (`compact` 96 px trong card); `ErrorScreen` bắt buộc `mascot`; `WarehouseEmpty` / `DriverNotice` mặc định tư thế chờ. Luôn `alt=""` +
-  `aria-hidden`, không động. **Không** ở bảng, form, Planner, bảng điều khiển (kể cả kỳ không có dữ liệu), toast, hộp thoại; ở màn kho và
+  `aria-hidden`, không động — trừ trang giới thiệu, nơi Lumo đổi tư thế và bong bóng `LumoSays` gõ chữ một lần (lời trong bong bóng là
+  nội dung đọc được, ảnh vẫn `aria-hidden`). Trợ lý "Hỏi Lumo" của hai trang công khai dùng Lumo bán thân làm ảnh đại diện trong ô vuông bo
+  góc (`AssistantAvatar`): `wink` ở nút mở, `explain` ở đầu khung chat và cạnh câu trả lời, `idea` ở màn chào — đứng yên, `aria-hidden`. **Không** ở bảng, form, Planner, bảng điều khiển (kể cả kỳ không có dữ liệu), toast, hộp thoại; ở màn kho và
   tài xế chỉ màn rỗng, màn lỗi và màn xong việc.
 
 ### Cấm tuyệt đối
@@ -760,7 +952,7 @@ Nguồn: `design/brand/` (`source/` là file người dùng giao; `logo-mark*.sv
 - Kính (blur nền, viền sáng) dùng **theo lớp**, không rải tuỳ ý. **Được** ở chrome điều hướng (`.glass-nav` trên dải trời) và panel điều khiển
   nổi đè lên khung 3D nền tối (`.glass-dark`): kính là kính **tối**. Ô số liệu là card nền đặc. **Không** ở bảng, form, inspector và mọi bề mặt
   người dùng đọc lâu — những chỗ đó giữ nền đặc, phân tách bằng viền 1px. Không lồng kính trong kính. Luôn có nền đặc dự phòng khi trình duyệt
-  thiếu `backdrop-filter`, và tôn trọng `prefers-reduced-transparency`. Viền phát sáng không dùng ngoài các chỗ kể trên. Màn kho và tài xế dùng
+  thiếu `backdrop-filter`, và tôn trọng `prefers-reduced-transparency`. Viền phát sáng không dùng ngoài các chỗ kể trên và gradient quay của trợ lý "Hỏi Lumo" — viền nút mở, vòng ảnh đầu khung chat (mục 1, `assistant.css`). Màn kho và tài xế dùng
   điều khiển đặc (mục 1); blur ở đó (tablet trong kho sáng, đeo găng; điện thoại ngoài nắng) chưa có số đo tương phản và FPS trên thiết bị thật,
   phải đo trước khi coi kính ở hai màn đó là đã chốt.
 - Toast nằm dưới thanh tiêu đề (`offset` trên 80 px): không che nút hành động ở góc phải header — rê chuột lên toast làm nó dừng đếm giờ
@@ -784,7 +976,9 @@ Nguồn: `design/brand/` (`source/` là file người dùng giao; `logo-mark*.sv
   màn đăng nhập, cũng là hình dự phòng của trang giới thiệu) hoặc là linh vật **Lumo** (LM-105, theo bảng tư thế ở mục "Thương hiệu"); không mượn
   ảnh trang trí bên ngoài, không số liệu hay lời khen của khách hàng nghĩ ra. Hai trang công khai nằm ngoài khung ứng dụng nên cuộn cả tài liệu
   (đầu trang dính trên cùng). Hình của trang giới thiệu dựng từ chính sản phẩm: khung 3D chuyến mẫu, sơ đồ đẳng cự, mã QR mẫu không thuộc kiện
-  nào; lưới tính năng có một thẻ nền tối đặc `--panel-dark`.
+  nào; thùng xe SVG của "Một chuyến hàng".
+  Sân kho quanh xe trong khung 3D trang giới thiệu là cảnh minh hoạ dựng bằng chính bộ máy 3D: không chữ, không số, không biển hiệu; hộp trên làn chờ
+  là kiện thật của lần chạy.
 
 **Cuộn trong khung ứng dụng**: trang không bao giờ cuộn; mỗi màn tự cuộn vùng nội dung của nó. `AppShell` đặt màn
 trong một **hàng** flex `relative min-h-0` dưới thanh điều hướng. Gốc màn `flex min-w-0 flex-1 flex-col`, vùng cuộn
@@ -1007,7 +1201,7 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
   pinned? }`, vị trí draft là cm. Header hiện **MOCK RESULT** khi `isMockResult`. Chế độ màu thứ hai là **theo kiện gốc** (`packageId`) vì contract
   không có đơn hàng; `packaging` của kết quả là một kiểu trung tính.
 - **Kho** (`/kho`, LM-086, FE-6-01 → FE-6-05): danh sách chuyến chia **nhóm theo trạng thái và dòng phụ** (`WAREHOUSE_STAGES`): Đang xếp hàng (tiến
-  độ) · Chờ soạn (Đã lập kế hoạch, bản duyệt còn hiệu lực) · Xếp xong — chờ xuất phát (còn ghi được số seal tới khi tài xế xuất phát) · Chờ điều
+  độ) · Chờ soạn (Đã lập kế hoạch, bản duyệt còn hiệu lực) · Xếp xong — chờ xuất phát (kho không ghi số seal: bỏ theo quyết định của chủ sản phẩm 19/11/2026) · Chờ điều
   phối tối ưu lại (bản duyệt lỗi thời, không có nút); nút chính của màn là chuyến đang xếp dở, không thì chuyến chờ soạn sớm nhất.
   `/kho?chuyen=<mã>` là phiên của chuyến theo bản duyệt chốt lúc `startLoading` — bước Soạn hàng rồi bước Xếp, tiến độ ghi vào kho qua các hàm
   đối chiếu (mục 9), mở lại tiếp tục ở kiện chưa ghi đầu tiên; bản duyệt lỗi thời **không** vào phiên (chờ điều phối duyệt lại). Scene cm đưa cho
@@ -1115,7 +1309,7 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
 
 Ảnh nhỏ, không xoay được thì vẽ bằng SVG đẳng cự qua `lib/isometric.ts` — nhẹ hơn
 nhiều và không kéo Three.js vào chunk. Đang dùng ở: hình thùng xếp dần của hộp thoại chạy tối ưu
-(`optimization/RunFigure`, mục 6 "Không bịa số"), ảnh thu nhỏ màn so sánh phương án, hình minh hoạ hướng đặt kiện ở kho, skeleton lúc
+(`optimization/RunFigure`, mục 6 "Không bịa số"), ảnh thu nhỏ phương án (`components/PlanThumbnail`, màn so sánh phương án), hình minh hoạ hướng đặt kiện ở kho, skeleton lúc
 đang tải Three.js, hình minh hoạ màn đăng nhập và sơ đồ tuyến ở chi tiết chuyến (`trips/RouteDiagram.tsx`, LM-097).
 Hình chỉ cần hình học thì lấy toạ độ mặt qua `boxFacePoints` / `shellFacePoints` và tô bằng class token (`fill-azure-500`), không đưa mã hex
 vào component.
@@ -1145,6 +1339,15 @@ chỉ đi tới máy chủ của mình qua `api-client`).
 | Một bước phát lại xếp hàng | 400–700ms | decelerate |
 
 Bắt buộc hỗ trợ `prefers-reduced-motion`: mọi thời lượng trên 200ms rút về 100ms, tắt chuyển động lớn.
+
+**Trang giới thiệu** (`features/marketing/reveal`; token `--dur-reveal`, `--dur-reveal-long`, `--dur-odometer`, `--dur-pose`,
+`--reveal-rise`, `--stagger-word`, `--stagger-item` ở `index.css`): chuyển động chỉ bật khi có `IntersectionObserver`, `matchMedia` và
+người xem không chọn giảm chuyển động (`data-motion="on"`); tắt, hay nằm ngoài `RevealProvider` (như `/bang-gia`), thì mọi thứ ở trạng
+thái cuối ngay từ đầu và DOM là chữ thường — **không bao giờ có nội dung ẩn chờ chuyển động**. Mỗi cổng mở một lần khi khối vào khung
+nhìn (ba ngưỡng 0, 0,07, 0,15; khối cao hơn khung nhìn dùng `Reveal at={0.07}`), cuộn ngược không chạy lại; phần tử nhận focus và trang in
+hiện ngay trạng thái cuối. Chữ tách để chuyển động (`split-text.ts`) giữ tên truy cập: một bản `sr-only` và một bản `aria-hidden` — test
+vẫn đọc tiêu đề bằng `exact: true`. Đoạn văn dài nhô lên cả khối (`RevealWords mode="ink"`), không tô từng từ; hiệu ứng mới trên chữ chỉ
+dùng opacity / transform. Mỗi chuyển động tự chạy xong trong 1,5 giây; chuyển động theo cuộn không tự chạy.
 
 ## 9. Quy ước code
 
@@ -1429,7 +1632,7 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   phương án mới thì bắt đầu phiên mới) — và `ServerLoadingSession`: "Bắt đầu soạn hàng" `POST /api/warehouse/tasks/{tripId}/start` gửi `{ staging: true }` (bước soạn
   là tuỳ chọn ở máy chủ, web và app di động đều gửi: lượt gọi không gửi thì phiên không có bước soạn — `stagingRequired` vắng là đã soạn đủ), mở lại phiên ở bất kỳ thiết
   bị nào `GET /api/warehouse/tasks/{tripId}` (cùng dạng; phiên đọc từ máy chủ, không giữ ở tab). Phiên có lòng thùng và từng kiện (kích thước,
-  vị trí, mã QR, mã kiện, điểm giao, trạng thái, đã soạn, báo thiếu, xác nhận tay), số xác nhận tay chờ và số seal. **Soạn hàng**
+  vị trí, mã QR, mã kiện, điểm giao, trạng thái, đã soạn, báo thiếu, xác nhận tay) và số xác nhận tay chờ. **Soạn hàng**
   (`ServerStagingStep`, như `StagingStepPage`): đối chiếu không cần thứ tự `POST …/tasks/{tripId}/staging/packages/{packageId}/confirm` (quét lại
   là `alreadyStaged`, không ghi), xác nhận tay `…/manual` (chỉ tính là đã soạn khi điều phối viên duyệt; còn chờ thì dòng ghi "chờ duyệt" và bước soạn chưa xong, bị từ
   chối thì về chưa soạn), "Báo thiếu" `…/shortage`; soạn đủ thì màn tự sang bước xếp (`STAGING_INCOMPLETE`).
@@ -1455,8 +1658,9 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   `POST /api/warehouse/placements/{id}/confirm` (`{ method: QR | CODE }`, như bước soạn), xác nhận tay `…/manual`, ghi sai lệch vị trí `…/deviation` (cm nguyên + lý do), "Kiện hỏng"
   `…/damaged` (không kiện nào tựa lên thì bỏ lại kho — trạng thái `DAMAGED` —, có thì chuyến về Đã lập kế hoạch; số kiện tựa lên trên hộp
   thoại đếm như máy chủ, `restingCount`), xong thì `POST /api/warehouse/tasks/{tripId}/complete` (`INCOMPLETE_LOADING`; còn xác nhận tay chờ:
-  nút mờ kèm lý do, máy chủ `LOADING_MANUAL_CONFIRM_PENDING`); xếp xong ghi / đổi số seal `POST …/tasks/{tripId}/seal` tới lúc xe rời kho
-  (`ServerLoadingFinished`). Staging gửi `{ method, code }`; deviation có `tripId` trong body, manual/damaged có query `tripId`.
+  nút mờ kèm lý do, máy chủ `LOADING_MANUAL_CONFIRM_PENDING`); xếp xong là màn `ServerLoadingFinished`, nút
+  về danh sách là nút chính duy nhất — app không gọi `POST …/tasks/{tripId}/seal` của máy chủ nữa.
+  Staging gửi `{ method, code }`; deviation có `tripId` trong body, manual/damaged có query `tripId`.
   Mọi POST thành công đều GET lại phiên; khi lỗi/timeout/conflict, query đang mở GET lại trạng thái thật và giữ lỗi, không xác nhận cục bộ.
   Backend chỉ ghi trên approved plan hiện hành không stale, Trip LOADING và execution IN_PROGRESS; complete kiểm soạn đủ, còn kiện hợp lệ
   và không manual pending, giữ Trip LOADING cho Driver xuất phát. Đọc/chọn kiện 3D không gửi confirm. Điều phối viên quyết báo thiếu ở thẻ "Kiện kho báo thiếu" của Chi tiết chuyến máy chủ (`MissingPackagesCard server`,
@@ -2201,8 +2405,8 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   trả lời (người, vai trò, nội dung, giờ — tên và vai trò cũng chụp lúc trả lời vì người của công ty không đọc được tài khoản nền tảng). Kho
   (`db-support.ts`, `ctx.scope.supportTickets` theo công ty rồi lọc tiếp theo người gửi): **người của công ty chỉ thấy và trả lời yêu cầu do chính
   mình gửi** — của đồng nghiệp hay của công ty khác đọc là `NOT_FOUND`, ghi vào yêu cầu của công ty khác `FORBIDDEN_COMPANY`; **hỗ trợ khách hàng
-  thấy mọi yêu cầu** và là người duy nhất đổi trạng thái (`setSupportTicketStatus`, kể cả mở lại) và đọc khung công ty (`getSupportCompanyPanel`: gói,
-  `planStatus` tính theo đồng hồ, số dư, 20 giao dịch credit gần nhất, qua `ctx.scope.platform*`); vai trò nền tảng khác `ROLE_NOT_ALLOWED`; gửi và
+  thấy mọi yêu cầu** và là người duy nhất đổi trạng thái (`setSupportTicketStatus`, kể cả mở lại); kho còn `getSupportCompanyPanel` (gói,
+  `planStatus` tính theo đồng hồ, số dư, 20 giao dịch credit gần nhất, qua `ctx.scope.platform*`) nhưng không màn nào đọc; vai trò nền tảng khác `ROLE_NOT_ALLOWED`; gửi và
   trả lời cần phiên (`NOT_SIGNED_IN`). Hỗ trợ khách hàng trả lời yêu cầu Mở thì yêu cầu sang Đang xử lý; yêu cầu Đóng không nhận trả lời
   (`TICKET_CLOSED`, mở lại bằng đổi trạng thái); sai dữ liệu `TICKET_INVALID`. Nhật ký nhóm `ticket` (`created` mang `ticketKind`, `replied` mang
   người gửi ở `requestedBy`, `statusChanged` mang `ticketStatus`) — **thuộc công ty của yêu cầu** (tham số `companyId` của `ctx.log`) dù người làm
@@ -2210,8 +2414,8 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   `SupportTicketDialog` mở từ mục "Yêu cầu hỗ trợ" của menu tài khoản (`NavRail`, và `AccountMenu` 56 px của kho, tài xế — cỡ cảm ứng ở nút, ô nhập,
   chữ) — danh sách yêu cầu của mình, gửi yêu cầu mới, đọc và trả lời. **`/ho-tro`** (`support.handle`, màn chính của hỗ trợ khách hàng): bảng mọi
   yêu cầu (hoạt động gần nhất trước; lọc `cong-ty`, `loai`, `trang-thai`, tìm theo tiêu đề / mã / người gửi — trên URL), `?ticket=<mã>` mở cuộc trao
-  đổi ở cột phải (trả lời, ô "Trạng thái yêu cầu") kèm `CompanyPanel` chỉ đọc; màn không có nút chính ngoài "Gửi trả lời". Khoá Query `['support',
-  'tickets' | 'panel', mã công ty]`, `staleTime: 0`; mọi lần ghi làm mới `['support']`, `['audit']`, `['notifications']`.
+  đổi ở cột phải (trả lời, ô "Trạng thái yêu cầu") — không có khung thông tin công ty, gói hay giao dịch credit của khách; màn không có nút chính
+  ngoài "Gửi trả lời". Khoá Query `['support', 'tickets']`, `['support', 'thread', mã yêu cầu]`, `staleTime: 0`; mọi lần ghi làm mới `['support']`, `['audit']`, `['notifications']`.
 - **Liên hệ của khách** (entity `ContactOfGuest` của backend; `contact-model.ts`, `db-contacts.ts`, `DbState.guestContacts`, seed `seed-contacts.ts`).
   `GuestContact` (`LH-NNN`): họ tên, email, số điện thoại / tên công ty / gói quan tâm / nội dung tuỳ chọn, loại `INQUIRY | DEMO_REQUEST | PRICING |
   CONTRACT | OTHER`, trạng thái `NEW | IN_PROGRESS | RESOLVED | CLOSED`, người nhận việc (mã + tên chụp lúc giao), ghi chú nội bộ, `resolvedAt` (lần
@@ -2230,7 +2434,14 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   tối ưu) và câu "Bản demo hiện tối ưu ở hạng Cơ bản cho mọi gói."; mỗi gói một nút phụ "Liên hệ tư vấn" (tên gói chỉ cho trình đọc màn hình, nên
   tên truy cập "Liên hệ tư vấn gói Pro" bắt đầu bằng đúng chữ hiện ra) mở `/gioi-thieu?goi=<mã gói>&loai=bao-gia#lien-he` — form đọc `goi`,
   `loai` (slug ở `lib/contact-slugs.ts`, dùng chung với bộ lọc của màn) để chọn sẵn; gói lạ hoặc đã ngừng bán thì không chọn, loại lạ là "Hỏi
-  thông tin". Kho từ chối thì banner `danger` ngay trên nút gửi, dữ liệu đang nhập giữ nguyên. Gửi xong form nhường chỗ cho vùng
+  thông tin". **Ô đồng ý với chính sách bảo mật** (Checkbox Radix, bắt buộc — zod `consentRequired`; nhãn có liên kết tới `/chinh-sach-bao-mat?lang=…`
+  mở ở thẻ mới) chỉ mở được nút gửi, **không gửi đi** (`toNewContact` không có nó). **Chặn chương trình gửi tự động** (`looksAutomated`,
+  `contact-form.ts`): ô bẫy `name="website"` ngoài react-hook-form (đẩy ra ngoài khung nhìn, không `display: none`; `aria-hidden`, `tabIndex -1`,
+  `autoComplete="off"`) có chữ, hoặc gửi khi form hiện ra chưa đủ `MIN_FILL_MS` (3 giây, tính từ lúc form mount — không từ phím đầu tiên, vì trình
+  duyệt tự điền thì người thật không gõ phím nào; "Gửi yêu cầu khác" dựng lại form nên đếm lại) — thì không gọi kho hay máy chủ, không báo thành
+  công giả (D-20), chỉ banner `danger` ngay trên nút gửi; dữ liệu đang nhập giữ nguyên, ô bẫy được xoá để người thật bấm gửi lại là đi. Test DOM
+  giả `Date` (`vi.useFakeTimers({ toFake: ['Date'] })`) rồi tua 3 giây; E2E chờ 3 giây trước khi gửi. Kho từ chối thì banner `danger` ngay trên
+  nút gửi, dữ liệu đang nhập giữ nguyên. Gửi xong form nhường chỗ cho vùng
   `role="status"` "Đã ghi nhận yêu cầu LH-…" (tiêu đề nhận focus); "Gửi yêu cầu khác" đưa con trỏ về ô Họ tên. Nút chính của trang giới thiệu nằm
   ở phần mở đầu ("Nhận tư vấn", hay "Đăng ký trải nghiệm" khi nối backend), nên nút gửi của form là nút phụ. **`/lien-he-khach`** (`features/contacts`, `contacts.handle`): bảng mọi yêu cầu, mới nhất
   trước (lọc `trang-thai`, `loai`, tìm theo tên / email / điện thoại / công ty / mã — trên URL); bấm tên mở khung xử lý ở cột phải
@@ -2240,7 +2451,9 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   tiêu đề của khung nhận focus; đóng khung thì focus về liên kết tên của dòng đó. Người đang nhận việc mà tài khoản đã khoá vẫn hiện tên trong ô
   (mục mờ, không chọn lại được); danh sách người nhận việc tải lỗi thì ô có gợi ý tải lại; tên gói không đọc được thì hiện mã gói. Danh sách người
   nhận việc (`listContactHandlers`, chỉ người đang hoạt động) nối backend đọc `GET /api/contact-guests/handlers`. Khoá `['contacts', …]`, `staleTime: 0`; gửi và sửa làm
-  mới `['contacts']`, `['audit']`.
+  mới `['contacts']`, `['audit']`. Máy chủ nối dòng `[Phản hồi email lúc <Instant>]: …` vào ghi chú nội bộ mỗi lần gửi email cho khách: khung
+  hiện mốc đó thành ngày giờ như giờ gửi của yêu cầu hỗ trợ (`readableNote`, "19/11/2026 20:59"), chỉ đổi cách hiện — chưa sửa gì thì không có gì
+  để lưu. Yêu cầu đăng ký dùng thử đã nhận việc kết thúc bằng "Đã giải quyết" như mọi loại, không chuyển sang đơn dùng thử của quản lý nền tảng.
 
 ### Kiểm thử
 
@@ -2293,7 +2506,9 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
 Mọi màn trong `app/App.tsx` đều `lazy()`. Nhờ đó Three.js chỉ tải khi mở màn 3D, thư viện biểu đồ
 chỉ tải khi mở màn cần nó, và máy tính bảng ở kho không gánh code của dispatcher.
 Thêm màn mới thì thêm theo đúng lối này. Từ điển `en` cũng là chunk riêng (mục 6). Kho mẫu (`lib/mock-db`) vẫn nằm trong
-bundle đầu: `AuthProvider` và mọi `-api.ts` gọi nó đồng bộ.
+bundle đầu: `AuthProvider` và mọi `-api.ts` gọi nó đồng bộ. Nhưng **khách chưa đăng nhập không dựng kho** khi mở trang (dựng seed là việc
+nặng nhất lúc mở): `restoreSession(null)` chỉ xoá phiên của kho đã dựng (`peekMockDb`), bảng giá công khai đọc `SEED_PLANS` tới khi kho
+được dựng, và trang giới thiệu chỉ hỏi danh mục gói khi phần Gói cước hay form liên hệ tới gần khung nhìn (`useNearViewport`). E2E kiểm cả trang giới thiệu thì cuộn hết trang trước (`scrollThrough` ở `e2e/i18n-en.spec.ts`): form liên hệ chỉ hiện sau khi danh mục gói về.
 
 ## 10. Khả năng truy cập
 
@@ -2345,7 +2560,7 @@ cuối mục này. Chữ trong mockup không phải chuẩn — chuẩn là `lib
 | Tổng kết chuyến: Lumo thay dấu kiểm | Giữ Lumo nhỏ ở đầu thẻ, dấu kiểm ở từng điểm | Mục "Thương hiệu": tư thế xong việc |
 | Card đè lên dải trời (mọi màn có `PageHero`, màn Xếp xong, chờ duyệt lại) | Card nằm dưới dải, không đè | Quyết định của chủ sản phẩm: card che tiến trình và tab khi cuộn |
 | Đội xe: tab trạng thái trên dải trời; bảng vật cản một dòng 10 cột; nhãn "Chưa dùng trong tính toán" ở Trục xe | Giữ ô số làm công tắc lọc; bảng vật cản hai dòng; bỏ nhãn | Quyết định của chủ sản phẩm; trục xe đã dùng để tính tải trục |
-| Ma trận quyền 13 quyền × 5 vai trò | 37 quyền × 8 vai trò | Ma trận thật của sản phẩm |
+| Ma trận quyền 13 quyền × 5 vai trò | 38 quyền × 8 vai trò | Ma trận thật của sản phẩm |
 | Nhật ký nhóm theo ngày, có đường thời gian | Giữ bảng có sắp xếp, phân trang | Quyết định của chủ sản phẩm |
 | Đăng nhập có ảnh xe tải 3D; màn lỗi dùng ô icon và khối "Chi tiết kỹ thuật" | Hình đẳng cự từ `lib/isometric.ts`; Lumo; không hiện chi tiết kỹ thuật | Không mượn ảnh ngoài; mục "Thương hiệu"; không lộ stack cho người dùng cuối |
 | Ảnh đại diện tròn ở thẻ Hồ sơ | Ô vuông bo góc | Luật ảnh đại diện trong nội dung |

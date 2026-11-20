@@ -1,0 +1,257 @@
+import type { Locator, Page } from '@playwright/test'
+import { attachJson, expect, test } from './fixtures'
+import { drawnFrames, R3F_DEPS, waitDemandIdle, type R3FModule } from './viewer-helpers'
+
+/**
+ * Khung 3D "Sân kho kể chuyện" của trang giới thiệu, chạy thật trên SwiftShader: một lần chạy tối ưu ngay trên trình duyệt ra ba
+ * phương án, chuyện chừng 24 giây chạy một lần tới lúc đã giao điểm 1 (xếp xong, lăn bánh, tới điểm 1, dỡ hàng của điểm đó); chọn phương án
+ * khác thì xếp lại theo nó; nút ba trạng thái dừng được cả số trên thẻ chuyến lẫn khung hình; giảm chuyển động cho thấy ngay trạng thái xếp
+ * xong (không lăn bánh); dưới bộ chọn là số của phương án đang chọn; "Một chuyến hàng" so ba phương án của cùng lần chạy và thùng xe đi
+ * theo chặng đang đọc; neo `#lien-he` hiện tiêu đề ngay; điện thoại 390 px không cuộn ngang, bộ chọn là ba nút cao 56 px. Scene R3F
+ * đọc qua `_roots` như các suite viewer — trang giới thiệu không có bảng đo của `?debug` (`?debug&quality=` chỉ khoá tier), nên số draw
+ * call đọc thẳng từ renderer.
+ */
+test.use({ collectConsoleErrors: true })
+
+const STAGE = 'figure[data-story-status]'
+/** Chuyện dài chừng 24 giây nhưng mỗi khung hình chỉ tiến tối đa 250 ms: SwiftShader vẽ chậm thì chuyện chạy chậm theo. */
+const STORY_WAIT_MS = 120_000
+/**
+ * Trần draw call của khung nghỉ ở góc Toàn cảnh: max(40, cảnh khi chưa có sân kho + 3). Đo ngày 20/10/2026 trên SwiftShader, chuyện đã
+ * xong (cả cảnh / khi ẩn sân kho): high 34 / 32, balanced 27 / 25, low 20 / 18 — sân kho tốn đúng 2 ở mọi tier (mặt quét đã tắt). Khói
+ * xả lúc xe rời kho là một InstancedMesh, chỉ vẽ khi còn bụi khói nên khung nghỉ không tính nó.
+ */
+const DRAW_CALL_CAP = 40
+/** Sân kho (`DioramaScene`) thêm tối đa ba draw call: nền gộp, hộp của làn chờ, mặt quét (chỉ trong pha tối ưu). */
+const YARD_DRAW_CALLS = 3
+
+/** Số n của "Đang xếp n / 366" trên thẻ chuyến; `null` khi thẻ chưa (hay không còn) ở pha xếp. */
+async function loadingCount(page: Page): Promise<number | null> {
+  const match = /Đang xếp (\d+) \/ 366/.exec(await page.locator(STAGE).innerText())
+  return match ? Number(match[1]) : null
+}
+
+/** Số của phương án đang chọn, dưới ba nút của bộ chọn. */
+const figuresOf = (stage: Locator) => stage.locator('[data-stage-plan-figures]')
+
+/** Số draw call của khung hình vừa vẽ: renderer đặt lại bộ đếm mỗi lần vẽ. */
+function lastDrawCalls(page: Page): Promise<number> {
+  return page.evaluate(async (url) => {
+    const { _roots } = (await import(url)) as R3FModule
+    return _roots.get(document.querySelector('canvas')!)!.store.getState().gl.info.render.calls
+  }, R3F_DEPS)
+}
+
+/** Ẩn / hiện cả sân kho (`landing-diorama`) rồi xin một khung hình. */
+function showYard(page: Page, visible: boolean): Promise<void> {
+  return page.evaluate(async ({ url, visible }) => {
+    const { _roots } = (await import(url)) as R3FModule
+    const state = _roots.get(document.querySelector('canvas')!)!.store.getState()
+    state.scene.getObjectByName('landing-diorama')!.visible = visible
+    state.invalidate()
+  }, { url: R3F_DEPS, visible })
+}
+
+/** Draw call của khung nghỉ: cả cảnh, và khi tạm ẩn sân kho — phần chênh là của riêng sân kho. Hiện lại thì số trở về như cũ. */
+async function restingDrawCalls(page: Page) {
+  await waitDemandIdle(page, 500)
+  const scene = await lastDrawCalls(page)
+  await showYard(page, false)
+  await waitDemandIdle(page, 500)
+  const withoutYard = await lastDrawCalls(page)
+  await showYard(page, true)
+  await waitDemandIdle(page, 500)
+  expect(await lastDrawCalls(page)).toBe(scene)
+  return { scene, withoutYard }
+}
+
+/** Độ đục thật của tiêu đề và mọi từ tách của nó: tích độ đục của phần tử và các phần tử bao ngoài. */
+function shownOpacity(heading: Locator): Promise<number> {
+  return heading.evaluate((element) => {
+    const effective = (node: Element) => {
+      let opacity = 1
+      for (let current: Element | null = node; current; current = current.parentElement) opacity *= Number(getComputedStyle(current).opacity)
+      return opacity
+    }
+    return Math.min(...[element, ...element.querySelectorAll('.reveal-word, .reveal-ink')].map(effective))
+  })
+}
+
+/** Trang cuộn ngang được không (bề rộng tài liệu vượt khung nhìn quá 1 px). */
+function scrollsSideways(page: Page): Promise<boolean> {
+  return page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1)
+}
+
+test.describe('landing story at 1440 × 900', () => {
+  test.use({ viewport: { width: 1440, height: 900 } })
+
+  test('the sample trip plays once to the end and the truck leaves the yard: the chosen plan figures (no MOCK RESULT tag on the public page), and the resting overview stays under the draw-call cap', async ({ page, browserErrors }, testInfo) => {
+    await page.goto('/gioi-thieu')
+    const stage = page.locator(STAGE)
+
+    await expect(stage).toHaveAttribute('data-story-status', 'ended', { timeout: STORY_WAIT_MS })
+    await expect(stage).not.toContainText('MOCK RESULT')
+    await expect(figuresOf(stage)).toContainText(/Chưa xếp\s*0/)
+    // Chuyện kết ở điểm 1 đã giao: thẻ chuyến vẫn Đang vận chuyển (còn ba điểm) kèm nhãn "Đã giao điểm 1"
+    await expect(stage).toHaveAttribute('data-story-phase', 'delivered')
+    await expect(stage.getByText('Đang vận chuyển', { exact: true })).toBeVisible()
+    await expect(stage.getByText('Đã giao điểm 1', { exact: true })).toBeVisible()
+    await expect(stage.locator('[data-stage-arrival]')).toBeHidden()
+    await expect(stage.getByRole('button', { name: 'Xếp lại thùng xe từ đầu', exact: true })).toBeVisible()
+
+    await expect(stage.locator('[data-view]')).toHaveAttribute('data-view', 'overview')
+    await expect(page.getByRole('group', { name: 'Góc nhìn', exact: true }).getByRole('button', { name: 'Toàn cảnh', exact: true })).toHaveAttribute('aria-pressed', 'true')
+    const drawCalls = await restingDrawCalls(page)
+    await attachJson(testInfo, 'landing-draw-calls', drawCalls)
+    expect(drawCalls.scene - drawCalls.withoutYard).toBeLessThanOrEqual(YARD_DRAW_CALLS)
+    expect(drawCalls.scene).toBeLessThanOrEqual(DRAW_CALL_CAP)
+    expect(browserErrors).toStrictEqual([])
+  })
+
+  test('in every quality tier the resting overview stays under the draw-call cap and the yard costs at most three draw calls', async ({ page, browserErrors }, testInfo) => {
+    // Giảm chuyển động đưa cảnh thẳng về trạng thái cuối; `?debug&quality=` khoá tier như các suite đo của Planner
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    const counts: Record<string, { scene: number; withoutYard: number }> = {}
+    for (const tier of ['high', 'balanced', 'low'] as const) {
+      await page.goto(`/gioi-thieu?debug&quality=${tier}`)
+      await expect(page.locator(STAGE)).toHaveAttribute('data-story-status', 'ended', { timeout: STORY_WAIT_MS })
+      await expect(page.locator(STAGE).locator('[data-view]')).toHaveAttribute('data-view', 'overview')
+      counts[tier] = await restingDrawCalls(page)
+    }
+    await attachJson(testInfo, 'landing-draw-calls-by-tier', counts)
+    for (const [tier, count] of Object.entries(counts)) {
+      expect(count.scene - count.withoutYard, tier).toBeLessThanOrEqual(YARD_DRAW_CALLS)
+      expect(count.scene, tier).toBeLessThanOrEqual(DRAW_CALL_CAP)
+    }
+    expect(browserErrors).toStrictEqual([])
+  })
+
+  test('pausing while the truck loads freezes the count and the canvas, keeps focus on the button, and resume carries on to the end', async ({ page, browserErrors }) => {
+    await page.goto('/gioi-thieu')
+    const stage = page.locator(STAGE)
+    await expect.poll(() => loadingCount(page), { timeout: STORY_WAIT_MS }).toBeGreaterThan(0)
+
+    await stage.getByRole('button', { name: 'Tạm dừng chuyến mẫu', exact: true }).click()
+    await expect(stage).toHaveAttribute('data-story-status', 'paused')
+    const resume = stage.getByRole('button', { name: 'Tiếp tục chuyến mẫu', exact: true })
+    await expect(resume).toBeFocused()
+    // Khung hình đã xin trước cú bấm vẽ nốt; từ đó không vẽ thêm khung nào, số trên thẻ đứng yên
+    await waitDemandIdle(page, 300)
+    const paused = { count: await loadingCount(page), frame: await drawnFrames(page) }
+    expect(paused.count).not.toBeNull()
+    expect(paused.count!).toBeLessThan(366)
+    await page.waitForTimeout(800)
+    expect({ count: await loadingCount(page), frame: await drawnFrames(page) }).toEqual(paused)
+    await expect(resume).toBeFocused()
+
+    await resume.click()
+    await expect(stage.getByRole('button', { name: 'Tạm dừng chuyến mẫu', exact: true })).toBeFocused()
+    await expect.poll(async () => (await stage.getAttribute('data-story-status')) === 'ended' || ((await loadingCount(page)) ?? 0) > paused.count!).toBe(true)
+    await expect(stage).toHaveAttribute('data-story-status', 'ended', { timeout: STORY_WAIT_MS })
+    await expect(stage.getByRole('button', { name: 'Xếp lại thùng xe từ đầu', exact: true })).toBeFocused()
+    await expect(figuresOf(stage)).toContainText(/Chưa xếp\s*0/)
+    await expect(stage.getByText('Đang vận chuyển', { exact: true })).toBeVisible()
+    await expect(stage.getByText('Đã giao điểm 1', { exact: true })).toBeVisible()
+    expect(browserErrors).toStrictEqual([])
+  })
+
+  test('one run gives three plans side by side; picking plan A loads the truck again with plan A and plays on to the end', async ({ page, browserErrors }) => {
+    await page.goto('/gioi-thieu')
+    const stage = page.locator(STAGE)
+    const plans = page.getByRole('group', { name: 'Một lần chạy, ba phương án', exact: true })
+    await expect(plans.getByRole('button')).toHaveCount(3, { timeout: STORY_WAIT_MS })
+    await expect(plans.getByRole('button', { name: 'Phương án C — Ít dỡ-xếp lại', exact: true })).toHaveAttribute('aria-pressed', 'true')
+    const tops = await plans.getByRole('button').evaluateAll((buttons) => buttons.map((button) => Math.round(button.getBoundingClientRect().top)))
+    expect(new Set(tops).size).toBe(1)
+    // Phương án C không dỡ-xếp lại kiện nào: đúng một nhãn "Tốt nhất" dưới bộ chọn
+    await expect(figuresOf(stage).getByText('Tốt nhất', { exact: true })).toHaveCount(1)
+
+    const planA = plans.getByRole('button', { name: 'Phương án A — Tối đa thể tích', exact: true })
+    await planA.click()
+    await expect(planA).toHaveAttribute('aria-pressed', 'true')
+    await expect(stage).toHaveAttribute('data-plan', 'A')
+    await expect(stage).toHaveAttribute('data-story-status', 'ended', { timeout: STORY_WAIT_MS })
+    await expect(stage).toHaveAttribute('data-story-phase', 'delivered')
+    await expect(figuresOf(stage)).toContainText(/Dỡ-xếp lại\s*21/)
+    expect(await scrollsSideways(page)).toBe(false)
+    expect(browserErrors).toStrictEqual([])
+  })
+
+  test('reduced motion shows the loaded state at once: no story button, nothing animates, the truck does not drive off', async ({ page, browserErrors }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.goto('/gioi-thieu')
+    const stage = page.locator(STAGE)
+    await expect(stage).toHaveAttribute('data-story-status', 'ended', { timeout: STORY_WAIT_MS })
+    await expect(stage).toHaveAttribute('data-story-phase', 'ready')
+    await expect(stage.getByText('Xếp xong — chờ xuất phát', { exact: true })).toBeVisible()
+    await expect(stage).not.toContainText('MOCK RESULT')
+    await expect(figuresOf(stage)).toContainText(/Chưa xếp\s*0/)
+    await waitDemandIdle(page, 500)
+    await expect(stage.getByRole('button', { name: /chuyến mẫu|Xếp lại/ })).toHaveCount(0)
+    await expect(page.locator('[data-motion="on"]')).toHaveCount(0)
+    // Đổi phương án: thùng của phương án đó xếp xong ngay
+    await stage.getByRole('button', { name: 'Phương án B — Cân bằng tải trục', exact: true }).click()
+    await expect(stage).toHaveAttribute('data-plan', 'B')
+    await expect(stage).toHaveAttribute('data-story-phase', 'ready')
+    await expect(figuresOf(stage)).toContainText(/Chênh tải hai trục\s*[\d,]+ điểm %\s*Tốt nhất/)
+    expect(browserErrors).toStrictEqual([])
+  })
+
+  test('"One trip" compares the three plans of the same sample run, and the truck follows the leg being read, only forward', async ({ page, browserErrors }) => {
+    await page.goto('/gioi-thieu')
+    const journey = page.locator('#cach-hoat-dong')
+    await journey.scrollIntoViewIfNeeded()
+    // Cùng truy vấn với khung 3D: bảng có số của lần chạy mẫu, "Tốt nhất" ở B (cân trục) và C (không dỡ-xếp lại)
+    await expect(journey.locator('[data-journey-plans]')).toHaveAttribute('data-journey-plans', 'ready', { timeout: STORY_WAIT_MS })
+    const table = journey.getByRole('table', { name: 'So sánh ba phương án của lần chạy mẫu', exact: true })
+    await expect(table.getByText('Tốt nhất', { exact: true })).toHaveCount(2)
+    const stop = journey.locator('[data-journey-stop]')
+    await expect(stop).toHaveAttribute('data-journey-stop', 'ready')
+    await expect(stop.locator('dd').first()).toContainText('96')
+    await expect(journey).not.toContainText('MOCK RESULT')
+
+    // Từng chặng tới giữa khung nhìn: chặng đang đọc là chặng đó, tiến độ của thùng xe chỉ tăng
+    const legs = await journey.getByRole('list', { name: 'Năm chặng của một chuyến hàng', exact: true }).locator(':scope > li').all()
+    expect(legs).toHaveLength(5)
+    let previous = -1
+    for (const [index, leg] of legs.entries()) {
+      await leg.evaluate((element) => element.scrollIntoView({ block: 'center' }))
+      await expect(journey).toHaveAttribute('data-chapter', String(index))
+      const progress = Number(await journey.evaluate((element) => (element as HTMLElement).style.getPropertyValue('--p')))
+      expect(progress).toBeGreaterThan(previous)
+      previous = progress
+    }
+    expect(await scrollsSideways(page)).toBe(false)
+    expect(browserErrors).toStrictEqual([])
+  })
+
+  test('opening the contact anchor focuses its heading, in view and fully shown within 1.5 s', async ({ page, browserErrors }) => {
+    await page.goto('/gioi-thieu#lien-he')
+    const heading = page.getByRole('heading', { level: 2, name: 'Liên hệ với LoadMaster', exact: true })
+    await heading.waitFor({ state: 'attached' })
+    await expect(heading).toBeFocused({ timeout: 1_500 })
+    await expect(heading).toBeInViewport({ timeout: 1_500 })
+    await expect.poll(() => shownOpacity(heading), { timeout: 1_500 }).toBe(1)
+    expect(browserErrors).toStrictEqual([])
+  })
+})
+
+test('@phone at 390 px the page never scrolls sideways, the truck view is the default, and the story ends once the stage is scrolled to', async ({ page, browserErrors }) => {
+  await page.goto('/gioi-thieu')
+  const stage = page.locator(STAGE)
+  await expect(page.getByRole('group', { name: 'Góc nhìn', exact: true }).getByRole('button', { name: 'Thùng xe', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await expect(stage.locator('[data-view]')).toHaveAttribute('data-view', 'truck')
+  expect(await scrollsSideways(page)).toBe(false)
+
+  await stage.locator('[data-view]').scrollIntoViewIfNeeded()
+  await expect(stage).toHaveAttribute('data-story-status', 'ended', { timeout: STORY_WAIT_MS })
+  await expect(figuresOf(stage)).toContainText(/Chưa xếp\s*0/)
+  // Bộ chọn trên điện thoại: ba nút cao ít nhất 56 px, số của phương án đang chọn nằm dưới
+  const plans = page.getByRole('group', { name: 'Một lần chạy, ba phương án', exact: true })
+  const heights = await plans.getByRole('button').evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().height))
+  expect(heights).toHaveLength(3)
+  for (const height of heights) expect(height).toBeGreaterThanOrEqual(56)
+  await expect(figuresOf(stage)).toContainText('Dỡ-xếp lại')
+  expect(await scrollsSideways(page)).toBe(false)
+  expect(browserErrors).toStrictEqual([])
+})

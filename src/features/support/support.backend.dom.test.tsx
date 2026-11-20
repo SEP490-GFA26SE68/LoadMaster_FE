@@ -56,7 +56,6 @@ beforeEach(() => {
     const reply = (data: unknown, status = 200) => Promise.resolve(new Response(JSON.stringify({ success: true, message: 'ok', data }), { status }))
     if (key === 'GET /api/users/me') return reply({ ...me, fullName: 'Người xem', status: 'ACTIVE' })
     if (key === 'GET /api/support-tickets') return reply(tickets)
-    if (key === 'GET /api/contracts?companyId=1') return reply([])
     if (key === 'POST /api/support-tickets' && typeof body === 'object' && body !== null) {
       const created = { ...DISPATCHER_TICKET, ...body, id: 12, ticketCode: 'TCK-20261017-7777', status: 'OPEN', createdAt: '2026-10-17T09:00:00' }
       tickets = [created, ...tickets]
@@ -151,7 +150,7 @@ test('the thread comes from the reply table of the server: the list counts it, a
   ])
 })
 
-test('the supporter reads every ticket, sees the note of the team and the company panel, and sets Resolved', async () => {
+test('the supporter reads every ticket, sees the note of the team without a company panel, and sets Resolved', async () => {
   const user = userEvent.setup()
   me = { id: 4, userRoleType: 'SYSTEM_SUPPORTER' }
   renderAs('systemSupporter', <SupportPage />, '/ho-tro?ticket=1')
@@ -159,9 +158,7 @@ test('the supporter reads every ticket, sees the note of the team and the compan
   expect(panel).toHaveTextContent('Cần xuất lại hoá đơn.')
   expect(within(panel).getByRole('region', { name: 'Phản hồi của đội hỗ trợ' })).toHaveTextContent('Đã gửi lại hoá đơn qua email.')
   expect(within(panel).getByRole('button', { name: 'Gửi trả lời' })).toBeInTheDocument()
-  const company = await screen.findByRole('region', { name: 'Thông tin công ty' }, SLOW)
-  expect(await within(company).findByText('Công ty chưa có gói cước.', {}, SLOW)).toBeInTheDocument()
-  expect(within(company).getAllByText('Chưa đọc được')).toHaveLength(2)
+  expect(screen.queryByRole('region', { name: 'Thông tin công ty' })).not.toBeInTheDocument()
   const table = screen.getByRole('table')
   expect(within(table).getAllByRole('columnheader').map((header) => header.textContent)).toContain('Cập nhật')
   expect(within(table).getAllByText('Vận tải Long Bình')).toHaveLength(2)

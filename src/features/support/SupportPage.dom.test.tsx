@@ -86,19 +86,12 @@ test('replying starts the ticket, and its status can be changed to closed and ba
   expect((await rowOf('TKT-001')).textContent).toContain('Đã đóng')
 })
 
-test('the side panel shows the plan, the balance and the latest credit transactions of the company of the open ticket, read only', async () => {
+test('the side column shows only the conversation of the open ticket: no company, plan or credit panel', async () => {
   renderSupport('?ticket=TKT-002')
-  const panel = await screen.findByRole('region', { name: 'Thông tin công ty' }, SLOW)
-  await within(panel).findByText('Basic', {}, SLOW)
-  expect(within(panel).getByText('Công ty CP Giao nhận Phương Nam')).toBeInTheDocument()
-  expect(within(panel).getByText('Đang hoạt động')).toBeInTheDocument()
-  // Phương Nam đã dùng gần hết 3.000 credit của gói Basic: còn 2, và hơn 20 giao dịch nên khung chỉ giữ 20 dòng mới nhất
-  expect(within(panel).getByText('Số dư credit').nextElementSibling).toHaveTextContent('2')
-  expect(within(panel).getAllByRole('listitem')).toHaveLength(20)
-  expect(within(panel).getAllByRole('listitem')[0]).toHaveTextContent('Dùng')
-  expect(within(panel).getByText('Chỉ đọc')).toBeInTheDocument()
-  expect(within(panel).queryByRole('button')).not.toBeInTheDocument()
   // Cuộc trao đổi của yêu cầu đã đóng: hai lần trả lời của seed, không có ô trả lời
-  const thread = screen.getByRole('region', { name: 'Hỏi cách nạp thêm credit' })
+  const thread = await screen.findByRole('region', { name: 'Hỏi cách nạp thêm credit' }, SLOW)
   expect(within(thread).getAllByRole('listitem')).toHaveLength(2)
+  expect(screen.queryByRole('region', { name: 'Thông tin công ty' })).not.toBeInTheDocument()
+  expect(screen.queryByText('Số dư credit')).not.toBeInTheDocument()
+  expect(screen.queryByText('Giao dịch credit gần nhất')).not.toBeInTheDocument()
 })

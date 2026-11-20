@@ -7,7 +7,7 @@ import { renderWarehouse } from './warehouse-test-utils'
 
 /**
  * Phiên xếp bản máy chủ có bước soạn hàng (`stagingRequired`): soạn bằng mã gõ, báo thiếu, rồi sang bước xếp — xác nhận tay chờ duyệt chặn
- * hoàn tất, kiện hỏng bỏ lại kho —, xếp xong thì ghi số seal. Đăng nhập vẫn là phiên kho mẫu (chỉ để dựng màn).
+ * hoàn tất, kiện hỏng bỏ lại kho —, rồi xếp xong. Đăng nhập vẫn là phiên kho mẫu (chỉ để dựng màn).
  */
 vi.mock('@/lib/backend-config', () => ({
   backendConfig: { authSource: 'mock', apiUrl: 'http://be.test', features: new Set(['warehouse']), keycloak: { url: '', realm: '', clientId: '' } },
@@ -19,7 +19,6 @@ const CODE = 'TRIP-20261106-A1'
 type Row = { status: string; staged: boolean; shortageStatus?: string; manualStatus?: string; manualStep?: string }
 let rows: Record<number, Row> = {}
 let completed = false
-let seal: string | null = null
 let calls: FakeCall[] = []
 
 const step = (placementId: number, sequence: number, barcode: string) => ({
@@ -37,7 +36,6 @@ function session() {
     totalPackages: 2, status: completed ? 'COMPLETED' : 'IN_PROGRESS', startedAt: null, completedAt: null,
     stagingRequired: true, stagingComplete: placements.every((item) => item.staged),
     pendingManualCount: placements.filter((item) => item.manualStatus === 'PENDING').length,
-    sealNumber: seal, sealedAt: seal ? '2026-11-06 11:00:00' : null, sealedByName: seal ? 'Kho Long Bình' : null,
     placements,
   }
 }
@@ -50,7 +48,6 @@ function patch(placementId: number, next: Partial<Row>) {
 beforeEach(() => {
   rows = { 101: { status: 'PENDING', staged: false }, 102: { status: 'PENDING', staged: false } }
   completed = false
-  seal = null
   connectApiAuth(() => Promise.resolve('token-1'))
   calls = stubBackend({
     'GET /api/warehouse/tasks/7': () => ({ body: envelope(session()) }),
@@ -77,10 +74,6 @@ beforeEach(() => {
     'POST /api/warehouse/tasks/7/complete': () => {
       completed = true
       return { body: envelope({ tripId: 7, totalPackages: 2, totalDeviations: 0 }) }
-    },
-    'POST /api/warehouse/tasks/7/seal': (call) => {
-      seal = (call.body as { sealNumber: string }).sealNumber
-      return { body: envelope({ tripId: 7, sealNumber: seal }) }
     },
   }).calls
 })
@@ -181,17 +174,13 @@ test('xếp: xác nhận tay gửi điều phối viên, kiện hỏng bỏ lạ
   expect(posts()).toStrictEqual(['/api/warehouse/placements/101/manual', '/api/warehouse/placements/102/damaged'])
 })
 
-test('xếp xong: ghi số seal trước khi xe rời kho, phiên đọc lại mang số seal', async () => {
+test('xếp xong: màn không hỏi thêm gì, chỉ còn lối về danh sách chuyến', async () => {
   rows = { 101: { status: 'CONFIRMED', staged: true }, 102: { status: 'DAMAGED', staged: true } }
   completed = true
-  const user = userEvent.setup()
   renderWarehouse('/kho?chuyen=7')
   expect(await screen.findByText(`Đã xếp xong chuyến ${CODE}`, undefined, LOAD)).toBeInTheDocument()
   expect(screen.getByText(/bỏ lại 1 kiện hỏng/i)).toBeInTheDocument()
-
-  await user.type(screen.getByRole('textbox', { name: 'Số seal' }), '  SEAL-42 ')
-  await user.click(screen.getByRole('button', { name: 'Ghi số seal' }))
-  expect(await screen.findByText(/Số seal SEAL-42 · ghi lúc/, undefined, LOAD)).toBeInTheDocument()
-  expect(calls.find((call) => call.path === '/api/warehouse/tasks/7/seal')?.body).toEqual({ sealNumber: 'SEAL-42' })
-  expect(screen.getByRole('link', { name: 'Về danh sách chuyến' })).toBeInTheDocument()
+  expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+  expect(screen.getByRole('link', { name: 'Về danh sách chuyến' })).toHaveAttribute('href', '/kho')
+  expect(calls.some((call) => call.path.endsWith('/seal'))).toBe(false)
 })

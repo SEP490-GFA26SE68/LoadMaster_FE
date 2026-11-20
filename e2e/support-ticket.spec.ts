@@ -25,7 +25,7 @@ test('a dispatcher sends a ticket, customer support replies and closes it, and t
   await page.keyboard.press('Escape')
   await expect(dialog).toHaveCount(0)
 
-  // Hỗ trợ khách hàng: màn chính là `/ho-tro`; mở yêu cầu, trả lời, đọc gói và số dư của công ty, đóng yêu cầu
+  // Hỗ trợ khách hàng: màn chính là `/ho-tro`; mở yêu cầu, trả lời, đóng yêu cầu
   await switchUser(page, 'systemSupporter')
   await page.waitForURL((url) => url.pathname === '/ho-tro')
   await expect(page.getByRole('heading', { level: 1, name: 'Hỗ trợ khách hàng', exact: true })).toBeVisible()
@@ -34,10 +34,9 @@ test('a dispatcher sends a ticket, customer support replies and closes it, and t
   await thread.getByRole('textbox', { name: 'Trả lời', exact: true }).fill('Hoá đơn VAT gửi qua email quản trị công ty trong 2 ngày làm việc.')
   await thread.getByRole('button', { name: 'Gửi trả lời', exact: true }).click()
   await expect(thread.getByRole('combobox', { name: 'Trạng thái yêu cầu', exact: true })).toHaveText('Đang xử lý')
-  const panel = page.getByRole('region', { name: 'Thông tin công ty', exact: true })
-  await expect(panel).toContainText('Công ty TNHH Vận tải Long Bình')
-  await expect(panel).toContainText('Pro')
-  await expect(panel.getByText('Số dư credit', { exact: true }).locator('xpath=following-sibling::dd')).toHaveText('9.972')
+  // Cột phải chỉ có cuộc trao đổi: không khung thông tin công ty, gói hay giao dịch credit của khách
+  await expect(page.getByRole('region', { name: 'Thông tin công ty', exact: true })).toHaveCount(0)
+  await expect(page.getByText('Giao dịch credit gần nhất', { exact: true })).toHaveCount(0)
   await thread.getByRole('combobox', { name: 'Trạng thái yêu cầu', exact: true }).click()
   await page.getByRole('option', { name: 'Đã đóng', exact: true }).click()
   await expect(thread.getByText('Phiếu hỗ trợ đã đóng (chỉ đọc) — không thể nhắn tin hay đổi trạng thái.', { exact: true })).toBeVisible()

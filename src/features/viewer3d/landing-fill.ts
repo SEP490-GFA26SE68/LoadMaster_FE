@@ -1,5 +1,5 @@
-/** Thời gian xếp đầy thùng ở khung 3D của trang giới thiệu: dưới 5 giây nên không cần nút dừng (WCAG 2.2.2), và không lặp lại. */
-export const LANDING_FILL_MS = 3000
+/** Thời gian xếp đầy thùng ở khung 3D của trang giới thiệu: pha xếp 5 giây của chuyện 9 giây; có nút tạm dừng. Không lặp lại. */
+export const LANDING_FILL_MS = 5000
 
 /**
  * Số kiện đã hiện sau `elapsedMs` của một lần xếp ở trang giới thiệu. Tính theo thời gian, không theo khung hình: máy chiếu yếu vẽ

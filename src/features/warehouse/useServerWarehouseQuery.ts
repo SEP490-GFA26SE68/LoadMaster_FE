@@ -6,7 +6,6 @@ import {
   fetchServerWarehouseTrips,
   confirmServerPlacementManually,
   recordServerDeviation,
-  recordServerSeal,
   reportServerDamaged,
   reportServerShortage,
   stageServerPackage,
@@ -133,9 +132,3 @@ export function useReportServerDamagedMutation(tripId: string) {
   })
 }
 
-export function useRecordServerSealMutation(tripId: string) {
-  const client = useQueryClient()
-  return useMutation({
-    // A failed/ambiguous write is never confirmation evidence. Reconcile by GET, retaining the original mutation error.
-    onError: () => client.refetchQueries({ queryKey: sessionKey(tripId), type: 'active' }), mutationFn: (sealNumber: string) => recordServerSeal(tripId, sealNumber), onSuccess: (session) => settle(client, tripId, session) })
-}

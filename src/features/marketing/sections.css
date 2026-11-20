@@ -1,0 +1,26 @@
+/*
+ * Vạch tiến độ cuộn 2 px dưới đầu trang của trang giới thiệu (`PublicPage progress`, `.landing-progress`). Chỉ hiện khi trình duyệt có
+ * animation-timeline theo cuộn và người xem không chọn giảm chuyển động; thiếu một trong hai thì không có vạch.
+ */
+
+@layer components {
+  .landing-progress {
+    display: none;
+  }
+  @supports (animation-timeline: scroll()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .landing-progress {
+        display: block;
+        animation: lp-progress linear both;
+        animation-duration: auto;
+        animation-timeline: scroll(root block);
+      }
+    }
+  }
+}
+
+@keyframes lp-progress {
+  from {
+    transform: scaleX(0);
+  }
+}

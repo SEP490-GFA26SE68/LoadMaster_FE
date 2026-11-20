@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
-import { connectApiAuth, isApiError } from '@/lib/api-client'
+import { connectApiAuth } from '@/lib/api-client'
 import { envelope, stubBackend } from '@/test/fake-backend'
 import { restingCount, serverLoadingView, serverStagingView } from './server-loading'
 import { createWarehouseBackend } from './warehouse-backend-api'
 
 /**
- * Soạn hàng, báo thiếu, xác nhận tay, kiện hỏng và seal của kho khi nhóm `warehouse` nối backend (`WarehouseStagingController`): đúng
+ * Soạn hàng, báo thiếu, xác nhận tay, và kiện hỏng của kho khi nhóm `warehouse` nối backend (`WarehouseStagingController`): đúng
  * endpoint, rồi đọc lại phiên của máy chủ; phiên mang tiến độ soạn và xác nhận tay của từng kiện.
  */
 vi.mock('@/lib/backend-config', () => ({
@@ -47,7 +47,7 @@ test('bắt đầu kèm bước soạn hàng; phiên mang tiến độ soạn, b
   })
   const session = await createWarehouseBackend().start('7')
   expect(calls[0]?.body).toEqual({ staging: true })
-  expect(session).toMatchObject({ stagingRequired: true, stagingComplete: false, pendingManual: 0, seal: null })
+  expect(session).toMatchObject({ stagingRequired: true, stagingComplete: false, pendingManual: 0 })
   expect(session.staging[102]).toEqual({ staged: false, shortage: 'open', manual: { status: 'REJECTED', step: 'STAGING', rejectReason: 'Không thấy nhãn' } })
   const view = serverStagingView(session)
   expect(view).toMatchObject({ total: 2, staged: 1, openShortages: 1 })
@@ -119,19 +119,6 @@ test('kiện hỏng: bỏ lại kho thì đọc lại phiên; chuyến về lậ
   expect(replanned.calls.map((call) => call.path)).toEqual(['/api/warehouse/placements/101/damaged'])
 })
 
-test('seal: gửi số đã bỏ khoảng trắng, phiên mang số seal; máy chủ từ chối thì giữ mã', async () => {
-  const { calls } = stubBackend({
-    'POST /api/warehouse/tasks/7/seal': { body: envelope({ tripId: 7, sealNumber: 'SEAL-42' }) },
-    'GET /api/warehouse/tasks/7': { body: envelope({ ...SESSION, status: 'COMPLETED', sealNumber: 'SEAL-42', sealedAt: '2026-11-06 11:00:00', sealedByName: 'Kho A' }) },
-  })
-  const session = await createWarehouseBackend().seal('7', '  SEAL-42 ')
-  expect(calls[0]?.body).toEqual({ sealNumber: 'SEAL-42' })
-  expect(session.seal).toEqual({ number: 'SEAL-42', at: '2026-11-06T04:00:00.000Z', byName: 'Kho A' })
-
-  stubBackend({ 'POST /api/warehouse/tasks/7/seal': { status: 409, body: { success: false, code: 'SEAL_NOT_ALLOWED', message: 'x' } } })
-  const error = await createWarehouseBackend().seal('7', 'S-1').catch((caught: unknown) => caught)
-  expect(isApiError(error) && error.code).toBe('SEAL_NOT_ALLOWED')
-})
 
 test('số kiện tựa lên: đáy chạm nóc và chồng lên nhau trên mặt sàn, như máy chủ đếm', async () => {
   stubBackend({

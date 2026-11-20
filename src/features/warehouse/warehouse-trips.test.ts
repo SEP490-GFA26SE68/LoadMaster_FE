@@ -24,15 +24,15 @@ test('the Phương Nam warehouse sees only the approved trip of its own company 
   const db = warehouseDb('US-0015')
   // seed-phuong-nam.ts: TRIP-PN-001 = 30 thùng linh kiện + 12 kiện vải cuộn đã duyệt, chờ xếp; TRIP-PN-002 là nháp nên không hiện
   expect(warehouseTripRows(await entries(db), await vehicleNames(db))).toStrictEqual([
-    { id: 'TRIP-PN-001', name: 'Tuyến Quận 7 – Nhà Bè', scheduledDate: '2026-09-14', vehicleName: 'Isuzu QKR 230 · 51C-907.41', status: 'PLANNED', sub: { kind: 'approved' }, manualSub: null, stage: 'waiting', step: 'staging', total: 42, recorded: 0, damaged: 0, shortages: 0, replan: undefined, recheck: 0, seal: undefined },
+    { id: 'TRIP-PN-001', name: 'Tuyến Quận 7 – Nhà Bè', scheduledDate: '2026-09-14', vehicleName: 'Isuzu QKR 230 · 51C-907.41', status: 'PLANNED', sub: { kind: 'approved' }, manualSub: null, stage: 'waiting', step: 'staging', total: 42, recorded: 0, damaged: 0, shortages: 0, replan: undefined, recheck: 0 },
   ])
 })
 
 test('seed on 14/09, grouped by status (FE-6-01): loading, waiting to be staged, loaded, then the stale approved trip; nothing awaiting approval or past the warehouse', async () => {
   const db = warehouseDb('US-0003')
   const rows = warehouseTripRows(await entries(db), await vehicleNames(db))
-  const rest = { manualSub: null, damaged: 0, shortages: 0, replan: undefined, recheck: 0, seal: undefined }
-  // seed-trips.ts: TRIP-011 = 80 + 60 + 80 + 60 kiện, kho đã soạn đủ và ghi 110 bước xếp; TRIP-010 = 80 + 40 + 45 + 45 kiện, xếp xong chưa ghi seal;
+  const rest = { manualSub: null, damaged: 0, shortages: 0, replan: undefined, recheck: 0 }
+  // seed-trips.ts: TRIP-011 = 80 + 60 + 80 + 60 kiện, kho đã soạn đủ và ghi 110 bước xếp; TRIP-010 = 80 + 40 + 45 + 45 kiện, đã xếp xong;
   // TRIP-013 duyệt 80 + 60 + 60 kiện rồi mới sửa số lượng. TRIP-012 (chờ duyệt), TRIP-014 (nháp), chuyến đang vận chuyển, đã giao và đã
   // huỷ không hiện.
   expect(rows).toStrictEqual([
@@ -46,7 +46,7 @@ test('seed on 14/09, grouped by status (FE-6-01): loading, waiting to be staged,
   ])
 })
 
-test('a started trip is staged, then loaded: the row counts the step it is in, shortages and damaged packages; loaded, it waits to depart with its seal', async () => {
+test('a started trip is staged, then loaded: the row counts the step it is in, shortages and damaged packages; loaded, it waits to depart', async () => {
   const db = warehouseDb('US-0003')
   const TRIP = 'TRIP-2026-0914'
   await db.startLoading(TRIP)
@@ -73,10 +73,9 @@ test('a started trip is staged, then loaded: the row counts the step it is in, s
   ])
 
   await db.completeLoading(TRIP)
-  await db.recordSeal('TRIP-2026-0914', 'SEAL-0914')
   const loaded = warehouseTripRows(await entries(db), await vehicleNames(db))
-  expect(loaded.map((row) => [row.id, row.stage, row.seal])).toStrictEqual([
-    ['TRIP-011', 'loading', undefined], ['TRIP-010', 'loaded', undefined], ['TRIP-2026-0914', 'loaded', 'SEAL-0914'], ['TRIP-013', 'stale', undefined],
+  expect(loaded.map((row) => [row.id, row.stage])).toStrictEqual([
+    ['TRIP-011', 'loading'], ['TRIP-010', 'loaded'], ['TRIP-2026-0914', 'loaded'], ['TRIP-013', 'stale'],
   ])
   db.restoreSession('US-0004')
   await db.startDelivery('TRIP-2026-0914')

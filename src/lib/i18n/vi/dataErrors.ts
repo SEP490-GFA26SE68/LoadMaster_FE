@@ -52,7 +52,6 @@ export const dataErrors = {
   PACKAGE_NOT_IN_TRIP: 'Mã {token} không thuộc chuyến {tripId}.',
   WRONG_PACKAGE_SCANNED: 'Đã quét kiện {scanned}, bước này cần kiện {expected}.',
   QR_WRONG_STOP: 'Kiện {packageInstanceId} thuộc điểm giao {stopNumber}.',
-  SEAL_INVALID: 'Số seal cần từ 1 đến {max} ký tự.',
   // Kho kiện (FE-3b-01)
   PACKAGE_INVALID: 'Kiện chưa hợp lệ: kích thước và khối lượng phải lớn hơn 0, cần loại hàng và điểm đến.',
   INVALID_PACKAGE_STATUS_TRANSITION: 'Kiện {packageId} không chuyển được sang trạng thái đó từ trạng thái hiện tại.',

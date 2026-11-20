@@ -1,0 +1,254 @@
+/*
+ * Chỗ của trợ lý "Hỏi Lumo" trên hai trang công khai. Nút mở và khung chat neo góc dưới phải, chừa vùng an toàn của máy (tai thỏ, thanh
+ * home). `--assistant-lift` do `useLauncherLift` ghi lên <html>: nút nâng lên khi nút chính của phần mở đầu hay nút "Lên đầu trang" chạm
+ * vào chỗ của nó; khung chat (từ 768 px) đứng ngay trên nút. Dưới 768 px khung chat là tờ phủ cả màn (`100dvh`: bàn phím ảo không che ô
+ * nhập). Lớp z 200: trên đầu trang dính (z 20), dưới hộp thoại (z 300) và toast.
+ */
+:root {
+  /* Thứ tự màu của gradient AI AWS (`--genai-*` ở index.css), dùng cho viền nút và vạch "đang trả lời" */
+  --genai-stops: var(--genai-1) 0%, var(--genai-2) 10%, var(--genai-3) 24%, var(--genai-4) 50%, var(--genai-5) 76%, var(--genai-2) 90%,
+    var(--genai-1) 100%;
+  --assistant-edge: max(1rem, env(safe-area-inset-right));
+  --assistant-base: max(1rem, env(safe-area-inset-bottom));
+  --assistant-launcher-h: 3rem;
+}
+
+@media (pointer: coarse) {
+  :root {
+    --assistant-launcher-h: 3.5rem;
+  }
+}
+
+@media (min-width: 768px) {
+  :root {
+    --assistant-edge: max(1.5rem, env(safe-area-inset-right));
+    --assistant-base: max(1.5rem, env(safe-area-inset-bottom));
+  }
+}
+
+/*
+ * Viền gradient quanh nút ("animated gradient border", kiểu nút trợ lý AI của AWS): `conic-gradient` theo gradient AI của AWS Cloudscape
+ * (`--genai-*`, ngoại lệ duy nhất của luật không tím), góc bắt đầu là biến `@property` được animate. Hai lớp giả, không đổi bố cục:
+ * ::before là viền 2 px thay chỗ viền xám của nút (mask cắt phần giữa), ::after là quầng màu phía ngoài (blur trước, mask cắt phần trong sau,
+ * nên không nhuộm mặt nút). Lúc nghỉ viền đứng yên; quay khi rê chuột / focus và khi Lumo đang trả lời (`data-thinking`) — chuyển động chỉ ở
+ * trạng thái có lý do, như hướng dẫn của AWS. Khi trang mở viền quay hai vòng (~4,8 s, dưới mốc 5 s của WCAG 2.2.2) để khách thấy nút.
+ * `--lumo-spin` (lúc mở) và `--lumo-turn` (theo thao tác) là hai biến riêng: dừng quay thì viền đứng tại chỗ, không nhảy về đầu.
+ * Giảm chuyển động: đứng yên, quầng vẫn sáng lên khi rê chuột hay đang trả lời.
+ */
+@property --lumo-spin {
+  syntax: '<angle>';
+  inherits: true;
+  initial-value: 0deg;
+}
+
+@property --lumo-turn {
+  syntax: '<angle>';
+  inherits: true;
+  initial-value: 0deg;
+}
+
+@keyframes lumo-intro {
+  to {
+    --lumo-spin: 360deg;
+  }
+}
+
+@keyframes lumo-turn {
+  to {
+    --lumo-turn: 360deg;
+  }
+}
+
+.assistant-launcher {
+  position: fixed;
+  right: var(--assistant-edge);
+  bottom: var(--assistant-base);
+  z-index: 200;
+  transform: translateY(calc(-1 * var(--assistant-lift, 0px)));
+  transition:
+    transform var(--dur-md) var(--ease-standard),
+    background-color var(--dur-fast) var(--ease-standard);
+  /* Viền gradient thay viền xám; bóng xám nhường cho quầng màu */
+  border-color: transparent;
+  box-shadow: var(--e1);
+  animation:
+    lumo-intro 2.4s linear 2,
+    lumo-turn 3s linear infinite;
+  animation-play-state: running, paused;
+}
+
+.assistant-launcher::before,
+.assistant-launcher::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  box-sizing: border-box;
+  background: conic-gradient(from calc(var(--lumo-spin) + var(--lumo-turn)), var(--genai-stops));
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+}
+
+/* Viền 2 px phủ đúng chỗ viền 1 px của nút và thêm 1 px ra ngoài: ôm sát mặt trắng */
+.assistant-launcher::before {
+  inset: -2px;
+  padding: 2px;
+  border-radius: calc(var(--r-lg) + 1px);
+}
+
+/* Quầng: lớp nền mờ trước, mask cắt phần trong sau — chỉ còn khung 14 px ngoài nút */
+.assistant-launcher::after {
+  inset: -14px;
+  padding: 14px;
+  border-radius: calc(var(--r-lg) + 13px);
+  filter: blur(10px);
+  opacity: 0.55;
+  transition: opacity var(--dur-md) var(--ease-standard);
+}
+
+.assistant-launcher:is(:hover, :focus-visible, [data-thinking]) {
+  animation-play-state: running, running;
+}
+
+.assistant-launcher:is(:hover, :focus-visible, [data-thinking])::after {
+  opacity: 0.9;
+}
+
+/* Vòng focus lùi ra ngoài viền gradient */
+.assistant-launcher:focus-visible {
+  outline-offset: 5px;
+}
+
+/* Vạch "đang trả lời" ở chân đầu khung chat: gradient AWS trượt ngang (loading bar của Cloudscape), chỉ khi đang trả lời */
+.assistant-thinking-bar {
+  height: 2px;
+  background: linear-gradient(90deg, var(--genai-stops));
+  background-size: 200% 100%;
+  opacity: 0;
+  transition: opacity var(--dur-md) var(--ease-standard);
+}
+
+.assistant-thinking-bar[data-on] {
+  opacity: 1;
+  animation: lumo-bar 1.6s linear infinite;
+}
+
+@keyframes lumo-bar {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* Ảnh Lumo ở đầu khung chat: vòng gradient 2 px (nền conic lộ ra quanh ô ảnh), quay khi đang trả lời, dừng tại chỗ khi xong */
+.assistant-avatar-ring {
+  display: inline-flex;
+  flex: none;
+  padding: 2px;
+  border-radius: calc(var(--r-md) + 2px);
+  background: conic-gradient(from var(--lumo-turn), var(--genai-stops));
+  animation: lumo-turn 3s linear infinite;
+  animation-play-state: paused;
+}
+
+.assistant-avatar-ring[data-thinking] {
+  animation-play-state: running;
+}
+
+/*
+ * Chữ "Lumo đang trả lời…": một dải sáng của gradient trợ lý chạy ngang qua chữ xám (chữ cắt nền, `background-clip: text`). Phần lớn
+ * chữ vẫn là `--ink-3`; dải sáng đi qua trong chưa tới hai giây mỗi vòng và chỉ trong lúc chờ câu trả lời.
+ */
+.assistant-shimmer {
+  color: var(--ink-3);
+}
+
+@supports (background-clip: text) or (-webkit-background-clip: text) {
+  .assistant-shimmer {
+    background: linear-gradient(90deg, var(--ink-3) 35%, var(--genai-3) 45%, var(--genai-5) 50%, var(--genai-3) 55%, var(--ink-3) 65%);
+    background-size: 250% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: lumo-shimmer 1.8s linear infinite;
+  }
+}
+
+@keyframes lumo-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+
+/* Nút mở đổi giữa ảnh Lumo và mũi tên thu gọn: hình mới xoay nhẹ vào chỗ */
+.assistant-launcher-swap {
+  animation: lumo-swap var(--dur-md) var(--ease-decelerate);
+}
+
+@keyframes lumo-swap {
+  from {
+    opacity: 0;
+    transform: rotate(-60deg) scale(0.7);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .assistant-launcher,
+  .assistant-thinking-bar[data-on],
+  .assistant-avatar-ring,
+  .assistant-launcher-swap {
+    animation: none;
+  }
+
+  .assistant-shimmer {
+    animation: none;
+    background: none;
+    color: var(--ink-3);
+  }
+}
+
+@media (forced-colors: active) {
+  .assistant-shimmer {
+    background: none;
+    color: CanvasText;
+  }
+}
+
+.assistant-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  height: 100dvh;
+}
+
+@media (min-width: 768px) {
+  .assistant-panel {
+    inset: auto;
+    right: var(--assistant-edge);
+    bottom: calc(var(--assistant-base) + var(--assistant-launcher-h) + 0.75rem + var(--assistant-lift, 0px));
+    width: min(380px, calc(100vw - 3rem));
+    height: min(560px, calc(100dvh - var(--assistant-base) - var(--assistant-launcher-h) - 1.75rem - var(--assistant-lift, 0px)));
+    transition:
+      width var(--dur-md) var(--ease-standard),
+      height var(--dur-md) var(--ease-standard);
+  }
+
+  /* Phóng to: rộng 720 px, cao tới dưới đầu trang (đỉnh khung cách mép trên 5 rem — đầu trang cao 4 rem, không che nút nào của nó) —
+     câu trả lời dài và bảng giá đọc không phải cuộn nhiều */
+  .assistant-panel[data-expanded] {
+    width: min(720px, calc(100vw - 3rem));
+    height: min(880px, calc(100dvh - var(--assistant-base) - var(--assistant-launcher-h) - 5.75rem - var(--assistant-lift, 0px)));
+  }
+}
+
+@media (min-width: 768px) and (prefers-reduced-motion: reduce) {
+  .assistant-panel {
+    transition: none;
+  }
+}

@@ -22,17 +22,17 @@ function cellsOf(matrix: HTMLElement, label: string) {
 const NO = 'Không'
 const YES = 'Có'
 
-test('tám cột vai trò theo thứ tự nền tảng → công ty, 37 dòng quyền kèm mã; không còn nhà sản xuất, logistics và quyền của họ', () => {
+test('tám cột vai trò theo thứ tự nền tảng → công ty, 38 dòng quyền kèm mã; không còn nhà sản xuất, logistics và quyền của họ', () => {
   const matrix = renderMatrix()
   expect(within(matrix).getAllByRole('columnheader').map((cell) => cell.textContent)).toStrictEqual([
     'Quyền', 'Quản trị hệ thống', 'Quản lý nền tảng', 'Hỗ trợ khách hàng', 'Quản trị công ty', 'Quản lý công ty', 'Điều phối viên',
     'Nhân viên kho', 'Tài xế',
   ])
-  // Một dòng tiêu đề, 13 dòng khu vực, 37 dòng quyền, một dòng tổng
-  expect(within(matrix).getAllByRole('row')).toHaveLength(53)
+  // Một dòng tiêu đề, 14 dòng khu vực (có companyWarehouses), 38 dòng quyền (thêm payroll.manage của màn Lương), một dòng tổng
+  expect(within(matrix).getAllByRole('row')).toHaveLength(54)
   // Dòng quyền có chín ô (tên + tám vai trò); dòng khu vực chỉ một ô, dòng tổng tám ô
   const permissionRows = within(matrix).getAllByRole('row').filter((row) => within(row).queryAllByRole('cell').length === 9)
-  expect(permissionRows).toHaveLength(37)
+  expect(permissionRows).toHaveLength(38)
   // Dòng đầu và dòng cuối của ma trận; mã quyền nằm ngay dưới tên
   const labels = permissionRows.map((row) => within(row).getAllByRole('cell')[0]?.textContent)
   expect([labels[0], labels.at(-1)]).toStrictEqual(['Tạo và quản lý công ty khách hàngcompanies.manage', 'Giao hàngdriver.operate'])
@@ -56,6 +56,8 @@ test('quản trị hệ thống và quản trị công ty quản lý người d�
   expect(cellsOf(matrix, 'Xem chuyến hàng')).toStrictEqual([NO, NO, NO, NO, YES, YES, NO, NO])
   expect(cellsOf(matrix, 'Xếp hàng tại kho')).toStrictEqual([NO, NO, NO, NO, NO, NO, YES, NO])
   expect(cellsOf(matrix, 'Giao hàng')).toStrictEqual([NO, NO, NO, NO, NO, NO, NO, YES])
+  // Lương tài xế do quản lý công ty quản lý, như CompanyPayrollController (hasRole MANAGER) của backend
+  expect(cellsOf(matrix, 'Quản lý cấu hình và tính bảng lương tài xế')).toStrictEqual([NO, NO, NO, NO, YES, NO, NO, NO])
 })
 
 test('chỉ quản lý công ty xuất báo cáo; điều phối chạy tối ưu, chỉnh sửa và duyệt phương án (FE-0-07)', () => {

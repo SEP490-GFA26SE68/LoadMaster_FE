@@ -46,8 +46,6 @@ export const warehouse = {
     start: 'Start staging',
     resume: { staging: 'Continue staging ({done}/{total})', loading: 'Continue loading ({done}/{total})' },
     openLoaded: 'View the loaded trip',
-    seal: 'Seal number {number}',
-    noSeal: 'No seal number recorded yet.',
     recheck: {
       one: 'The dispatcher rejected {count} manual confirmation: open the trip to check the package again.',
       other: 'The dispatcher rejected {count} manual confirmations: open the trip to check the packages again.',
@@ -145,19 +143,6 @@ export const warehouse = {
     overlayWaiting: 'Loading finishes once the dispatcher approves the manual confirmations.',
     rejected: 'The dispatcher rejected the manual confirmation of package {id}. Check this package again, then verify it.',
     rejectReason: 'Reason: {reason}',
-  },
-  seal: {
-    title: 'Seal the cargo door',
-    description: 'Record the seal number on the cargo door so the driver and the receiver can check it. Skip it if there is no seal.',
-    label: 'Seal number',
-    hint: 'Up to {max} characters, for example SEAL-240914.',
-    required: 'Enter the seal number before recording it.',
-    tooLong: 'The seal number has at most {max} characters.',
-    submit: 'Record seal number',
-    change: 'Change seal number',
-    recorded: 'Seal {number} · recorded at {time}',
-    none: 'No seal number was recorded for this trip.',
-    locked: 'The vehicle has left the warehouse: the seal number can no longer change.',
   },
   tiles: {
     position: 'Position',

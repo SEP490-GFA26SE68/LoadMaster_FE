@@ -1,0 +1,67 @@
+import type { Dictionary } from '../types'
+import type { samplePlan as source } from '../vi/samplePlan'
+
+/** Public "Sample plan" page `/phuong-an-mau` (see the Vietnamese file). */
+export const samplePlan: Dictionary<typeof source> = {
+  title: 'Sample plan',
+  lede: 'A sample trip of {count} cartons and {stops} delivery stops. Turn the 3D view, tap a carton, watch the loading and the unloading at each stop.',
+  back: 'About LoadMaster',
+  backLabel: 'Back to the LoadMaster home page',
+  stageLabel: '3D view of plan {label}',
+  views: 'View',
+  view: {
+    'goc-cheo': 'Diagonal',
+    'cua-sau': 'Rear door',
+    'ben-hong': 'Side',
+    tren: 'Top',
+  },
+  mode: {
+    label: 'Show',
+    load: 'Loading',
+    unload: 'Unloading',
+  },
+  stops: 'Unload at',
+  stopOption: 'Stop {number} · {name}',
+  computing: 'The simulated optimizer is working out three plans right in your browser…',
+  failed: 'This browser could not work out the sample trip. Reload the page to try again.',
+  fallback: 'This browser cannot draw the 3D view, so this is an illustration; the figures alongside still come from the run just made.',
+  source: 'Every figure is worked out by the LoadMaster simulated optimizer right in your browser — no server, no account.',
+  trip: {
+    title: 'Plan {label}',
+    placed: 'Loaded',
+    placedValue: '{placed} / {total} cartons',
+    payload: 'Payload used',
+    payloadValue: '{used} / {max}',
+    howSubject: 'plan {label}',
+  },
+  stop: {
+    title: 'At stop {number} · {name}',
+    count: 'Cartons unloaded',
+    moved: 'Later-stop cartons to move',
+    outOfZone: 'Cartons in the wrong zone',
+    outOfZoneValue: '{foreign} in · {stray} out',
+    note: 'Counted from the placements of plan {label}: a later-stop carton between this stop’s cargo and the rear door has to come out first.',
+    outOfZoneHow: 'The truck floor is split into zones by delivery stop, the first stop next to the door. {foreign} cartons of other stops have their centre inside the zone of stop {number}; {stray} cartons of stop {number} sit outside its zone — each one is a re-handling.',
+    howSubject: 'stop {number}',
+  },
+  share: {
+    copy: 'Copy link',
+    share: 'Share link',
+    copied: 'Link to this exact view copied.',
+    shared: 'Link to this exact view shared.',
+    failed: 'Could not copy the link — copy the address from the browser bar instead.',
+    title: 'Sample plan — LoadMaster',
+    note: 'The link keeps the plan, the mode, the stop and the view you have chosen.',
+  },
+  player: {
+    loading: 'Loading in the plan’s loading order',
+    unloading: 'Unloading at stop {number} · {name} in unloading order',
+    current: 'Unloading: {id}',
+    blockers: '{count} later-stop cartons are in the way, outlined as a warning.',
+    paused: 'Stopped: the carton being unloaded is fully blocked by later-stop cartons.',
+    skip: 'Skip this carton',
+    keys: 'Keys: Space play / pause · ← → step back / forward · Home to the start.',
+  },
+  open: 'Full screen',
+  openLabel: 'Open the sample plan full screen',
+}

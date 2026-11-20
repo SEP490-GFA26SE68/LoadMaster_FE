@@ -28,7 +28,6 @@ export const nav = {
   companyProfile: 'Thông tin công ty',
   support: 'Hỗ trợ',
   supportRequests: 'Yêu cầu hỗ trợ',
-  changeCustomerPlan: 'Đổi gói khách hàng',
   // Kho của công ty (`/quan-ly-kho`): quản lý công ty. Nhãn ngắn để thanh vừa 1.366 px; tiêu đề màn vẫn là companyWarehouses.title
   companyWarehouses: 'Kho bãi',
   // Liên hệ của khách: yêu cầu khách chưa có tài khoản gửi từ trang giới thiệu; quản trị hệ thống và hỗ trợ khách hàng

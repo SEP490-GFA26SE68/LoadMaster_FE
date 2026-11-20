@@ -218,7 +218,6 @@ const PROBES = {
   resolveStagingShortage: onForeignTrip((db, tripId) => db.resolveStagingShortage(tripId, 'PKG-001-01', 'KEEP_SEARCHING')),
   reportDamagedPackage: onForeignTrip((db, tripId) => db.reportDamagedPackage(tripId, 'PKG-001-01')),
   confirmLoadingByQr: onForeignTrip((db, tripId, { qrToken }) => db.confirmLoadingByQr(tripId, qrToken)),
-  recordSeal: onForeignTrip((db, tripId) => db.recordSeal(tripId, 'SEAL-0914')),
   confirmUnloadByQr: onForeignTrip((db, tripId, { qrToken }) => db.confirmUnloadByQr(tripId, 1, qrToken)),
   confirmLoadingManually: onForeignTrip((db, tripId) => db.confirmLoadingManually(tripId, { packageInstanceId: 'PKG-001-01', reason: 'LABEL_DAMAGED' })),
   confirmUnloadManually: onForeignTrip((db, tripId) => db.confirmUnloadManually(tripId, 1, { packageInstanceId: 'PKG-001-01', reason: 'QR_UNREADABLE' })),
