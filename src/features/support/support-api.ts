@@ -9,8 +9,6 @@
  */
 
 import { fetchBackendMe } from '@/features/auth/me-api'
-import { api, ApiError, isApiError } from '@/lib/api-client'
-import { fetchFirstPage } from '@/lib/api-page'
 import { api, ApiError } from '@/lib/api-client'
 import { usesBackend } from '@/lib/backend-config'
 import {
@@ -110,59 +108,6 @@ export async function replyToSupportTicket(ticketId: string, text: string): Prom
 export async function setSupportTicketStatus(ticketId: string, status: TicketStatus): Promise<SupportTicket> {
   if (!ON_BACKEND) return getMockDb().setSupportTicketStatus(ticketId, status)
   return requiredTicketOf(await api().patch<SupportTicketDto>(`/api/support-tickets/${encodeURIComponent(ticketId)}`, { body: { status } }))
-}
-
-/**
- * Phần phụ của khung công ty mà máy chủ không cho đọc (403) hoặc không có (404) thì là `null` — khung bỏ phần đó. Lỗi khác (mất mạng,
- * máy chủ lỗi) ném tiếp để màn báo lỗi tải và cho thử lại, không giả như công ty không có số dư.
- */
-async function orNull<T>(promise: Promise<T>): Promise<T | null> {
-  try {
-    return await promise
-  } catch (error) {
-    if (isApiError(error) && (error.status === 403 || error.status === 404)) return null
-    throw error
-  }
-}
-
-/**
- * Gói, số dư và 20 giao dịch credit gần nhất của công ty — khung bên cạnh màn hỗ trợ. Backend: tên công ty theo hợp đồng, không có hợp
- * đồng thì theo tên đi kèm yêu cầu (`companyName`); số dư, giao dịch máy chủ không cho đọc (403) hay không có (404) thì là `null`, lỗi khác ném tiếp.
- */
-// GET /api/contracts?companyId · GET /api/credits/balance?companyId · GET /api/credits/transactions?companyId
-export async function getSupportCompanyPanel(companyId: string, companyName?: string): Promise<SupportPanel> {
-  if (!ON_BACKEND) return panelOfMock(await getMockDb().getSupportCompanyPanel(companyId))
-  const query = { companyId }
-  const [contracts, balance, transactions] = await Promise.all([
-    api().get<ContractDto[] | null>('/api/contracts', { query }),
-    orNull(api().get<CreditBalanceDto>('/api/credits/balance', { query })),
-    orNull(fetchFirstPage<CreditTransactionDto>(CREDIT_TRANSACTIONS_PATH, { query, size: SUPPORT_PANEL_TRANSACTIONS }).then(page => page.rows)),
-  ])
-  const dto = latestContracts((contracts ?? []).filter((item) => String(item.companyId) === companyId))[0]
-  const contract = dto === undefined ? null : contractOf(dto, new Date().toISOString())
-  return {
-    companyName: contract?.companyName ?? companyName ?? companyId,
-    plan: contract?.plan ?? null,
-    planStatus: contract?.status ?? null,
-    credit: balance === null ? null : creditBalanceOf(balance),
-    transactions: transactions === null ? null : transactions.map(creditTransactionOf),
-  }
-}
-
-/** Hợp đồng gói hiện tại của mọi công ty — hộp thoại đổi gói cho khách. Kho mẫu không có lệnh đổi gói nên không đọc gì. */
-// GET /api/contracts
-export async function listCompanyContracts(): Promise<CompanyContract[]> {
-  if (!ON_BACKEND) return []
-  const now = new Date().toISOString()
-  return latestContracts((await api().get<ContractDto[] | null>('/api/contracts')) ?? []).map((dto) => contractOf(dto, now))
-}
-
-/** Hỗ trợ khách hàng áp ngay một gói cho công ty khách (tự gia hạn). Chỉ backend: kho mẫu đổi gói qua thanh toán của quản trị công ty. */
-// POST /api/contracts
-export async function assignCompanyPlan(companyId: string, planId: string): Promise<CompanyContract> {
-  if (!ON_BACKEND) throw new ApiError('NOT_SUPPORTED')
-  const body = { companyId: Number(companyId), planId: Number(planId), autoRenew: true }
-  return contractOf(await api().post<ContractDto>('/api/contracts', { body }), new Date().toISOString())
 }
 
 export type UnlockTrialResult = {
