@@ -1,6 +1,7 @@
 import { Navigate, Outlet, useLocation } from 'react-router'
 import { useAuthSafe } from '@/features/auth/AuthProvider'
 import { TrialAgreementNotifier } from '@/features/billing/TrialAgreementNotifier'
+import { AppAssistant } from '@/features/marketing/assistant/AppAssistant'
 import { TrialAccountLockedView } from '@/features/support/TrialAccountLockedView'
 import { TrialExpiredLockedView } from '@/features/support/TrialExpiredLockedView'
 import { isPlatformRole } from '@/types/user'
@@ -52,6 +53,7 @@ export function AppShell() {
       <div className="relative flex min-h-0 min-w-0 flex-1">
         <Outlet />
       </div>
+      <AppAssistant />
     </div>
   )
 }

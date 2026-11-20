@@ -46,7 +46,7 @@ async function openAssistant(surface: 'public' | 'app' = 'public') {
     </QueryClientProvider>,
   )
   const user = userEvent.setup()
-  await user.click(screen.getByRole('button', { name: 'Hỏi Lumo' }))
+  await user.click(screen.getByRole('button', { name: surface === 'app' ? 'Trợ lý AI' : 'Hỏi Lumo' }))
   const panel = within(await screen.findByRole('dialog', { name: 'Lumo' }, ANSWER))
   const ask = async (question: string) => {
     await user.type(panel.getByRole('textbox', { name: 'Câu hỏi của bạn' }), `${question}{Enter}`)

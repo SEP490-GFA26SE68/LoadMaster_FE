@@ -76,7 +76,7 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   mười hai mục, **Điều khoản sử dụng** `/dieu-khoan-su-dung` (`marketing/terms/`, nhánh `terms`): mười một mục. Mỗi câu nói đúng điều mã hôm
   nay làm và chọn theo nguồn đang chạy (máy chủ hay bản demo: `usesBackend(…)`, `REGISTRATION_CAPABILITIES`, `backendConfig.authSource`) —
   người đọc yêu cầu liên hệ theo `CONTACT_READER_ROLES` (`contacts/contact-readers.ts`: máy chủ cho thêm quản lý nền tảng), máy chủ trả lời
-  qua email (Brevo), email của máy chủ khi đăng ký, VNPay khi thanh toán thật, Goong khi tìm địa chỉ và tính tuyến; dấu tích đồng ý chỉ để
+  qua email (Brevo), email của máy chủ khi đăng ký, VNPay khi thanh toán thật, Goong khi tìm địa chỉ và tính tuyến, Anthropic khi trợ lý AI nối máy chủ (nhóm `assistant`); dấu tích đồng ý chỉ để
   form cho gửi, không gửi đi. Mọi số là tham số từ hằng của code (credit, kỳ gói, ngưỡng sắp hết credit từ `BILLING_CONSTANTS`; hạn ký thoả
   thuận dùng thử, ngày xoá và ngày cập nhật ở `legal/legal-facts.ts`). Hạn lưu trữ chỉ nói thứ code có (dùng thử: khoá sau 72 giờ, xoá 30 ngày
   sau khi hết hạn); dữ liệu khác trên máy chủ ghi "chưa ấn định". Không pháp nhân, địa chỉ, mã số thuế, email hay cam kết tuân thủ nào chưa
@@ -258,10 +258,23 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   câu mô tả vẽ ngay, không chờ phần 3D. Câu mô tả khung
   (`landing.stage.caption`) là `sr-only`, nối bằng `aria-describedby`; canvas `aria-hidden`.
 - **Trợ lý "Hỏi Lumo"** (`marketing/assistant/`, gắn ở `PublicPage` nên có ở cả hai trang công khai): trợ lý **thụ động** — không tự mở, không
-  lời mời bật lên — trả lời từ **bộ câu trả lời soạn sẵn** (`assistant-kb.ts`, 16 chủ đề; câu ở nhánh `assistant` của từ điển), **không phải AI**
-  và không bao giờ nói mình là AI; dòng nhỏ dưới ô gõ — cũng là mô tả của hộp thoại — nói Lumo trả lời từ tài liệu của LoadMaster, không phải nhân viên tư vấn. Khớp câu hỏi bằng
-  từ khoá vi + en không dấu (`assistant-match.ts`, dưới ngưỡng thì nói thẳng là chưa có câu trả lời). Lớp mạng `assistant-api.ts`
-  (`askAssistant`, `POST /api/assistant/messages` — chưa có ở BE: khớp ở trình duyệt sau 500 ms) → `useAskAssistantMutation`. Nút mở góc
+  lời mời bật lên. **Hai chế độ theo nhóm `assistant`** (`ASSISTANT_USES_AI` ở `assistant-api.ts`). Kho mẫu: trả lời từ **bộ câu trả lời soạn
+  sẵn** (`assistant-kb.ts`, 16 chủ đề; câu ở nhánh `assistant` của từ điển), **không phải AI** và không bao giờ nói mình là AI; dòng nhỏ dưới ô
+  gõ — cũng là mô tả của hộp thoại — nói Lumo trả lời từ tài liệu của LoadMaster, không phải nhân viên tư vấn. Khớp câu hỏi bằng từ khoá vi +
+  en không dấu (`assistant-match.ts`, dưới ngưỡng thì nói thẳng là chưa có câu trả lời) sau 500 ms. **Nối máy chủ**: Lumo là **trợ lý AI** và
+  dòng dưới ô gõ nói vậy, kèm "có thể nhầm" (`panel.disclaimerAi`, trong ứng dụng `disclaimerAiApp`). Câu gõ đi tới mô hình qua
+  `askAssistant` (`assistant-api.ts`, giới hạn 45 giây): khách `POST /api/assistant/public/messages` kèm `guestKey` — mã ngẫu nhiên 32 ký tự giữ
+  ở `sessionStorage` `loadmaster.tro-ly-lumo` —, người đã đăng nhập `POST /api/assistant/messages` kèm đường dẫn và tiêu đề của màn đang mở;
+  lượt sau gửi `conversationId` máy chủ trả về, "Bắt đầu lại" mở hội thoại mới. Câu gợi ý (chủ đề) vẫn là câu soạn sẵn. Máy chủ bận, hết
+  ngân sách (`ASSISTANT_*`) hay không tới được thì trả câu soạn sẵn kèm một dòng "Trợ lý AI đang bận…" (`degraded`), không hiện thông điệp thô.
+  Câu trả lời của mô hình vẽ bằng phần tử thường (`assistant-text.ts`: đoạn, gạch đầu dòng, bước — bỏ dấu Markdown, không bao giờ đưa HTML vào
+  trang); liên kết máy chủ gợi ý chỉ giữ đường dẫn trong app mà người xem mở được (`openableLinks` + `canOpenRoute` của `app/route-access.ts`,
+  tối đa ba). Trong ứng dụng, trợ lý tự mời chuyển câu hỏi cho đội hỗ trợ: hai nút "Có, chuyển cho đội hỗ trợ" / "Không cần" gửi đi như một
+  lượt trả lời, máy chủ tạo yêu cầu hỗ trợ và màn nêu mã; lối "Hỏi đội LoadMaster" sang form liên hệ chỉ có ở trang công khai. Lớp mạng
+  → `useAskAssistantMutation`. **Trong ứng dụng** (`AppAssistant`, gắn ở `AppShell`): nút "Trợ lý AI" cùng khung chat, **chỉ khi nhóm
+  `assistant` nối máy chủ**, người dùng không bị gắn cờ và công ty còn gói hiệu lực (vai trò nền tảng không bị khoá); màn toàn màn hình
+  (Planner, kho, tài xế) nằm ngoài `AppShell` nên không có nút. Cuộc trò chuyện gắn với bề mặt và người xem (`assistantSession.bind`): đổi người
+  đăng nhập hay đi từ trang công khai vào app thì cuộc trò chuyện cũ đóng và mất. Nút mở góc
   dưới phải (chữ từ 640 px, 48 px / 56 px cảm ứng, chừa vùng an toàn) có **viền gradient quay** kiểu nút trợ lý AI của AWS (`animated gradient border`: `conic-gradient` theo gradient AI của AWS Cloudscape —
   token `--genai-1…5` ở `index.css`, xanh nhạt → xanh dương → chàm → tím, ngoại lệ duy nhất của luật không tím, quyết định của chủ sản phẩm
   19/11/2026 —, viền 2 px thay viền xám + quầng màu ngoài nút; đứng yên lúc nghỉ, quay khi rê chuột / focus và khi Lumo đang trả lời
@@ -284,7 +297,8 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   trình duyệt, 15 mức từ 50 tới 10.000, đứng sẵn ở 300); thẻ gói rẻ nhất đủ dùng có viền `--primary` kèm nhãn chữ "Rẻ nhất đủ dùng".
   "Hỏi đội LoadMaster" mở form liên hệ (Hỏi thông tin) và điền sẵn câu hỏi qua `state` của điều hướng (không lên URL;
   `ContactSection` đọc một lần mỗi lần điều hướng) — không hứa thời gian trả lời. Cuộc trò chuyện chỉ trong bộ nhớ
-  (`assistant-session.ts`): giữ qua hai trang, tải lại là mất; không `localStorage`. Thêm điều sản phẩm làm được thì thêm chủ đề, chỉ nói
+  (`assistant-session.ts`): giữ qua hai trang, tải lại là mất; không `localStorage` (nối máy chủ thì máy chủ lưu hội thoại — Chính sách bảo
+  mật nói vậy và nêu Anthropic là bên nhận dữ liệu). Thêm điều sản phẩm làm được thì thêm chủ đề, chỉ nói
   điều đang đúng; điều theo nguồn dữ liệu đi qua `AssistantContext` (luật nghỉ bắt buộc chỉ khi giờ đến là của mock).
 - **Số trên trang giới thiệu** đều có nguồn, mỗi số kèm câu nguồn: số dưới bộ chọn của khung 3D, bảng ba phương án và số của điểm 1 ở "Một
   chuyến hàng" — đều của lần chạy mẫu vừa tính; hai số cố định cạnh bảng — credit một lần chạy (`BILLING_CONSTANTS.optimizationCost`) và cổng
@@ -1374,7 +1388,8 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
 - **Nhóm chức năng** (`BACKEND_FEATURES`): `VITE_API_FEATURES` là `all` (mặc định), `none` hoặc danh sách tên nhóm, chỉ có hiệu lực khi đăng
   nhập bằng Keycloak (kho mẫu luôn tắt hết). Mỗi `-api.ts` hỏi `usesBackend('<nhóm>')` một lần ở đầu file (`ON_BACKEND`); nhóm tắt chạy đúng
   như kho mẫu, nên CI, E2E và test cũ không đổi. Đã nối: `users`, `companies`, `billing`, `contacts`, `support`, `packages`, `driver`,
-  `monitoring`, `trips`, `fleet`, `warehouse`, `notifications`, `registration`, `payroll`. Nhóm `payroll` cấu hình phiên bản đơn giá công ty,
+  `monitoring`, `trips`, `fleet`, `warehouse`, `notifications`, `registration`, `payroll`, `assistant` (trợ lý AI Lumo — mục 1 "Trợ lý
+  Hỏi Lumo"; tắt thì Lumo trả lời bằng câu soạn sẵn và app không có nút trợ lý). Nhóm `payroll` cấu hình phiên bản đơn giá công ty,
   tính và chốt bảng lương theo tháng, đọc phiếu lương tài xế và gán tài xế cho chuyến. `platformOps` chưa có thân hàm nào — cờ bật vẫn là kho mẫu — nên không dựa vào `usesBackend`
   của nhóm đó cho tới khi nối. Nhóm `notifications` tắt thì chuông đọc nhật ký kho mẫu nên chỉ hiện khi mọi nhóm mà thông báo của vai trò
   nói về còn là kho mẫu (`notificationsReachable`, `notifications-api.ts`; bật thì mục "Chuông thông báo" dưới). Mã chuyến chỉ là liên kết khi màn đọc chuyến cùng nguồn với màn chuyến (`tripLinkable` ở

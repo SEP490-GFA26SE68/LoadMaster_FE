@@ -49,6 +49,8 @@ let nextId = 1
 let generation = 0
 let conversations: Partial<Record<AssistantSurface, string>> = {}
 let guest: string | null = null
+/** Ai đang trò chuyện (`<bề mặt>:<mã người dùng>`): đổi người hay đổi bề mặt thì cuộc trò chuyện cũ không theo sang. */
+let owner: string | null = null
 const listeners = new Set<() => void>()
 
 function update(patch: Partial<AssistantSession>) {
@@ -98,6 +100,15 @@ export const assistantSession = {
     conversations = { ...conversations, [surface]: id }
   },
   guestKey,
+  /** Gắn cuộc trò chuyện với người đang xem; người khác (đăng xuất rồi đăng nhập, từ trang công khai vào ứng dụng) thì xoá và đóng khung. */
+  bind(next: string) {
+    if (owner !== null && owner !== next) {
+      generation += 1
+      conversations = {}
+      update({ entries: [], pending: false, open: false })
+    }
+    owner = next
+  },
   /** "Bắt đầu lại": xoá cuộc trò chuyện (và hội thoại ở máy chủ), khung vẫn mở. */
   restart() {
     generation += 1
@@ -111,6 +122,7 @@ export const assistantSession = {
     generation += 1
     conversations = {}
     guest = null
+    owner = null
     for (const listener of listeners) listener()
   },
 }

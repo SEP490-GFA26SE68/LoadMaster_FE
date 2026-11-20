@@ -8,11 +8,14 @@ import { TRIAL_AGREEMENT_HOURS, TRIAL_PURGE_DAYS } from '../legal/legal-facts'
 import { PrivacyPage } from './PrivacyPage'
 
 vi.mock('@/lib/backend-config', () => ({
-  backendConfig: { authSource: 'keycloak', apiUrl: 'http://be.test', features: new Set(['contacts']), keycloak: { url: '', realm: '', clientId: '' } },
-  usesBackend: (feature: string) => feature === 'contacts',
+  backendConfig: { authSource: 'keycloak', apiUrl: 'http://be.test', features: new Set(['contacts', 'assistant']), keycloak: { url: '', realm: '', clientId: '' } },
+  usesBackend: (feature: string) => feature === 'contacts' || feature === 'assistant',
 }))
 
-/** Liên hệ của khách đi tới máy chủ: trang nói đúng các vai trò máy chủ cho đọc (cả quản lý nền tảng) và việc trả lời qua Brevo. */
+/**
+ * Liên hệ của khách và trợ lý AI đi tới máy chủ: trang nói đúng các vai trò máy chủ cho đọc (cả quản lý nền tảng), việc trả lời qua Brevo và
+ * việc câu hỏi cho trợ lý đi tới Anthropic.
+ */
 function renderPrivacy() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
@@ -53,4 +56,13 @@ test('signed in through the server, the policy names Keycloak and the trial dead
     `Tài khoản dùng thử chưa ký thoả thuận dịch vụ trong ${TRIAL_AGREEMENT_HOURS} giờ thì bị khoá, và bị xoá hẳn ${TRIAL_PURGE_DAYS} ngày sau khi hết hạn dùng thử.`,
   )
   expect(retention).toHaveTextContent('LoadMaster chưa ấn định thời hạn lưu')
+})
+
+test('with the AI assistant on the server, the policy says questions go through the server to Anthropic and lists Anthropic as a recipient', () => {
+  renderPrivacy()
+  const assistant = screen.getByRole('region', { name: 'Bản thử trên trang giới thiệu và trợ lý' })
+  expect(assistant).toHaveTextContent('máy chủ lưu cuộc trò chuyện và gửi câu đó, cùng các lượt trước của cuộc trò chuyện, tới Anthropic')
+  expect(assistant).not.toHaveTextContent('câu bạn gõ không được gửi đi')
+  const recipients = screen.getByRole('region', { name: 'Bên thứ ba nhận dữ liệu' })
+  expect(recipients).toHaveTextContent('Anthropic — mô hình AI soạn câu trả lời của trợ lý Lumo')
 })

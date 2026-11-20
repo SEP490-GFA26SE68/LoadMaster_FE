@@ -8,6 +8,8 @@
 export const assistant = {
   launcher: {
     label: 'Hỏi {name}',
+    /** Tên nút trong ứng dụng (nhóm `assistant` nối máy chủ). */
+    labelApp: 'Trợ lý AI',
   },
   panel: {
     subtitle: 'Hỏi đáp về LoadMaster',

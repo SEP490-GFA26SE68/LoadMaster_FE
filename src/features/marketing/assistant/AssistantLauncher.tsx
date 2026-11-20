@@ -1,10 +1,12 @@
 import { ChevronDown } from 'lucide-react'
-import { lazy, Suspense, useRef, useState } from 'react'
+import { lazy, Suspense, useLayoutEffect, useRef, useState } from 'react'
 import { LUMO_NAME } from '@/components/brand/Lumo'
+import { useAuthSafe } from '@/features/auth/AuthProvider'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { AssistantAvatar } from './AssistantAvatar'
 import { ASSISTANT_PANEL_ID, assistantSession, useAssistantSession } from './assistant-session'
+import { useAssistantSurface } from './assistant-surface'
 import { useLauncherLift } from './useLauncherLift'
 import './assistant.css'
 
@@ -16,10 +18,16 @@ const AssistantPanel = lazy(() => import('./AssistantPanel'))
  * rồi giữ lại để đóng / mở không tải lại; cuộc trò chuyện ở `assistant-session.ts`. Nút nâng lên khi chạm điều khiển quan trọng của trang
  * (`useLauncherLift`). Viền gradient quay (`assistant.css`): đứng yên lúc nghỉ, quay khi rê chuột / focus và khi Lumo đang trả lời.
  * Khung đang mở thì nút thành nút thu gọn: chỉ còn mũi tên xuống, bấm là đóng khung. Tên truy cập vẫn là "Hỏi Lumo" — trạng thái mở
- * nằm ở `aria-expanded`, không đổi tên theo trạng thái (mẫu nút mở rộng của ARIA APG).
+ * nằm ở `aria-expanded`, không đổi tên theo trạng thái (mẫu nút mở rộng của ARIA APG). Trong ứng dụng (`AppAssistant`) tên nút là "Trợ lý
+ * AI". Cuộc trò chuyện gắn với người đang xem và bề mặt (`assistantSession.bind`): đổi người là cuộc trò chuyện cũ không theo sang.
  */
 export function AssistantLauncher() {
   const t = useT()
+  const surface = useAssistantSurface()
+  const userId = useAuthSafe()?.user?.id ?? ''
+  // Trước khi vẽ: cuộc trò chuyện của người trước không hiện ra dù chỉ một khung hình
+  useLayoutEffect(() => assistantSession.bind(`${surface}:${userId}`), [surface, userId])
+  const label = surface === 'app' ? t('assistant.launcher.labelApp') : t('assistant.launcher.label', { name: LUMO_NAME })
   const { open, pending } = useAssistantSession()
   const [loaded, setLoaded] = useState(open)
   // Dựng lại khi khung đã mở sẵn (chuyển giữa hai trang công khai): khung không giành focus của trang
@@ -54,12 +62,12 @@ export function AssistantLauncher() {
         {open ? (
           <>
             <ChevronDown aria-hidden className="assistant-launcher-swap size-6" strokeWidth={1.5} />
-            <span className="sr-only">{t('assistant.launcher.label', { name: LUMO_NAME })}</span>
+            <span className="sr-only">{label}</span>
           </>
         ) : (
           <>
             <AssistantAvatar pose="wink" className="assistant-launcher-swap pointer-coarse:size-11" />
-            <span className="sr-only sm:not-sr-only">{t('assistant.launcher.label', { name: LUMO_NAME })}</span>
+            <span className="sr-only sm:not-sr-only">{label}</span>
           </>
         )}
       </button>

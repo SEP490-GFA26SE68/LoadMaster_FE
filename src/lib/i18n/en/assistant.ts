@@ -4,6 +4,7 @@ import type { assistant as source } from '../vi/assistant'
 export const assistant = {
   launcher: {
     label: 'Ask {name}',
+    labelApp: 'AI assistant',
   },
   panel: {
     subtitle: 'Questions about LoadMaster',

@@ -76,7 +76,7 @@ test('the consent label opens the privacy policy in a new tab; the page fits a 3
   // Thẻ mới lấy khung nhìn của ngữ cảnh, không của trang mở nó
   await policy.setViewportSize({ width: 390, height: 844 })
   await expect(policy.getByRole('heading', { level: 1, name: 'Chính sách bảo mật', exact: true })).toBeVisible()
-  await expect(policy.getByText('Cập nhật lần cuối: 19/11/2026', { exact: true })).toBeVisible()
+  await expect(policy.getByText('Cập nhật lần cuối: 20/11/2026', { exact: true })).toBeVisible()
   await expect(policy).toHaveTitle(/Chính sách bảo mật/)
   // Không cuộn ngang ở 390 px
   expect(await policy.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0)

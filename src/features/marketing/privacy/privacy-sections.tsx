@@ -30,6 +30,8 @@ const DRIVER_ON_SERVER = usesBackend('driver')
 /** Thoả thuận dịch vụ thử nghiệm (`agreements-api.ts`) và bảng lương tài xế chỉ có khi nhóm của chúng nối máy chủ. */
 const BILLING_ON_SERVER = usesBackend('billing')
 const PAYROLL_ON_SERVER = usesBackend('payroll')
+/** Trợ lý AI: câu hỏi đi qua máy chủ tới Anthropic. Tắt thì Lumo trả lời từ bộ câu soạn sẵn trên trình duyệt. */
+const ASSISTANT_ON_SERVER = usesBackend('assistant')
 
 /**
  * Mười hai mục của Chính sách bảo mật theo thứ tự đọc: phạm vi và mục đích → từng lối dữ liệu đi vào (form liên hệ, đăng ký, tài khoản,
@@ -142,7 +144,7 @@ export function usePrivacySections(): LegalSectionSpec[] {
       content: (
         <>
           <LegalText>{t('privacy.local.tryOut')}</LegalText>
-          <LegalText>{t('privacy.local.assistant', { name: LUMO_NAME })}</LegalText>
+          <LegalText>{t(ASSISTANT_ON_SERVER ? 'privacy.local.assistantAi' : 'privacy.local.assistant', { name: LUMO_NAME })}</LegalText>
         </>
       ),
     },
@@ -155,6 +157,7 @@ export function usePrivacySections(): LegalSectionSpec[] {
           <LegalList>
             {SIGN_IN_ON_SERVER ? <li>{t('privacy.thirdParties.brevo')}</li> : null}
             {SIGN_IN_ON_SERVER ? <li>{t('privacy.thirdParties.vnpay')}</li> : null}
+            {ASSISTANT_ON_SERVER ? <li>{t('privacy.thirdParties.anthropic', { name: LUMO_NAME })}</li> : null}
             <li>{t('privacy.thirdParties.goong')}</li>
             <li>{t('privacy.thirdParties.google')}</li>
           </LegalList>

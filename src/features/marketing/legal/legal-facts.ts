@@ -12,7 +12,7 @@ export const TRIAL_AGREEMENT_HOURS = 72
 export const TRIAL_PURGE_DAYS = 30
 
 /** Ngày sửa nội dung hai trang lần cuối — giữa trưa giờ máy để định dạng ngày không lệch sang hôm trước / hôm sau. */
-export const LEGAL_UPDATED_AT = new Date(2026, 10, 19, 12)
+export const LEGAL_UPDATED_AT = new Date(2026, 10, 20, 12)
 
 /** Hai tài liệu pháp lý, theo thứ tự của bộ chuyển trên dải trời. */
 export const LEGAL_DOCS = ['privacy', 'terms'] as const
