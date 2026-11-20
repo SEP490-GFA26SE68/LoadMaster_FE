@@ -25,6 +25,7 @@ const DashboardPage = lazy(() => import('@/features/manager/DashboardPage').then
 const TripListPage = lazy(() => import('@/features/trips/TripListPage').then((m) => ({ default: m.TripListPage })))
 const TripFormPage = lazy(() => import('@/features/trips/TripFormPage').then((m) => ({ default: m.TripFormPage })))
 const TripDetailPage = lazy(() => import('@/features/trips/TripDetailPage').then((m) => ({ default: m.TripDetailPage })))
+const TripClaimsPage = lazy(() => import('@/features/trips/TripClaimsPage').then((m) => ({ default: m.TripClaimsPage })))
 const OptimizationSetupPage = lazy(() => import('@/features/optimization/OptimizationSetupPage').then((m) => ({ default: m.OptimizationSetupPage })))
 const PlanComparisonPage = lazy(() => import('@/features/trips/PlanComparisonPage').then((m) => ({ default: m.PlanComparisonPage })))
 const ViewerPage = lazy(() => import('@/features/viewer3d/ViewerPage').then((m) => ({ default: m.ViewerPage })))
@@ -194,6 +195,7 @@ export const routes: RouteObject[] = [
                   ]),
                   guarded('trips.view', [
                     { path: '/chuyen', element: <TripListPage />, handle: titled((t) => t('titles.trips')) },
+                    { path: '/phieu-xin-chuyen', element: <TripClaimsPage />, handle: titled((t) => t('titles.tripClaims')) },
                     { path: '/chuyen/:tripId', element: <TripDetailPage />, handle: titled((t, s) => t('titles.trip', idParam(s, 'tripId'))) },
                   ]),
                   guarded('trips.edit', [

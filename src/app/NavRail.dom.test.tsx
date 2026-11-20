@@ -2,13 +2,26 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
-import { expect, test } from 'vitest'
+import { beforeEach, expect, test, vi } from 'vitest'
 import { TooltipProvider } from '@/components/ui/Tooltip'
 import { AuthProvider } from '@/features/auth/AuthProvider'
 import { I18nProvider } from '@/lib/i18n'
 import { signedInAs } from '@/test/signed-in'
 import type { Role } from '@/types/user'
 import { NavRail } from './NavRail'
+
+const { tripsBackend } = vi.hoisted(() => ({ tripsBackend: { enabled: true } }))
+vi.mock('@/lib/backend-config', async () => {
+  const actual = await vi.importActual<typeof import('@/lib/backend-config')>('@/lib/backend-config')
+  return {
+    ...actual,
+    usesBackend: (feature: Parameters<typeof actual.usesBackend>[0]) => feature === 'trips' ? tripsBackend.enabled : feature === 'notifications' || actual.usesBackend(feature),
+  }
+})
+
+beforeEach(() => {
+  tripsBackend.enabled = true
+})
 
 function renderRail(role: Role, route = '/') {
   signedInAs(role)
@@ -51,8 +64,8 @@ test('nav rail đánh dấu mục đang mở và hiện nhãn chữ cho từng m
  * Nhận hàng (FE-0-06).
  */
 test.each<[Role, string[]]>([
-  ['dispatcher', ['Chuyến hàng', 'Giám sát', 'Kho kiện', 'Yêu cầu giao', 'Đội xe', 'Bảng điều khiển']],
-  ['companyManager', ['Bảng điều khiển', 'Yêu cầu giao', 'Kho kiện', 'Chuyến hàng', 'Giám sát', 'Đội xe', 'Kho bãi', 'Bảng lương']],
+  ['dispatcher', ['Chuyến hàng', 'Phiếu xin chuyến', 'Giám sát', 'Kho kiện', 'Yêu cầu giao', 'Đội xe', 'Bảng điều khiển']],
+  ['companyManager', ['Bảng điều khiển', 'Yêu cầu giao', 'Kho kiện', 'Chuyến hàng', 'Phiếu xin chuyến', 'Giám sát', 'Đội xe', 'Kho bãi', 'Bảng lương']],
   ['warehouse', ['Kho', 'Kho kiện', 'Khách hàng']],
   ['driver', ['Tài xế']],
   ['systemManager', ['Gói cước', 'Lịch sử gói cước', 'Công ty', 'Đơn dùng thử']],
@@ -67,6 +80,23 @@ test.each<[Role, string[]]>([
     (link) => link.textContent,
   ),
 ).toStrictEqual(items)
+})
+
+test('điều phối viên thấy tab phiếu xin chuyến khi nối backend chuyến', () => {
+  renderRail('dispatcher')
+  expect(screen.getByRole('link', { name: 'Phiếu xin chuyến' })).toHaveAttribute('href', '/phieu-xin-chuyen')
+})
+
+test('nhân viên kho không thấy tab phiếu xin chuyến dù có quyền xem chuyến', () => {
+  renderRail('warehouse')
+  expect(screen.queryByRole('link', { name: 'Phiếu xin chuyến' })).not.toBeInTheDocument()
+})
+
+test('tab phiếu xin chuyến bị ẩn khi chưa nối backend chuyến', () => {
+  tripsBackend.enabled = false
+  renderRail('dispatcher')
+  expect(screen.queryByRole('link', { name: 'Phiếu xin chuyến' })).not.toBeInTheDocument()
+  tripsBackend.enabled = true
 })
 
 /**

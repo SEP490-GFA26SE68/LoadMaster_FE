@@ -6,6 +6,7 @@ export const nav = {
   label: 'Main navigation',
   dashboard: 'Dashboard',
   trips: 'Trips',
+  tripClaims: 'Trip claims',
   warehouse: 'Warehouse',
   driver: 'Driver',
   fleet: 'Fleet',

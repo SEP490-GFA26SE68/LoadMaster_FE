@@ -1,4 +1,4 @@
-import { Banknote, Box, Building2, ClipboardList, CreditCard, Inbox, LayoutDashboard, Layers, LifeBuoy, MapPinned, Package, ScrollText, Tablet, Truck, Users, Warehouse } from 'lucide-react'
+import { Banknote, Box, Building2, ClipboardCheck, ClipboardList, CreditCard, Inbox, LayoutDashboard, Layers, LifeBuoy, MapPinned, Package, ScrollText, Tablet, Truck, Users, Warehouse } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { ROLE_HOME } from '@/features/auth/landing'
 import { can, type Permission } from '@/features/auth/permissions'
@@ -20,6 +20,7 @@ export type NavScreen = {
 export const NAV_SCREENS = {
   dashboard: { to: '/tong-quan', labelKey: 'nav.dashboard', icon: LayoutDashboard, permission: 'dashboard.view' },
   trips: { to: '/chuyen', labelKey: 'nav.trips', icon: Truck, permission: 'trips.view' },
+  tripClaims: { to: '/phieu-xin-chuyen', labelKey: 'nav.tripClaims', icon: ClipboardCheck, permission: 'trips.view' },
   // Giám sát chuyến Đang vận chuyển (FE-6-10)
   monitoring: { to: '/giam-sat', labelKey: 'nav.monitoring', icon: MapPinned, permission: 'monitoring.view' },
   // Loại kiện và In nhãn mở từ màn Kho kiện, không có mục riêng
@@ -77,8 +78,8 @@ export const NAV_ITEMS: Readonly<Record<Role, readonly NavScreenId[]>> = {
   systemManager: ['plans', 'subscriptionHistory', 'companies', 'trialRequests'],
   systemSupporter: ['support', 'contacts'],
   companyAdmin: ['users', 'audit', 'billing', 'companyProfile'],
-  companyManager: ['dashboard', 'requirements', 'packages', 'trips', 'monitoring', 'fleet', 'companyWarehouses', 'payroll'],
-  dispatcher: ['trips', 'monitoring', 'packages', 'requirements', 'fleet', 'dashboard'],
+  companyManager: ['dashboard', 'requirements', 'packages', 'trips', 'tripClaims', 'monitoring', 'fleet', 'companyWarehouses', 'payroll'],
+  dispatcher: ['trips', 'tripClaims', 'monitoring', 'packages', 'requirements', 'fleet', 'dashboard'],
   warehouse: ['warehouse', 'packages', 'warehouseCustomers'],
   driver: ['driver'],
 }

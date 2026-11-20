@@ -77,6 +77,12 @@ export const apiErrors = {
 
   // Chuyến, tuyến, phân tách hàng
   TRIP_NOT_FOUND: 'Không tìm thấy chuyến.',
+  TRIP_CLAIM_NOT_FOUND: 'Không tìm thấy phiếu xin chuyến.',
+  TRIP_CLAIM_DUPLICATE: 'Bạn đã gửi phiếu xin chuyến này rồi.',
+  TRIP_CLAIM_TRIP_TAKEN: 'Chuyến này đã có tài xế nhận.',
+  TRIP_CLAIM_TRIP_NOT_OPEN: 'Chuyến không còn ở trạng thái cho phép nhận.',
+  TRIP_CLAIM_ALREADY_DECIDED: 'Phiếu xin chuyến này đã có quyết định.',
+  TRIP_CLAIM_NOT_OWN: 'Bạn không thể thao tác trên phiếu của người khác.',
   PAYROLL_RATE_NOT_CONFIGURED: 'Công ty chưa cấu hình mức lương áp dụng cho tháng này.',
   PAYROLL_RATE_ALREADY_EXISTS: 'Đã có phiên bản mức lương bắt đầu từ tháng này.',
   PAYROLL_RATE_EFFECTIVE_DATE_TOO_EARLY: 'Mức lương mới chỉ được áp dụng từ tháng sau (hoặc từ tháng này đối với công ty mới).',
