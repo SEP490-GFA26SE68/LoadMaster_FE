@@ -1,91 +1,114 @@
-import { useFrame, useThree } from '@react-three/fiber'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useThree } from '@react-three/fiber'
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { useSearchParams } from 'react-router'
+import type { Group } from 'three'
 import type { OptimizationRequest, OptimizationResult } from '@/domain/models'
-import { fillStep } from './landing-fill'
+import { DIORAMA_FRAME_POINTS, HERO_INSETS, laneSlots, STAGE_CAMERA, type HeroTier, type StageView } from './landing/diorama-layout'
+import { DioramaScene } from './landing/DioramaScene'
+import type { StorySource } from './landing/story-clock'
+import { DepartMotion, TruckStandIn } from './landing/DepartMotion'
+import { ContextWatch, FirstFrame } from './landing/frame-watch'
+import { doorsShut, loadedCount, STOP_SCENE_AT, UNLOAD_STOP, unloadedCount, ZONES_AT } from './landing/story-timeline'
+import { deriveSceneSemantics } from './operations/scene-semantics'
 import { adaptResult } from './scene-input'
+import type { FramePoints } from './scene/frame-fit'
 import { SceneCanvas } from './scene/SceneCanvas'
 import { usePerformanceFlags } from './usePerformanceFlags'
-import type { CameraPreset } from './viewer-types'
+import { debugQualityTier } from './viewer-options'
 
 const noop = () => {}
 
-/** Khung hình không có HUD đè lên: camera đứng gần hơn khung vừa khít của Planner để thùng xe chiếm phần lớn khung. */
-const FRAME_ZOOM = 1.3
+/** Khung đổi cỡ (xoay máy, kéo cửa sổ) thì canh lại camera một lần, khi kích thước đã yên chừng này ms. */
+const RESIZE_SETTLE_MS = 150
 
-/** Báo một lần khi khung hình đầu tiên đã vẽ: trang giới thiệu lúc đó mới đổi ảnh tĩnh sang khung 3D, rồi mới bắt đầu xếp. */
-function FirstFrame({ onFrame }: { onFrame: () => void }) {
-  const done = useRef(false)
-  useFrame(() => {
-    if (done.current) return
-    done.current = true
-    onFrame()
-  })
+/** Mỗi nhịp của chuyện xin một khung hình (`frameloop="demand"`); chuyện dừng hay hết thì cảnh nghỉ. */
+function StoryFrames({ story }: { story: StorySource }) {
+  const invalidate = useThree((state) => state.invalidate)
+  useEffect(() => story.subscribe(() => invalidate()), [story, invalidate])
   return null
 }
 
-/** Mất ngữ cảnh WebGL giữa chừng (card đồ hoạ khởi động lại, hết bộ nhớ): báo trang đổi sang hình minh hoạ thay vì để khung đen. */
-function ContextWatch({ onLost }: { onLost: () => void }) {
-  const canvas = useThree((state) => state.gl.domElement)
+/** Khung bọc canvas đổi cỡ: tăng `fitRequest` khi đã yên — camera của trang không ai xoay tay nên luôn canh lại theo khung mới. */
+function useRefitOnResize() {
+  const [request, setRequest] = useState(0)
+  const [box, setBox] = useState<HTMLDivElement | null>(null)
   useEffect(() => {
-    canvas.addEventListener('webglcontextlost', onLost)
-    return () => canvas.removeEventListener('webglcontextlost', onLost)
-  }, [canvas, onLost])
-  return null
-}
-
-/** Số kiện đang hiện: xếp từ 0 tới đủ thùng một lần mỗi `playKey`, theo thời gian thật (`fillStep`); giảm chuyển động thì đầy ngay. */
-function useFill(total: number, playKey: number, started: boolean, reducedMotion: boolean): number {
-  const [step, setStep] = useState(0)
-  useEffect(() => {
-    if (!started || reducedMotion) return
-    let frame = 0
-    let start: number | null = null
-    const tick = (now: number) => {
-      start ??= now
-      const next = fillStep(total, now - start)
-      setStep(next)
-      if (next < total) frame = requestAnimationFrame(tick)
-    }
-    frame = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(frame)
-  }, [total, playKey, started, reducedMotion])
-  return reducedMotion ? total : step
+    if (!box || typeof ResizeObserver === 'undefined') return
+    let timer = 0
+    let first = true
+    const observer = new ResizeObserver(() => {
+      // Lần báo ngay khi bắt đầu quan sát là kích thước lúc mở: khung đầu tiên đã canh theo nó
+      if (first) { first = false; return }
+      window.clearTimeout(timer)
+      timer = window.setTimeout(() => setRequest((value) => value + 1), RESIZE_SETTLE_MS)
+    })
+    observer.observe(box)
+    return () => { observer.disconnect(); window.clearTimeout(timer) }
+  }, [box])
+  return [request, setBox] as const
 }
 
 /**
- * Khung 3D của trang giới thiệu (`features/marketing` tải lười): cùng `SceneCanvas` với Planner, kho và tài xế, vẽ phương án mẫu
- * mà bộ tối ưu mô phỏng vừa tính trên trình duyệt của người xem. Không thao tác (`interactive={false}`: cuộn trang đi xuyên qua khung
- * hình), camera chỉ đổi theo nút góc nhìn của trang; góc "Trên" bật dải vùng theo điểm giao. Kiện xếp từ vách trước ra cửa sau đúng
- * `loadingOrder`, một lần, tới khi người xem bấm "Xếp lại".
+ * Khung 3D "Sân kho kể chuyện" của trang giới thiệu (`features/marketing` tải lười): cùng `SceneCanvas` với Planner, kho và tài xế,
+ * vẽ phương án mẫu mà bộ tối ưu mô phỏng vừa tính trên trình duyệt của người xem, giữa một sân kho thu nhỏ (`DioramaScene`). Không
+ * thao tác (`interactive={false}`: cuộn trang đi xuyên qua khung hình). Thời gian do trang giữ (`story`): kiện vào làn chờ, mặt quét
+ * lúc tối ưu, dải vùng điểm giao từ `ZONES_AT`, rồi từng kiện rời làn vào thùng đúng `loadingOrder`, cửa thùng đóng và xe lăn bánh
+ * rời kho (`DepartMotion`: nhóm xe của `SceneCanvas`, khói ở ống xả). Tới điểm 1 (khung tối dần do trang vẽ, `STOP_SCENE_AT` đổi cảnh
+ * lúc tối hẳn): hàng của điểm 1 rõ, hàng các điểm sau mờ đi (`deriveSceneSemantics` dỡ hàng, như màn tài xế), xe lùi vào chỗ dỡ, cửa
+ * mở, kiện của điểm 1 rời thùng đúng `unloadingOrder` và chồng lại ở làn — cùng InstancedMesh của kiện và của làn, không draw call nào
+ * thêm.
+ *
+ * Ba góc nhìn: `overview` toàn sân kho canh vào phần khung không bị nút, thẻ và Lumo che (`HERO_INSETS[tier]`); `truck` cận xe;
+ * `zones` nhìn từ trên, dải vùng kèm nhãn. React chỉ đọc vài giá trị suy ra từ thời gian (bước xếp, đã có dải vùng chưa, cửa đã đóng
+ * chưa, đã tới chỗ dỡ chưa, số kiện đã dỡ); hộp của làn, mặt quét, xe chạy và khói đọc thời gian trong `useFrame`.
  */
-export default function LandingStageViewer({ request, result, stopNames, preset, playKey, onReady, onFail }: {
+export default function LandingStageViewer({ request, result, stopNames, view, tier, story, onReady, onFail }: {
   request: OptimizationRequest
   result: OptimizationResult
   stopNames: readonly string[]
-  preset: CameraPreset
-  /** Tăng lên để xếp lại từ thùng rỗng. */
-  playKey: number
+  view: StageView
+  tier: HeroTier
+  story: StorySource
   onReady: () => void
   /** Ngữ cảnh WebGL mất giữa chừng. */
   onFail: () => void
 }) {
-  const flags = usePerformanceFlags(undefined, 'landing')
+  const [search] = useSearchParams()
+  const flags = usePerformanceFlags(debugQualityTier(search), 'landing')
   const model = useMemo(() => adaptResult({
     trip: { id: 'LANDING', stops: stopNames.map((name) => ({ name })) },
     revision: { request, result, ordersRecomputed: false },
   }), [request, result, stopNames])
-  const [started, setStarted] = useState(false)
-  const handleFrame = useCallback(() => {
-    setStarted(true)
-    onReady()
-  }, [onReady])
-  const step = useFill(model.placements.length, playKey, started, flags.reducedMotion)
+  const slots = useMemo(() => laneSlots(request, result, UNLOAD_STOP), [request, result])
+  /** Kiện của điểm 1 theo thứ tự rời thùng */
+  const unloadIds = useMemo(() => slots.filter((slot) => slot.unloadRank !== null).sort((a, b) => a.unloadRank! - b.unloadRank!).map((slot) => slot.instanceId), [slots])
+  const total = slots.length
+  const subscribe = useCallback((listener: () => void) => story.subscribe(listener), [story])
+  const step = useSyncExternalStore(subscribe, () => loadedCount(total, story.time()))
+  const zonesOn = useSyncExternalStore(subscribe, () => story.time() >= ZONES_AT)
+  const doorsClosed = useSyncExternalStore(subscribe, () => doorsShut(story.time()))
+  const atStop = useSyncExternalStore(subscribe, () => story.time() >= STOP_SCENE_AT)
+  const unloaded = useSyncExternalStore(subscribe, () => unloadedCount(unloadIds.length, story.time()))
+  const semantics = useMemo(() => atStop ? deriveSceneSemantics(model.placements, {
+    kind: 'unloading', step: model.placements.length, unloadedIds: new Set(unloadIds.slice(0, unloaded)), focusStop: UNLOAD_STOP,
+  }) : undefined, [atStop, unloaded, unloadIds, model.placements])
+  const vehicleRef = useRef<Group>(null)
+  const framePoints = useMemo<FramePoints | undefined>(
+    () => view === 'overview' ? { points: DIORAMA_FRAME_POINTS, insets: HERO_INSETS[tier] } : undefined, [view, tier])
+  const [fitRequest, observe] = useRefitOnResize()
 
   return (
-    <SceneCanvas experience="landing" model={model} placements={model.placements} flags={flags} preset={preset}
-      selectedId={null} onSelect={noop} step={step} zones={preset === 'tren' ? model.zones : undefined} interactive={false} frameZoom={FRAME_ZOOM}>
-      <FirstFrame onFrame={handleFrame} />
-      <ContextWatch onLost={onFail} />
-    </SceneCanvas>
+    <div ref={observe} className="absolute inset-0">
+      <SceneCanvas experience="landing" model={model} placements={model.placements} flags={flags} preset={view === 'zones' ? 'tren' : 'goc-cheo'}
+        selectedId={null} onSelect={noop} step={step} semantics={semantics} zones={zonesOn ? model.zones : undefined} zoneLabels={view === 'zones'}
+        interactive={false} fov={STAGE_CAMERA.fov} framePoints={framePoints} frameZoom={view === 'overview' ? 1 : STAGE_CAMERA.zoom} fitRequest={fitRequest}
+        vehicleRef={vehicleRef} doorsClosed={doorsClosed} vehicleChildren={flags.decoration ? null : <TruckStandIn vehicle={model.vehicle} />}>
+        <FirstFrame onFrame={onReady} />
+        <ContextWatch onLost={onFail} />
+        <StoryFrames story={story} />
+        <DioramaScene slots={slots} total={total} vehicle={model.vehicle} story={story} low={!flags.decoration} reducedMotion={flags.reducedMotion} />
+        <DepartMotion vehicleRef={vehicleRef} story={story} vehicle={model.vehicle} smoke={flags.decoration && !flags.reducedMotion} />
+      </SceneCanvas>
+    </div>
   )
 }

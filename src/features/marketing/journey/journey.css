@@ -1,0 +1,63 @@
+/*
+ * "Một chuyến hàng" của trang giới thiệu (`LandingJourney`): hình thùng xe đọc tiến độ cuộn `--p` (0 → 1 qua năm chặng) mà
+ * `useJourneyProgress` ghi lên phần tử `.journey`, cùng chặng đang xem `data-chapter`. Mặc định — không JS, không IntersectionObserver,
+ * trang in — `--p` là 0,5: thùng đầy, chip Đang vận chuyển, cửa đóng; không gì bị ẩn chờ chuyển động.
+ *
+ * Mỗi kiện mang hai ngưỡng `--on` (lên xe) và `--off` (xuống xe) từ `journey-model.ts`. `--in` / `--out` là hai dốc rất ngắn quanh hai
+ * ngưỡng đó: kiện hiện và trượt vào từ phía cửa khi `--p` qua `--on`, mờ và trượt ra phía cửa khi `--p` qua `--off`. Chỉ opacity và
+ * transform — không đổi bố cục. Giảm chuyển động: tiến độ đứng ở giữa từng chặng (`useJourneyProgress`), kiện không trượt.
+ */
+.journey {
+  --p: 0.5;
+}
+
+.journey-box {
+  --fade: 0.012;
+  --in: clamp(0, (var(--p) - var(--on)) / var(--fade), 1);
+  --out: clamp(0, (var(--off) - var(--p)) / var(--fade), 1);
+  opacity: calc(var(--in) * var(--out));
+  transform: translateX(calc((1 - var(--in)) * 36px + (1 - var(--out)) * 56px));
+}
+
+/* Vạch giữa đường chạy theo tiến độ: đứng yên khi khách không cuộn */
+.journey-road {
+  stroke-dashoffset: calc(var(--p) * -1500px);
+}
+
+/* Chip trạng thái của chặng đang xem; chưa có tiến độ thì là chip của chặng trên đường */
+.journey-chip {
+  display: none;
+}
+.journey:not([data-chapter]) .journey-chip[data-for~='2'],
+.journey[data-chapter='0'] .journey-chip[data-for~='0'],
+.journey[data-chapter='1'] .journey-chip[data-for~='1'],
+.journey[data-chapter='2'] .journey-chip[data-for~='2'],
+.journey[data-chapter='3'] .journey-chip[data-for~='3'],
+.journey[data-chapter='4'] .journey-chip[data-for~='4'] {
+  display: inline-flex;
+}
+
+/* Cửa sau mở khi kho xếp hàng và khi tài xế dỡ ở điểm giao */
+.journey-door-open {
+  opacity: 0;
+}
+.journey[data-chapter='1'] .journey-door-open,
+.journey[data-chapter='3'] .journey-door-open {
+  opacity: 1;
+}
+.journey[data-chapter='1'] .journey-door-closed,
+.journey[data-chapter='3'] .journey-door-closed {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .journey-box {
+    transform: none;
+  }
+}
+
+@media print {
+  .journey {
+    --p: 0.5 !important;
+  }
+}

@@ -39,7 +39,7 @@ afterEach(() => sessionStorage.clear())
 
 test('a guest sees sign-up as the one primary action of the hero, with consulting beside it', () => {
   renderLanding()
-  const hero = within(screen.getByRole('region', { name: 'Tận dụng thùng xe, dỡ đúng thứ tự, theo dõi tới điểm giao cuối.' }))
+  const hero = within(screen.getByRole('region', { name: 'Tới điểm nào, mở cửa là thấy hàng của điểm đó.' }))
 
   const trial = hero.getByRole('link', { name: 'Đăng ký trải nghiệm' })
   expect(trial).toHaveAttribute('href', '/dang-ky-trai-nghiem')
@@ -54,7 +54,7 @@ test('a guest sees sign-up as the one primary action of the hero, with consultin
 test('a signed-in user has nothing to sign up for: consulting stays the primary action', () => {
   signedInAs('dispatcher')
   renderLanding()
-  const hero = within(screen.getByRole('region', { name: 'Tận dụng thùng xe, dỡ đúng thứ tự, theo dõi tới điểm giao cuối.' }))
+  const hero = within(screen.getByRole('region', { name: 'Tới điểm nào, mở cửa là thấy hàng của điểm đó.' }))
 
   expect(hero.queryByRole('link', { name: /Đăng ký/ })).not.toBeInTheDocument()
   expect(isPrimary(hero.getByRole('link', { name: 'Nhận tư vấn' }))).toBe(true)

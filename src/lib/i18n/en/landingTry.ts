@@ -1,0 +1,108 @@
+import type { Dictionary } from '../types'
+import type { landingTry as source } from '../vi/landingTry'
+
+/**
+ * "Try it with your cargo" on the landing page (`#thu-ngay`, `features/marketing/try`): the visitor types a truck body and cartons, the
+ * app's simulated optimizer runs right in the browser and returns three plans A · B · C. No MOCK RESULT label on public pages: the source
+ * sentence under the results says the figures come from the simulated optimizer.
+ */
+export const landingTry = {
+  title: 'Try it with your cargo',
+  lede: 'Type your truck body and cartons, then run: the optimizer works out three plans right in this browser — no account needed.',
+  tabs: {
+    label: 'Choose what to try',
+    pack: 'Load your own truck',
+    axle: 'Axle load',
+  },
+  form: {
+    label: 'Your truck and cargo',
+    run: 'Work out three plans',
+    howSubject: 'the trial',
+    privacy: 'The figures you type stay in this browser; nothing is sent to a server.',
+  },
+  truck: {
+    legend: 'Truck body',
+    lengthCm: 'Length (cm)',
+    widthCm: 'Width (cm)',
+    heightCm: 'Height (cm)',
+    payloadKg: 'Payload (kg)',
+    note: 'Measure inside the body. The trial treats the rear door as the full body opening, with no obstacles and no axles.',
+  },
+  cartons: {
+    legend: 'Carton type {number}',
+    lengthCm: 'Length (cm)',
+    widthCm: 'Width (cm)',
+    heightCm: 'Height (cm)',
+    weightKg: 'Weight (kg)',
+    quantity: 'Cartons',
+    stop: 'Delivery stop',
+    stopOption: 'Stop {number}',
+    add: 'Add a carton type',
+    remove: 'Remove carton type {number}',
+    total: '{total} / {max} cartons in total',
+    rulesLabel: 'Cartons',
+    rules: 'Cartons stay upright, can turn on the floor and can be stacked — each carries at most three times its own weight on top. Stop 1 is delivered first.',
+  },
+  errors: {
+    required: 'Enter a number',
+    number: 'Numbers only, at most two decimal places',
+    integer: 'Enter a whole number',
+    range: 'From {min} to {max}',
+    totalQuantity: 'The trial loads at most {max} cartons per run',
+  },
+  results: {
+    title: 'Three plans from one run',
+    idle: 'Press “Work out three plans” to see the result for the figures above.',
+    plan: 'Plan {label}',
+    sameAs: 'Same as plan {label}',
+    placed: 'Loaded',
+    placedValue: '{placed} / {total}',
+    volume: 'Volume used',
+    balance: 'Centre of gravity off the middle',
+    rehandling: 'Cartons to move and reload',
+    unplacedTitle: 'Not loaded',
+    unplacedRow: 'Carton type {kind}: {count} — {reason}',
+    doorTooSmall: 'Taller or wider than the cargo body',
+    legend: 'Carton colour by delivery stop',
+    stopName: 'Stop {number}',
+    balanceNote: 'The trial does not ask for axles, so there are no axle loads: plan B balances by moving the centre of gravity of the cargo to the middle of the body length.',
+    singleStopNote: 'Every carton goes to the same stop, so none has to be moved and reloaded — give the carton types different stops to compare this figure.',
+    source: 'Figures worked out in your browser by the LoadMaster simulated optimizer, in one run for all three plans.',
+    stale: 'The figures above changed after this run — press “Work out three plans” to run again.',
+  },
+  announce: {
+    running: 'Working out three plans.',
+    done: 'Three plans ready for {total} cartons.',
+  },
+  failure: {
+    invalid: 'The optimizer does not accept these figures:',
+    failed: 'The optimizer found no plan for these figures.',
+    timeout: 'The optimizer ran over {seconds} seconds and stopped.',
+    service: 'This browser cannot run the simulated optimizer yet. Try reloading the page.',
+  },
+  axle: {
+    title: 'Which axle carries the cargo?',
+    vehicle: 'Sample truck: a 3.5-tonne truck, body {length} long, payload {payload}. The front axle sits under the cab, {frontAxle} ahead of the body’s front wall; the rear axle is {rearAxle} behind the front wall.',
+    mass: 'Cargo weight',
+    center: 'Cargo centre of gravity, from the front wall',
+    centerHint: 'A small number puts the cargo towards the cab, a large one towards the rear door.',
+    resultTitle: 'Load on the two axles',
+    groups: { front: 'Front axle', rear: 'Rear axle' },
+    loadOfLimit: '{load} / {limit}',
+    percent: '{value} of limit',
+    over: 'Over by {over}',
+    within: 'Both axles are within their limits.',
+    overFront: 'The front axle is over its limit by {over} — move the cargo towards the rear door or take some off.',
+    overRear: 'The rear axle is over its limit by {over} — move the cargo towards the cab or take some off.',
+    overBoth: 'Both axles are over their limits — take some cargo off.',
+    source: 'Worked out with a lever model on the two declared axles of the sample truck. It is an estimate: the empty-truck load is the declared figure, with no separate allowance for fuel or the driver.',
+    howSubject: 'axle load',
+  },
+  next: {
+    sample: 'See the sample plan in 3D',
+    lead: 'In the app, dispatchers run the optimizer with trucks whose axles are set up, and the cartons and stops of real trips.',
+    trial: 'Sign up for a trial',
+    contact: 'Get advice',
+    forYourCargo: 'for your cargo',
+  },
+} satisfies Dictionary<typeof source>

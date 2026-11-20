@@ -121,10 +121,20 @@ Phần backend chưa có vẫn chạy kho mẫu (xem "Trạng thái"); `VITE_API
   nhãn gửi bên gửi dán sẵn. Tài xế thấy điểm nhận trong danh sách điểm với biểu tượng và chữ riêng, đối chiếu từng kiện lên xe bằng ba
   mức, rồi dỡ chúng ở điểm giao như kiện thường; kiện nhận chưa có vị trí 3D nên nằm ở danh sách riêng. Màn của quản lý nền tảng và hỗ
   trợ khách hàng làm ở các bước sau.
-- Trang công khai cho khách chưa có tài khoản: giới thiệu `/gioi-thieu` (khách mở `/` khi chưa đăng nhập sẽ tới đây), bảng giá `/bang-gia`
-  (các gói đang bán, giá còn là giá tạm) và form liên hệ. Hỗ trợ khách hàng, quản lý nền tảng và quản trị hệ thống xử lý các yêu cầu đó ở
-  màn Liên hệ của khách `/lien-he-khach`: nhận việc, đổi trạng thái, ghi chú nội bộ. Không có trang tự đăng ký: tài khoản công ty do đội
-  LoadMaster tạo.
+- Trang công khai cho khách chưa có tài khoản (khách mở `/` khi chưa đăng nhập sẽ tới trang giới thiệu):
+  - Giới thiệu `/gioi-thieu`: khung 3D chuyến mẫu (bộ tối ưu mô phỏng chạy ngay trên trình duyệt), "Một chuyến hàng trên LoadMaster"
+    (năm chặng từ lập chuyến tới giao xong), "Thử với hàng của bạn" (khách nhập lòng thùng, tải trọng và tới bốn loại kiện, nhận ba
+    phương án tính trên trình duyệt), gói cước kèm thanh kéo tư vấn gói theo số lần chạy mỗi tháng, Hỏi đáp, và form liên hệ.
+  - Trợ lý "Hỏi Lumo" ở góc hai trang công khai: trả lời từ bộ câu soạn sẵn trong app, không phải AI và không gửi câu hỏi đi đâu.
+  - Bảng giá `/bang-gia` (các gói đang bán; gói chưa chốt giá ghi "Giá trị tạm — chờ chốt").
+  - Chính sách bảo mật `/chinh-sach-bao-mat` và Điều khoản sử dụng `/dieu-khoan-su-dung`: mỗi câu nói đúng điều ứng dụng đang làm theo
+    nguồn đang chạy (máy chủ hay bản demo); mục lục dính, in được.
+  - Đăng ký công khai (`/dang-ky-trai-nghiem`, `/dang-ky`) **chỉ có khi nối backend**; bản demo không có lối tự đăng ký, tài khoản công
+    ty do đội LoadMaster tạo sau yêu cầu liên hệ.
+
+  Hỗ trợ khách hàng và quản trị hệ thống xử lý yêu cầu liên hệ ở màn Liên hệ của khách `/lien-he-khach`: nhận việc, đổi trạng thái, ghi
+  chú nội bộ. Trang công khai mang thẻ mô tả và ảnh chia sẻ; đặt `VITE_SITE_URL` (mẫu ở `.env.example`) thì có thêm địa chỉ chuẩn và
+  `sitemap.xml`.
 - **Nối backend từng phần.** Mặc định dữ liệu nằm trong kho in-memory (`src/lib/mock-db`), các tab cùng trình duyệt dùng chung nó
   (`BroadcastChannel`), và mất khi tải lại mọi tab. Đặt `VITE_AUTH_SOURCE=keycloak` (mẫu ở `.env.example`) thì form đăng nhập của app dùng Keycloak của
   backend, và người dùng, công ty, gói cước và credit (thanh toán giả lập của backend), liên hệ của khách, yêu cầu hỗ trợ, kho kiện, màn

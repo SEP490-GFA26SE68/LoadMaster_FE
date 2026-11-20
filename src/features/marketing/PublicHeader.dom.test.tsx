@@ -43,7 +43,7 @@ function renderHeader(path: string, { progress = false }: { progress?: boolean }
             <PublicHeader progress={progress} />
             <main>
               <section className="landing-cinema" data-testid="hero" />
-              <section id="tinh-nang" data-testid="features" />
+              <section data-testid="problems" />
               <section id="cach-hoat-dong" data-testid="how" />
               <section id="lien-he" data-testid="contact" />
             </main>
@@ -69,8 +69,8 @@ test('a guest on the sample store gets the four page links, the language control
   const banner = renderHeader('/gioi-thieu')
   const nav = within(banner.getByRole('navigation', { name: 'Mục của trang giới thiệu' }))
   expect(nav.getAllByRole('link').map((link) => [link.textContent, link.getAttribute('href')])).toStrictEqual([
-    ['Tính năng', '/gioi-thieu#tinh-nang'],
     ['Cách hoạt động', '/gioi-thieu#cach-hoat-dong'],
+    ['Thử ngay', '/gioi-thieu#thu-ngay'],
     ['Bảng giá', '/bang-gia'],
     ['Liên hệ', '/gioi-thieu#lien-he'],
   ])
@@ -122,7 +122,7 @@ test('the header turns more solid once the hero has scrolled under it, and back 
 
 test('on the landing page the glass indicator sits under the section being read, visually only', () => {
   const banner = renderHeader('/gioi-thieu')
-  place(screen.getByTestId('features'), { top: -1400, bottom: -200 })
+  place(screen.getByTestId('problems'), { top: -1400, bottom: -200 })
   place(screen.getByTestId('how'), { top: -100, bottom: 900 })
   place(screen.getByTestId('contact'), { top: 2400, bottom: 3200 })
   scrollTo(2000)
@@ -137,7 +137,7 @@ test('on the landing page the glass indicator sits under the section being read,
   expect(how).toHaveAttribute('data-active')
   expect(indicator).not.toHaveAttribute('hidden')
   expect(how).not.toHaveAttribute('aria-current')
-  expect(nav.getByRole('link', { name: 'Tính năng' })).not.toHaveAttribute('data-active')
+  expect(nav.getByRole('link', { name: 'Liên hệ' })).not.toHaveAttribute('data-active')
 
   // Giữa hai phần (phần khác của trang): không mục nào
   place(screen.getByTestId('how'), { top: -1200, bottom: -200 })

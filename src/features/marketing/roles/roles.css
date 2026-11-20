@@ -1,0 +1,41 @@
+/*
+ * Phần "Một chuyến, bốn màn" (features/marketing/roles).
+ *
+ * - Màn trong khung thiết bị co theo bề rộng như một tấm hình: khung là container (inline-size), thân màn đặt cỡ chữ gốc bằng một phần
+ *   bề rộng khung (--roles-em phần), mọi cỡ bên trong tính bằng em — cùng lối với nhãn in của kho kiện (gốc 4 mm khi in, 16 px trên màn).
+ * - Xe trên sơ đồ tuyến chạy một lần từ kho tới vị trí mô phỏng khi phần hiện ra (cổng của reveal.css), 1,2 giây; giảm chuyển động hay
+ *   không có hệ chuyển động thì xe đứng sẵn ở vị trí cuối. Chỉ khung đầu có trong keyframes: khung cuối là style của chính phần tử.
+ * - Bảng tab: các bảng chồng lên cùng một ô lưới, nên phần cao bằng bảng cao nhất và đổi tab không làm trang nhảy; bảng không mở thì
+ *   ẩn hẳn (visibility) — trình đọc màn hình chỉ thấy bảng đang mở.
+ */
+@layer components {
+  .roles-screen {
+    container-type: inline-size;
+  }
+  .roles-screen-body {
+    font-size: calc(100cqw / var(--roles-em, 40));
+    line-height: 1.3;
+  }
+
+  .roles-panels {
+    display: grid;
+  }
+  .roles-panels > * {
+    grid-area: 1 / 1;
+  }
+  .roles-panels > [data-state='inactive'] {
+    visibility: hidden;
+  }
+
+  [data-motion='on'] .roles-vehicle {
+    animation: roles-drive 1.2s var(--ease-standard) both;
+    animation-delay: calc(var(--reveal-delay, 0s) + 400ms);
+    animation-play-state: var(--reveal-play, running);
+  }
+}
+
+@keyframes roles-drive {
+  from {
+    transform: translate(var(--roles-from-x, 0), var(--roles-from-y, 0));
+  }
+}
