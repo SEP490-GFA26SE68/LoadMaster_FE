@@ -7,7 +7,6 @@ export const landingMotion = {
   lumo: {
     /** Chỉ trình đọc màn hình đọc, đứng trước câu Lumo nói; `{name}` là tên riêng của linh vật. */
     says: '{name} nói:',
-    facts: 'Đây là các con số cố định của chính ứng dụng, không phải số của một chuyến hàng nào.',
   },
   statement: {
     kicker: 'Nguyên tắc xếp hàng',
@@ -19,7 +18,6 @@ export const landingMotion = {
     route: 'Tối ưu tuyến, tính giờ đến',
     approve: 'Duyệt phương án trước khi xếp',
     axle: 'Ước lượng tải trục trước và sau',
-    pickup: 'Nhận hàng dọc đường',
     monitor: 'Giám sát chuyến đang chạy',
     report: 'Báo cáo sau mỗi chuyến',
   },

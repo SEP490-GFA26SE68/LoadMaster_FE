@@ -1,7 +1,6 @@
-import { CheckCircle2, PhoneOff, Send, UserCheck, X } from 'lucide-react'
+import { CheckCircle2, PhoneOff, UserCheck, X } from 'lucide-react'
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
-import { Banner } from '@/components/Banner'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Textarea } from '@/components/ui/Textarea'
@@ -11,13 +10,8 @@ import { ContactStatusBadge, ContactTypeBadge } from './ContactBadges'
 import { ContactPlan } from './ContactPlan'
 import { ContactReply } from './ContactReply'
 import type { ContactRow } from './contact-list'
-import { mailtoHref, NOTE_TOO_LONG } from './contact-panel-form'
-import {
-  CONTACTS_SOURCE,
-  useClaimContactMutation,
-  useForwardTrialMutation,
-  useUpdateContactMutation,
-} from './useContactsQuery'
+import { mailtoHref, NOTE_TOO_LONG, readableNote } from './contact-panel-form'
+import { CONTACTS_SOURCE, useClaimContactMutation, useUpdateContactMutation } from './useContactsQuery'
 
 function Detail({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -32,9 +26,9 @@ function Detail({ label, children }: { label: string; children: ReactNode }) {
  * Khung bên phải của `/lien-he-khach` (`?lien-he=<mã>`): thông tin khách gửi, nội dung, và phần xử lý. Cuộn trong khung
  * (`overscroll-contain`). Người xử lý không tự đổi trạng thái hay người nhận việc bằng ô chọn:
  * - "Đảm nhận": nhận việc cho chính mình, trạng thái Đang xử lý.
- * - Đã nhận: "Đã giải quyết" — đơn dùng thử thì thay bằng chuyển cho quản lý nền tảng (khi nguồn có yêu cầu dùng thử,
- *   `CONTACTS_SOURCE.canForwardTrial`); đơn tư vấn có thêm "Liên hệ thất bại" (Đã đóng).
- * - Ghi chú nội bộ lưu riêng; gửi email trả lời khách chỉ có khi nguồn gửi được (`CONTACTS_SOURCE.canReply`).
+ * - Đã nhận: "Đã giải quyết" (mọi loại yêu cầu, kể cả đăng ký dùng thử); đơn tư vấn có thêm "Liên hệ thất bại" (Đã đóng).
+ * - Ghi chú nội bộ lưu riêng, mốc giờ máy chủ ghi trong đó hiện thành ngày giờ (`readableNote`); gửi email trả lời khách chỉ có khi nguồn
+ *   gửi được (`CONTACTS_SOURCE.canReply`).
  */
 export function ContactPanel({ row, onClose }: { row: ContactRow; onClose: () => void }) {
   const t = useT()
@@ -42,19 +36,19 @@ export function ContactPanel({ row, onClose }: { row: ContactRow; onClose: () =>
   const { contact } = row
   const update = useUpdateContactMutation()
   const claim = useClaimContactMutation()
-  const forwardMutation = useForwardTrialMutation()
 
   const headingId = useId()
   const headingRef = useRef<HTMLHeadingElement>(null)
   const [focusRequest, setFocusRequest] = useState(0)
   useEffect(() => headingRef.current?.focus(), [focusRequest])
 
-  const [note, setNote] = useState(contact.note ?? '')
+  // Ghi chú như người dùng đọc: mốc giờ máy chủ ghi kèm (dòng "Phản hồi email lúc …") đã thành ngày giờ
+  const storedNote = readableNote(contact.note ?? '', format)
+  const [note, setNote] = useState(storedNote)
 
   // Bản mới của yêu cầu (người khác vừa lưu, hay chính mình vừa ghi) thay ghi chú đang hiện
-  useEffect(() => setNote(contact.note ?? ''), [contact])
+  useEffect(() => setNote(storedNote), [storedNote, contact])
 
-  const forwardsTrial = contact.requestType === 'DEMO_REQUEST' && CONTACTS_SOURCE.canForwardTrial
   const isPricing = contact.requestType === 'PRICING'
   const isDone = contact.status === 'RESOLVED' || contact.status === 'CLOSED'
   const isClaimed = contact.status === 'IN_PROGRESS'
@@ -87,17 +81,7 @@ export function ContactPanel({ row, onClose }: { row: ContactRow; onClose: () =>
     update.mutate({ contactId: contact.id, patch: { note: note.trim() } }, done(t('contacts.panel.noteSaved')))
   }
 
-  function handleForwardTrial() {
-    forwardMutation.mutate(
-      { contact, note: t('contacts.panel.trial.forwardNote', { id: contact.id, name: contact.fullName }) },
-      {
-        onSuccess: () => toast.success(t('contacts.panel.trial.forwarded')),
-        onError: (error) => toast.error(dataErrorMessage(error, t)),
-      },
-    )
-  }
-
-  const noteUnchanged = note.trim() === (contact.note ?? '').trim()
+  const noteUnchanged = note.trim() === storedNote.trim()
   const noteError = note.trim().length > CONTACT_LIMITS.note ? t(NOTE_TOO_LONG, { max: CONTACT_LIMITS.note }) : undefined
   const notGiven = <span className="text-ink-3">{t('contacts.panel.notGiven')}</span>
   const busy = update.isPending || claim.isPending
@@ -153,17 +137,6 @@ export function ContactPanel({ row, onClose }: { row: ContactRow; onClose: () =>
             : <p className="m-0 text-body text-ink-3">{t('contacts.panel.noMessage')}</p>}
         </div>
 
-        {forwardsTrial && !isDone ? (
-          <div className="border-b border-line-soft px-4.5 py-4">
-            <Banner tone="warning">
-              <span className="flex flex-col gap-1">
-                <span className="font-semibold text-ink-strong">{t('contacts.panel.trial.title')}</span>
-                <span>{isClaimed ? t('contacts.panel.trial.forwardHint') : t('contacts.panel.trial.claimFirst')}</span>
-              </span>
-            </Banner>
-          </div>
-        ) : null}
-
         {CONTACTS_SOURCE.canReply ? <ContactReply key={contact.id} contact={contact} /> : null}
 
         <div className="flex flex-col gap-4 px-4.5 py-4" aria-labelledby={`${headingId}-xu-ly`}>
@@ -189,17 +162,10 @@ export function ContactPanel({ row, onClose }: { row: ContactRow; onClose: () =>
             ) : null}
             {isClaimed ? (
               <>
-                {forwardsTrial ? (
-                  <Button type="button" variant="secondary" loading={forwardMutation.isPending} onClick={handleForwardTrial}>
-                    {forwardMutation.isPending ? null : <Send aria-hidden className="size-3.5" strokeWidth={1.5} />}
-                    {t('contacts.panel.trial.forward')}
-                  </Button>
-                ) : (
-                  <Button type="button" variant="secondary" loading={update.isPending} disabled={busy} onClick={handleResolve}>
-                    {update.isPending ? null : <CheckCircle2 aria-hidden className="size-4" strokeWidth={1.5} />}
-                    {t('contacts.panel.resolve')}
-                  </Button>
-                )}
+                <Button type="button" variant="secondary" loading={update.isPending} disabled={busy} onClick={handleResolve}>
+                  {update.isPending ? null : <CheckCircle2 aria-hidden className="size-4" strokeWidth={1.5} />}
+                  {t('contacts.panel.resolve')}
+                </Button>
                 {isPricing ? (
                   <Button type="button" variant="secondary" disabled={busy} onClick={handleFailContact}>
                     <PhoneOff aria-hidden className="size-4" strokeWidth={1.5} />

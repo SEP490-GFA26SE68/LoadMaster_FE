@@ -20,6 +20,7 @@ export const trialRequests = {
     customer: 'Customer',
     contact: 'Contact',
     plan: 'Plan of interest',
+    precheck: 'AI pre-check',
     createdAt: 'Sent',
     status: 'Status',
     handler: 'Handler',

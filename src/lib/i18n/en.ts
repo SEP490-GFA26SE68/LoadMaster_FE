@@ -47,9 +47,22 @@ import { companyProfile } from './en/companyProfile'
 import { support } from './en/support'
 import { contacts } from './en/contacts'
 import { landing } from './en/landing'
+import { landingFaq } from './en/landingFaq'
 import { landingFooter } from './en/landingFooter'
+import { landingHow } from './en/landingHow'
+import { landingJourney } from './en/landingJourney'
 import { landingMotion } from './en/landingMotion'
+import { landingRoles } from './en/landingRoles'
+import { landingStage } from './en/landingStage'
+import { landingStory } from './en/landingStory'
+import { landingTry } from './en/landingTry'
+import { samplePlan } from './en/samplePlan'
+import { landingWhy } from './en/landingWhy'
 import { pricing } from './en/pricing'
+import { privacy } from './en/privacy'
+import { terms } from './en/terms'
+import { legal } from './en/legal'
+import { seo } from './en/seo'
 import { warehouseCustomers } from './en/warehouseCustomers'
 import { backendTripRoute } from './en/backendTripRoute'
 import { serverPlans } from './en/serverPlans'
@@ -60,6 +73,7 @@ import { serverAudit } from './en/serverAudit'
 import { serverWarehouse } from './en/serverWarehouse'
 import { trialRegistration } from './en/trialRegistration'
 import { guestRegistration } from './en/guestRegistration'
+import { assistant } from './en/assistant'
 
 /** Bản tiếng Anh: mỗi nhánh một file trong `en/`, kiểm thiếu/thừa key theo nhánh nguồn `vi/`. */
 export const en = {
@@ -109,9 +123,22 @@ export const en = {
   support,
   contacts,
   landing,
+  landingFaq,
   landingFooter,
+  landingHow,
+  landingJourney,
   landingMotion,
+  landingRoles,
+  landingStage,
+  landingStory,
+  landingTry,
+  samplePlan,
+  landingWhy,
   pricing,
+  privacy,
+  terms,
+  legal,
+  seo,
   warehouseCustomers,
   backendTripRoute,
   serverPlans,
@@ -123,4 +150,6 @@ export const en = {
   trialRegistration,
   guestRegistration,
   transfers,
+
+  assistant,
 } satisfies Dictionary<typeof vi>

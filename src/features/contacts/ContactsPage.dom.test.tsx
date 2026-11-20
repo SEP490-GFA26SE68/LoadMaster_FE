@@ -100,7 +100,7 @@ test('supporter can click "Đảm nhận" on a new contact to assign themselves 
   // Không có nút Hủy cho contact
   expect(within(panel).queryByRole('button', { name: /^hủy/i })).not.toBeInTheDocument()
 
-  // Chưa đảm nhận thì CHƯA ĐƯỢC có các nút "Đã giải quyết", "Liên hệ thất bại", "Chuyển cho Quản lý nền tảng"
+  // Chưa đảm nhận thì CHƯA ĐƯỢC có các nút "Đã giải quyết", "Liên hệ thất bại" (nút chuyển cho Quản lý nền tảng đã bỏ hẳn)
   expect(within(panel).queryByRole('button', { name: 'Đã giải quyết' })).not.toBeInTheDocument()
   expect(within(panel).queryByRole('button', { name: 'Liên hệ thất bại' })).not.toBeInTheDocument()
   expect(within(panel).queryByRole('button', { name: /Chuyển cho Quản lý nền tảng/i })).not.toBeInTheDocument()

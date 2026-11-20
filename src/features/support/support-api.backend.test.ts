@@ -1,9 +1,7 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { connectApiAuth, isApiError } from '@/lib/api-client'
 import {
-  assignCompanyPlan,
   createSupportTicket,
-  getSupportCompanyPanel,
   getSupportTicketThread,
   listSupportTickets,
   replyToSupportTicket,
@@ -249,3 +247,4 @@ test('the recent transaction preview intentionally reads one page without claimi
  expect(calls.filter(call=>call.key.startsWith('GET /api/credits/transactions'))).toHaveLength(1)
  expect(calls.every(call=>call.key.startsWith('GET '))).toBe(true)
 })
+

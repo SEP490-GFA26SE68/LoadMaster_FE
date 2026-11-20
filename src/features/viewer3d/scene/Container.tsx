@@ -28,12 +28,15 @@ export function Container({
   reducedMotion = false,
   doorOpening = false,
   edgeOpacity = 0.28,
+  doorsClosed = false,
 }: {
   vehicle: VehicleConfig
   materials: SceneMaterials
   detail?: boolean
   reducedMotion?: boolean
   doorOpening?: boolean
+  /** Hai cánh cửa sau quay về đóng (khung 3D trang giới thiệu, lúc xe rời kho). Mặc định mở ~110°. */
+  doorsClosed?: boolean
   /** Độ rõ của viền nóc và cạnh đứng; xem trước ở form xe không có hàng che nên vẽ rõ hơn. */
   edgeOpacity?: number
 }) {
@@ -113,8 +116,8 @@ export function Container({
           <meshStandardMaterial color={materials.skirt} roughness={0.85} />
         </mesh>
       ) : null}
-      <ContainerDoor length={L} height={door.height} width={door.width} hingeZ={door.jamb} side={1} materials={materials} detail={detail} reducedMotion={reducedMotion || !detail} />
-      <ContainerDoor length={L} height={door.height} width={door.width} hingeZ={W - door.jamb} side={-1} materials={materials} detail={detail} reducedMotion={reducedMotion || !detail} />
+      <ContainerDoor length={L} height={door.height} width={door.width} hingeZ={door.jamb} side={1} materials={materials} detail={detail} reducedMotion={reducedMotion || !detail} closed={doorsClosed} />
+      <ContainerDoor length={L} height={door.height} width={door.width} hingeZ={W - door.jamb} side={-1} materials={materials} detail={detail} reducedMotion={reducedMotion || !detail} closed={doorsClosed} />
     </group>
   )
 }

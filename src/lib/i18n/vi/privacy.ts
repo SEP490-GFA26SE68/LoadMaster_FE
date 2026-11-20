@@ -1,0 +1,118 @@
+/**
+ * Trang công khai "Chính sách bảo mật" `/chinh-sach-bao-mat` (`features/marketing/privacy`, khung chung ở nhánh `legal`). Mỗi câu nói đúng
+ * điều mã hôm nay làm — không pháp nhân, địa chỉ, thời hạn lưu hay cam kết tuân thủ nào chưa có. Câu theo nguồn dữ liệu (máy chủ hay bản
+ * demo) đứng thành cặp, trang chọn một câu theo cấu hình đang chạy. `{name}` là tên riêng của trợ lý, `{roles}` là tên các vai trò;
+ * `{hours}`, `{days}` là hằng của `legal/legal-facts.ts` — không viết số vào câu.
+ */
+export const privacy = {
+  title: 'Chính sách bảo mật',
+  lede: 'LoadMaster thu dữ liệu nào, gửi tới đâu và lưu ở đâu — đúng như bản ứng dụng bạn đang mở.',
+  summary: {
+    input: 'LoadMaster nhận dữ liệu bạn nhập vào form liên hệ, form đăng ký và vào ứng dụng — không thu thập ngầm để quảng cáo hay thống kê.',
+    tenancy: 'Dữ liệu của mỗi công ty tách riêng; đội LoadMaster không mở được xe, kiện, chuyến của công ty nào.',
+    gps: 'Vị trí của tài xế chỉ được gửi khi tài xế tự bật "Dùng GPS thật" trong một chuyến đang chạy.',
+    tracking: 'Không công cụ thống kê truy cập, không quảng cáo, không cookie do ứng dụng đặt.',
+    rights: 'Muốn xem, sửa hoặc xoá dữ liệu của mình, bạn gửi yêu cầu qua form liên hệ.',
+  },
+  scope: {
+    title: 'Phạm vi và mục đích',
+    body: 'Chính sách này nói về dữ liệu LoadMaster nhận khi bạn mở các trang công khai, gửi form liên hệ, đăng ký và dùng ứng dụng. Mỗi câu mô tả đúng bản ứng dụng bạn đang mở.',
+    purposesIntro: 'LoadMaster dùng dữ liệu vào đúng các việc sau:',
+    purposes: {
+      contact: 'trả lời yêu cầu liên hệ của bạn;',
+      signUp: 'duyệt đăng ký và tạo tài khoản công ty;',
+      signIn: 'cho bạn đăng nhập và làm việc theo đúng vai trò của mình;',
+      operate: 'chạy các chức năng công ty dùng: lập chuyến, tối ưu, xếp hàng, giao hàng và giám sát;',
+      billing: 'tính gói cước, credit và thanh toán;',
+      support: 'xử lý yêu cầu hỗ trợ công ty gửi.',
+    },
+    noAds: 'LoadMaster không dùng dữ liệu của bạn để quảng cáo.',
+  },
+  contact: {
+    title: 'Form liên hệ',
+    intro: 'Form liên hệ ở trang giới thiệu chỉ gửi những ô dưới đây:',
+    required: '{field} (bắt buộc)',
+    optional: '{field} (nếu bạn điền)',
+    consent: 'Dấu tích đồng ý với chính sách này chỉ để form cho gửi — chưa đánh dấu thì yêu cầu không được gửi; form không gửi dấu tích đó đi. Form còn một ô ẩn để nhận ra chương trình gửi tự động — ô đó cũng không được gửi đi.',
+    record: 'Hệ thống ghi thêm lúc bạn gửi; khi xử lý, đội LoadMaster ghi trạng thái, người nhận việc và ghi chú nội bộ của yêu cầu.',
+    handlers: 'Chỉ {roles} của đội LoadMaster đọc và xử lý yêu cầu liên hệ.',
+    server: 'Yêu cầu được gửi tới máy chủ của LoadMaster.',
+    reply: 'Khi đội LoadMaster trả lời, máy chủ gửi email tới địa chỉ bạn nhập qua Brevo — dịch vụ gửi email — và lưu nội dung trả lời vào ghi chú của yêu cầu.',
+    demo: 'Bản demo này chưa nối máy chủ: yêu cầu chỉ nằm trong bộ nhớ của trình duyệt này (các thẻ đang mở dùng chung) và mất khi đóng hoặc tải lại mọi thẻ.',
+  },
+  registration: {
+    title: 'Đăng ký dùng thử và đăng ký trả phí',
+    trial: 'Đăng ký dùng thử gửi tới máy chủ của LoadMaster: tên công ty, mã số thuế, họ tên, email, số điện thoại, và — nếu bạn điền — địa chỉ công ty, ghi chú. Máy chủ gửi mã xác nhận tới email đó, kiểm sơ bộ thông tin, rồi đội LoadMaster duyệt yêu cầu.',
+    paid: 'Đăng ký trả phí gửi tên công ty, mã công ty, mã số thuế, họ tên, email, số điện thoại, và — nếu bạn điền — địa chỉ công ty; sau mã xác nhận qua email là gói và kỳ thanh toán bạn chọn.',
+    email: 'Mã xác nhận và các email khác của máy chủ (như hoá đơn) đi qua Brevo — dịch vụ gửi email —, nên Brevo nhận địa chỉ email và nội dung thư.',
+    payment: 'Ứng dụng không có ô nhập số thẻ hay tài khoản ngân hàng nào. Khi máy chủ dùng cổng thanh toán thật, bạn được chuyển sang trang của VNPay — cổng thanh toán — để trả, và máy chủ gửi cho VNPay số tiền, tên gói, tên công ty và địa chỉ IP của bạn; bản thử nghiệm dùng thanh toán giả lập, không chuyển đi đâu.',
+    off: 'Bản này chưa mở đăng ký công khai: tài khoản công ty do đội LoadMaster tạo sau khi nhận yêu cầu liên hệ.',
+  },
+  account: {
+    title: 'Tài khoản và đăng nhập',
+    data: 'Một tài khoản gồm họ tên, email, vai trò và công ty của bạn. Quản trị công ty tạo, sửa, khoá và xoá tài khoản của nhân viên công ty mình.',
+    signIn: 'Bạn đăng nhập bằng email và mật khẩu; ứng dụng gửi chúng thẳng tới Keycloak — máy chủ đăng nhập của LoadMaster — và không lưu mật khẩu. Mã đăng nhập chỉ nằm trong bộ nhớ của thẻ; mã làm mới nằm trong sessionStorage của thẻ để tải lại trang không phải đăng nhập lại.',
+    signInPage: 'Khi máy chủ đăng nhập chưa cho đăng nhập ngay trên màn của ứng dụng, ứng dụng chuyển bạn sang trang đăng nhập của Keycloak; trang đó dùng cookie riêng của Keycloak.',
+    reset: 'Khi bạn quên mật khẩu, máy chủ gửi một mã xác nhận tới email của tài khoản để bạn đặt mật khẩu mới.',
+    signInDemo: 'Bản demo này đăng nhập bằng tài khoản mẫu ngay trong trình duyệt; phiên nằm trong sessionStorage của thẻ.',
+    agreement: 'Khi quản trị công ty ký thoả thuận dịch vụ thử nghiệm trong ứng dụng, máy chủ lưu họ tên và số điện thoại người ký, lúc ký và địa chỉ IP lúc ký.',
+    audit: 'Ứng dụng ghi nhật ký những việc làm thay đổi dữ liệu: ai làm, lúc nào, trên đối tượng nào. Quản trị công ty đọc nhật ký của công ty mình.',
+  },
+  company: {
+    title: 'Dữ liệu vận hành của công ty',
+    data: 'Khi dùng ứng dụng, công ty nhập dữ liệu vận hành của mình: xe, kiện hàng, khách gửi hàng, yêu cầu giao (nơi nhận, địa chỉ, toạ độ, hạn giao), chuyến, phương án xếp hàng và tiến độ xếp, giao.',
+    payroll: 'Quản lý công ty tính và chốt bảng lương tài xế trên máy chủ: đơn giá của công ty, lương cơ bản của từng tài xế, tài xế của từng chuyến và số tiền theo tháng.',
+    support: 'Yêu cầu hỗ trợ người dùng công ty gửi từ menu tài khoản — tiêu đề, nội dung và các lần trả lời — do bộ phận hỗ trợ khách hàng của LoadMaster đọc và trả lời; người gửi chỉ thấy yêu cầu của chính mình.',
+    recipients: 'Thông tin về nơi nhận hàng và khách của công ty do công ty nhập và chịu trách nhiệm; ứng dụng chỉ dùng nó để chạy các chức năng của chính công ty đó.',
+    tenancy: 'Tài khoản của một công ty chỉ đọc được xe, kiện, chuyến, người dùng của công ty mình. Đội LoadMaster đọc được danh sách công ty, tài khoản và nhật ký của mọi công ty (để khoá, mở khoá, đặt lại mật khẩu), cùng gói, credit và yêu cầu hỗ trợ khi xử lý hỗ trợ; đội không mở được xe, kiện, chuyến của công ty nào.',
+  },
+  device: {
+    title: 'Vị trí và camera của thiết bị',
+    gps: 'Vị trí điện thoại của tài xế chỉ được gửi khi tài xế bật "Dùng GPS thật" trong một chuyến đang chạy, và dừng khi tài xế tắt hoặc rời màn chuyến.',
+    gpsReaders: 'Trình duyệt hỏi quyền định vị trước khi gửi. Khi đang bật, điện thoại gửi vị trí mới nhất theo nhịp đều; {roles} của cùng công ty thấy vị trí xe ở màn Giám sát.',
+    gpsDemo: 'Ở bản demo này, vị trí chỉ hiện trong chính trình duyệt này, không gửi tới máy chủ nào.',
+    guidance: 'Màn điểm giao của tài xế còn đọc vị trí của điện thoại để chỉ đường tới điểm kế tiếp (trình duyệt hỏi quyền trước). Vị trí đó chỉ dùng ngay trên điện thoại, không được gửi đi.',
+    camera: 'Quét mã QR dùng camera của thiết bị ngay trong trình duyệt: ứng dụng chỉ đọc mã trên nhãn, không lưu và không gửi hình ảnh từ camera.',
+  },
+  local: {
+    title: 'Bản thử trên trang giới thiệu và trợ lý',
+    tryOut: 'Phần "Thử với hàng của bạn" và khung 3D chuyến mẫu của trang giới thiệu tính ngay trên trình duyệt của bạn: kích thước và khối lượng kiện bạn nhập không được gửi đi đâu, và mất khi tải lại trang.',
+    assistant: '{name} trả lời ngay trên trình duyệt từ tài liệu soạn sẵn: câu bạn gõ không được gửi đi và mất khi tải lại trang — trừ khi bạn chuyển câu hỏi sang form liên hệ rồi tự gửi form.',
+  },
+  thirdParties: {
+    title: 'Bên thứ ba nhận dữ liệu',
+    intro: 'Ngoài các bên dưới đây, ứng dụng không gửi dữ liệu của bạn tới bên nào khác:',
+    brevo: 'Brevo — gửi email thay máy chủ của LoadMaster (mã xác nhận, hoá đơn, trả lời yêu cầu liên hệ).',
+    vnpay: 'VNPay — cổng thanh toán, khi máy chủ dùng cổng thật.',
+    goong: 'Goong — ảnh nền bản đồ, tìm địa chỉ và tính tuyến.',
+    google: 'Google Fonts — phông chữ của giao diện.',
+    demo: 'Bản demo này không có máy chủ, nên không gửi gì tới dịch vụ gửi email hay cổng thanh toán.',
+    maps: 'Bản đồ chỉ có trong ứng dụng, không có trên trang công khai. Khi bản cài đặt có khoá bản đồ, trình duyệt tải ảnh nền bản đồ từ Goong — nhà cung cấp bản đồ; không có khoá thì không tải gì. Ô tìm địa chỉ không gọi Goong từ trình duyệt: khi nối máy chủ, máy chủ của LoadMaster gửi chữ bạn gõ tới Goong để tìm địa chỉ, và gửi toạ độ các điểm giao tới Goong để tính tuyến.',
+    fonts: 'LoadMaster tải hai phông chữ từ Google Fonts, nên trình duyệt gửi yêu cầu tới máy chủ của Google.',
+  },
+  browser: {
+    title: 'Trên trình duyệt của bạn',
+    storage: 'LoadMaster chỉ dùng sessionStorage của thẻ đang mở — trình duyệt xoá khi đóng thẻ — để nhớ ngôn ngữ, phiên đăng nhập và vài trạng thái tạm của màn. Ứng dụng không dùng localStorage, và mã của ứng dụng không đặt cookie.',
+    tracking: 'LoadMaster không gắn công cụ thống kê truy cập, quảng cáo hay theo dõi người xem nào.',
+  },
+  retention: {
+    title: 'Thời gian lưu',
+    browser: 'Dữ liệu trong sessionStorage mất khi bạn đóng thẻ.',
+    demo: 'Bản demo này chỉ giữ dữ liệu trong bộ nhớ của trình duyệt: đóng hoặc tải lại mọi thẻ là mọi thứ trở về dữ liệu mẫu.',
+    trial: 'Tài khoản dùng thử chưa ký thoả thuận dịch vụ trong {hours} giờ thì bị khoá, và bị xoá hẳn {days} ngày sau khi hết hạn dùng thử.',
+    open: 'Với dữ liệu khác trên máy chủ — yêu cầu liên hệ, tài khoản, dữ liệu vận hành, nhật ký — LoadMaster chưa ấn định thời hạn lưu: dữ liệu ở lại tới khi được xoá. Muốn xoá sớm hơn, hãy gửi yêu cầu qua form liên hệ.',
+  },
+  rights: {
+    title: 'Quyền của bạn',
+    body: 'Muốn hỏi về dữ liệu bạn đã gửi, hãy gửi yêu cầu qua form liên hệ.',
+    intro: 'Qua form đó, bạn có thể yêu cầu LoadMaster:',
+    see: 'cho biết đang giữ dữ liệu nào về bạn;',
+    fix: 'sửa dữ liệu sai;',
+    remove: 'xoá dữ liệu bạn đã gửi.',
+    company: 'Với dữ liệu trong tài khoản của một công ty, hãy hỏi quản trị công ty của bạn trước: họ quản lý tài khoản và dữ liệu vận hành của công ty.',
+  },
+  changes: {
+    title: 'Thay đổi chính sách',
+    body: 'Khi ứng dụng đổi cách thu, gửi hay lưu dữ liệu, trang này được sửa theo và ngày cập nhật ở đầu trang đổi. Bản đang hiện là bản đang áp dụng.',
+  },
+} as const

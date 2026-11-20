@@ -5,7 +5,6 @@ import type { landingMotion as source } from '../vi/landingMotion'
 export const landingMotion = {
   lumo: {
     says: '{name} says:',
-    facts: 'These are the app’s own fixed numbers, not figures from any one trip.',
   },
   statement: {
     kicker: 'The loading rule',
@@ -17,7 +16,6 @@ export const landingMotion = {
     route: 'Optimized routes with arrival times',
     approve: 'Plans approved before loading',
     axle: 'Front and rear axle load estimates',
-    pickup: 'Pickups along the way',
     monitor: 'Live trip monitoring',
     report: 'A report after every trip',
   },

@@ -15,7 +15,7 @@ import { RevealProvider } from './reveal'
  * IntersectionObserver nên mặc định chuyển động tắt; test cần chuyển động thì cài observer giả. Kho mẫu: nút chính là "Nhận tư vấn"
  * (bản nối máy chủ: `LandingHero.backend.dom.test.tsx`).
  */
-const TITLE = 'Tận dụng thùng xe, dỡ đúng thứ tự, theo dõi tới điểm giao cuối.'
+const TITLE = 'Tới điểm nào, mở cửa là thấy hàng của điểm đó.'
 const REDUCE = '(prefers-reduced-motion: reduce)'
 
 let io: FakeIntersectionObserverControl | null = null
@@ -74,15 +74,14 @@ test('with motion on the title is split for the eye only: one heading, one exact
   expect(gate).toHaveAttribute('data-shown')
   expect(io?.instances.some((instance) => instance.targets.has(gate as HTMLElement))).toBe(false)
 
-  // Nút và vai trò không đổi theo chuyển động: "Nhận tư vấn" là nút chính duy nhất, "Xem bảng giá" là nút kính
+  // Nút không đổi theo chuyển động: "Nhận tư vấn" là nút chính duy nhất, "Thử với hàng của bạn" là nút kính
   const consult = hero.getByRole('link', { name: 'Nhận tư vấn' })
   expect(consult).toHaveAttribute('href', '/gioi-thieu#lien-he')
   expect(hero.getAllByRole('link').filter(isPrimary)).toEqual([consult])
-  expect(hero.getByRole('link', { name: 'Xem bảng giá' })).toHaveAttribute('href', '/bang-gia')
+  expect(hero.getByRole('link', { name: 'Thử với hàng của bạn' })).toHaveAttribute('href', '/gioi-thieu#thu-ngay')
   expect(hero.queryByRole('link', { name: /Đăng ký/ })).not.toBeInTheDocument()
-  expect(within(hero.getByRole('list')).getAllByRole('listitem').map((item) => item.textContent)).toStrictEqual([
-    'Điều phối viên', 'Nhân viên kho', 'Tài xế', 'Quản lý công ty',
-  ])
+  // Vai trò giới thiệu ở "Một chuyến hàng", không ở phần mở đầu
+  expect(hero.queryByRole('list')).not.toBeInTheDocument()
   expect(hero.queryByText(/MOCK/)).not.toBeInTheDocument()
 })
 

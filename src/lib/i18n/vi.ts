@@ -45,9 +45,22 @@ import { companyProfile } from './vi/companyProfile'
 import { support } from './vi/support'
 import { contacts } from './vi/contacts'
 import { landing } from './vi/landing'
+import { landingFaq } from './vi/landingFaq'
 import { landingFooter } from './vi/landingFooter'
+import { landingHow } from './vi/landingHow'
+import { landingJourney } from './vi/landingJourney'
 import { landingMotion } from './vi/landingMotion'
+import { landingRoles } from './vi/landingRoles'
+import { landingStage } from './vi/landingStage'
+import { landingStory } from './vi/landingStory'
+import { landingTry } from './vi/landingTry'
+import { samplePlan } from './vi/samplePlan'
+import { landingWhy } from './vi/landingWhy'
 import { pricing } from './vi/pricing'
+import { privacy } from './vi/privacy'
+import { terms } from './vi/terms'
+import { legal } from './vi/legal'
+import { seo } from './vi/seo'
 import { warehouseCustomers } from './vi/warehouseCustomers'
 import { backendTripRoute } from './vi/backendTripRoute'
 import { serverPlans } from './vi/serverPlans'
@@ -58,6 +71,7 @@ import { serverAudit } from './vi/serverAudit'
 import { serverWarehouse } from './vi/serverWarehouse'
 import { trialRegistration } from './vi/trialRegistration'
 import { guestRegistration } from './vi/guestRegistration'
+import { assistant } from './vi/assistant'
 
 /**
  * Từ điển nguồn. Mọi ngôn ngữ khác khai báo `satisfies Dictionary<typeof vi>`,
@@ -115,9 +129,22 @@ export const vi = {
   support,
   contacts,
   landing,
+  landingFaq,
   landingFooter,
+  landingHow,
+  landingJourney,
   landingMotion,
+  landingRoles,
+  landingStage,
+  landingStory,
+  landingTry,
+  samplePlan,
+  landingWhy,
   pricing,
+  privacy,
+  terms,
+  legal,
+  seo,
   warehouseCustomers,
   backendTripRoute,
   serverPlans,
@@ -129,4 +156,6 @@ export const vi = {
   trialRegistration,
   guestRegistration,
   transfers,
+
+  assistant,
 } as const

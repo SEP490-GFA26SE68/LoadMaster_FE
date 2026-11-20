@@ -1,0 +1,108 @@
+import type { Dictionary } from '../types'
+import type { terms as source } from '../vi/terms'
+
+export const terms = {
+  title: 'Terms of use',
+  lede: 'The conditions under which your company and each of its users work on LoadMaster: accounts, the trial, plans and credits, and responsibility when you use optimization results.',
+  summary: {
+    account: 'Accounts belong to the company: the company admin creates and manages staff accounts, and each person does only the work of their role.',
+    credit: 'One 3D load optimization run uses {cost} credits; leftover credits do not carry over to the next period.',
+    results: 'Loading plans and arrival times are estimates for reference: checking load, securing and safety before the vehicle leaves is your job.',
+    data: 'Each company’s operational data is kept apart and belongs to that company.',
+    cancel: 'Cancelling a plan stops it from renewing, but it stays usable until the end of the period already paid for.',
+  },
+  scope: {
+    title: 'Scope of the service',
+    body: 'LoadMaster is browser-based software that helps small and medium transport companies plan trips and load cargo onto vehicles. The service covers:',
+    items: {
+      plan: 'creating delivery requirements, planning trips and optimizing the order of delivery stops;',
+      optimize: '3D load optimization: each run gives three plans for the dispatcher to review, adjust by hand and approve;',
+      operate: 'loading at the warehouse and delivery by drivers following the approved plan, checking every package by its QR code;',
+      monitor: 'monitoring trips on the road, trip reports, the dashboard and driver payroll.',
+    },
+    agree: 'These terms apply to every company that uses LoadMaster and to everyone using that company’s accounts. Using the app means you accept them.',
+    availability: 'Features not available in the version you have open do not appear on screen; the terms below describe that version.',
+  },
+  account: {
+    title: 'Accounts and roles',
+    company: 'Every account belongs to one company and has one role: {roles}. Each role sees and does only the work of that role.',
+    admin: 'The company admin creates, edits, locks and deletes the accounts of their own company’s staff. The first company admin account is created by the LoadMaster team when the company is opened.',
+    adminSelf: 'The company admin creates, edits, locks and deletes the accounts of their own company’s staff. The first company admin account is created when a trial sign-up is approved, when a paid sign-up has been paid, or when the LoadMaster team opens the company.',
+    password: 'Keep your password to yourself and do not share accounts. If you think your password has leaked, change it at once and tell your company admin.',
+    responsible: 'The company is responsible for what is done with its accounts; the app keeps a log of who did what and when.',
+  },
+  trial: {
+    title: 'Trial',
+    request: 'Signing up for a trial means trying the Basic plan. The server runs a first check of the details, then the LoadMaster team approves the request and sets the trial length; that length is shown on the company’s plan page.',
+    agreement: 'The company admin must sign the trial service agreement in the app within {hours} hours of the account being issued. If it is not signed in time, the company account is locked, even if trial time remains; the company admin signs the agreement or sends an unlock request to continue.',
+    purge: 'A trial account locked for not signing the agreement is permanently deleted {purgeDays} days after the trial ends.',
+    after: 'When the trial ends, the company needs to subscribe to a plan to keep working.',
+    off: 'This version has no public trial sign-up: company accounts are created by the LoadMaster team after a contact request.',
+  },
+  billing: {
+    title: 'Plans, credits, renewal and cancellation',
+    plans: 'Each plan has a price per period, a number of credits per month and an optimization tier; the plans on sale are on the Pricing page. A plan labelled “{provisional}” has a price that is not final and may change. A plan’s new price and credits apply only from each company’s next renewal.',
+    pricingLink: 'See Pricing',
+    period: 'A plan period lasts {days} days. At the start of each period the credit balance is reset to the plan’s monthly credits: leftover credits, including credits bought on top, do not carry over to the next period.',
+    cost: 'One 3D load optimization run uses {cost} credits, even when that run produces three plans. A run that produces no result uses no credits. Plans with unlimited credits are not charged.',
+    topUp: 'The company admin buys more credits on the “Plan and credits” page while the plan is active, and is told “Credits running low” when the balance falls to {percent}% of the plan’s monthly credits.',
+    renew: 'A plan is renewed when the company admin pays for the next period; if it is not paid by the due date, the plan expires.',
+    cancel: 'Cancelling a plan stops it from renewing, but it stays usable until the end of the period already paid for.',
+    expiredServer: 'When a company has no active plan, its staff cannot use the app; the company admin keeps only the “Plan and credits” page to renew or subscribe to a plan.',
+    expiredDemo: 'In this demo version an expired plan can still use the remaining credits, but only at the Basic optimization tier, and no credits can be bought until it is renewed.',
+    payment: 'Payments go through the app’s payment page or the payment gateway’s page; the app has no fields for card or bank account numbers. Plan fees already paid are not refunded, except for a technical error on LoadMaster’s side.',
+    paymentDemo: 'This demo version uses simulated payments: no real money is collected.',
+  },
+  results: {
+    title: 'Optimization results are estimates',
+    estimate: 'Loading plans, axle loads, cargo centre of gravity and expected arrival times are calculated from the data the company enters — dimensions, weights, vehicles, coordinates. They are estimates for reference, not measurements on a real vehicle.',
+    checkIntro: 'Before the vehicle leaves, the company and the person in charge check and are responsible for:',
+    check: {
+      load: 'the vehicle’s actual load and axle loads;',
+      securing: 'lashing, dunnage and the stability of the cargo;',
+      safety: 'the safety of cargo, people and vehicles, and the rules for road transport.',
+    },
+    input: 'Wrong data gives wrong results: the app does not weigh or measure real cargo. Expected arrival times cannot foresee traffic jams, weather or incidents on the road.',
+    approval: 'The app blocks approval when a plan exceeds axle limits or leaves required packages unloaded, but that block does not replace a real check. Whoever approves a plan reviews its warnings first.',
+    mock: 'Results labelled MOCK RESULT come from the simulated optimizer.',
+  },
+  data: {
+    title: 'Company data',
+    owner: 'The operational data a company enters — vehicles, packages, shipper customers, recipients, trips, plans, payroll — belongs to that company. The company is responsible for its accuracy and for having the right to use the customer and staff information it enters.',
+    tenancy: 'Data is kept apart by company: one company’s accounts cannot read another company’s data, and the LoadMaster team cannot open any company’s vehicles, packages or trips.',
+    privacy: 'LoadMaster collects, uses and keeps data exactly as the privacy policy says.',
+    privacyLink: 'Read the privacy policy',
+  },
+  conduct: {
+    title: 'What you must not do',
+    intro: 'When using LoadMaster you must not:',
+    items: {
+      share: 'use someone else’s account, or let people outside your company use yours;',
+      access: 'try to read another company’s data or act beyond the permissions of your role;',
+      attack: 'probe, attack or overload the system, including sending forms automatically in bulk;',
+      content: 'enter data you have no right to use, or unlawful content;',
+      copy: 'copy, reverse-engineer or resell the LoadMaster software.',
+    },
+  },
+  termination: {
+    title: 'Suspension and termination',
+    company: 'The company admin can lock or delete their own staff’s accounts at any time.',
+    platform: 'The LoadMaster team may lock accounts or suspend a company that breaks these terms.',
+    plan: 'A company without an active plan, or a trial account past the agreement deadline, is locked as the “Plans, credits, renewal and cancellation” and “Trial” sections describe.',
+    leave: 'To stop using LoadMaster, the company admin cancels the plan (it stays usable until the end of the period) and, to have the company’s data deleted, sends a request through the contact form.',
+  },
+  liability: {
+    title: 'Limitation of liability',
+    asIs: 'LoadMaster is provided as is. The LoadMaster team works to keep the service running smoothly but does not guarantee it will never be interrupted or have errors.',
+    limits: 'To the extent the law allows, LoadMaster is not responsible for damage arising from using optimization results without a real check, from wrong data entered by users, or from an account used by someone else because its password leaked.',
+  },
+  changes: {
+    title: 'Changes to these terms',
+    body: 'When the terms change, this page is edited and the date at the top changes with it. The version shown is the one that applies; continuing to use the app after the terms change means you accept the new version.',
+  },
+  contact: {
+    title: 'Contact',
+    guest: 'For questions about these terms, send them through the contact form on the home page.',
+    user: 'If you already have a company account, open “Support requests” in the app’s account menu to ask the support team.',
+  },
+} satisfies Dictionary<typeof source>

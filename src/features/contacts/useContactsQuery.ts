@@ -1,8 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type { GuestContact, GuestContactPatch } from '@/lib/mock-db'
+import type { GuestContactPatch } from '@/lib/mock-db'
 import {
   claimGuestContact,
-  forwardContactToTrialRequest,
   listContactHandlers,
   listContactPlanNames,
   listGuestContacts,
@@ -51,14 +50,5 @@ export function useReplyContactMutation() {
     mutationFn: ({ contactId, subject, message }: { contactId: string; subject: string; message: string }) =>
       replyGuestContact(contactId, subject, message),
     onSuccess: () => Promise.all(['contacts', 'audit'].map((key) => client.invalidateQueries({ queryKey: [key] }))),
-  })
-}
-
-export function useForwardTrialMutation() {
-  const client = useQueryClient()
-  return useMutation({
-    mutationFn: ({ contact, note }: { contact: GuestContact; note: string }) =>
-      forwardContactToTrialRequest(contact, note),
-    onSuccess: () => Promise.all(['contacts', 'audit', 'trial-requests'].map((key) => client.invalidateQueries({ queryKey: [key] }))),
   })
 }

@@ -5,61 +5,45 @@
  *   getSupportTicketThread   → GET /api/support-tickets/{id}/replies (chỉ backend; kho mẫu: danh sách đã mang trao đổi)
  *   replyToSupportTicket     → POST /api/support-tickets/{id}/replies
  *   setSupportTicketStatus   → PATCH /api/support-tickets/{id}
- *   getSupportCompanyPanel   → GET /api/contracts?companyId · GET /api/credits/balance?companyId · GET /api/credits/transactions?companyId
- *   listCompanyContracts     → GET /api/contracts (chỉ backend)
- *   assignCompanyPlan        → POST /api/contracts (chỉ backend)
+ *   unlockTrialAccount       → POST /api/support-tickets/{id}/unlock-trial (chỉ backend)
  */
 
 import { fetchBackendMe } from '@/features/auth/me-api'
 import { api, ApiError, isApiError } from '@/lib/api-client'
 import { fetchFirstPage } from '@/lib/api-page'
+import { api, ApiError } from '@/lib/api-client'
 import { usesBackend } from '@/lib/backend-config'
-import {
-  CREDIT_TRANSACTIONS_PATH,
-  creditBalanceOf,
-  creditTransactionOf,
-  type CreditBalanceDto,
-  type CreditTransactionDto,
-} from '@/lib/billing-backend-api'
 import {
   BACKEND_TICKET_STATUSES,
   getMockDb,
-  SUPPORT_PANEL_TRANSACTIONS,
   TICKET_STATUSES,
   type NewSupportTicket,
   type SupportTicket,
   type TicketStatus,
 } from '@/lib/mock-db'
 import { ticketCreateBody, ticketOf, threadOf, type SupportTicketDto, type SupportTicketThreadDto } from './support-dto'
-import { contractOf, latestContracts, panelOfMock, type CompanyContract, type ContractDto, type SupportPanel } from './support-panel-dto'
 import { ticketsToDisplay } from './ticket-view'
-
-export type { CompanyContract, SupportPanel, SupportPanelPlan } from './support-panel-dto'
 
 const ON_BACKEND = usesBackend('support')
 
 /**
  * Việc màn làm được theo nguồn dữ liệu. Backend: danh sách không mang trao đổi — màn đọc trao đổi của từng yêu cầu ở máy chủ (`threads`);
  * tên công ty đi kèm yêu cầu thay cho danh bạ công ty của kho mẫu (`companyDirectory`); có thêm trạng thái Đã giải quyết (`statuses`); Hỗ
- * trợ khách hàng đổi gói cho công ty khách ngay trên màn (`planAssign`, kho mẫu không có lệnh đó) và mở khoá tài khoản dùng thử bị gắn cờ
- * (`trialUnlock`, kho mẫu không có tài khoản dùng thử). Trao đổi, mốc hoạt động gần nhất và khung công ty có ở cả hai nguồn.
+ * trợ khách hàng mở khoá tài khoản dùng thử bị gắn cờ (`trialUnlock`, kho mẫu không có tài khoản dùng thử). Trao đổi và mốc hoạt động gần
+ * nhất có ở cả hai nguồn.
  */
 export const SUPPORT_SOURCE: {
   readonly replies: boolean
   readonly threads: boolean
-  readonly companyPanel: boolean
   readonly activityTime: boolean
   readonly companyDirectory: boolean
-  readonly planAssign: boolean
   readonly trialUnlock: boolean
   readonly statuses: readonly TicketStatus[]
 } = {
   replies: true,
   threads: ON_BACKEND,
-  companyPanel: true,
   activityTime: true,
   companyDirectory: !ON_BACKEND,
-  planAssign: ON_BACKEND,
   trialUnlock: ON_BACKEND,
   statuses: ON_BACKEND ? BACKEND_TICKET_STATUSES : TICKET_STATUSES,
 }

@@ -1,7 +1,8 @@
 /**
- * Chân trang của hai trang công khai — giới thiệu, bảng giá (`PublicFooter`, `features/marketing/footer`). Thông tin liên hệ chỉ lấy
- * từ `SITE_INFO` (`lib/site-info.ts`): mục nào chưa có (email, điện thoại, địa chỉ, mã số thuế) thì không vẽ dòng đó. Liên kết chỉ trỏ
- * tới thứ đang có: bốn phần của trang giới thiệu, Bảng giá, đăng nhập và — khi khách tự đăng ký được — hai trang đăng ký.
+ * Chân trang của các trang công khai — giới thiệu, bảng giá, chính sách bảo mật (`PublicFooter`, `features/marketing/footer`). Thông tin
+ * liên hệ chỉ lấy từ `SITE_INFO` (`lib/site-info.ts`): mục nào chưa có (email, điện thoại, địa chỉ, mã số thuế) thì không vẽ dòng đó.
+ * Liên kết chỉ trỏ tới thứ đang có: các phần của trang giới thiệu (kể cả Hỏi đáp), Bảng giá, chính sách bảo mật, đăng nhập và — khi khách
+ * tự đăng ký được — hai trang đăng ký.
  */
 export const landingFooter = {
   title: 'Chân trang',
@@ -24,11 +25,15 @@ export const landingFooter = {
     account: 'Tài khoản',
   },
   links: {
-    features: 'Tính năng',
     how: 'Cách hoạt động',
+    try: 'Thử ngay',
     plans: 'Gói cước',
     pricing: 'Bảng giá',
+    samplePlan: 'Phương án mẫu 3D',
+    faq: 'Hỏi đáp',
     contact: 'Liên hệ tư vấn',
+    privacy: 'Chính sách bảo mật',
+    terms: 'Điều khoản sử dụng',
     /** Chỉ có khi `SITE_INFO.supportEmail` có giá trị. */
     email: 'Email hỗ trợ',
     signIn: 'Đăng nhập',

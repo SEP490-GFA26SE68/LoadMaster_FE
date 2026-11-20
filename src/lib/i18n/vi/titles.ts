@@ -53,6 +53,9 @@ export const titles = {
   // Trang công khai và màn liên hệ của khách
   landing: 'Giới thiệu',
   pricing: 'Bảng giá',
+  privacy: 'Chính sách bảo mật',
+  terms: 'Điều khoản sử dụng',
+  samplePlan: 'Phương án mẫu',
   contacts: 'Liên hệ của khách',
   trialRegistration: 'Đăng ký trải nghiệm',
   guestRegistration: 'Đăng ký dùng ngay',

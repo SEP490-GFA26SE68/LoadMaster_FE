@@ -11,9 +11,9 @@ test.use({ collectConsoleErrors: true })
 test('a guest picks a plan on the pricing page and sends a request; customer support finds it and takes it on', async ({ page, browserErrors }) => {
   await page.goto('/')
   await page.waitForURL(/\/gioi-thieu$/)
-  await expect(page.getByRole('heading', { level: 1, name: 'Tận dụng thùng xe, dỡ đúng thứ tự, theo dõi tới điểm giao cuối.' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Tới điểm nào, mở cửa là thấy hàng của điểm đó.' })).toBeVisible()
 
-  await page.getByRole('main').getByRole('link', { name: 'Xem bảng giá', exact: true }).click()
+  await page.getByRole('main').getByRole('link', { name: 'So sánh các gói', exact: true }).click()
   await page.waitForURL(/\/bang-gia$/)
   await expect(page.getByRole('heading', { level: 1, name: 'Bảng giá', exact: true })).toBeVisible()
   const pro = page.getByRole('group', { name: 'Pro', exact: true })
@@ -29,6 +29,9 @@ test('a guest picks a plan on the pricing page and sends a request; customer sup
   await page.getByRole('textbox', { name: 'Email', exact: true }).fill('hung.do@vantaisongtien.vn')
   await page.getByRole('textbox', { name: 'Tên công ty', exact: true }).fill('Vận tải Sông Tiền')
   await page.getByRole('textbox', { name: 'Nội dung', exact: true }).fill('Đội 8 xe tải chạy miền Tây, cần báo giá gói Pro.')
+  // Đồng ý với chính sách bảo mật là bắt buộc; form chỉ gửi khi đã hiện ít nhất 3 giây (chặn chương trình gửi tự động)
+  await page.getByRole('checkbox', { name: /^Tôi đã đọc và đồng ý với chính sách bảo mật/ }).click()
+  await page.waitForTimeout(3_000)
   await page.getByRole('button', { name: 'Gửi yêu cầu', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Đã ghi nhận yêu cầu LH-004', exact: true })).toBeFocused()
 
@@ -59,5 +62,26 @@ test('a guest picks a plan on the pricing page and sends a request; customer sup
   await expect(panel.getByRole('button', { name: 'Đã giải quyết', exact: true })).toBeVisible()
   await expect(page.getByRole('row').filter({ hasText: 'LH-004' })).toContainText('Đang xử lý')
 
+  expect(browserErrors).toStrictEqual([])
+})
+
+test('the consent label opens the privacy policy in a new tab; the page fits a 390 px phone', async ({ page, browserErrors }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/gioi-thieu#lien-he')
+  const link = page.getByRole('main').getByRole('link', { name: /^chính sách bảo mật/ })
+  await expect(link).toBeVisible()
+
+  const [policy] = await Promise.all([page.waitForEvent('popup'), link.click()])
+  await policy.waitForURL(/\/chinh-sach-bao-mat\?lang=vi$/)
+  // Thẻ mới lấy khung nhìn của ngữ cảnh, không của trang mở nó
+  await policy.setViewportSize({ width: 390, height: 844 })
+  await expect(policy.getByRole('heading', { level: 1, name: 'Chính sách bảo mật', exact: true })).toBeVisible()
+  await expect(policy.getByText('Cập nhật lần cuối: 19/11/2026', { exact: true })).toBeVisible()
+  await expect(policy).toHaveTitle(/Chính sách bảo mật/)
+  // Không cuộn ngang ở 390 px
+  expect(await policy.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0)
+
+  // Form ở trang gốc giữ nguyên, chưa gửi gì
+  await expect(page.getByRole('button', { name: 'Gửi yêu cầu', exact: true })).toBeVisible()
   expect(browserErrors).toStrictEqual([])
 })

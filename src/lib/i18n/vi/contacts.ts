@@ -91,14 +91,6 @@ export const contacts = {
     failedToast: 'Đã cập nhật trạng thái liên hệ thất bại.',
     saveNote: 'Lưu ghi chú',
     noteSaved: 'Đã lưu ghi chú nội bộ thành công!',
-    trial: {
-      title: 'Yêu cầu đăng ký tài khoản dùng thử',
-      claimFirst: 'Hỗ trợ khách hàng không duyệt trực tiếp đơn dùng thử. Bấm "Đảm nhận" ở mục xử lý bên dưới, rồi chuyển đơn cho Quản lý nền tảng.',
-      forwardHint: 'Hỗ trợ khách hàng không duyệt trực tiếp đơn dùng thử. Bấm "Chuyển cho Quản lý nền tảng" ở mục xử lý bên dưới để đưa đơn sang màn Đơn dùng thử.',
-      forward: 'Chuyển cho Quản lý nền tảng',
-      forwardNote: 'Duyệt tài khoản dùng thử từ yêu cầu #{id} ({name})',
-      forwarded: 'Đã chuyển đơn dùng thử sang màn Đơn dùng thử.',
-    },
     reply: {
       title: 'Phản hồi qua email cho khách',
       subject: 'Tiêu đề email',

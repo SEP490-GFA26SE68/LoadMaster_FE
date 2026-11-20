@@ -4,7 +4,7 @@ import { Spinner } from '@/components/ui/Spinner'
 import { useT, type TFunction } from '@/lib/i18n'
 import type { Permission } from '@/features/auth/permissions'
 import { useAuth } from '@/features/auth/AuthProvider'
-import { GUEST_REGISTRATION, landingPath, PUBLIC_HOME, REGISTRATION_SUCCESS, TRIAL_REGISTRATION } from '@/features/auth/landing'
+import { GUEST_REGISTRATION, landingPath, PUBLIC_HOME, PUBLIC_PRIVACY, PUBLIC_SAMPLE_PLAN, PUBLIC_TERMS, REGISTRATION_SUCCESS, TRIAL_REGISTRATION } from '@/features/auth/landing'
 import { RequireAuth } from '@/features/auth/RequireAuth'
 import { RequirePermission } from '@/features/auth/RequirePermission'
 import { StoreTripRoute } from '@/features/trips/StoreTripRoute'
@@ -61,9 +61,12 @@ const BillingPage = lazy(() => import('@/features/billing/BillingPage').then((m)
 const PayrollPage = lazy(() => import('@/features/payroll/PayrollPage').then((m) => ({ default: m.PayrollPage })))
 const PaymentSimulationPage = lazy(() => import('@/features/billing/PaymentSimulationPage').then((m) => ({ default: m.PaymentSimulationPage })))
 const PaymentResultPage = lazy(() => import('@/features/billing/PaymentResultPage').then((m) => ({ default: m.PaymentResultPage })))
-// Trang công khai (giới thiệu, bảng giá) và màn liên hệ của khách gửi từ trang giới thiệu
+// Trang công khai (giới thiệu, bảng giá, chính sách bảo mật, điều khoản sử dụng) và màn liên hệ của khách gửi từ trang giới thiệu
 const LandingPage = lazy(() => import('@/features/marketing/LandingPage').then((m) => ({ default: m.LandingPage })))
 const PricingPage = lazy(() => import('@/features/marketing/PricingPage').then((m) => ({ default: m.PricingPage })))
+const PrivacyPage = lazy(() => import('@/features/marketing/privacy/PrivacyPage').then((m) => ({ default: m.PrivacyPage })))
+const TermsPage = lazy(() => import('@/features/marketing/terms/TermsPage').then((m) => ({ default: m.TermsPage })))
+const SamplePlanPage = lazy(() => import('@/features/marketing/sample-plan/SamplePlanPage').then((m) => ({ default: m.SamplePlanPage })))
 const ContactsPage = lazy(() => import('@/features/contacts/ContactsPage').then((m) => ({ default: m.ContactsPage })))
 const TrialRegistrationPage = lazy(() => import('@/features/trial-registration/TrialRegistrationPage').then((m) => ({ default: m.TrialRegistrationPage })))
 const GuestRegistrationPage = lazy(() => import('@/features/registration/GuestRegistrationPage').then((m) => ({ default: m.GuestRegistrationPage })))
@@ -164,6 +167,9 @@ export const routes: RouteObject[] = [
           { path: '/', element: <RootLandingPage />, handle: titled((t) => t('titles.landing')) },
           { path: '/gioi-thieu', element: <LandingPage />, handle: titled((t) => t('titles.landing')) },
           { path: '/bang-gia', element: <PricingPage />, handle: titled((t) => t('titles.pricing')) },
+          { path: PUBLIC_PRIVACY, element: <PrivacyPage />, handle: titled((t) => t('titles.privacy')) },
+          { path: PUBLIC_TERMS, element: <TermsPage />, handle: titled((t) => t('titles.terms')) },
+          { path: PUBLIC_SAMPLE_PLAN, element: <SamplePlanPage />, handle: titled((t) => t('titles.samplePlan')) },
           { path: TRIAL_REGISTRATION, element: <TrialRegistrationPage />, handle: titled((t) => t('titles.trialRegistration')) },
           { path: GUEST_REGISTRATION, element: <GuestRegistrationPage />, handle: titled((t) => t('titles.guestRegistration')) },
           { path: REGISTRATION_SUCCESS, element: <RegistrationSuccessPage />, handle: titled((t) => t('titles.registrationSuccess')) },

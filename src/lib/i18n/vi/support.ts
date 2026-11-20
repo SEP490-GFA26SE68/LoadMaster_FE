@@ -1,4 +1,3 @@
-import { customerPlan } from './support-customer-plan'
 import { subscriptionLocked, trialLocked } from './support-trial-locked'
 
 /**
@@ -6,7 +5,6 @@ import { subscriptionLocked, trialLocked } from './support-trial-locked'
  * khách hàng. Nhãn loại và trạng thái dùng chung cho cả hai và cho nhật ký (`audit.log`).
  */
 export const support = {
-  customerPlan,
   trialLocked,
   subscriptionLocked,
   kinds: { TECHNICAL: 'Kỹ thuật', BILLING: 'Thanh toán', TRIAL_ACCOUNT_UNLOCK: 'Mở khóa dùng thử' },
@@ -72,8 +70,7 @@ export const support = {
     search: 'Tìm theo tiêu đề, mã, người gửi',
     empty: 'Chưa có yêu cầu hỗ trợ nào.',
     noMatch: 'Không có yêu cầu khớp bộ lọc.',
-    selectHint: 'Chọn một yêu cầu để xem trao đổi và thông tin công ty.',
-    selectHintStatusOnly: 'Chọn một yêu cầu để đọc nội dung và đổi trạng thái.',
+    selectHint: 'Chọn một yêu cầu để đọc trao đổi và đổi trạng thái.',
     filters: {
       company: 'Công ty',
       allCompanies: 'Mọi công ty',
@@ -85,19 +82,6 @@ export const support = {
     columns: { ticket: 'Yêu cầu', company: 'Công ty', kind: 'Loại', status: 'Trạng thái', updated: 'Cập nhật', sent: 'Gửi lúc' },
     statusLabel: 'Trạng thái yêu cầu',
     statusChanged: 'Yêu cầu {id} chuyển sang {status}',
-    panel: {
-      title: 'Thông tin công ty',
-      company: 'Công ty',
-      readOnly: 'Chỉ đọc',
-      plan: 'Gói',
-      planStatus: 'Trạng thái gói',
-      noPlan: 'Công ty chưa có gói cước.',
-      balance: 'Số dư credit',
-      recent: 'Giao dịch credit gần nhất',
-      noTransactions: 'Chưa có giao dịch credit nào.',
-      notLoaded: 'Chưa đọc được',
-      loading: 'Đang tải thông tin công ty',
-    },
     chat: {
       title: 'Trao đổi gần đây của công ty',
       hint: 'Hai ngày có hoạt động gần nhất',

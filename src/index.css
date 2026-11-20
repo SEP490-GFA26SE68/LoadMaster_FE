@@ -130,6 +130,13 @@
   --red-200: #f8c3be;
   --red-500: #db4241;
   --red-700: #b02a2d;
+  /* gradient trợ lý (theo gradient AI của AWS Cloudscape): CHỈ cho viền nút "Hỏi Lumo" và vạch "đang trả lời" của khung chat — ngoại lệ duy
+     nhất của luật không tím, không thành utility (không nằm trong @theme) */
+  --genai-1: #b8e7ff;
+  --genai-2: #0099ff;
+  --genai-3: #5c7fff;
+  --genai-4: #8575ff;
+  --genai-5: #962eff;
 
   /* nền và chữ */
   --bg: #ffffff;

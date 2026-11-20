@@ -10,7 +10,8 @@ const NEAR_MARGIN = '250px 0px'
 
 export type StageGate = 'off' | 'wait' | 'go'
 
-function savesData(): boolean {
+/** Người xem bật tiết kiệm dữ liệu (`navigator.connection.saveData`): trang không tải Three.js, không chạy bộ tối ưu mẫu. */
+export function savesData(): boolean {
   const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection
   return connection?.saveData === true
 }
