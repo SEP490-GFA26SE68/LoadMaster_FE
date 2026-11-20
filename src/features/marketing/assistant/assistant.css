@@ -267,7 +267,32 @@
   }
 }
 
-/* Nút "Trợ lý AI" của thanh điều hướng: vòng gradient quay khi rê chuột / focus, như nút nổi của trang công khai */
+/* Planner (không có thanh điều hướng): nút "Trợ lý AI" ở hàng góc dưới phải khung 3D, trên thanh tiến trình. Khung đứng ngay trên hàng nút
+   đó, mép phải thẳng lề 12 px của khung 3D, đỉnh khung không lên quá 5 rem — không che thanh trên (nút Duyệt) */
+@media (min-width: 768px) {
+  .assistant-panel[data-surface='app'][data-dock='planner'] {
+    --assistant-dock-bottom: 9.5rem;
+    top: auto;
+    right: 0.75rem;
+    bottom: var(--assistant-dock-bottom);
+    height: min(560px, calc(100dvh - var(--assistant-dock-bottom) - 5rem));
+  }
+
+  .assistant-panel[data-surface='app'][data-dock='planner'][data-expanded] {
+    height: calc(100dvh - var(--assistant-dock-bottom) - 5rem);
+  }
+}
+
+/* Từ 1.280 px nút của khung 3D và thanh tiến trình thấp hơn (40 px thay 56 px), và cột nổi bên phải khung 3D (thẻ kiện đang chọn, rộng
+   20,75 rem) hiện ra: khung chat đứng bên trái cột đó — trợ lý chọn kiện thì thẻ của kiện không bị khung chat che */
+@media (min-width: 1280px) {
+  .assistant-panel[data-surface='app'][data-dock='planner'] {
+    --assistant-dock-bottom: 8.25rem;
+    right: calc(0.75rem + 20.75rem + 0.75rem);
+  }
+}
+
+/* Nút "Trợ lý AI" của thanh điều hướng và của Planner: vòng gradient quay khi rê chuột / focus, như nút nổi của trang công khai */
 .assistant-rail:is(:hover, :focus-visible) .assistant-avatar-ring {
   animation-play-state: running;
 }

@@ -12,9 +12,12 @@ const AssistantPanel = lazy(() => import('./AssistantPanel'))
  * Phần chung của hai nút mở trợ lý — nút nổi "Hỏi Lumo" của hai trang công khai (`AssistantLauncher`) và nút "Trợ lý AI" trên thanh điều
  * hướng của ứng dụng (`AppAssistant`). Cuộc trò chuyện gắn với người đang xem và bề mặt (`assistantSession.bind`, trước khi vẽ: cuộc trò
  * chuyện của người trước không hiện ra dù chỉ một khung hình). Khung chat là chunk lười, chỉ tải ở lần mở đầu tiên rồi giữ lại để đóng /
- * mở không tải lại; dựng lại khi khung đã mở sẵn (chuyển giữa hai trang công khai) thì khung không giành focus của trang.
+ * mở không tải lại; dựng lại khi khung đã mở sẵn (chuyển giữa hai trang công khai) thì khung không giành focus của trang. `dock`: nơi
+ * neo khung khi trang không có thanh điều hướng (Planner — nút "Trợ lý AI" ở góc dưới phải khung 3D, `PlannerAssistant`).
  */
-export function useAssistantLauncher() {
+export type AssistantDock = 'planner'
+
+export function useAssistantLauncher(dock?: AssistantDock) {
   const t = useT()
   const surface = useAssistantSurface()
   const userId = useAuthSafe()?.user?.id ?? ''
@@ -32,7 +35,7 @@ export function useAssistantLauncher() {
 
   const panel = loaded ? (
     <Suspense fallback={null}>
-      <AssistantPanel launcherRef={ref} skipInitialFocus={mountedOpen} />
+      <AssistantPanel launcherRef={ref} skipInitialFocus={mountedOpen} dock={dock} />
     </Suspense>
   ) : null
 

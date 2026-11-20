@@ -274,8 +274,14 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   → `useAskAssistantMutation`. **Trong ứng dụng** (`AppAssistant`): nút "Trợ lý AI" 36 px trên **thanh điều hướng**, ngay sau Tìm
   nhanh (ảnh Lumo `wink` trong vòng gradient, tên ở `aria-label` / `title`) — không nổi đè lên bảng như nút góc dưới phải —, **chỉ khi nhóm
   `assistant` nối máy chủ**, người dùng không bị gắn cờ và công ty còn gói hiệu lực (vai trò nền tảng không bị khoá; `appAssistantShown`, thanh
-  cũng hỏi hàm này để chừa chỗ); màn toàn màn hình (Planner, kho, tài xế) không có thanh nên không có nút. Khung chat neo góc trên phải, ngay
-  dưới thanh (`data-surface="app"`). Màn chào trong ứng dụng gợi ý câu theo vai trò (`app-starters.ts`: màn đang mở, chuyến, credit, phiếu
+  cũng hỏi hàm này để chừa chỗ); màn toàn màn hình kho, tài xế không có nút. Khung chat neo góc trên phải, ngay
+  dưới thanh (`data-surface="app"`). **Planner bản máy chủ** (`BackendPlannerSession`) có nút "Trợ lý AI" riêng ở hàng góc dưới phải khung 3D
+  (`PlannerAssistant`, mục 7 "Operations"; khung chat `data-dock="planner"` đứng trên hàng nút đó), cùng cuộc trò chuyện. Ở đó câu hỏi gửi kèm
+  `viewer` (mã chuyến, mã số phương án, mã kiện đang chọn) và câu trả lời mang `uiActions` — `selectPackage`, `setCameraPreset`, `setStep`,
+  `setColorMode`, `openTab` — qua cầu nối thuần `viewer-bridge.ts` (`registerViewer` / `viewerContext` / `dispatchUiActions`, không Three.js):
+  kiểm lại từng lệnh (lệnh lạ, tham số sai, mã kiện phương án không có thì bỏ im lặng, không toast), tối đa 5 lệnh mỗi lượt, chỉ chạy lệnh của
+  câu trả lời **vừa về** (không chạy lại khi mở lại khung chat), bỏ hết khi đang Chỉnh sửa, khi không có Planner hay Planner đã sang phương án
+  khác. Không có lệnh dời, xoay, ghim hay duyệt. Màn chào trong ứng dụng gợi ý câu theo vai trò (`app-starters.ts`: màn đang mở, chuyến, credit, phiếu
   lương, yêu cầu hỗ trợ, gói cước — chỉ câu máy chủ có công cụ trả lời cho vai trò đó), gửi cho mô hình như câu gõ. Cuộc trò chuyện gắn với
   bề mặt và người xem (`assistantSession.bind`): đổi người đăng nhập hay đi từ trang công khai vào app thì cuộc trò chuyện cũ đóng và mất. Trên
   hai trang công khai nút mở góc
@@ -564,7 +570,8 @@ src/
                         chữ và khối hiện một lần `reveal/` (`RevealProvider` — một IntersectionObserver —, `Reveal`, `RevealWords`,
                         `FlowHeading`, `LineRise`, `TextRibbon`, `Odometer`, `LumoSays`, `split-text.ts` thuần, `reveal.css`); trợ lý "Hỏi Lumo"
                         `assistant/` (nút mở `AssistantLauncher`, khung chat lười `AssistantPanel`, bộ câu trả lời `assistant-kb.ts` + khớp
-                        `assistant-match.ts` + tính gói `assistant-advisor.ts` thuần, `assistant-api.ts`, `assistant-session.ts`)
+                        `assistant-match.ts` + tính gói `assistant-advisor.ts` thuần, `assistant-api.ts`, `assistant-session.ts`; nút của Planner
+                        `PlannerAssistant` + cầu nối thuần `viewer-bridge.ts`)
     contacts/           yêu cầu liên hệ của khách `/lien-he-khach` (quản trị hệ thống, hỗ trợ khách hàng): bảng, khung xử lý `ContactPanel`
   lib/                  format, helper, mock dùng chung, api client
     i18n/               từ điển vi/en (mỗi nhánh một file trong vi/, en/), provider, hook
@@ -1298,6 +1305,12 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
   cho thêm một nút. Chỉ hiện ở chế độ Xem, khi chuyến Đã lập kế hoạch và người xem
   có `trips.edit`. Mở cùng hộp thoại `trips/ChangeVehicleDialog` với Chi tiết chuyến (mục 9); đổi xong phương án đang xem thành lỗi
   thời ngay và thanh lỗi thời ghi "đã sửa Xe (giờ · ngày · người)". Đổi xe không bao giờ là nút chính.
+- **Trợ lý AI ở Planner** (chỉ Planner bản máy chủ, nhóm `assistant` nối máy chủ — mục 1 "Trợ lý"). Nút kính "Trợ lý AI" ở cùng hàng góc
+  dưới phải khung 3D, ngay trước "Chi tiết / Hiển thị" (slot `assistant` của `SceneHud`; từ 768 px, dưới 1.280 px chỉ ảnh Lumo), không trên
+  thanh trên 56 px; chế độ Chỉnh sửa ẩn hàng đó nên không có nút. Khung chat đứng trên hàng nút, từ 1.280 px bên trái cột nổi (thẻ kiện
+  đang chọn không bị che). `usePlannerAssistant` đăng ký Planner sau mỗi lần vẽ: chọn kiện theo mã in trên nhãn (tên của placement, chỉ khi
+  phương án có đúng một kiện mang mã đó), góc nhìn, bước xếp (đưa mô phỏng về Xếp hàng), chế độ màu; `openTab` mở tab Danh sách của hộp
+  thông tin và cuộn tới khối chưa xếp / đã ghim / đã xếp (`leftTab` → `section` của `PackageListPanel`).
 - **Kiện ghim ở Planner** (FE-BL-02). Phương án có kiện ghim thì hàng dưới phải khung 3D có `PinnedRerun` — nhãn "N kiện đã ghim" (biểu tượng
   ghim + chữ) và nút phụ "Chạy lại giữ ghim", bên trái "Đổi xe" / "Chi tiết" (từ 768 px, dưới 1.280 px chỉ biểu tượng; chọn chỗ này vì thanh trên không còn chỗ và
   cột nổi bên phải che mọi thứ đặt chồng lên trên nó). Cần quyền `optimization.run` và chuyến Đã lập kế hoạch.

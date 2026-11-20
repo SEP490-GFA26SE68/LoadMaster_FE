@@ -6,11 +6,15 @@
 /** Màn đang mở: chỉ là gợi ý cho máy chủ, máy chủ không đưa tiêu đề cho mô hình. */
 export type AssistantPageDto = { readonly path: string; readonly title: string }
 
+/** Planner bản máy chủ đang mở: chuyến, mã số phương án, mã kiện đang chọn. Chỉ gửi khi có Planner. */
+export type AssistantViewerDto = { readonly tripCode: string; readonly loadPlanId: number; readonly selectedPackageCode: string | null }
+
 export type AssistantMessageRequestDto = {
   readonly conversationId?: string
   readonly message: string
   readonly locale: string
   readonly page?: AssistantPageDto
+  readonly viewer?: AssistantViewerDto
 }
 
 /** `guestKey`: mã ngẫu nhiên của phiên trình duyệt (`^[A-Za-z0-9_-]{16,64}$`), hội thoại của khách chỉ đọc tiếp được với đúng mã đó. */

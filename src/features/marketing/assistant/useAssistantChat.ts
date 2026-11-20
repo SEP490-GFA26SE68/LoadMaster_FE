@@ -11,6 +11,7 @@ import type { AssistantContext, TopicId } from './assistant-kb'
 import { assistantSession } from './assistant-session'
 import { useAssistantSurface } from './assistant-surface'
 import { useAskAssistantMutation } from './useAssistantQuery'
+import { viewerContext } from './viewer-bridge'
 
 /** Giờ đến của app là mock tối ưu tuyến (có luật nghỉ bắt buộc) khi nhóm `trips` chưa nối máy chủ. */
 const MOCK_ROUTES = !usesBackend('trips')
@@ -35,12 +36,14 @@ export function useAssistantChat(onLeave: () => void) {
   const surface = useAssistantSurface()
 
   function askContext(): AssistantAskContext {
+    const viewer = surface === 'app' ? viewerContext() : null
     return {
       surface,
       locale,
       conversationId: assistantSession.conversationId(surface),
       guestKey: ASSISTANT_USES_AI && surface === 'public' ? assistantSession.guestKey() : null,
       ...(surface === 'app' ? { page: { path: `${pathname}${search}`, title: document.title } } : {}),
+      ...(viewer === null ? {} : { viewer }),
     }
   }
 
