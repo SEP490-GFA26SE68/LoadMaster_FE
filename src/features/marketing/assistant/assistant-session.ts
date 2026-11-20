@@ -13,7 +13,16 @@ export type AssistantEntry =
   | { readonly id: number; readonly kind: 'answer'; readonly topicId: TopicId; readonly degraded?: true }
   | { readonly id: number; readonly kind: 'fallback'; readonly degraded?: true }
   | { readonly id: number; readonly kind: 'advisor'; readonly runs: number }
-  | { readonly id: number; readonly kind: 'error' }
+  /** `cause`: lỗi của lượt gọi không có câu soạn sẵn thay thế (bản tin) — màn nói đúng lý do; vắng là câu "chưa trả lời được" chung. */
+  | { readonly id: number; readonly kind: 'error'; readonly cause?: unknown }
+  /** Bản tin "Tóm tắt hôm nay": gạch đầu dòng và liên kết do máy chủ dựng, giờ máy chủ đếm số. */
+  | {
+      readonly id: number
+      readonly kind: 'briefing'
+      readonly generatedAt: string
+      readonly bullets: readonly string[]
+      readonly links: readonly AssistantLink[]
+    }
   | {
       readonly id: number
       readonly kind: 'ai'

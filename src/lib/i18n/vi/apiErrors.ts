@@ -223,4 +223,8 @@ export const apiErrors = {
   STOP_NOT_MOVABLE: 'Điểm đã hoàn tất hoặc xe đã tới nên không đổi chỗ được.',
   PICKUP_AFTER_DELIVERY: 'Điểm nhận hàng phải đứng trước điểm giao của cùng yêu cầu.',
   STOP_ORDER_BLOCKS_CARGO: 'Theo thứ tự này có kiện bị kiện giao sau che kín lối dỡ nên không dỡ được. Thứ tự điểm giữ nguyên.',
+  // Trợ lý AI: lượt gọi không có câu soạn sẵn thay thế (bản tin "Tóm tắt hôm nay")
+  ASSISTANT_UNAVAILABLE: 'Trợ lý AI tạm thời không trả lời được. Thử lại sau ít phút.',
+  ASSISTANT_RATE_LIMITED: 'Bạn đã hỏi trợ lý quá nhiều lần trong một giờ. Thử lại sau.',
+  ASSISTANT_BUDGET_EXCEEDED: 'Trợ lý AI đã dùng hết hạn mức hôm nay. Thử lại vào ngày mai.',
 } as const

@@ -293,7 +293,11 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   kiểm lại từng lệnh (lệnh lạ, tham số sai, mã kiện phương án không có thì bỏ im lặng, không toast), tối đa 5 lệnh mỗi lượt, chỉ chạy lệnh của
   câu trả lời **vừa về** (không chạy lại khi mở lại khung chat), bỏ hết khi đang Chỉnh sửa, khi không có Planner hay Planner đã sang phương án
   khác. Không có lệnh dời, xoay, ghim hay duyệt. Màn chào trong ứng dụng gợi ý câu theo vai trò (`app-starters.ts`: màn đang mở, chuyến, credit, phiếu
-  lương, yêu cầu hỗ trợ, gói cước — chỉ câu máy chủ có công cụ trả lời cho vai trò đó), gửi cho mô hình như câu gõ. Cuộc trò chuyện gắn với
+  lương, yêu cầu hỗ trợ, gói cước — chỉ câu máy chủ có công cụ trả lời cho vai trò đó), gửi cho mô hình như câu gõ. Điều phối viên và quản lý
+  công ty có thêm nút phụ **"Tóm tắt hôm nay"** ở màn chào (`briefingAvailable`, `briefing-api.ts` → `useBriefingQuery`: `enabled: false`,
+  chỉ gọi `GET /api/assistant/briefing` khi bấm): máy chủ đếm số theo công ty và đệm bản tin 2 giờ, mô hình chỉ viết câu; bản tin vào cuộc
+  trò chuyện như câu trả lời của Lumo (gạch đầu dòng, "Số liệu lúc HH:mm", liên kết qua `AnswerLinks`), không toast; lỗi nói đúng lý do bằng
+  `apiErrors` (`ASSISTANT_*`, quyền, mạng) — không có câu soạn sẵn thay thế. Cuộc trò chuyện gắn với
   bề mặt và người xem (`assistantSession.bind`): đổi người đăng nhập hay đi từ trang công khai vào app thì cuộc trò chuyện cũ đóng và mất.
   Ngoài khung chat, trợ lý còn đọc tin nhắn đặt giao của khách thành bản nháp ở form tạo yêu cầu giao (mục 9 "Yêu cầu giao"). Trên
   hai trang công khai nút mở góc

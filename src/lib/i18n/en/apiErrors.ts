@@ -206,4 +206,7 @@ export const apiErrors = {
   STOP_NOT_MOVABLE: 'A stop is completed or the vehicle has reached it, so it cannot move.',
   PICKUP_AFTER_DELIVERY: 'A pickup stop must come before the delivery stop of the same request.',
   STOP_ORDER_BLOCKS_CARGO: 'In this order a package is fully blocked by packages delivered later and cannot be unloaded. The stop order stays as it was.',
+  ASSISTANT_UNAVAILABLE: 'The AI assistant cannot answer right now. Try again in a few minutes.',
+  ASSISTANT_RATE_LIMITED: 'You have asked the assistant too many times this hour. Try again later.',
+  ASSISTANT_BUDGET_EXCEEDED: 'The AI assistant has used up today’s allowance. Try again tomorrow.',
 } satisfies Dictionary<typeof source>

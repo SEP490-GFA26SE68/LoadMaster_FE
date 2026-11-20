@@ -11,6 +11,7 @@ import type { AssistantContext, TopicId } from './assistant-kb'
 import { assistantSession } from './assistant-session'
 import { useAssistantSurface } from './assistant-surface'
 import { useAskAssistantMutation } from './useAssistantQuery'
+import { useBriefingQuery } from './useBriefingQuery'
 import { viewerContext } from './viewer-bridge'
 
 /** Giờ đến của app là mock tối ưu tuyến (có luật nghỉ bắt buộc) khi nhóm `trips` chưa nối máy chủ. */
@@ -24,12 +25,13 @@ export function useAssistantContext(): AssistantContext {
 
 /**
  * Việc của khung chat: gửi câu hỏi (gõ hay bấm gợi ý — gợi ý gửi kèm chủ đề của nó), trả lời ngay phép tính gói khi trợ lý vừa hỏi số lần
- * chạy và khách gõ một số, và chuyển câu hỏi sang form liên hệ. Câu gõ đi kèm bề mặt, ngôn ngữ, hội thoại đang nói tiếp, mã khách (trang
- * công khai, khi nối máy chủ) và màn đang mở (trong ứng dụng). `onLeave` đóng khung chat trước khi điều hướng (không trả focus về nút mở:
- * trang đích đặt focus vào tiêu đề phần).
+ * chạy và khách gõ một số, chuyển câu hỏi sang form liên hệ, và đọc bản tin "Tóm tắt hôm nay" (trong ứng dụng, `useBriefingQuery`). Câu
+ * gõ đi kèm bề mặt, ngôn ngữ, hội thoại đang nói tiếp, mã khách (trang công khai, khi nối máy chủ) và màn đang mở (trong ứng dụng).
+ * `onLeave` đóng khung chat trước khi điều hướng (không trả focus về nút mở: trang đích đặt focus vào tiêu đề phần).
  */
 export function useAssistantChat(onLeave: () => void) {
   const { mutate } = useAskAssistantMutation()
+  const { request: briefing } = useBriefingQuery()
   const navigate = useNavigate()
   const { pathname, search } = useLocation()
   const { locale } = useLocale()
@@ -73,5 +75,5 @@ export function useAssistantChat(onLeave: () => void) {
     void navigate(contactPath({ type: 'INQUIRY' }), { state: handoffState(questions) })
   }
 
-  return { send, sendRuns, handoff }
+  return { send, sendRuns, handoff, briefing }
 }

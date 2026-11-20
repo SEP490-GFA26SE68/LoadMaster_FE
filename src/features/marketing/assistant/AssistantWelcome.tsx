@@ -1,5 +1,6 @@
 import {
   Calculator,
+  ClipboardList,
   Coins,
   LifeBuoy,
   MessageCircleQuestion,
@@ -12,12 +13,14 @@ import {
 } from 'lucide-react'
 import { useId } from 'react'
 import { LUMO_NAME } from '@/components/brand/Lumo'
+import { Button } from '@/components/ui/Button'
 import { useAuthSafe } from '@/features/auth/AuthProvider'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { appStartersFor, type AppStarterId } from './app-starters'
 import { STARTER_TOPICS, type TopicId } from './assistant-kb'
 import { useAssistantSurface } from './assistant-surface'
+import { briefingAvailable } from './briefing-api'
 import { AssistantAvatar } from './AssistantAvatar'
 import { CHAT_TOUCH } from './AssistantChips'
 
@@ -43,14 +46,19 @@ type Starter = { readonly key: string; readonly question: string; readonly icon:
 /**
  * Màn chào của khung chat khi chưa hỏi gì: Lumo (`idea` — gợi ý) chào một câu, nói hỏi được gì, rồi tối đa bốn câu hỏi gợi ý thành lưới
  * 2 × 2 lấp chỗ trống của khung. Trang công khai: bốn chủ đề soạn sẵn (bấm là hỏi đúng chủ đề đó). Trong ứng dụng: câu theo vai trò
- * (`appStartersFor`), gửi cho mô hình như câu gõ. Hỏi rồi thì màn chào nhường chỗ cho cuộc trò chuyện. Ô là nút: rê chuột chỉ đổi nền và
- * viền, không nâng ô.
+ * (`appStartersFor`), gửi cho mô hình như câu gõ; điều phối viên và quản lý công ty có thêm nút phụ "Tóm tắt hôm nay" (`onBriefing`, chỉ
+ * gọi máy chủ khi bấm). Hỏi rồi thì màn chào nhường chỗ cho cuộc trò chuyện. Ô là nút: rê chuột chỉ đổi nền và viền, không nâng ô.
  */
-export function AssistantWelcome({ onAsk, disabled }: { onAsk: (question: string, topicId?: TopicId) => void; disabled?: boolean }) {
+export function AssistantWelcome({ onAsk, onBriefing, disabled }: {
+  onAsk: (question: string, topicId?: TopicId) => void
+  onBriefing?: (label: string) => void
+  disabled?: boolean
+}) {
   const t = useT()
   const headingId = useId()
   const inApp = useAssistantSurface() === 'app'
   const role = useAuthSafe()?.user?.role
+  const briefing = inApp && onBriefing !== undefined && briefingAvailable(role) ? onBriefing : null
   const starters: Starter[] =
     inApp && role
       ? appStartersFor(role).map((id) => ({ key: id, question: t(`assistant.panel.appStarters.${id}`), icon: APP_STARTER_ICONS[id] }))
@@ -71,6 +79,18 @@ export function AssistantWelcome({ onAsk, disabled }: { onAsk: (question: string
           <p className="m-0 text-small text-ink-2 pointer-coarse:text-body-lg">{t(inApp ? 'assistant.panel.introHintApp' : 'assistant.panel.introHint')}</p>
         </div>
       </div>
+      {briefing !== null ? (
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={disabled}
+          className={cn('self-start pointer-coarse:h-12', CHAT_TOUCH)}
+          onClick={() => briefing(t('assistant.briefing.button'))}
+        >
+          <ClipboardList aria-hidden />
+          {t('assistant.briefing.button')}
+        </Button>
+      ) : null}
       <div role="group" aria-label={t('assistant.panel.starters')} className="grid grid-cols-2 gap-2">
         {starters.map(({ key, question, icon: Icon, topicId }) => (
           <button

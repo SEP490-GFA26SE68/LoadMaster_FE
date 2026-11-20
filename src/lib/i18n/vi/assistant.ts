@@ -178,6 +178,14 @@ export const assistant = {
     ticket: 'Đã tạo yêu cầu hỗ trợ {code}. Đội hỗ trợ trả lời ở mục “Yêu cầu hỗ trợ” của menu tài khoản.',
     degraded: 'Trợ lý AI đang bận nên đây là câu trả lời soạn sẵn.',
   },
+  /**
+   * Bản tin "Tóm tắt hôm nay" của điều phối viên và quản lý công ty (`AssistantBriefing`, GET /api/assistant/briefing): số do máy chủ đếm,
+   * mô hình chỉ viết câu. Lỗi nói bằng câu của `apiErrors`.
+   */
+  briefing: {
+    button: 'Tóm tắt hôm nay',
+    generatedAt: 'Số liệu lúc {time}.',
+  },
   fallback: 'Mình chưa có câu trả lời cho câu này trong tài liệu của LoadMaster. Bạn chọn một câu hỏi bên dưới, hoặc gửi câu hỏi cho đội LoadMaster.',
   handoff: {
     ask: 'Gửi câu hỏi cho đội LoadMaster',
