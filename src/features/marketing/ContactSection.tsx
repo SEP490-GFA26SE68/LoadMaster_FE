@@ -37,7 +37,8 @@ function ContactSent({ contact, onAgain }: { contact: GuestContact; onAgain: () 
 
 /**
  * Ba việc xảy ra sau khi khách gửi yêu cầu, theo thứ tự. Bước cuối nói đúng cách có tài khoản của chế độ đang chạy: khách tự đăng ký
- * được (`REGISTRATION_CAPABILITIES.publicSignUp`) thì "bạn tự đăng ký", kho mẫu thì "đội LoadMaster tạo sau khi trao đổi".
+ * được (`REGISTRATION_CAPABILITIES.publicSignUp`) thì "bạn tự đăng ký", kho mẫu thì "đội LoadMaster tạo sau khi trao đổi". Chỉ từ 640 px:
+ * trên điện thoại form đứng ngay dưới tiêu đề; cách có tài khoản nằm ở "Hỏi đáp" ngay trên, gửi xong có câu nói việc kế tiếp.
  */
 const NEXT_STEPS: readonly { icon: LucideIcon; key: MessageKey }[] = [
   { icon: MailCheck, key: 'landing.contact.next.reply' },
@@ -48,7 +49,7 @@ const NEXT_STEPS: readonly { icon: LucideIcon; key: MessageKey }[] = [
 function ContactNextSteps() {
   const t = useT()
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 max-sm:hidden">
       <h3 className="m-0 font-display text-h3 font-[650] text-sky-text font-stretch-108%">{t('landing.contact.next.title')}</h3>
       <ol className="m-0 flex list-none flex-col gap-4 p-0">
         {NEXT_STEPS.map(({ icon: Icon, key }) => (
@@ -91,7 +92,7 @@ export function ContactSection() {
   const message = prefill !== null && prefill.round === round ? prefill.message : ''
 
   return (
-    <section ref={sectionRef} id={CONTACT_ANCHOR} aria-labelledby="landing-contact" className="landing-closing scroll-mt-24 px-4 py-12 md:px-shell lg:py-16">
+    <section ref={sectionRef} id={CONTACT_ANCHOR} aria-labelledby="landing-contact" className="landing-closing scroll-mt-24 px-4 py-8 sm:py-12 md:px-shell lg:py-16">
       <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-12">
         <div className="flex flex-col gap-8">
           <SectionHeading id="landing-contact" tone="dark" title={t('landing.contact.title')} lede={t('landing.contact.lede')} />

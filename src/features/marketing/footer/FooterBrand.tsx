@@ -41,7 +41,8 @@ export function FooterBrand({ className }: { className?: string }) {
   return (
     <div className={cn('flex min-w-0 flex-col gap-6', className)}>
       <Logo tone="dark" size="md" tagline className="self-start" />
-      <RevealWords as="p" mode="ink" delay={120} text={t('landingFooter.description')} className={cn(FOOTER_TEXT, 'max-w-md')} />
+      {/* Câu mô tả chỉ từ 640 px: trên điện thoại chân trang chỉ giữ logo, lối liên hệ, ngôn ngữ và các cột liên kết */}
+      <RevealWords as="p" mode="ink" delay={120} text={t('landingFooter.description')} className={cn(FOOTER_TEXT, 'max-w-md max-sm:hidden')} />
 
       {supportEmail || phone || address ? (
         <address className="flex flex-col gap-3 not-italic">

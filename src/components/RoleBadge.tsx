@@ -27,9 +27,10 @@ export const ROLE_ICON: Readonly<Record<Role, LucideIcon>> = {
 
 /**
  * Nhãn vai trò (V2.3): nền slate, bo 6 px, icon của vai trò kèm tên vai trò từ từ điển. Vai trò là ngữ cảnh chứ không phải trạng
- * thái nên không dùng chip viên thuốc. Icon chỉ để nhìn (`aria-hidden`): tên vai trò đã nói đủ.
+ * thái nên không dùng chip viên thuốc. Icon chỉ để nhìn (`aria-hidden`): tên vai trò đã nói đủ. `className` thêm vào vỏ — trang công khai
+ * dùng để nâng chữ lên 16 px trên máy cảm ứng.
  */
-export function RoleBadge({ role, size = 'md' }: { role: Role; size?: 'sm' | 'md' }) {
+export function RoleBadge({ role, size = 'md', className }: { role: Role; size?: 'sm' | 'md'; className?: string }) {
   const t = useT()
   const Icon = ROLE_ICON[role]
   return (
@@ -37,6 +38,7 @@ export function RoleBadge({ role, size = 'md' }: { role: Role; size?: 'sm' | 'md
       className={cn(
         'inline-flex max-w-full items-center rounded-sm bg-tint-slate font-medium text-tint-slate-fg',
         size === 'sm' ? 'min-h-5 gap-1 px-1.5 text-micro' : 'min-h-5.5 gap-1.5 px-2 text-caption',
+        className,
       )}
     >
       <Icon aria-hidden className={cn('flex-none', size === 'sm' ? 'size-3' : 'size-3.5')} strokeWidth={1.5} />

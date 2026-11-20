@@ -30,7 +30,7 @@ function PlanTile({ plan, advised }: { plan: SubscriptionPlan; advised: boolean 
   const titleId = `landing-plan-${plan.id}`
   return (
     <Card role="group" aria-labelledby={titleId} data-advised={advised || undefined}
-      className={cn('flex flex-col gap-4 p-5 sm:p-6', advised && 'border-primary ring-1 ring-primary')}>
+      className={cn('flex flex-col gap-3 p-4 sm:gap-4 sm:p-6', advised && 'border-primary ring-1 ring-primary')}>
       <div className="flex flex-wrap items-center gap-2">
         <h3 id={titleId} className="m-0 font-display text-h2 font-[650] text-ink-strong font-stretch-108%">{plan.name}</h3>
         {advised ? <Badge shape="tag" tone="cyan" className={PUBLIC_TOUCH_TAG}>{t('landing.plans.advisor.fits')}</Badge> : null}
@@ -39,7 +39,7 @@ function PlanTile({ plan, advised }: { plan: SubscriptionPlan; advised: boolean 
         <span className="font-display text-figure font-bold tracking-[-0.02em] tabular-nums font-stretch-108%">{format.currency(plan.priceVnd)}</span>
         <span className="text-body-lg text-ink-2">{t('pricing.perMonth')}</span>
       </p>
-      <p className="m-0 flex items-center gap-2 border-t border-line-soft pt-4 text-body-lg font-medium text-ink-1">
+      <p className="m-0 flex items-center gap-2 border-t border-line-soft pt-3 text-body-lg font-medium text-ink-1 sm:pt-4">
         <Coins aria-hidden className="size-5 flex-none text-primary" strokeWidth={1.5} />
         {plan.monthlyCredits === null ? t('common.unlimitedCredits') : t('landing.plans.credits', { count: format.integer(plan.monthlyCredits) })}
       </p>
@@ -64,7 +64,7 @@ export function LandingPlans() {
   const advice = advise(runsAt(stop), list)
   const provisional = list.filter((plan) => plan.provisional).map((plan) => plan.name)
   return (
-    <section ref={sectionRef} id="goi-cuoc" aria-labelledby="landing-plans" className="scroll-mt-24 px-4 py-12 md:px-shell lg:py-16">
+    <section ref={sectionRef} id="goi-cuoc" aria-labelledby="landing-plans" className="scroll-mt-24 px-4 py-8 sm:py-12 md:px-shell lg:py-16">
       <SectionHeading id="landing-plans" title={t('landing.plans.title')} lede={t('landing.plans.lede')} />
 
       {plans.isPending ? (

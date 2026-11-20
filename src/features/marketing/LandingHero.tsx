@@ -28,7 +28,7 @@ export function LandingHero() {
   const signUp = REGISTRATION_CAPABILITIES.publicSignUp && !user
   return (
     <section aria-labelledby="landing-title">
-      <div className="relative grid items-center gap-10 px-4 pt-10 pb-12 md:px-shell xl:grid-cols-[34rem_minmax(0,1fr)] xl:items-start xl:gap-6 xl:pt-8 xl:pb-12">
+      <div className="relative grid items-center gap-8 px-4 pt-8 pb-8 sm:gap-10 sm:pt-10 sm:pb-12 md:px-shell xl:grid-cols-[34rem_minmax(0,1fr)] xl:items-start xl:gap-6 xl:pt-8 xl:pb-12">
         <Reveal group className="flex min-w-0 flex-col items-start gap-6 xl:pt-10 xl:[@media(min-height:44rem)]:sticky xl:[@media(min-height:44rem)]:top-16">
           <FlowHeading
             as="p"
@@ -45,7 +45,8 @@ export function LandingHero() {
             className="m-0 max-w-[15em] font-display text-hero font-bold tracking-[-0.02em] text-balance text-sky-text font-stretch-112%"
           />
           <RevealWords as="p" mode="ink" delay={350} text={t('landing.hero.lede')} className="m-0 max-w-[36em] text-intro text-sky-text-2" />
-          <Reveal kind="rise" delay={500} className="flex flex-wrap gap-3 pt-1" data-assistant-avoid>
+          {/* Khe 8 px dưới 640 px: hai nút vừa một hàng ở 390 px; hẹp hơn thì xuống dòng */}
+          <Reveal kind="rise" delay={500} className="flex flex-wrap gap-2 pt-1 sm:gap-3" data-assistant-avoid>
             {signUp ? (
               <Button asChild variant="primary" size="lg" className={cn(PUBLIC_TOUCH, SKY_FOCUS)}>
                 <Link to={TRIAL_REGISTRATION}>{t('landing.header.trial')}</Link>

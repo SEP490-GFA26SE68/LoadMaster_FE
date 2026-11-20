@@ -100,8 +100,8 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   chưa đăng nhập, dễ thấy nhất trước: **nút chính** của khối mở đầu `/gioi-thieu` là "Đăng ký trải nghiệm" ("Nhận tư vấn" lùi thành nút kính
   cạnh nó); đầu trang có nút kính "Đăng ký trải nghiệm" từ 768 px và "Đăng ký dùng ngay" từ 1.280 px (hẹp hơn hai mục nằm trong nút menu); màn
   đăng nhập có hai nút phụ dưới form (`LoginSignUp`); thẻ gói có nút phụ ("Đăng ký trải nghiệm" chỉ ở gói Basic). Người đã đăng nhập không thấy
-  lối vào nào (đầu trang, khối mở đầu, thẻ gói, chân trang). Câu dưới bảng gói và bước cuối của dải liên hệ nói đúng theo nguồn: khách tự
-  đăng ký được thì là `signUpNoteSelf`, kho mẫu thì "tài khoản do đội LoadMaster tạo". Kho mẫu (D-20) ẩn mọi lối vào, ba route chuyển về form liên hệ
+  lối vào nào (đầu trang, khối mở đầu, thẻ gói, chân trang). Câu dưới bảng gói và bước cuối của dải liên hệ (ba bước "Sau khi bạn gửi", chỉ từ 640 px)
+  nói đúng theo nguồn: khách tự đăng ký được thì là `signUpNoteSelf`, kho mẫu thì "tài khoản do đội LoadMaster tạo". Kho mẫu (D-20) ẩn mọi lối vào, ba route chuyển về form liên hệ
   của `/gioi-thieu` (dùng thử / báo giá, giữ gói) hoặc trang giới thiệu, và tài khoản công ty do đội LoadMaster mở sau yêu cầu liên hệ. Tài khoản
   dùng thử phải ký thoả thuận dịch vụ trong 72 giờ; quá hạn thì bị gắn cờ (màn khoá `TrialAccountLockedView`, gửi yêu cầu mở khoá) và bị xoá hẳn
   30 ngày sau khi hết hạn dùng thử. Chỉ quản trị công ty đọc và ký thoả thuận (`GET /api/agreements/my-agreement`, máy chủ chỉ cho vai trò
@@ -148,7 +148,9 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   trang bốn mục (`PUBLIC_LINKS`: Cách hoạt động, Thử ngay — tới `#thu-ngay`, neo ở module thuần `try/try-anchor.ts` —, Bảng giá, Liên hệ) —
   Hỏi đáp mở từ chân trang. **Nhận hàng dọc đường không được giới
   thiệu** ở hai trang công khai, kể cả trợ lý Lumo (quyết định của chủ sản phẩm 19/11/2026); tính năng vẫn có trong ứng dụng. Cả trang nằm trong
-  `RevealProvider`: chữ và thẻ hiện ra **một lần** khi cuộn tới (`features/marketing/reveal`, mục 8).
+  `RevealProvider`: chữ và thẻ hiện ra **một lần** khi cuộn tới (`features/marketing/reveal`, mục 8). Trên điện thoại cảm ứng 390 px cả trang
+  không quá 14 màn hình (đo 20/11/2026: 13,7 tiếng Việt, 14 tiếng Anh): dưới 640 px các phần sáng và dải liên hệ có lề trên dưới 32 px, câu mô
+  tả dưới tiêu đề phần 16 px (`SectionHeading`), thẻ gói lề 16 px, hai nút mở đầu cách nhau 8 px để cùng một hàng.
 - **"Một chuyến hàng trên LoadMaster"** (`marketing/journey/`, `LandingJourney`): năm chặng theo thứ tự (`CHAPTERS` ở `journey-model.ts`) —
   Lập chuyến và chọn phương án (điều phối viên) · Soạn và xếp ở kho (nhân viên kho) · Trên đường (điều phối viên) · Tại điểm giao (tài xế) ·
   Giao xong, báo cáo và tính lương (quản lý công ty) —, mỗi chặng một `RoleBadge`, một đoạn chữ và một hình dựng từ chính ứng dụng: bảng so ba
@@ -157,8 +159,8 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   thùng xe SVG dính theo cuộn (`JourneyTruck`, `aria-hidden`; từ 1.024 px là cột phải, hẹp hơn là dải dính dưới đầu trang): 35 kiện trong vùng
   của bốn điểm giao, lên xe ở chặng kho (điểm cuối trước, từ sàn lên), xuống xe ở chặng điểm giao (điểm 1 trước, từ trên xuống) — hình học
   thuần `truckBoxes`, có test. Từ 1.024 px mỗi chặng cao ít nhất 40 % khung nhìn (chặng cuối không) để thùng xe có quãng cuộn mà không để
-  khoảng trống lớn giữa các chặng; dưới 640 px chặng cao theo nội dung, không vạch nối và ô icon (còn `RoleBadge`), sơ đồ tuyến chỉ còn chip
-  mức hạn, bảng so tràn hết bề ngang — cả phần không quá 2.400 px ở 390 px. `useJourneyProgress` (IntersectionObserver, một khung hình mỗi lần cuộn, mốc 55 % chiều cao khung nhìn) ghi
+  khoảng trống lớn giữa các chặng; dưới 640 px chặng cao theo nội dung, không vạch nối và ô icon (còn `RoleBadge`, chữ 16 px trên máy cảm
+  ứng), sơ đồ tuyến chỉ còn chip mức hạn, bảng so tràn hết bề ngang, chặng cuối không có phiếu lương — cả phần không quá 2.200 px ở 390 px. `useJourneyProgress` (IntersectionObserver, một khung hình mỗi lần cuộn, mốc 55 % chiều cao khung nhìn) ghi
   thẳng vào DOM `--p`, `data-chapter`, `data-reached` — không state React theo cuộn. Không IntersectionObserver thì không ghi gì, CSS giữ thùng
   đầy (`--p` mặc định 0,5); giảm chuyển động thì hình đổi theo chặng, không theo từng điểm cuộn; chữ không bao giờ ẩn chờ cuộn. Bảng và số của
   điểm 1 đọc **cùng truy vấn** lần chạy mẫu với khung 3D (`useJourneySample`, khoá `['landing', 'sample-candidates']`); không Web Worker hay
@@ -217,7 +219,8 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   hiệu, nút tới form liên hệ, ngôn ngữ), bốn cột — Sản phẩm (ba neo của trang giới thiệu, Bảng giá, Phương án mẫu 3D) · Dành cho (năm vai trò công ty, là
   chữ) · Hỗ trợ (Hỏi đáp → `#hoi-dap`, Liên hệ tư vấn → `#lien-he`, Chính sách bảo mật → `/chinh-sach-bao-mat`, Điều khoản sử dụng →
   `/dieu-khoan-su-dung`; hàng cuối không lặp lại hai liên kết pháp lý) · Tài khoản ("Đăng nhập" hay "Vào ứng dụng"; khách có thêm hai lối đăng ký khi nối backend)
-  — và nút "Lên đầu trang". Cột chỉ chứa liên kết tới thứ **đang có**. Thông tin liên hệ của công ty ở `lib/site-info.ts` (`SITE_INFO`):
+  — và nút "Lên đầu trang", cùng hàng với bản quyền ở mọi bề rộng. Dưới 640 px không có câu mô tả của khối thương hiệu và cột "Dành cho"
+  (phần "Một chuyến, bốn màn" đã nói các vai trò). Cột chỉ chứa liên kết tới thứ **đang có**. Thông tin liên hệ của công ty ở `lib/site-info.ts` (`SITE_INFO`):
   email, số điện thoại, địa chỉ, mã số thuế đều `null` tới khi chủ sản phẩm đưa số thật, và chân trang không vẽ dòng nào cho giá trị `null`
   — không viết email hay số điện thoại chưa xác nhận vào code.
 - **Khung 3D chuyến mẫu** (`LandingStage`; Three.js chỉ ở `viewer3d/LandingStageViewer` và `viewer3d/landing/`, tải lười): bộ tối ưu mô phỏng tính

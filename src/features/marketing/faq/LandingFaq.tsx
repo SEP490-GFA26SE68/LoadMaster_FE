@@ -20,7 +20,7 @@ export function LandingFaq() {
   const t = useT()
   const context = useAssistantContext()
   return (
-    <section id="hoi-dap" aria-labelledby="landing-faq" className="scroll-mt-24 px-4 py-12 md:px-shell lg:py-16">
+    <section id="hoi-dap" aria-labelledby="landing-faq" className="scroll-mt-24 px-4 py-8 sm:py-12 md:px-shell lg:py-16">
       <div className="grid gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-14">
         <SectionHeading id="landing-faq" title={t('landingFaq.title')} lede={t('landingFaq.lede', { name: LUMO_NAME })} />
         <ul className="m-0 flex list-none flex-col gap-3 p-0">

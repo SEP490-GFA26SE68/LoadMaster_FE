@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { ClipboardCheck, Flag, MapPin, Truck, Warehouse, type LucideIcon } from 'lucide-react'
 import { RoleBadge } from '@/components/RoleBadge'
 import { useT } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
 import type { Role } from '@/types/user'
 import { SectionHeading } from '../SectionHeading'
 import { CHAPTERS, type ChapterKey } from './journey-model'
@@ -36,7 +37,7 @@ function chapterVisual(key: ChapterKey, sample: JourneySample): ReactNode {
  * "Một chuyến hàng trên LoadMaster" (`#cach-hoat-dong`): năm chặng của một chuyến — lập chuyến và chọn phương án, soạn và xếp ở kho, trên
  * đường, tại điểm giao, giao xong — mỗi chặng một vai trò, một đoạn chữ và một hình của chính ứng dụng (bảng so ba phương án của lần chạy
  * mẫu, ba cách đối chiếu, sơ đồ tuyến và mức hạn, số của điểm 1, phiếu lương). Dưới 640 px không có đường dọc và mốc, tiêu đề chặng nhỏ
- * một bậc, để năm chặng gọn trong chừng ba màn điện thoại. Cạnh danh sách (trên điện thoại: dải dính dưới đầu trang)
+ * một bậc và chặng cuối không có phiếu lương, để năm chặng gọn trong chừng hai màn rưỡi điện thoại. Cạnh danh sách (trên điện thoại: dải dính dưới đầu trang)
  * là hình thùng xe dính theo cuộn: kiện lên xe ở chặng kho, xuống xe ở chặng điểm giao, chip trạng thái theo chặng đang xem
  * (`useJourneyProgress` ghi thẳng vào DOM). Mốc của chặng đã tới đổi sang cyan. Không có IntersectionObserver hay giảm chuyển động:
  * hình đứng ở trạng thái mặc định hoặc đổi theo từng chặng; chữ không bao giờ bị ẩn chờ cuộn.
@@ -65,12 +66,13 @@ export function LandingJourney() {
                   <Icon className="size-5" strokeWidth={1.5} />
                 </span>
                 <div className="flex min-w-0 flex-col gap-2 sm:gap-3">
-                  <div><RoleBadge role={role} size="md" /></div>
+                  <div><RoleBadge role={role} size="md" className="pointer-coarse:text-body-lg" /></div>
                   <h3 className="m-0 font-display text-h2 font-bold tracking-[-0.01em] text-balance text-ink-strong font-stretch-108% sm:text-h1">
                     {t(`landingJourney.chapters.${key}.title`)}
                   </h3>
                   <p className="m-0 max-w-[36em] text-body-lg text-pretty text-ink-2">{t(`landingJourney.chapters.${key}.text`)}</p>
-                  <div className="mt-1 sm:mt-2">{chapterVisual(key, sample)}</div>
+                  {/* Phiếu lương (chỉ tên dòng, không số) chỉ từ 640 px: trên điện thoại đoạn chữ của chặng đã nói đủ */}
+                  <div className={cn('mt-1 sm:mt-2', key === 'done' && 'max-sm:hidden')}>{chapterVisual(key, sample)}</div>
                 </div>
               </li>
             )

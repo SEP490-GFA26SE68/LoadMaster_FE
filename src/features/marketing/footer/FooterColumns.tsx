@@ -42,12 +42,15 @@ function LinkColumn({ titleKey, index, children }: { titleKey: MessageKey; index
   )
 }
 
-/** Năm vai trò trong công ty dùng LoadMaster: danh sách để đọc, không phải liên kết — tên vai trò lấy từ nhánh `roles` của từ điển. */
+/**
+ * Năm vai trò trong công ty dùng LoadMaster: danh sách để đọc, không phải liên kết — tên vai trò lấy từ nhánh `roles` của từ điển. Chỉ từ
+ * 640 px: trên điện thoại cột này dài nhất mà không dẫn đi đâu (trang giới thiệu đã có "Một chuyến, bốn màn").
+ */
 function RolesColumn() {
   const t = useT()
   const titleId = useId()
   return (
-    <div className="flex min-w-0 flex-col gap-3">
+    <div className="flex min-w-0 flex-col gap-3 max-sm:hidden">
       <LineRise as="h2" id={titleId} delay={headingDelay(1)} className={FOOTER_HEADING} lines={[t('landingFooter.columns.roles')]} />
       <ul aria-labelledby={titleId} className="m-0 flex list-none flex-col gap-1 p-0">
         {FOOTER_ROLES.map((role) => {

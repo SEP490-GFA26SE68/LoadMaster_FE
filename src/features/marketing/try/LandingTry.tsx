@@ -46,7 +46,7 @@ export function LandingTry() {
   }
 
   return (
-    <section id={TRY_ANCHOR} aria-labelledby="landing-try" className="scroll-mt-24 px-4 py-12 md:px-shell lg:py-16">
+    <section id={TRY_ANCHOR} aria-labelledby="landing-try" className="scroll-mt-24 px-4 py-8 sm:py-12 md:px-shell lg:py-16">
       <SectionHeading id="landing-try" title={t('landingTry.title')} lede={t('landingTry.lede')} />
       <Tabs defaultValue="pack" className="mt-6">
         <TabsList aria-label={t('landingTry.tabs.label')} className="px-0">
