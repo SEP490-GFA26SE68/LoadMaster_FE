@@ -88,14 +88,6 @@ export const contacts = {
     failedToast: 'The request is marked as could not reach.',
     saveNote: 'Save note',
     noteSaved: 'Internal note saved.',
-    trial: {
-      title: 'Trial account request',
-      claimFirst: 'Customer support does not approve trial requests directly. Take the request below first, then hand it over to the platform manager.',
-      forwardHint: 'Customer support does not approve trial requests directly. Use "Hand over to the platform manager" below to move it to the Trial requests screen.',
-      forward: 'Hand over to the platform manager',
-      forwardNote: 'Review a trial account from request #{id} ({name})',
-      forwarded: 'The trial request was moved to the Trial requests screen.',
-    },
     reply: {
       title: 'Reply to the guest by email',
       subject: 'Email subject',

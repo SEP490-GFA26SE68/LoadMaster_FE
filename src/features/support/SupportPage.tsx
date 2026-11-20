@@ -17,7 +17,6 @@ import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import { matchesQuery } from '@/lib/list-filter'
 import { TICKET_KINDS, type SupportTicket, type TicketStatus } from '@/lib/mock-db'
 import { CompanyChatCard } from './CompanyChatCard'
-import { CompanyPanel } from './CompanyPanel'
 import { recentCompanyChat } from './support-chat'
 import { createTicketColumns, TicketCompanyNamesContext } from './support-columns'
 import { TicketThread } from './TicketThread'
@@ -58,10 +57,9 @@ function StatusSelect({ ticket, pending, onChange }: { ticket: SupportTicket; pe
 /**
  * Hỗ trợ khách hàng `/ho-tro` (FE-8-07, `support.handle`) — màn chính của vai trò. Bảng mọi yêu cầu hỗ trợ (hoạt động gần nhất trước), lọc
  * công ty, loại, trạng thái và tìm theo tiêu đề / mã / người gửi — tất cả trên URL; bấm một dòng mở cuộc trao đổi ở cột bên phải (`?ticket=`)
- * để trả lời và đổi trạng thái (kể cả mở lại yêu cầu đã đóng), kèm khung **chỉ đọc** về công ty đó: gói, số dư và 20 giao dịch credit gần nhất.
- * Màn không có nút chính ngoài "Gửi trả lời" của cuộc trao đổi. Nối backend (`SUPPORT_SOURCE`): trao đổi và khung công ty đọc từ máy
- * chủ (trao đổi đọc riêng cho các yêu cầu của công ty đang chọn, `threads`), khung công ty có thêm ô "Đổi gói nhanh" (`planAssign`); tên
- * công ty đi kèm yêu cầu.
+ * để trả lời và đổi trạng thái (kể cả mở lại yêu cầu đã đóng). Màn không có nút chính ngoài "Gửi trả lời" của cuộc
+ * trao đổi. Nối backend (`SUPPORT_SOURCE`): trao đổi đọc từ máy chủ (đọc riêng cho các yêu cầu của công ty đang chọn, `threads`); tên công
+ * ty đi kèm yêu cầu.
  */
 export function SupportPage() {
   const t = useT()
@@ -210,15 +208,12 @@ export function SupportPage() {
                       />
                     </div>
                   </Card>
-                  {SUPPORT_SOURCE.companyPanel ? (
-                    <CompanyPanel companyId={selected.companyId} companyName={selected.companyName} ticketClosed={selected.status === 'CLOSED'} />
-                  ) : null}
                   {companyChat.length > 0 ? <CompanyChatCard entries={companyChat} /> : null}
                 </>
               ) : (
                 <Card>
                   <CardHeader><CardTitle as="h2">{t('support.page.title')}</CardTitle></CardHeader>
-                  <p className="m-0 p-4.5 text-body text-ink-2">{t(SUPPORT_SOURCE.companyPanel ? 'support.page.selectHint' : 'support.page.selectHintStatusOnly')}</p>
+                  <p className="m-0 p-4.5 text-body text-ink-2">{t('support.page.selectHint')}</p>
                 </Card>
               )}
             </aside>

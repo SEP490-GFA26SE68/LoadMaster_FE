@@ -34,7 +34,7 @@ function CustomerCell({ request }: { request: TrialRequest }) {
       >
         {request.fullName}
       </button>
-      <span className="line-clamp-1 text-caption text-ink-3">
+      <span className="line-clamp-2 text-caption break-words text-ink-3">
         {request.companyName ?? t('platform.trialRequests.individual')}
         {request.taxCode ? ` (MST: ${request.taxCode})` : ''}
       </span>
@@ -45,7 +45,7 @@ function CustomerCell({ request }: { request: TrialRequest }) {
 function ContactCell({ request }: { request: TrialRequest }) {
   return (
     <span className="flex min-w-0 flex-col items-start gap-0.5 whitespace-normal">
-      <span className="line-clamp-1 break-all text-ink-1">{request.email}</span>
+      <span className="line-clamp-2 break-all text-ink-1">{request.email}</span>
       {request.phoneNumber ? <span className="font-mono text-caption text-ink-3">{request.phoneNumber}</span> : null}
     </span>
   )
@@ -54,7 +54,7 @@ function ContactCell({ request }: { request: TrialRequest }) {
 function PlanCell({ request }: { request: TrialRequest }) {
   const t = useT()
   if (request.interestedPlanName === null) return <span className="text-ink-3">{t('platform.trialRequests.noPlan')}</span>
-  return <span className="line-clamp-2 text-ink-1">{request.interestedPlanName}</span>
+  return <span className="line-clamp-2 break-words whitespace-normal text-ink-1">{request.interestedPlanName}</span>
 }
 
 function PrecheckCell({ request }: { request: TrialRequest }) {
@@ -73,8 +73,8 @@ function ManagerReviewCell({ request }: { request: TrialRequest }) {
   if (request.managerReviewedByName) {
     return (
       <span className="flex min-w-0 flex-col items-start gap-0.5 whitespace-normal">
-        <span className="line-clamp-1 font-medium text-ink-1">{request.managerReviewedByName}</span>
-        {request.managerReviewedByEmail ? <span className="line-clamp-1 text-caption text-ink-3">{request.managerReviewedByEmail}</span> : null}
+        <span className="line-clamp-2 font-medium break-words text-ink-1">{request.managerReviewedByName}</span>
+        {request.managerReviewedByEmail ? <span className="line-clamp-2 text-caption break-all text-ink-3">{request.managerReviewedByEmail}</span> : null}
       </span>
     )
   }
@@ -92,8 +92,8 @@ function AdminProvisionCell({ request }: { request: TrialRequest }) {
   if (request.approvedByName) {
     return (
       <span className="flex min-w-0 flex-col items-start gap-0.5 whitespace-normal">
-        <span className="line-clamp-1 font-medium text-ink-1">{request.approvedByName}</span>
-        {request.approvedByEmail ? <span className="line-clamp-1 text-caption text-ink-3">{request.approvedByEmail}</span> : null}
+        <span className="line-clamp-2 font-medium break-words text-ink-1">{request.approvedByName}</span>
+        {request.approvedByEmail ? <span className="line-clamp-2 text-caption break-all text-ink-3">{request.approvedByEmail}</span> : null}
       </span>
     )
   }
@@ -103,9 +103,15 @@ function AdminProvisionCell({ request }: { request: TrialRequest }) {
   return <span className="text-ink-3 text-caption">—</span>
 }
 
+/** Ngày trên, giờ dưới: hai dòng mono không tràn sang cột Trạng thái. */
 function CreatedCell({ request }: { request: TrialRequest }) {
   const format = useFormat()
-  return <span className="font-mono tabular-nums text-ink-2">{format.time(request.createdAt)} · {format.date(request.createdAt)}</span>
+  return (
+    <span className="flex flex-col font-mono whitespace-nowrap tabular-nums">
+      <span className="text-ink-1">{format.date(request.createdAt)}</span>
+      <span className="text-caption text-ink-3">{format.time(request.createdAt)}</span>
+    </span>
+  )
 }
 
 function ActionsCell({ request }: { request: TrialRequest }) {
@@ -171,14 +177,15 @@ export function createTrialColumns(t: TFunction) {
   const column = (id: string, header: string, meta: ColumnMeta, Cell: (props: { request: TrialRequest }) => ReactNode) =>
     helper.display({ id, header, meta, cell: (info) => <Cell request={info.row.original} /> })
   return helper.columns([
-    column('customer', t('platform.trialRequests.columns.customer'), { width: '18%' }, CustomerCell),
-    column('contact', t('platform.trialRequests.columns.contact'), { width: '16%' }, ContactCell),
-    column('plan', t('platform.trialRequests.columns.plan'), { width: '10%' }, PlanCell),
-    column('precheck', 'AI Pre-check', { width: '90px' }, PrecheckCell),
-    column('managerReviewed', t('platform.trialRequests.columns.managerReviewed'), { width: '150px' }, ManagerReviewCell),
-    column('adminProvisioned', t('platform.trialRequests.columns.adminProvisioned'), { width: '140px' }, AdminProvisionCell),
-    column('createdAt', t('platform.trialRequests.columns.createdAt'), { width: '140px' }, CreatedCell),
-    column('status', t('platform.trialRequests.columns.status'), { width: '130px' }, ({ request }) => <TrialStatusBadge status={request.status} />),
-    column('actions', t('platform.trialRequests.columns.actions'), { width: '140px' }, ActionsCell),
+    // Khách hàng và Liên hệ không khai bề rộng: chia đều phần còn lại của bảng (tối thiểu 1.320 px, TrialRequestsPage)
+    column('customer', t('platform.trialRequests.columns.customer'), {}, CustomerCell),
+    column('contact', t('platform.trialRequests.columns.contact'), {}, ContactCell),
+    column('plan', t('platform.trialRequests.columns.plan'), { width: '128px' }, PlanCell),
+    column('precheck', t('platform.trialRequests.columns.precheck'), { width: '112px' }, PrecheckCell),
+    column('managerReviewed', t('platform.trialRequests.columns.managerReviewed'), { width: '176px' }, ManagerReviewCell),
+    column('adminProvisioned', t('platform.trialRequests.columns.adminProvisioned'), { width: '176px' }, AdminProvisionCell),
+    column('createdAt', t('platform.trialRequests.columns.createdAt'), { width: '112px' }, CreatedCell),
+    column('status', t('platform.trialRequests.columns.status'), { width: '148px' }, ({ request }) => <TrialStatusBadge status={request.status} />),
+    column('actions', t('platform.trialRequests.columns.actions'), { width: '136px' }, ActionsCell),
   ])
 }
