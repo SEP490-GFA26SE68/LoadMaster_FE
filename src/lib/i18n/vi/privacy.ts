@@ -61,6 +61,7 @@ export const privacy = {
   company: {
     title: 'Dữ liệu vận hành của công ty',
     data: 'Khi dùng ứng dụng, công ty nhập dữ liệu vận hành của mình: xe, kiện hàng, khách gửi hàng, yêu cầu giao (nơi nhận, địa chỉ, toạ độ, hạn giao), chuyến, phương án xếp hàng và tiến độ xếp, giao.',
+    requirementDraft: 'Khi máy chủ bật trợ lý AI, điều phối viên có thể dán tin nhắn đặt giao của khách — có thể có tên, số điện thoại, địa chỉ người nhận — vào form tạo yêu cầu giao: nội dung đó đi tới máy chủ của LoadMaster rồi tới Anthropic để đọc ra bản nháp; máy chủ không lưu nội dung dán vào, và bản nháp chỉ điền sẵn các ô của form cho điều phối viên xem lại và tự lưu.',
     payroll: 'Quản lý công ty tính và chốt bảng lương tài xế trên máy chủ: đơn giá của công ty, lương cơ bản của từng tài xế, tài xế của từng chuyến và số tiền theo tháng.',
     support: 'Yêu cầu hỗ trợ người dùng công ty gửi từ menu tài khoản — tiêu đề, nội dung và các lần trả lời — do bộ phận hỗ trợ khách hàng của LoadMaster đọc và trả lời; người gửi chỉ thấy yêu cầu của chính mình.',
     recipients: 'Thông tin về nơi nhận hàng và khách của công ty do công ty nhập và chịu trách nhiệm; ứng dụng chỉ dùng nó để chạy các chức năng của chính công ty đó.',

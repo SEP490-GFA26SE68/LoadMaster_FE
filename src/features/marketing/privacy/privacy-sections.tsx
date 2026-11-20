@@ -118,6 +118,7 @@ export function usePrivacySections(): LegalSectionSpec[] {
       content: (
         <>
           <LegalText>{t('privacy.company.data')}</LegalText>
+          {ASSISTANT_ON_SERVER ? <LegalText>{t('privacy.company.requirementDraft')}</LegalText> : null}
           {PAYROLL_ON_SERVER ? <LegalText>{t('privacy.company.payroll')}</LegalText> : null}
           <LegalText>{t('privacy.company.support')}</LegalText>
           <LegalText>{t('privacy.company.recipients')}</LegalText>
