@@ -277,7 +277,8 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   cũng hỏi hàm này để chừa chỗ); màn toàn màn hình (Planner, kho, tài xế) không có thanh nên không có nút. Khung chat neo góc trên phải, ngay
   dưới thanh (`data-surface="app"`). Màn chào trong ứng dụng gợi ý câu theo vai trò (`app-starters.ts`: màn đang mở, chuyến, credit, phiếu
   lương, yêu cầu hỗ trợ, gói cước — chỉ câu máy chủ có công cụ trả lời cho vai trò đó), gửi cho mô hình như câu gõ. Cuộc trò chuyện gắn với
-  bề mặt và người xem (`assistantSession.bind`): đổi người đăng nhập hay đi từ trang công khai vào app thì cuộc trò chuyện cũ đóng và mất. Trên
+  bề mặt và người xem (`assistantSession.bind`): đổi người đăng nhập hay đi từ trang công khai vào app thì cuộc trò chuyện cũ đóng và mất.
+  Ngoài khung chat, trợ lý còn đọc tin nhắn đặt giao của khách thành bản nháp ở form tạo yêu cầu giao (mục 9 "Yêu cầu giao"). Trên
   hai trang công khai nút mở góc
   dưới phải (chữ từ 640 px, 48 px / 56 px cảm ứng, chừa vùng an toàn) có **viền gradient quay** kiểu nút trợ lý AI của AWS (`animated gradient border`: `conic-gradient` theo gradient AI của AWS Cloudscape —
   token `--genai-1…5` ở `index.css`, xanh nhạt → xanh dương → chàm → tím, ngoại lệ duy nhất của luật không tím, quyết định của chủ sản phẩm
@@ -1632,6 +1633,13 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   nguồn với màn. Trang in nhãn của máy chủ chỉ xem trước và tải file PDF máy chủ dựng, không dựng tờ nhãn từ kho mẫu. Yêu cầu còn trong chuyến mà
   kho đã bỏ kiện của nó (máy chủ trả `shortDelivered`, `droppedPackageCount`) đọc là "Giao thiếu" (`PARTIAL`, suy lúc đọc như D-92); bỏ kiện
   cuối cùng thì máy chủ gỡ yêu cầu khỏi chuyến (về `PENDING`, điểm giao không còn kiện bị xoá). Máy chủ chưa có trạng thái hoàn trả của kiện.
+  **Bản nháp từ tin nhắn của khách** (nhóm `assistant`, chỉ form tạo; `RequirementDraftPanel`, `requirement-draft-api.ts`): điều phối viên dán
+  tin nhắn / email (tối đa 4.000 ký tự), `POST /api/assistant/requirement-draft` (`{ text }`, quyền `DELIVERY_DEMAND_MANAGE`, máy chủ không tạo
+  gì, không lưu nội dung) trả bản nháp; panel điền bằng `setValue` tên điểm đến + địa chỉ, hạn (giờ Việt Nam của máy chủ qua `isoFromBackend` →
+  `deadlineParts`), ưu tiên, số kiện dự kiến, ghi chú (`draftToFormValues`, thuần) — trường máy chủ để trống không đụng tới. **Không bao giờ tự
+  lưu** và không chạm khách hàng, kiện, toạ độ: tên bên gửi và danh sách hàng chỉ hiện để đối chiếu, "Cần bạn bổ sung" luôn có ô Khách hàng.
+  Dòng dưới ô dán nói nội dung đi tới máy chủ rồi tới Anthropic; trang Chính sách bảo mật có câu `privacy.company.requirementDraft`. Lỗi
+  `ASSISTANT_*` có câu riêng ở `requirements.draft.errors`.
 - **Kho** (`warehouse`; `warehouse-backend-api.ts`, DTO ở `warehouse-dto.ts`, `WAREHOUSE_CAPABILITIES` ở `warehouse-server-api.ts`): `/kho` là
   `ServerWarehouseTripsPage` — `GET /api/warehouse/tasks` trả chuyến chờ xếp và chuyến Đang xếp hàng kèm phiên (`executionId`,
   `executionStatus`; web và app di động gửi `includeAwaitingReplan=true` nên có thêm nhóm "Chờ điều phối tối ưu lại" — chuyến quay về lập kế hoạch vì
