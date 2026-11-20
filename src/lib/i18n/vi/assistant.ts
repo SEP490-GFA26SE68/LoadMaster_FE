@@ -23,7 +23,16 @@ export const assistant = {
     /** Hai câu thay `disclaimer` khi nhóm `assistant` nối máy chủ: Lumo là trợ lý AI và có thể nhầm. */
     disclaimerAi: '{name} là trợ lý AI, trả lời từ tài liệu của LoadMaster và có thể nhầm — việc quan trọng hãy hỏi đội LoadMaster.',
     disclaimerAiApp: '{name} là trợ lý AI, trả lời từ tài liệu và dữ liệu bạn được xem, và có thể nhầm — kiểm lại trước khi làm việc quan trọng.',
-    introHintApp: 'Hỏi mình về chuyến hàng, phương án xếp, kiện, đội xe hay cách dùng màn đang mở.',
+    introHintApp: 'Hỏi mình về màn đang mở hay dữ liệu bạn được xem trong LoadMaster.',
+    /** Câu hỏi gợi ý của màn chào trong ứng dụng (`app-starters.ts`): mỗi vai trò chỉ thấy câu máy chủ trả lời được cho họ. */
+    appStarters: {
+      page: 'Màn này dùng để làm gì?',
+      trips: 'Có chuyến nào đang vận chuyển?',
+      credit: 'Công ty còn bao nhiêu credit?',
+      payroll: 'Phiếu lương tháng này của tôi thế nào?',
+      tickets: 'Yêu cầu hỗ trợ của tôi tới đâu rồi?',
+      plans: 'Các gói cước khác nhau thế nào?',
+    },
     /** Màn chào khi chưa hỏi gì. */
     greeting: 'Chào bạn, mình là {name}.',
     introHint: 'Hỏi mình về gói cước, credit, cách LoadMaster xếp hàng hay cách dùng thử.',

@@ -107,3 +107,30 @@ test('signing in as someone else closes the panel and drops the previous convers
   await next.findByText('Chuyến TRIP-2026-0914 đang xếp hàng.', {}, ANSWER)
   expect((calls[1] as FakeCall).body).not.toHaveProperty('conversationId')
 })
+
+/**
+ * Màn chào trong ứng dụng không gợi ý câu của trang công khai (giá gói, dùng thử): câu theo vai trò, gửi cho mô hình như câu gõ — không
+ * trả câu soạn sẵn của một chủ đề.
+ */
+test('the app welcome suggests questions for the role and sends them to the model', async () => {
+  const { calls } = stubBackend({
+    'POST /api/assistant/messages': { body: envelope({ conversationId: 'c-1', reply: 'Có 1 chuyến đang vận chuyển: TRIP-009.', uiActions: [], links: [], handoff: { offered: false, ticketCode: null } }) },
+  })
+  auth.user = person('US-0002', 'dispatcher')
+  render(shell())
+  const user = userEvent.setup()
+  await user.click(screen.getByRole('button', { name: 'Trợ lý AI' }))
+  const panel = within(await screen.findByRole('dialog', { name: 'Lumo' }, ANSWER))
+  const starters = panel.getByRole('group', { name: 'Câu hỏi gợi ý' })
+  expect(within(starters).getAllByRole('button').map((b) => b.textContent)).toStrictEqual([
+    'Màn này dùng để làm gì?',
+    'Có chuyến nào đang vận chuyển?',
+    'Công ty còn bao nhiêu credit?',
+    'Yêu cầu hỗ trợ của tôi tới đâu rồi?',
+  ])
+  expect(panel.queryByRole('button', { name: 'Giá các gói?' })).not.toBeInTheDocument()
+
+  await user.click(within(starters).getByRole('button', { name: 'Có chuyến nào đang vận chuyển?' }))
+  expect(await panel.findByText('Có 1 chuyến đang vận chuyển: TRIP-009.', {}, ANSWER)).toBeInTheDocument()
+  expect((calls[0] as FakeCall).body).toMatchObject({ message: 'Có chuyến nào đang vận chuyển?', page: { path: '/chuyen' } })
+})

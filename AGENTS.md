@@ -271,10 +271,14 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   trang); liên kết máy chủ gợi ý chỉ giữ đường dẫn trong app mà người xem mở được (`openableLinks` + `canOpenRoute` của `app/route-access.ts`,
   tối đa ba). Trong ứng dụng, trợ lý tự mời chuyển câu hỏi cho đội hỗ trợ: hai nút "Có, chuyển cho đội hỗ trợ" / "Không cần" gửi đi như một
   lượt trả lời, máy chủ tạo yêu cầu hỗ trợ và màn nêu mã; lối "Hỏi đội LoadMaster" sang form liên hệ chỉ có ở trang công khai. Lớp mạng
-  → `useAskAssistantMutation`. **Trong ứng dụng** (`AppAssistant`, gắn ở `AppShell`): nút "Trợ lý AI" cùng khung chat, **chỉ khi nhóm
-  `assistant` nối máy chủ**, người dùng không bị gắn cờ và công ty còn gói hiệu lực (vai trò nền tảng không bị khoá); màn toàn màn hình
-  (Planner, kho, tài xế) nằm ngoài `AppShell` nên không có nút. Cuộc trò chuyện gắn với bề mặt và người xem (`assistantSession.bind`): đổi người
-  đăng nhập hay đi từ trang công khai vào app thì cuộc trò chuyện cũ đóng và mất. Nút mở góc
+  → `useAskAssistantMutation`. **Trong ứng dụng** (`AppAssistant`): nút "Trợ lý AI" 36 px trên **thanh điều hướng**, ngay sau Tìm
+  nhanh (ảnh Lumo `wink` trong vòng gradient, tên ở `aria-label` / `title`) — không nổi đè lên bảng như nút góc dưới phải —, **chỉ khi nhóm
+  `assistant` nối máy chủ**, người dùng không bị gắn cờ và công ty còn gói hiệu lực (vai trò nền tảng không bị khoá; `appAssistantShown`, thanh
+  cũng hỏi hàm này để chừa chỗ); màn toàn màn hình (Planner, kho, tài xế) không có thanh nên không có nút. Khung chat neo góc trên phải, ngay
+  dưới thanh (`data-surface="app"`). Màn chào trong ứng dụng gợi ý câu theo vai trò (`app-starters.ts`: màn đang mở, chuyến, credit, phiếu
+  lương, yêu cầu hỗ trợ, gói cước — chỉ câu máy chủ có công cụ trả lời cho vai trò đó), gửi cho mô hình như câu gõ. Cuộc trò chuyện gắn với
+  bề mặt và người xem (`assistantSession.bind`): đổi người đăng nhập hay đi từ trang công khai vào app thì cuộc trò chuyện cũ đóng và mất. Trên
+  hai trang công khai nút mở góc
   dưới phải (chữ từ 640 px, 48 px / 56 px cảm ứng, chừa vùng an toàn) có **viền gradient quay** kiểu nút trợ lý AI của AWS (`animated gradient border`: `conic-gradient` theo gradient AI của AWS Cloudscape —
   token `--genai-1…5` ở `index.css`, xanh nhạt → xanh dương → chàm → tím, ngoại lệ duy nhất của luật không tím, quyết định của chủ sản phẩm
   19/11/2026 —, viền 2 px thay viền xám + quầng màu ngoài nút; đứng yên lúc nghỉ, quay khi rê chuột / focus và khi Lumo đang trả lời
@@ -377,8 +381,10 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   toàn màn hình không có), chuông thông báo (LM-098 — sự kiện nhật ký liên quan vai trò, không gồm việc chính mình làm; "đã đọc" là state giao
   diện trong tab, `read-state.ts`) và mục "Hồ sơ cá nhân" trong menu tài khoản (`/ho-so`, LM-096 — mọi người đã đăng nhập; mục "Yêu cầu hỗ trợ" kế
   bên là của năm vai trò công ty, FE-8-07; kho/tài xế mở từ nút tài khoản 56 px ở màn chính). Nút hành động trên thanh dùng
-  `components/NavRailButton.tsx`. Thêm mục vào thanh phải đo lại ở 1.366 px (`e2e/layout-1366.spec.ts` đo thanh của điều phối viên và quản lý
-  công ty ở cả hai ngôn ngữ).
+  `components/NavRailButton.tsx`. Nhóm `assistant` nối máy chủ thì sau Tìm nhanh có nút "Trợ lý AI" 36 px (mục 1 "Trợ lý"); để tám mục của
+  quản lý công ty vẫn vừa, chữ "LoadMaster" cạnh logo ẩn ở 1.340–1.439 px và ô tìm nhanh chỉ rộng (176 px kèm "Ctrl K") từ 1.680 px thay vì
+  1.536 px (`QuickSearch wideFrom`). Thêm mục vào thanh phải đo lại ở 1.366 px (`e2e/layout-1366.spec.ts` đo thanh của điều phối viên và quản lý
+  công ty ở cả hai ngôn ngữ) — spec chạy ở kho mẫu nên không có nút trợ lý: đo lại bản nối máy chủ ở 1.340–1.920 px khi đổi thanh.
 - **Màn kho** (`/kho`, soạn, xếp, xếp xong, chờ duyệt lại; V2.3 đợt 6) có thanh trên là dải trời cao 80 px (`components/TouchTopBar`) với điều
   khiển **đặc**, không kính: nền `--sky-solid`, viền `--sky-solid-border` (token ở `index.css`), nút `variant="skySolid"`, và `tone="sky"` của
   `ExitIconButton`, `LanguageSwitch`, `NotificationBell variant="touch"`, `AccountMenu` — mặc định vẫn nền sáng. **Màn tài xế** (`/tai-xe`, điểm

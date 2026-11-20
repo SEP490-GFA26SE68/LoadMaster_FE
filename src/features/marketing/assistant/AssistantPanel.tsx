@@ -66,6 +66,8 @@ export default function AssistantPanel({ launcherRef, skipInitialFocus = false }
           ref={contentRef}
           id={ASSISTANT_PANEL_ID}
           data-expanded={expanded || undefined}
+          // Trong ứng dụng khung neo góc trên phải, dưới nút "Trợ lý AI" của thanh điều hướng (assistant.css)
+          data-surface={surface}
           aria-modal={phone ? true : undefined}
           onOpenAutoFocus={(event) => {
             event.preventDefault()

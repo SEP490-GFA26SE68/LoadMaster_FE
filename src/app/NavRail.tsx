@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/DropdownMenu'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { can } from '@/features/auth/permissions'
+import { AppAssistant, appAssistantShown } from '@/features/marketing/assistant/AppAssistant'
 import { EtaRiskWatcher } from '@/features/monitoring/EtaRiskWatcher'
 import { NotificationBell } from '@/features/notifications/NotificationBell'
 import { QuickSearch } from '@/features/search/QuickSearch'
@@ -63,6 +64,7 @@ export function NavRail() {
   }
 
   const homePath = user?.subscriptionExpired && user.role === 'companyAdmin' ? '/goi-cuoc' : logoPath(user?.role)
+  const assistantShown = appAssistantShown(user)
 
   async function handleSignOut() {
     await signOut()
@@ -77,7 +79,16 @@ export function NavRail() {
         className="flex flex-none items-center gap-2.5 rounded-md outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
       >
         <LogoMark tone="dark" />
-        <span aria-hidden className="hidden font-display text-[18px] leading-none font-bold tracking-[-0.2px] text-(--logo-on-dark) font-stretch-106% lg:inline">
+        {/* Có nút "Trợ lý AI" thì chữ cạnh logo nhường chỗ ở dải mục có chữ mà thanh còn chật (1.340–1.439 px) và ô tìm nhanh chỉ rộng từ
+            1.680 px: tám mục của quản lý công ty vừa khít 1.366 px */}
+        <span
+          aria-hidden
+          className={cn(
+            'hidden font-display text-[18px] leading-none font-bold tracking-[-0.2px] text-(--logo-on-dark) font-stretch-106%',
+            // Hai khoảng không chồng nhau: thứ tự giữa `lg` (rem) và mốc px trong CSS không quyết định gì
+            assistantShown ? 'lg:max-[1339.98px]:inline min-[1440px]:inline' : 'lg:inline',
+          )}
+        >
           Load<span className="text-(--logo-sky)">Master</span>
         </span>
       </Link>
@@ -130,7 +141,8 @@ export function NavRail() {
             <span>{t('nav.supportRequests')}</span>
           </button>
         ) : null}
-        {!user?.subscriptionExpired ? <QuickSearch /> : null}
+        {!user?.subscriptionExpired ? <QuickSearch wideFrom={assistantShown ? 1680 : 1536} /> : null}
+        <AppAssistant />
         <LanguageMenu />
         <NotificationBell />
         <EtaRiskWatcher />

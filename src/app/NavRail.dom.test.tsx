@@ -29,11 +29,12 @@ function renderRail(role: Role, route = '/') {
   )
 }
 
-/** LM-053 (D-20): nút Cài đặt chưa mở màn nào nên không hiển thị. */
-test('nav rail không có nút Cài đặt', () => {
+/** LM-053 (D-20): nút Cài đặt chưa mở màn nào nên không hiển thị. Kho mẫu chưa có trợ lý AI nên thanh cũng không có nút "Trợ lý AI". */
+test('nav rail không có nút Cài đặt, không có nút Trợ lý AI ở kho mẫu', () => {
   renderRail('dispatcher')
   expect(screen.getByRole('link', { name: 'Chuyến hàng' })).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Cài đặt' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Trợ lý AI' })).not.toBeInTheDocument()
 })
 
 /** Mục đang mở phải nhận ra được bằng trình đọc màn hình (aria-current) và mỗi mục có nhãn chữ nhìn thấy được. */
