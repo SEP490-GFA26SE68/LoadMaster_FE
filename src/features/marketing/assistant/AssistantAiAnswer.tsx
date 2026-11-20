@@ -6,6 +6,7 @@ import { useAuthSafe } from '@/features/auth/AuthProvider'
 import { can } from '@/features/auth/permissions'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+import type { AssistantLink } from './assistant-api'
 import { openableLinks } from './assistant-links'
 import type { AssistantEntry } from './assistant-session'
 import { answerBlocks, type AnswerBlock } from './assistant-text'
@@ -32,9 +33,32 @@ export function DegradedNote() {
 }
 
 /**
- * Câu trả lời của mô hình. Chữ vẽ bằng phần tử thường (`answerBlocks`), không bao giờ là HTML của mô hình. Liên kết của máy chủ chỉ giữ
- * đường dẫn trong app mà người xem mở được (bảng route thật và quyền của vai trò — `openableLinks`, `canOpenRoute`). Trợ lý hỏi có chuyển
- * cho đội hỗ trợ không thì lượt cuối có hai nút trả lời, bấm là gửi câu đó như người dùng gõ; yêu cầu hỗ trợ đã tạo thì có một dòng kèm mã.
+ * Liên kết máy chủ gợi ý dưới một câu trả lời (của mô hình hay bản tin): chỉ giữ đường dẫn trong app mà người xem mở được (bảng route thật
+ * và quyền của vai trò — `openableLinks`, `canOpenRoute`); không còn liên kết nào thì không vẽ gì.
+ */
+export function AnswerLinks({ links, onNavigate }: { links: readonly AssistantLink[]; onNavigate?: () => void }) {
+  const t = useT()
+  const role = useAuthSafe()?.user?.role
+  const openable = openableLinks(links, (to) => canOpenRoute(to, (permission) => can(role, permission)))
+  if (openable.length === 0) return null
+  return (
+    <div role="group" aria-label={t('assistant.ai.links')} className="flex flex-wrap gap-2 pt-1">
+      {openable.map((link) => (
+        <Button key={link.to} asChild variant="secondary" size="sm" className={ACTION}>
+          <Link to={link.to} onClick={onNavigate}>
+            {link.label}
+            <ArrowRight aria-hidden />
+          </Link>
+        </Button>
+      ))}
+    </div>
+  )
+}
+
+/**
+ * Câu trả lời của mô hình. Chữ vẽ bằng phần tử thường (`answerBlocks`), không bao giờ là HTML của mô hình; liên kết qua `AnswerLinks`.
+ * Trợ lý hỏi có chuyển cho đội hỗ trợ không thì lượt cuối có hai nút trả lời, bấm là gửi câu đó như người dùng gõ; yêu cầu hỗ trợ đã tạo
+ * thì có một dòng kèm mã.
  * Lệnh giao diện (`uiActions`) chưa dùng ở đây.
  */
 export function AiAnswer({ entry, isLast, pending, onAsk, onNavigate }: {
@@ -45,26 +69,13 @@ export function AiAnswer({ entry, isLast, pending, onAsk, onNavigate }: {
   onNavigate?: () => void
 }) {
   const t = useT()
-  const role = useAuthSafe()?.user?.role
-  const links = openableLinks(entry.links, (to) => canOpenRoute(to, (permission) => can(role, permission)))
   const { offered, ticketCode } = entry.handoff
 
   return (
     <div className="flex flex-col gap-2">
       {answerBlocks(entry.text).map((block, index) => <Block key={index} block={block} />)}
       {ticketCode !== null ? <p className="m-0 font-medium">{t('assistant.ai.ticket', { code: ticketCode })}</p> : null}
-      {links.length > 0 ? (
-        <div role="group" aria-label={t('assistant.ai.links')} className="flex flex-wrap gap-2 pt-1">
-          {links.map((link) => (
-            <Button key={link.to} asChild variant="secondary" size="sm" className={ACTION}>
-              <Link to={link.to} onClick={onNavigate}>
-                {link.label}
-                <ArrowRight aria-hidden />
-              </Link>
-            </Button>
-          ))}
-        </div>
-      ) : null}
+      <AnswerLinks links={entry.links} onNavigate={onNavigate} />
       {offered && ticketCode === null && isLast ? (
         <div role="group" aria-label={t('assistant.ai.handoffQuestion')} className="flex flex-wrap gap-2 pt-1">
           <Button type="button" variant="secondary" size="sm" disabled={pending} className={ACTION} onClick={() => onAsk(t('assistant.ai.handoffYesMessage'))}>

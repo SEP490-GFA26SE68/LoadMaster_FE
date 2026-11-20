@@ -163,6 +163,10 @@ export const assistant = {
     ticket: 'Support request {code} has been created. The support team replies under “Support requests” in the account menu.',
     degraded: 'The AI assistant is busy, so this is a prepared answer.',
   },
+  briefing: {
+    button: 'Today’s summary',
+    generatedAt: 'Figures as of {time}.',
+  },
   fallback: 'I have no answer for that in the LoadMaster documentation yet. Pick a question below, or send your question to the LoadMaster team.',
   handoff: {
     ask: 'Send my question to the LoadMaster team',

@@ -276,7 +276,11 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   `assistant` nối máy chủ**, người dùng không bị gắn cờ và công ty còn gói hiệu lực (vai trò nền tảng không bị khoá; `appAssistantShown`, thanh
   cũng hỏi hàm này để chừa chỗ); màn toàn màn hình (Planner, kho, tài xế) không có thanh nên không có nút. Khung chat neo góc trên phải, ngay
   dưới thanh (`data-surface="app"`). Màn chào trong ứng dụng gợi ý câu theo vai trò (`app-starters.ts`: màn đang mở, chuyến, credit, phiếu
-  lương, yêu cầu hỗ trợ, gói cước — chỉ câu máy chủ có công cụ trả lời cho vai trò đó), gửi cho mô hình như câu gõ. Cuộc trò chuyện gắn với
+  lương, yêu cầu hỗ trợ, gói cước — chỉ câu máy chủ có công cụ trả lời cho vai trò đó), gửi cho mô hình như câu gõ. Điều phối viên và quản lý
+  công ty có thêm nút phụ **"Tóm tắt hôm nay"** ở màn chào (`briefingAvailable`, `briefing-api.ts` → `useBriefingQuery`: `enabled: false`,
+  chỉ gọi `GET /api/assistant/briefing` khi bấm): máy chủ đếm số theo công ty và đệm bản tin 2 giờ, mô hình chỉ viết câu; bản tin vào cuộc
+  trò chuyện như câu trả lời của Lumo (gạch đầu dòng, "Số liệu lúc HH:mm", liên kết qua `AnswerLinks`), không toast; lỗi nói đúng lý do bằng
+  `apiErrors` (`ASSISTANT_*`, quyền, mạng) — không có câu soạn sẵn thay thế. Cuộc trò chuyện gắn với
   bề mặt và người xem (`assistantSession.bind`): đổi người đăng nhập hay đi từ trang công khai vào app thì cuộc trò chuyện cũ đóng và mất. Trên
   hai trang công khai nút mở góc
   dưới phải (chữ từ 640 px, 48 px / 56 px cảm ứng, chừa vùng an toàn) có **viền gradient quay** kiểu nút trợ lý AI của AWS (`animated gradient border`: `conic-gradient` theo gradient AI của AWS Cloudscape —
