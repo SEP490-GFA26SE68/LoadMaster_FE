@@ -14,6 +14,7 @@ import { fleet } from './en/fleet'
 import { issues } from './en/issues'
 import { optimization } from './en/optimization'
 import { trips } from './en/trips'
+import { tripClaims } from './en/tripClaims'
 import { warehouse } from './en/warehouse'
 import { viewer } from './en/viewer'
 import { fields } from './en/fields'
@@ -90,6 +91,7 @@ export const en = {
   issues,
   optimization,
   trips,
+  tripClaims,
   warehouse,
   viewer,
   fields,

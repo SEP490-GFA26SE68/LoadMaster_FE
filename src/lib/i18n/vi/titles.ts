@@ -7,6 +7,7 @@ export const titles = {
   passwordReset: 'Đặt mật khẩu mới',
   dashboard: 'Bảng điều khiển',
   trips: 'Chuyến hàng',
+  tripClaims: 'Phiếu xin chuyến',
   trip: 'Chuyến {id}',
   newTrip: 'Tạo chuyến mới',
   editTrip: 'Sửa chuyến {id}',
