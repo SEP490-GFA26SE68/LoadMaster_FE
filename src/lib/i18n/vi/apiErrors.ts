@@ -100,6 +100,7 @@ VEHICLE_PRESENCE_CONFLICT: "Trạng thái xe hoặc mã xác nhận xung đột.
   PAYROLL_RATE_NOT_CONFIGURED: 'Công ty chưa cấu hình mức lương áp dụng cho tháng này.',
   PAYROLL_RATE_ALREADY_EXISTS: 'Đã có phiên bản mức lương bắt đầu từ tháng này.',
   PAYROLL_RATE_EFFECTIVE_DATE_TOO_EARLY: 'Mức lương mới chỉ được áp dụng từ tháng sau (hoặc từ tháng này đối với công ty mới).',
+  PAYROLL_KPI_BONUS_REQUIRED: 'Đã nhập chỉ tiêu KPI thì phải nhập tiền thưởng KPI lớn hơn 0',
   PAYROLL_PERIOD_NOT_FOUND: 'Chưa có bảng lương cho tháng này.',
   PAYROLL_PERIOD_LOCKED: 'Bảng lương đã chốt nên không thể thay đổi hoặc tính lại.',
   PAYROLL_DATA_INCOMPLETE: 'Chuyến có dữ liệu phương án khối lượng hoặc quãng đường còn thiếu.',

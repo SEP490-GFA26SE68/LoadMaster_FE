@@ -15,6 +15,7 @@ import { useSetDriverBaseSalaryMutation, useSetTripPayrollDriversMutation, useTr
 
 type PayrollResultsProps = {
   period: PayrollPeriod
+  hasKpi: boolean
   statement: PayrollDriverStatement | undefined
   statementLoading: boolean
   statementError: string | null
@@ -22,7 +23,7 @@ type PayrollResultsProps = {
   onSelectDriver: (driverId: string | null) => void
 }
 
-export function PayrollResults({ period, statement, statementLoading, statementError, selectedDriverId, onSelectDriver }: PayrollResultsProps) {
+export function PayrollResults({ period, hasKpi, statement, statementLoading, statementError, selectedDriverId, onSelectDriver }: PayrollResultsProps) {
   const t = useT()
   const format = useFormat()
   const total = period.drivers.reduce((sum, driver) => sum + driver.totalSalaryVnd, 0)
@@ -52,12 +53,13 @@ export function PayrollResults({ period, statement, statementLoading, statementE
           </div>
           {period.drivers.length === 0 ? <p className="text-small text-ink-2">{t('payroll.results.noDrivers')}</p> : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[680px] border-collapse text-left text-small">
+              <table className="w-full min-w-[760px] border-collapse text-left text-small">
                 <thead><tr className="border-b border-line-strong text-ink-2">
                   <th className="px-3 py-2">{t('payroll.results.driver')}</th>
                   <th className="px-3 py-2 text-right">{t('payroll.rate.baseShort')}</th>
                   <th className="px-3 py-2 text-right">{t('payroll.results.totalKg')}</th>
                   <th className="px-3 py-2 text-right">{t('payroll.results.handling')}</th>
+                  {hasKpi ? <th className="px-3 py-2 text-right">{t('payroll.results.kpiBonus')}</th> : null}
                   <th className="px-3 py-2 text-right">{t('payroll.results.total')}</th>
                 </tr></thead>
                 <tbody>
@@ -75,6 +77,13 @@ export function PayrollResults({ period, statement, statementLoading, statementE
                       <td className="px-3 py-2 text-right">{format.currency(driver.baseSalaryVnd)}</td>
                       <td className="px-3 py-2 text-right">{format.weight(driver.totalKg)}</td>
                       <td className="px-3 py-2 text-right">{format.currency(driver.handlingAmountVnd)}</td>
+                      {hasKpi ? (
+                        <td className="px-3 py-2 text-right">
+                          {driver.kpiAchieved
+                            ? `${t('payroll.results.kpiAchieved')}: ${format.currency(driver.kpiAmountVnd)}`
+                            : <span className="text-ink-3">{t('payroll.results.kpiMissed')}</span>}
+                        </td>
+                      ) : null}
                       <td className="px-3 py-2 text-right font-semibold">{format.currency(driver.totalSalaryVnd)}</td>
                     </tr>
                   ))}

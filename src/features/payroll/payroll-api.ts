@@ -11,6 +11,8 @@ export type PayrollRate = {
   readonly commissionPercent: number
   readonly handlingFeeVndPerKg: number
   readonly handlingDriverPercent: number
+  readonly kpiTargetKg: number | null
+  readonly kpiBonusVnd: number
   readonly periodStatus?: 'DRAFT' | 'LOCKED' | null
 }
 
@@ -21,6 +23,8 @@ export type PayrollDriverSummary = {
   readonly totalKg: number
   readonly kgAmountVnd: number
   readonly handlingAmountVnd: number
+  readonly kpiAchieved: boolean
+  readonly kpiAmountVnd: number
   readonly totalSalaryVnd: number
 }
 
@@ -60,6 +64,9 @@ export type PayrollDriverStatement =
       readonly handlingFeeVndPerKg: number
       readonly handlingDriverPercent: number
       readonly handlingAmountVnd: number
+      readonly kpiTargetKg: number | null
+      readonly kpiAchieved: boolean
+      readonly kpiBonusVnd: number
       readonly totalSalaryVnd: number
     })
   | (PayrollDriverStatementBase & {
@@ -87,7 +94,9 @@ export type DriverBaseSalaryResponse = {
   readonly baseSalaryVnd: number
 }
 
-export type PayrollRateInput = Omit<PayrollRate, 'id'>
+export type PayrollRateInput = Omit<PayrollRate, 'id' | 'periodStatus' | 'kpiBonusVnd'> & {
+  readonly kpiBonusVnd: number | null
+}
 
 // GET /api/company/payroll/settings
 export function fetchPayrollRates(): Promise<PayrollRate[]> {
@@ -96,7 +105,18 @@ export function fetchPayrollRates(): Promise<PayrollRate[]> {
 
 // PUT /api/company/payroll/settings — appends a rate version effective from the given date.
 export function createPayrollRate(input: PayrollRateInput): Promise<PayrollRate> {
-  return api().put('/api/company/payroll/settings', { body: input })
+  return api().put('/api/company/payroll/settings', {
+    body: {
+      effectiveFrom: input.effectiveFrom,
+      baseSalaryVnd: input.baseSalaryVnd,
+      rateVndPerKg: input.rateVndPerKg,
+      commissionPercent: input.commissionPercent,
+      handlingFeeVndPerKg: input.handlingFeeVndPerKg,
+      handlingDriverPercent: input.handlingDriverPercent,
+      kpiTargetKg: input.kpiTargetKg ?? null,
+      kpiBonusVnd: input.kpiTargetKg == null ? null : input.kpiBonusVnd ?? null,
+    },
+  })
 }
 
 // GET /api/company/payroll/periods/{period}
