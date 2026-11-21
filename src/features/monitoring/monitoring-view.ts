@@ -99,3 +99,34 @@ export function escalationRows(board: MonitoringBoard, fleet: readonly LiveMonit
     })
     .toSorted((a, b) => Date.parse(a.exception.reportedAt) - Date.parse(b.exception.reportedAt))
 }
+
+/**
+ * Số chuyến mỗi trang của khung danh sách cạnh bản đồ: vừa chiều cao card bản đồ (`h-112` + đầu card) khi hiện hai dòng.
+ */
+export const MONITORING_TRIP_PAGE_SIZE = 2
+/** Một sự cố mỗi trang: card sự cố cao tương đương sáu dòng lịch sử vị trí. */
+export const MONITORING_EXCEPTION_PAGE_SIZE = 1
+/** Sáu điểm vị trí mỗi trang — cùng mật độ bảng lịch sử trước khi phân trang. */
+export const MONITORING_HISTORY_PAGE_SIZE = 6
+
+/** Trang đã kẹp và các chuyến của trang đó. */
+export function pagedTrips<T>(items: readonly T[], pageIndex: number, pageSize = MONITORING_TRIP_PAGE_SIZE): {
+  pageIndex: number
+  pageCount: number
+  items: readonly T[]
+} {
+  const pageCount = Math.max(1, Math.ceil(items.length / pageSize))
+  const page = Math.min(Math.max(0, pageIndex), pageCount - 1)
+  return { pageIndex: page, pageCount, items: items.slice(page * pageSize, (page + 1) * pageSize) }
+}
+
+/** Trang chứa chuyến đang chọn; `null` khi chuyến không còn trong danh sách đã lọc. */
+export function pageIndexOfTrip(
+  items: readonly { readonly tripId: string }[],
+  tripId: string | null,
+  pageSize = MONITORING_TRIP_PAGE_SIZE,
+): number | null {
+  if (tripId === null) return null
+  const index = items.findIndex((item) => item.tripId === tripId)
+  return index < 0 ? null : Math.floor(index / pageSize)
+}

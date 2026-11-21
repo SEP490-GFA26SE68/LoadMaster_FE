@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 import { baseStyle, emptyStyle, goongMapTilesKey, GOONG_STYLE_URL } from './map-style'
-import { projectToSketch, routeExtent, routeLine } from './route-map-model'
+import { projectToSketch, routeExtent, routeLine, viewExtent } from './route-map-model'
 
 const DEPOT = { name: 'Kho Long Bình', lat: 10.9294, lng: 106.8747 }
 const STOPS = [
@@ -31,6 +31,16 @@ test('the extent covers the vehicle too, though it is not on the line', () => {
   const vehicle = { name: '60C-123.45', lat: 11.2, lng: 107.1 }
   expect(routeExtent({ depot: DEPOT, stops: STOPS, vehicle })).toContainEqual(vehicle)
   expect(routeLine({ depot: DEPOT, stops: STOPS, vehicle })).not.toContainEqual(vehicle)
+})
+
+test('followVehicle keeps depot, stops and the vehicle in the same frame', () => {
+  const vehicle = { name: '60C-123.45', lat: 11.2, lng: 107.1 }
+  const data = { depot: DEPOT, stops: STOPS, vehicle }
+  const framed = viewExtent(data, true)
+  expect(framed).toContainEqual(DEPOT)
+  expect(framed).toContainEqual(STOPS[0])
+  expect(framed).toContainEqual(vehicle)
+  expect(viewExtent(data, false)).not.toContainEqual(vehicle)
 })
 
 test('the sketch projection keeps north up, east right, the padding and the aspect ratio', () => {

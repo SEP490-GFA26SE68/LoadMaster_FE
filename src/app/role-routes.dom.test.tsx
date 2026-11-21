@@ -70,8 +70,9 @@ test('the route table is what these checks think it is: known screens exist, rem
   expect(routeAccess('/cong-ty').permissions).toStrictEqual(['companyProfile.manage'])
   // Hỗ trợ (FE-8-07): Hỗ trợ khách hàng
   expect(routeAccess('/ho-tro').permissions).toStrictEqual(['support.handle'])
-  // Bảng lương: quản lý công ty
+  // Bảng lương: quản lý công ty. Phiếu lương điều phối: điều phối viên
   expect(routeAccess('/bang-luong').permissions).toStrictEqual(['payroll.manage'])
+  expect(routeAccess('/phieu-luong').permissions).toStrictEqual(['payroll.viewOwn'])
   // Liên hệ của khách: ba vai trò nền tảng
   expect(routeAccess('/lien-he-khach').permissions).toStrictEqual(['contacts.handle'])
   expect(routeAccess('/ho-so').permissions).toStrictEqual([])

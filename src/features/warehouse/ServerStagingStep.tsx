@@ -16,6 +16,9 @@ import { codeMatches, type ServerLoadingSession } from './warehouse-server-api'
  * Bước Soạn hàng của phiên bản máy chủ — như bản kho mẫu (`StagingStepPage`): kho đưa mọi kiện của phương án vào khu chờ và đối chiếu từng
  * kiện, không cần thứ tự (quét QR, gõ mã, hoặc xác nhận tay chờ điều phối viên duyệt). Mỗi kiện chưa soạn có "Báo thiếu": máy chủ ghi báo
  * thiếu, điều phối viên quyết tìm tiếp hay bỏ kiện ở Chi tiết chuyến. Soạn đủ thì máy chủ cho xếp và màn tự sang bước Xếp.
+ *
+ * `/kho` là màn toàn màn hình (không nằm trong `AppShell`): gốc phải `h-dvh` để nút đối chiếu neo đáy khung nhìn, vùng `main` cuộn bằng
+ * lăn chuột. Không `overflow-hidden` trên danh sách — Chrome nuốt bánh xe trên phần tử đó nên danh sách không trượt.
  */
 export function ServerStagingStep({ tripId, session }: { tripId: string; session: ServerLoadingSession }) {
   const t = useT()
@@ -100,19 +103,22 @@ export function ServerStagingStep({ tripId, session }: { tripId: string; session
         </p>
       ) : null}
 
-      <main className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3">
-        <div className="flex flex-col gap-1">
+      <main
+        tabIndex={0}
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 outline-none"
+      >
+        <div className="mb-3 flex flex-col gap-1">
           <h1 className="font-display text-h2 font-bold text-ink-strong font-stretch-106%">{t('warehouse.staging.title', { count: format.integer(view.pending.length) })}</h1>
           <p className="m-0 text-pretty text-ink-2">{t('warehouse.staging.hint')}</p>
         </div>
-        <ul aria-label={t('warehouse.staging.listLabel')} className="m-0 flex list-none flex-col overflow-hidden rounded-lg border border-border bg-bg p-0 shadow-card">
+        <ul aria-label={t('warehouse.staging.listLabel')} className="m-0 flex list-none flex-col rounded-lg border border-border bg-bg p-0 shadow-card">
           {view.pending.map((row) => (
             <StagingRow key={row.placement.id} row={row} disabled={report.isPending} onReport={() => setTarget(row)} />
           ))}
         </ul>
       </main>
 
-      <div className="flex-none px-3 pb-3">
+      <div className="flex-none border-t border-border bg-app px-3 py-3">
         <Button variant="primary" className="h-14 w-full gap-3 text-body-lg [&_svg]:size-6" disabled={pending} onClick={() => handleVerifyOpen(true)}>
           <ScanLine strokeWidth={2} />
           {t('warehouse.scan.open')}

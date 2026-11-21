@@ -7,13 +7,13 @@ import type { OptimizationJob } from './load-plans-backend-api'
 import { RunFigure } from './RunFigure'
 import { getBackendJobStatusKey } from './backend-job-status'
 import { runAlgorithmLabel } from './server-algorithms'
+import { solverConstraintMessage } from './solver-constraints'
 
 /**
- * Hộp thoại một lần chạy tối ưu của máy chủ. Máy chủ chỉ báo trạng thái job — không báo số kiện đã xét — nên hình là dải khối chạy vòng
- * (`fraction={null}`), không dừng ở mức đầy nào; bên cạnh chỉ có đúng điều máy chủ trả: trạng thái, mã lần chạy, thời gian tính và số
- * phương án đã lưu khi xong. Không ra phương án (`NO_SOLUTION`, `FAILED`) thì nói rõ, kèm việc máy chủ không trừ credit.
+ * Hộp thoại một lần chạy tối ưu của máy chủ. Hình là dải khối chạy vòng (`fraction={null}`). Khi xong: trạng thái, mã lần chạy, thời gian
+ * tính, số phương án đã lưu, và — nếu lần chạy không ra chỗ đặt — các mã ràng buộc cứng đã chặn (`violatedConstraints`).
  */
-export function BackendRunDialog({ open, onOpenChange, jobId, job, error, compareTo, hasPlans }: {
+export function BackendRunDialog({ open, onOpenChange, jobId, job, error, compareTo, hasPlans, constraintCodes = [] }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   jobId: string
@@ -22,6 +22,8 @@ export function BackendRunDialog({ open, onOpenChange, jobId, job, error, compar
   error: unknown
   hasPlans: boolean
   compareTo: string
+  /** Mã ràng buộc cứng gom từ kiện chưa xếp của lần chạy. */
+  constraintCodes?: readonly string[]
 }) {
   const t = useT()
   const format = useFormat()
@@ -38,6 +40,16 @@ export function BackendRunDialog({ open, onOpenChange, jobId, job, error, compar
           <p role={failed || error ? 'alert' : 'status'} className={failed || error ? 'text-body text-danger' : 'text-body text-ink-1'}>
             {error ? dataErrorMessage(error, t) : t(getBackendJobStatusKey(status))}
           </p>
+          {constraintCodes.length > 0 ? (
+            <div className="flex flex-col gap-2">
+              <p className="text-small font-medium text-ink-2">{t('serverPlans.job.constraintsHeading')}</p>
+              <ul className="m-0 flex list-disc flex-col gap-1 pl-5 text-body text-danger">
+                {constraintCodes.map((code) => (
+                  <li key={code}>{solverConstraintMessage(code, t)}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
           <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-small">
             <dt className="text-ink-3">{t('serverPlans.job.code')}</dt>
             <dd className="font-mono break-all">{jobId}</dd>

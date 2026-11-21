@@ -1,5 +1,5 @@
 import { TriangleAlert } from 'lucide-react'
-import { memo } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
 import { VehicleName } from '@/components/VehicleName'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -8,12 +8,13 @@ import { useFormat, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import type { LiveMonitoring, MonitoringTrip } from './monitoring-api'
 import { DeadlineChip, SourceTag } from './monitoring-chips'
-import { tripSummary, type MonitoringFilter } from './monitoring-view'
+import { MONITORING_TRIP_PAGE_SIZE, pageIndexOfTrip, pagedTrips, tripSummary, type MonitoringFilter } from './monitoring-view'
+import { MonitoringPager } from './MonitoringPager'
 
 /**
  * Danh sách chuyến Đang vận chuyển cạnh bản đồ (FE-6-10): xe, tài xế, điểm tiếp, giờ đến dự kiến, mức hạn, sự cố — và là **bản thay
- * thế bản đồ** cho trình đọc màn hình (bản đồ là hình `aria-hidden`). Hai công tắc lọc "Có nguy cơ trễ" và "Có sự cố" kèm số chuyến
- * của từng loại. Chọn một dòng là chọn chuyến của bản đồ và của phần chi tiết bên dưới.
+ * thế bản đồ** cho trình đọc màn hình (bản đồ là hình `aria-hidden`). Hai dòng mỗi trang cho khung cao bằng card bản đồ; hai công tắc
+ * lọc "Có nguy cơ trễ" và "Có sự cố" kèm số chuyến của từng loại. Chọn một dòng là chọn chuyến của bản đồ và của phần chi tiết bên dưới.
  */
 export function MonitoringTripList({ liveOf, visible, counts, filter, onToggle, onClear, selectedId, onSelect }: {
   liveOf: (tripId: string) => LiveMonitoring | undefined
@@ -28,12 +29,26 @@ export function MonitoringTripList({ liveOf, visible, counts, filter, onToggle, 
 }) {
   const t = useT()
   const format = useFormat()
+  const [pageIndex, setPageIndex] = useState(0)
+  const selectedRef = useRef<string | null>(null)
+  useEffect(() => {
+    const selectedChanged = selectedId !== selectedRef.current
+    selectedRef.current = selectedId
+    setPageIndex((current) => {
+      if (selectedChanged) {
+        const selectedPage = pageIndexOfTrip(visible, selectedId)
+        if (selectedPage !== null) return selectedPage
+      }
+      return pagedTrips(visible, current).pageIndex
+    })
+  }, [selectedId, visible])
+  const page = pagedTrips(visible, pageIndex)
   const chips = [
     { name: 'late' as const, label: t('monitoring.list.filters.late'), count: counts.late },
     { name: 'incidents' as const, label: t('monitoring.list.filters.incidents'), count: counts.incidents },
   ]
   return (
-    <Card className="flex min-w-0 flex-col">
+    <Card className="flex h-full min-h-0 min-w-0 flex-col">
       <CardHeader>
         <CardTitle as="h2">{t('monitoring.list.title')}</CardTitle>
         <div role="group" aria-label={t('monitoring.list.filters.label')} className="flex basis-full flex-wrap gap-2">
@@ -56,17 +71,25 @@ export function MonitoringTripList({ liveOf, visible, counts, filter, onToggle, 
         </div>
       </CardHeader>
       {visible.length === 0 ? (
-        <div className="flex flex-col items-start gap-2 p-4.5">
+        <div className="flex flex-1 flex-col items-start gap-2 p-4.5">
           <p className="m-0 text-small text-ink-2">{t('monitoring.list.noMatch')}</p>
           <Button variant="secondary" size="sm" onClick={onClear}>{t('monitoring.list.clear')}</Button>
         </div>
       ) : (
-        <ul aria-label={t('monitoring.list.title')} className="m-0 flex list-none flex-col p-0">
-          {visible.map((trip) => (
+        <ul aria-label={t('monitoring.list.title')} className="m-0 flex min-h-0 flex-1 list-none flex-col p-0">
+          {page.items.map((trip) => (
             <TripRow key={trip.tripId} trip={trip} live={liveOf(trip.tripId)} selected={trip.tripId === selectedId} onSelect={onSelect} />
           ))}
         </ul>
       )}
+      <MonitoringPager
+        pageIndex={page.pageIndex}
+        pageCount={page.pageCount}
+        pageSize={MONITORING_TRIP_PAGE_SIZE}
+        total={visible.length}
+        label={t('monitoring.list.pagination')}
+        onPageChange={setPageIndex}
+      />
     </Card>
   )
 }

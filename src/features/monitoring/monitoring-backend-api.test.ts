@@ -80,6 +80,8 @@ test('giám sát các chuyến: giờ đến của máy chủ không phải mock
           { eventId: 'ETA-2', at: '2026-10-18T09:05:00', tripId: TRIP, stopId: null, stopNumber: null, status: 'AT_RISK', eta: '2026-10-18T10:00:00', deadline: '2026-10-18T10:10:00' },
         ],
         exceptions: [],
+        activeRoutePlanId: 4,
+        routeLegs: [{ legId: 11, legSequence: 1, polyline: '_p~iF~ps|U' }],
         refreshMs: 500,
         isMockResult: false,
       }]),
@@ -91,6 +93,8 @@ test('giám sát các chuyến: giờ đến của máy chủ không phải mock
   expect(live?.location).toEqual({ lat: 10.9, lng: 106.8, speedKmh: 42, heading: 270, recordedAt: '2026-10-18T02:05:00.000Z', source: 'GPS' })
   expect(live?.stops).toEqual([{ stopId: '8', number: 2, eta: '2026-10-18T03:00:00.000Z', deadline: '2026-10-18T03:10:00.000Z', deadlineStatus: 'AT_RISK' }])
   expect(live?.alerts.map((alert) => alert.eventId)).toEqual(['ETA-1'])
+  expect(live?.activeRoutePlanId).toBe(4)
+  expect(live?.routeLegs).toEqual([{ legId: 11, legSequence: 1, startStopId: null, endStopId: null, polyline: '_p~iF~ps|U' }])
 })
 
 test('vị trí mới nhất và lịch sử vị trí đọc theo mã chuyến', async () => {

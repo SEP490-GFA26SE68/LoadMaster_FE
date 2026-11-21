@@ -85,6 +85,21 @@ describe('backendPlanScene', () => {
     })
     expect(scene.unplaced.map((item) => [item.name, item.reasonCode, item.detailUnknown])).toEqual([['PK-302', 'OVER_PAYLOAD', true], ['PK-303', 'UNKNOWN', true]])
   })
+
+  test('CONSTRAINT_VIOLATED kèm mã solver giữ mã cụ thể, không thành UNKNOWN', () => {
+    const scene = backendPlanScene({
+      tripCode: 'TRIP-1', vehicle: VEHICLE, stops: STOPS,
+      plan: plan({ unplaced: [{
+        packageId: '747', code: 'PA-001-001', reason: 'CONSTRAINT_VIOLATED',
+        violatedConstraints: ['AXLE_CONFIG_MISSING'], size: null, weightKg: null,
+      }] }),
+    })
+    expect(scene.unplaced[0]).toMatchObject({
+      reasonCode: 'CONSTRAINT_VIOLATED',
+      solverConstraints: ['AXLE_CONFIG_MISSING'],
+      detailUnknown: true,
+    })
+  })
 })
 
 describe('backendPlacementIds', () => {

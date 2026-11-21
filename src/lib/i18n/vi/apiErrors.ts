@@ -106,6 +106,7 @@ VEHICLE_PRESENCE_CONFLICT: "Trạng thái xe hoặc mã xác nhận xung đột.
   PAYROLL_INVALID_PERIOD: 'Kỳ lương không hợp lệ. Chọn tháng theo định dạng năm-tháng.',
   PAYROLL_INVALID_DRIVER_ASSIGNMENT: 'Phân công tài xế nhận lương năng suất không hợp lệ.',
   PAYROLL_INVALID_AMOUNT: 'Khối lượng, quãng đường và đơn giá phải là số không âm.',
+  PAYROLL_INVALID_OVERTIME_DAYS: 'Số ngày tăng ca phải từ 0 đến số ngày của tháng lương.',
   DELIVERY_REQUIREMENT_NOT_FOUND: 'Không tìm thấy yêu cầu giao.',
   DELIVERY_REQUIREMENT_NOT_PENDING: 'Chỉ xoá được yêu cầu còn chờ xếp chuyến và chưa giữ kiện nào.',
   INVALID_DELIVERY_REQUIREMENT_TRANSITION: 'Yêu cầu giao không chuyển được sang trạng thái này.',

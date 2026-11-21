@@ -47,7 +47,6 @@ function RequirementForm({ row, onClose }: { row?: RequirementRow; onClose: () =
   const can = useCan()
   const canCreate = user?.role === 'dispatcher' && can('requirements.edit') && REQUIREMENT_SERVER_SUPPORT.create
   const submitting = useRef(false)
-
   const [extensionReason, setExtensionReason] = useState('')
 
   const tripQuery = useRequirementTripQuery(current?.tripId)
@@ -72,9 +71,7 @@ function RequirementForm({ row, onClose }: { row?: RequirementRow; onClose: () =
 
   const locked =
     (current ? !REQUIREMENT_SERVER_SUPPORT.manage : !canCreate) ||
-    (current !== undefined &&
-      (current.status !== 'PENDING' ||
-        current.tripId !== undefined))
+    (current !== undefined && (current.status !== 'PENDING' || current.tripId !== undefined))
   const hasReceivedPackages = current !== undefined && (current.receivedPackageCount ?? current.packageIds.length) > 0
   const canChangeDestination = !locked && !hasReceivedPackages
   const hasCoordinates = current?.lat != null || current?.lng != null
@@ -111,22 +108,14 @@ function RequirementForm({ row, onClose }: { row?: RequirementRow; onClose: () =
   function handleSubmit(values: RequirementFormValues) {
     if (locked || submitting.current) return
     submitting.current = true
-
     const done = (saved: DeliveryRequirement) => {
       toast.success(current ? t('requirements.form.saved', { id: saved.id }) : t('requirements.form.created', { id: saved.id }))
       onClose()
     }
-
     if (current) {
-      update.mutate(
-        toChanges(values, current),
-        { onSuccess: done, onSettled: () => { submitting.current = false } },
-      )
+      update.mutate(toChanges(values, current), { onSuccess: done, onSettled: () => { submitting.current = false } })
     } else {
-      create.mutate(
-        toInput(values),
-        { onSuccess: done, onSettled: () => { submitting.current = false } },
-      )
+      create.mutate(toInput(values), { onSuccess: done, onSettled: () => { submitting.current = false } })
     }
   }
 
@@ -253,17 +242,9 @@ function RequirementForm({ row, onClose }: { row?: RequirementRow; onClose: () =
           <Button
             type="submit"
             loading={mutation.isPending}
-            disabled={
-              mutation.isPending ||
-              customers.isPending ||
-              customers.isError ||
-              addingCustomer ||
-              createCustomerMutation.isPending
-            }
+            disabled={mutation.isPending || customers.isPending || customers.isError || addingCustomer || createCustomerMutation.isPending}
           >
-            {current
-              ? t('requirements.form.save')
-              : t('requirements.form.create')}
+            {current ? t('requirements.form.save') : t('requirements.form.create')}
           </Button>
         ) : null}
       </DialogFooter>

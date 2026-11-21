@@ -58,6 +58,7 @@ export const NAV_SCREENS = {
   trialRequests: { to: '/nen-tang/yeu-cau-dung-thu', labelKey: 'nav.trialRequests', icon: ClipboardList, permission: 'trialRequests.manage' },
   billing: { to: '/goi-cuoc', labelKey: 'nav.billing', icon: CreditCard, permission: 'billing.manage' },
   payroll: { to: '/bang-luong', labelKey: 'nav.payroll', icon: Banknote, permission: 'payroll.manage' },
+  payrollOwn: { to: '/phieu-luong', labelKey: 'nav.payrollOwn', icon: Banknote, permission: 'payroll.viewOwn' },
   audit: { to: '/nhat-ky', labelKey: 'nav.audit', icon: ScrollText, permission: 'audit.view' },
   warehouseVehicles: { to: '/kho/xe', labelKey: 'nav.warehouseVehicles', icon: Truck, permission: 'warehouse.operate' },
   warehouse: { to: '/kho', labelKey: 'nav.warehouse', icon: Tablet, permission: 'warehouse.operate' },
@@ -80,7 +81,7 @@ export const NAV_ITEMS: Readonly<Record<Role, readonly NavScreenId[]>> = {
   systemSupporter: ['support', 'contacts'],
   companyAdmin: ['users', 'audit', 'billing', 'companyProfile'],
   companyManager: ['dashboard', 'requirements', 'packages', 'trips', 'tripClaims', 'monitoring', 'fleet', 'companyWarehouses', 'payroll'],
-  dispatcher: ['trips', 'tripClaims', 'monitoring', 'packages', 'requirements', 'fleet', 'dashboard'],
+  dispatcher: ['trips', 'tripClaims', 'monitoring', 'packages', 'requirements', 'fleet', 'dashboard', 'payrollOwn'],
   warehouse: ['warehouse', 'warehouseVehicles', 'packages', 'warehouseCustomers'],
   driver: ['driver'],
 }

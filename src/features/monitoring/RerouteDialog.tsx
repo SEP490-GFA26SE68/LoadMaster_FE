@@ -11,10 +11,9 @@ import type { LiveRerouteProposal } from './exceptions-api'
 import { useConfirmRerouteMutation, useRequestRerouteMutation } from './useMonitoringQuery'
 
 /**
- * Hộp "Tìm tuyến khác" (FE-6-11, D-87): mock đưa ra 2–3 tuyến tới **điểm kế tiếp** từ vị trí xe — tên, quãng đường, thời gian và giờ
- * đến điểm đó — kèm nhãn **MOCK RESULT**. Chọn một tuyến thì xe mô phỏng thôi đứng chờ sự cố và giờ đến tính lại theo vị trí. Thứ tự
- * điểm giao không đổi và bản đồ vẫn vẽ đường nối thẳng: hộp nói rõ điều đó. Mỗi lần mở là một lần tìm mới. Tuyến của backend là một
- * đường đi cơ sở nhân với các hệ số cố định (chưa phải đường đi khác thật), nên vẫn mang nhãn MOCK RESULT dù backend không báo mock.
+ * Hộp "Tìm tuyến khác" (FE-6-11, D-87): 2–3 lựa chọn tới **điểm kế tiếp** từ vị trí xe — tên, quãng đường, thời gian và giờ đến điểm
+ * đó. Nhãn **MOCK RESULT** chỉ khi nguồn báo `isMockResult` (kho mẫu). Backend confirm rồi vẽ lại polyline Goong trên bản đồ; thứ tự
+ * điểm giao không đổi. Mỗi lần mở là một lần tìm mới. Không gọi traffic feed — tài xế báo TRAFFIC, điều phối viên chọn tuyến.
  */
 export function RerouteDialog({ tripId, stopName, open, onOpenChange }: {
   tripId: string

@@ -117,7 +117,6 @@ export async function listDeliveryRequirements(): Promise<RequirementRow[]> {
   return rows.map(requirementRowFromApi)
 }
 
-
 export type RequirementListParams = {
   page: number; size: number; search?: string; status?: string; priority?: string
   deadlineFrom?: string; deadlineTo?: string; sortBy?: string; sortDir?: 'ASC' | 'DESC'

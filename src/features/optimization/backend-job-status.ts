@@ -1,7 +1,8 @@
 // SUCCESS is a legacy terminal state, not proof that every package was packed.
 // Probe its saved plans; never rewrite it to COMPLETED or infer a plan from status alone.
 export function canFetchOptimizationPlans(status?: string): boolean {
-  return ['COMPLETED', 'PARTIAL', 'SUCCESS'].includes(status?.toUpperCase() ?? '')
+  // NO_SOLUTION vẫn lưu phương án rỗng kèm kiện chưa xếp — cần đọc để báo ràng buộc cụ thể.
+  return ['COMPLETED', 'PARTIAL', 'SUCCESS', 'NO_SOLUTION'].includes(status?.toUpperCase() ?? '')
 }
 
 export function getBackendJobStatusKey(status?: string) {

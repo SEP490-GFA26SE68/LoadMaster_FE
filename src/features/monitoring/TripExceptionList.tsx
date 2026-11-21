@@ -1,8 +1,12 @@
+import type { ReactNode } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
+import { CardBody } from '@/components/ui/Card'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import { ESCALATE_AFTER_MINUTES, isActiveException, type TripException } from '@/lib/mock-db'
 import { ExceptionStatusChip } from './monitoring-chips'
+import { MONITORING_EXCEPTION_PAGE_SIZE } from './monitoring-view'
+import { MonitoringPager, usePagedItems } from './MonitoringPager'
 import { useEscalateExceptionMutation, useResolveExceptionMutation } from './useMonitoringQuery'
 import { useMoment } from './useMoment'
 
@@ -34,58 +38,80 @@ export function ExceptionFacts({ exception, userNames }: { exception: TripExcept
 }
 
 /**
- * Sự cố của chuyến đang chọn ở màn Giám sát (FE-6-11), mới nhất trước. Người có `exceptions.resolve` (điều phối viên) xử lý sự cố còn
- * mở: "Tìm tuyến khác", "Không có tuyến khả thi — chuyển quản lý" (chỉ khi chưa chuyển), "Đã xử lý". Các nút đều là nút phụ: nút chính
- * của màn là "Báo sự cố". Người chỉ xem (quản lý công ty) thấy một dòng lý do. Nguồn dữ liệu chưa có việc chuyển quản lý (backend) thì
- * không có nút đó (`canEscalate`).
+ * Sự cố của chuyến đang chọn ở màn Giám sát (FE-6-11), mới nhất trước, một sự cố mỗi trang cho khung cao bằng lịch sử vị trí cạnh nó.
+ * Người có `exceptions.resolve` (điều phối viên) xử lý sự cố còn mở: "Tìm tuyến khác", "Không có tuyến khả thi — chuyển quản lý" (chỉ
+ * khi chưa chuyển), "Đã xử lý". Các nút đều là nút phụ: nút chính của màn là "Báo sự cố". Người chỉ xem (quản lý công ty) thấy một dòng
+ * lý do. Nguồn dữ liệu chưa có việc chuyển quản lý (backend) thì không có nút đó (`canEscalate`).
  */
-export function TripExceptionList({ tripId, exceptions, userNames, canResolve, canEscalate, onReroute }: {
+export function TripExceptionList({ tripId, exceptions, userNames, canResolve, canEscalate, onReroute, lead }: {
   tripId: string
   exceptions: readonly TripException[]
   userNames: Readonly<Record<string, string>>
   canResolve: boolean
   canEscalate: boolean
   onReroute: () => void
+  /** Dòng tuyến đang dùng, đặt trên danh sách sự cố. */
+  lead?: ReactNode
 }) {
   const t = useT()
   const escalate = useEscalateExceptionMutation(tripId)
   const resolve = useResolveExceptionMutation(tripId)
   const busy = escalate.isPending || resolve.isPending
-  if (exceptions.length === 0) return <p className="m-0 text-small text-ink-3">{t('monitoring.exceptions.none')}</p>
-
+  const newestFirst = exceptions.toReversed()
+  const page = usePagedItems(newestFirst, MONITORING_EXCEPTION_PAGE_SIZE)
   const run = (mutation: typeof escalate, id: string, done: 'escalated' | 'resolved') =>
     mutation.mutate(id, {
       onSuccess: () => toast.success(t(`monitoring.exceptions.done.${done}`, { id })),
       onError: (error) => toast.error(dataErrorMessage(error, t)),
     })
 
+  if (exceptions.length === 0) {
+    return (
+      <CardBody className="flex min-h-0 flex-1 flex-col gap-3">
+        {lead}
+        <p className="m-0 text-small text-ink-3">{t('monitoring.exceptions.none')}</p>
+      </CardBody>
+    )
+  }
+
   return (
-    <div className="flex flex-col gap-2.5">
-      {!canResolve && exceptions.some(isActiveException) ? <p className="m-0 text-small text-ink-3">{t('monitoring.exceptions.readOnly')}</p> : null}
-      <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
-        {exceptions.toReversed().map((exception) => (
-          <li key={exception.id} className="flex flex-col gap-2 rounded-md border border-border p-3">
-            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-              <span className="font-mono text-small text-ink-3 tabular-nums">{exception.id}</span>
-              <span className="font-semibold text-ink-strong">{t(`common.tripExceptionTypes.${exception.type}`)}</span>
-              <ExceptionStatusChip status={exception.status} />
-            </div>
-            <p className="m-0 text-body text-ink-1">{exception.description}</p>
-            <ExceptionFacts exception={exception} userNames={userNames} />
-            {canResolve && isActiveException(exception) ? (
-              <div className="flex flex-wrap gap-2 pt-1">
-                <Button variant="secondary" size="sm" disabled={busy} onClick={onReroute}>{t('monitoring.exceptions.actions.reroute')}</Button>
-                {canEscalate && exception.status === 'OPEN' ? (
-                  <Button variant="secondary" size="sm" className="h-auto min-h-8 py-1 whitespace-normal" disabled={busy} onClick={() => run(escalate, exception.id, 'escalated')}>
-                    {t('monitoring.exceptions.actions.escalate')}
-                  </Button>
-                ) : null}
-                <Button variant="secondary" size="sm" disabled={busy} onClick={() => run(resolve, exception.id, 'resolved')}>{t('monitoring.exceptions.actions.resolve')}</Button>
+    <>
+      <CardBody className="flex min-h-0 flex-1 flex-col gap-3">
+        {lead}
+        {!canResolve && exceptions.some(isActiveException) ? <p className="m-0 text-small text-ink-3">{t('monitoring.exceptions.readOnly')}</p> : null}
+        <ul aria-label={t('monitoring.exceptions.title')} className="m-0 flex min-h-0 flex-1 list-none flex-col gap-2.5 p-0">
+          {page.items.map((exception) => (
+            <li key={exception.id} className="flex flex-col gap-2 rounded-md border border-border p-3">
+              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                <span className="font-mono text-small text-ink-3 tabular-nums">{exception.id}</span>
+                <span className="font-semibold text-ink-strong">{t(`common.tripExceptionTypes.${exception.type}`)}</span>
+                <ExceptionStatusChip status={exception.status} />
               </div>
-            ) : null}
-          </li>
-        ))}
-      </ul>
-    </div>
+              <p className="m-0 text-body text-ink-1">{exception.description}</p>
+              <ExceptionFacts exception={exception} userNames={userNames} />
+              {canResolve && isActiveException(exception) ? (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <Button variant="secondary" size="sm" disabled={busy} onClick={onReroute}>{t('monitoring.exceptions.actions.reroute')}</Button>
+                  {canEscalate && exception.status === 'OPEN' ? (
+                    <Button variant="secondary" size="sm" className="h-auto min-h-8 py-1 whitespace-normal" disabled={busy} onClick={() => run(escalate, exception.id, 'escalated')}>
+                      {t('monitoring.exceptions.actions.escalate')}
+                    </Button>
+                  ) : null}
+                  <Button variant="secondary" size="sm" disabled={busy} onClick={() => run(resolve, exception.id, 'resolved')}>{t('monitoring.exceptions.actions.resolve')}</Button>
+                </div>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      </CardBody>
+      <MonitoringPager
+        pageIndex={page.pageIndex}
+        pageCount={page.pageCount}
+        pageSize={page.pageSize}
+        total={page.total}
+        label={t('monitoring.exceptions.pagination')}
+        onPageChange={page.setPageIndex}
+      />
+    </>
   )
 }

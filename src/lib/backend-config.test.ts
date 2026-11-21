@@ -33,8 +33,8 @@ test('an unknown sign-in source is an error, not a silent fallback to the sample
 test('keycloak mode calls the backend for every wired group unless VITE_API_FEATURES narrows it', () => {
   const keycloak = (features: string) => resolveBackendConfig({ VITE_AUTH_SOURCE: 'keycloak', VITE_API_FEATURES: features }).features
   expect(keycloak('all')).toStrictEqual(new Set(BACKEND_FEATURES))
-  expect(keycloak('none')).toStrictEqual(new Set())
-  expect(keycloak(' users , packages,')).toStrictEqual(new Set(['users', 'packages']))
+  expect(keycloak('none')).toStrictEqual(new Set(['driver', 'payroll']))
+  expect(keycloak(' users , packages,')).toStrictEqual(new Set(['users', 'packages', 'driver', 'payroll']))
 })
 
 test('the sample store never calls the backend, whatever VITE_API_FEATURES says', () => {
@@ -43,4 +43,11 @@ test('the sample store never calls the backend, whatever VITE_API_FEATURES says'
 
 test('an unknown feature group is an error that names it', () => {
   expect(() => resolveBackendConfig({ VITE_AUTH_SOURCE: 'keycloak', VITE_API_FEATURES: 'users,orders' })).toThrow(/orders/)
+})
+
+test('keycloak always includes driver and payroll, even when VITE_API_FEATURES omits them', () => {
+  expect(resolveBackendConfig({ VITE_AUTH_SOURCE: 'keycloak', VITE_API_FEATURES: 'none' }).features).toStrictEqual(new Set(['driver', 'payroll']))
+  expect(resolveBackendConfig({ VITE_AUTH_SOURCE: 'keycloak', VITE_API_FEATURES: 'warehouse' }).features).toStrictEqual(
+    new Set(['warehouse', 'driver', 'payroll']),
+  )
 })

@@ -31,7 +31,9 @@ test('tripCode search finds rows outside first page without nested trip; resets 
  await waitFor(()=>expect(calls.at(-1)?.searchParams.get('page')).toBe('0'))
  expect(screen.getByText('1–2 / 2',{exact:true})).toBeInTheDocument()
  expect(screen.queryByRole('button',{name:'Xem chi tiết yêu cầu 51'})).not.toBeInTheDocument()
- expect(screen.getByRole('button',{name:'Tạo yêu cầu giao'})).toBeInTheDocument()
+ const add=screen.getByRole('button',{name:'Tạo yêu cầu giao'})
+ expect(add.closest('header')).not.toBeNull()
+ expect(document.querySelector('.sky-overlap')).toBeNull()
 })
 test('combined URL filters, sort and every query param participate in query key',async()=>{
  const client=mount('/?q=Target&trang-thai=giao-thieu&uu-tien=cao&han-tu=2026-11-12&han-den=2026-11-12')

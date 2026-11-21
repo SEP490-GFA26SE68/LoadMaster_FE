@@ -1,6 +1,7 @@
 /**
  * Hàm → endpoint backend của màn kho khi nhóm `warehouse` nối backend (`usesBackend('warehouse')`):
  *   fetchTrips   → GET /api/warehouse/tasks?includeAwaitingReplan=true
+ *   fetchApprovedPlan → GET /api/warehouse/tasks/{tripId}/plan
  *   fetchSession → GET /api/warehouse/tasks/{tripId}
  *   start        → POST /api/warehouse/tasks/{tripId}/start
  *   confirm      → POST /api/warehouse/placements/{id}/confirm

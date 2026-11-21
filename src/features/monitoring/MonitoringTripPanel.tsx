@@ -137,11 +137,17 @@ export const MonitoringTripPanel = memo(function MonitoringTripPanel({ trip, liv
         </CardBody>
       </Card>
 
-      <div className="grid grid-cols-2 items-start gap-3 max-lg:grid-cols-1">
-        <Card>
+      <div className="grid grid-cols-2 items-stretch gap-3 max-lg:grid-cols-1">
+        <Card className="flex h-full min-h-0 min-w-0 flex-col">
           <CardHeader><CardTitle>{t('monitoring.exceptions.title')}</CardTitle></CardHeader>
-          <CardBody className="flex flex-col gap-3">
-            {reroute ? (
+          <TripExceptionList
+            tripId={trip.tripId}
+            exceptions={live?.exceptions ?? []}
+            userNames={userNames}
+            canResolve={can('exceptions.resolve')}
+            canEscalate={caps.escalation}
+            onReroute={() => setRerouting(true)}
+            lead={reroute ? (
               <p className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 text-small text-ink-2">
                 {t('monitoring.reroute.current', {
                   time: format.time(reroute.confirmedAt), route: t(`monitoring.reroute.routes.${reroute.route}`),
@@ -150,15 +156,7 @@ export const MonitoringTripPanel = memo(function MonitoringTripPanel({ trip, liv
                 {live?.isMockResult ? <Badge shape="tag" tone="mock">MOCK RESULT</Badge> : null}
               </p>
             ) : null}
-            <TripExceptionList
-              tripId={trip.tripId}
-              exceptions={live?.exceptions ?? []}
-              userNames={userNames}
-              canResolve={can('exceptions.resolve')}
-              canEscalate={caps.escalation}
-              onReroute={() => setRerouting(true)}
-            />
-          </CardBody>
+          />
         </Card>
         <LocationHistory tripId={trip.tripId} />
       </div>

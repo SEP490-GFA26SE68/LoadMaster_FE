@@ -75,8 +75,10 @@ export function RouteMapSketch({ data }: { data: RouteMapData }) {
       })}
       {vehicle ? (
         <g data-marker="vehicle" transform={at(vehicle)}>
-          <circle r={RADIUS + 1} fill="var(--bg)" stroke="var(--primary)" strokeWidth={2} />
-          <circle r={4.5} fill="var(--primary)" />
+          <g transform={`rotate(${data.vehicle?.heading ?? 0})`}>
+            <circle r={RADIUS + 1} fill="var(--bg)" stroke="var(--primary)" strokeWidth={2} />
+            <polygon points="0,-10 -4.5,4 4.5,4" fill="var(--primary)" />
+          </g>
           {data.vehicle?.tag ? <VehicleTag text={data.vehicle.tag} offset={RADIUS + 13} /> : null}
         </g>
       ) : null}

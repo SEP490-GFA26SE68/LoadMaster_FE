@@ -32,7 +32,7 @@ export const monitoring = {
     tag: '{trip} · {source}',
     /** Tên mốc xe của một chuyến cho trình đọc màn hình. */
     vehicle: 'chuyến {trip}, {name} ({source})',
-    note: 'Tuyến và điểm giao là của chuyến đang chọn; xe của chuyến khác chỉ hiện vị trí.',
+    note: 'Bản đồ chỉ hiện tuyến, điểm giao và vị trí xe của chuyến đang chọn.',
     noPosition: 'Chuyến {id} còn điểm giao chưa có toạ độ nên chưa có vị trí xe.',
     pathFailed: 'Không đọc được tuyến của chuyến {id} từ máy chủ — bản đồ nối thẳng các điểm.',
   },
@@ -50,6 +50,7 @@ export const monitoring = {
     arrived: 'Đã đến {time}',
     noDeadline: 'Không có hạn',
     incidents: { one: '{count} sự cố', other: '{count} sự cố' },
+    pagination: 'Trang danh sách chuyến',
   },
   panel: {
     label: 'Giám sát chuyến {id}',
@@ -69,10 +70,12 @@ export const monitoring = {
       columns: { time: 'Giờ', position: 'Vĩ độ, kinh độ', speed: 'Tốc độ', source: 'Nguồn' },
       speed: '{speed} km/h',
       empty: 'Chưa có điểm vị trí nào.',
+      pagination: 'Trang lịch sử vị trí',
     },
   },
   exceptions: {
     title: 'Sự cố của chuyến',
+    pagination: 'Trang sự cố của chuyến',
     report: 'Báo sự cố',
     none: 'Chuyến chưa có sự cố nào.',
     statuses: { OPEN: 'Chưa xử lý', ESCALATED: 'Đã chuyển quản lý', RESOLVED: 'Đã xử lý' },
@@ -144,11 +147,11 @@ export const monitoring = {
       list: 'Điểm chưa có toạ độ',
     },
   },
-  /** Hộp "Tìm tuyến khác" (mock): 2–3 lựa chọn, chỉ đổi đường tới điểm kế tiếp. */
+  /** Hộp "Tìm tuyến khác": gợi ý từ vị trí xe tới điểm chưa giao; chọn xong máy chủ vẽ lại tuyến. */
   reroute: {
     title: 'Tìm tuyến khác cho chuyến {id}',
     description: 'Đường khác tới điểm {number} · {name}, tính từ vị trí xe lúc {time}.',
-    note: 'Thứ tự điểm giao không đổi. Bản đồ vẫn vẽ đường nối thẳng; các tuyến chỉ khác nhau ở quãng đường và thời gian.',
+    note: 'Thứ tự điểm giao không đổi. Các lựa chọn là đường gợi ý từ vị trí xe tới điểm chưa giao; chọn xong máy chủ vẽ lại tuyến trên bản đồ.',
     loading: 'Đang tìm tuyến…',
     options: 'Tuyến thay thế',
     routes: { BYPASS: 'Đường tránh gần', RING_ROAD: 'Đường vành đai', HIGHWAY: 'Cao tốc' },

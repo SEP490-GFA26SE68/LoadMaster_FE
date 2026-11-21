@@ -5,8 +5,8 @@ export type RouteMapPlace = GeoPoint & { readonly name: string }
 /** Điểm giao trên bản đồ. `number` là số định danh của điểm (quyết định màu điểm giao), không phải vị trí trong mảng. */
 export type RouteMapStop = RouteMapPlace & { readonly id: string; readonly number: number }
 
-/** Xe trên bản đồ. `tag` là nhãn ngắn hiện ngay dưới mốc xe (mã chuyến, nguồn vị trí) — màn Giám sát có nhiều xe cùng lúc. */
-export type RouteMapVehicle = RouteMapPlace & { readonly tag?: string }
+/** Xe trên bản đồ. `tag` là nhãn ngắn hiện ngay dưới mốc xe (mã chuyến, nguồn vị trí). */
+export type RouteMapVehicle = RouteMapPlace & { readonly tag?: string; readonly heading?: number }
 
 export type RouteMapData = {
   /** Kho xuất phát; không có thì tuyến bắt đầu từ điểm giao đầu tiên. */
@@ -15,7 +15,7 @@ export type RouteMapData = {
   readonly stops: readonly RouteMapStop[]
   /** Vị trí xe (giám sát, F6). Không nằm trên đường tuyến. */
   readonly vehicle?: RouteMapVehicle
-  /** Xe của các chuyến khác đang chạy (màn Giám sát, FE-6-10): chỉ vị trí, không tuyến, không quyết định khung nhìn. */
+  /** Xe của các chuyến khác (tuỳ chọn). Màn Giám sát không truyền: mỗi lần chọn một chuyến chỉ vẽ xe của chuyến đó. */
   readonly others?: readonly (RouteMapVehicle & { readonly id: string })[]
   /** Đường đi thật khi backend trả polyline; không có thì nối thẳng kho → các điểm theo thứ tự. */
   readonly path?: readonly GeoPoint[]
@@ -37,15 +37,31 @@ export function staticExtent(data: RouteMapData): readonly GeoPoint[] {
   return routeExtent({ ...data, vehicle: undefined, others: undefined })
 }
 
-export type RouteMapPin = { readonly key: string; readonly point: GeoPoint; readonly kind: 'depot' | 'stop' | 'vehicle' | 'other'; readonly number?: number; readonly tag?: string }
+/**
+ * Khung nhìn lúc canh bản đồ. `followVehicle`: kho, điểm giao, tuyến **và** xe của chuyến đang chọn (không chỉ GPS — tránh mất kho/điểm).
+ * Không bám thì giữ tuyến đứng yên; nút canh toàn tuyến vẫn dùng `routeExtent`.
+ */
+export function viewExtent(data: RouteMapData, followVehicle = false): readonly GeoPoint[] {
+  if (followVehicle) return routeExtent({ ...data, others: undefined })
+  return staticExtent(data)
+}
+
+export type RouteMapPin = {
+  readonly key: string
+  readonly point: GeoPoint
+  readonly kind: 'depot' | 'stop' | 'vehicle' | 'other'
+  readonly number?: number
+  readonly tag?: string
+  readonly heading?: number
+}
 
 /** Các mốc của bản đồ, mỗi mốc một khoá ổn định: dữ liệu đổi thì mốc cùng khoá chỉ dời chỗ, không dựng lại. */
 export function routePins(data: RouteMapData): RouteMapPin[] {
   return [
     ...(data.depot ? [{ key: 'depot', point: data.depot, kind: 'depot' as const }] : []),
     ...data.stops.map((stop) => ({ key: `stop:${stop.id}`, point: stop, kind: 'stop' as const, number: stop.number })),
-    ...(data.others ?? []).map((other) => ({ key: `other:${other.id}`, point: other, kind: 'other' as const, tag: other.tag })),
-    ...(data.vehicle ? [{ key: 'vehicle', point: data.vehicle, kind: 'vehicle' as const, tag: data.vehicle.tag }] : []),
+    ...(data.others ?? []).map((other) => ({ key: `other:${other.id}`, point: other, kind: 'other' as const, tag: other.tag, heading: other.heading })),
+    ...(data.vehicle ? [{ key: 'vehicle', point: data.vehicle, kind: 'vehicle' as const, tag: data.vehicle.tag, heading: data.vehicle.heading }] : []),
   ]
 }
 

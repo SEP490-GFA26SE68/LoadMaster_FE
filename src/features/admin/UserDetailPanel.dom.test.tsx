@@ -93,10 +93,10 @@ test('panel chi tiết: bấm dòng mở đúng người, quyền của vai trò
   await waitFor(() => expect(info.getAllByRole('definition').map((value) => value.textContent)).toStrictEqual([
     'US-0001', '0901 234 567', 'Công ty TNHH Vận tải Long Bình', 'Kho Long Bình', expect.stringMatching(/^07:50 \d{2}\/\d{2}\/\d{4}$/),
   ]), SLOW)
-  // 22 quyền của điều phối viên theo thứ tự dòng của ma trận PRD v2 (FE-0-01, FE-0-07), gồm chỉnh sửa và duyệt phương án; hai quyền
-  // đơn hàng tạm đã bỏ (FE-4b-01)
+  // 23 quyền của điều phối viên theo thứ tự dòng của ma trận (payroll.viewOwn + PRD v2, FE-0-01, FE-0-07)
   const chips = within(within(panel).getByRole('region', { name: 'Công việc được phép' })).getAllByRole('listitem')
   expect(chips.map((chip) => chip.textContent)).toStrictEqual([
+    'Xem phiếu lương của mình',
     'Gửi yêu cầu hỗ trợ', 'Xem bảng điều khiển', 'Xem yêu cầu giao', 'Tạo, sửa yêu cầu giao', 'Xem kho kiện',
     'Tra cứu kiện bằng mã QR', 'In nhãn QR', 'Xem chuyến hàng', 'Tạo, sửa, huỷ chuyến', 'Tối ưu tuyến', 'Chạy tối ưu',
     'Chỉnh sửa và duyệt phương án', 'Duyệt kiện xác nhận tay', 'Xem phương án 3D và so sánh', 'Xem giám sát chuyến đang chạy', 'Xem đội xe',

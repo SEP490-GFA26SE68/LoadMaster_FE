@@ -24,7 +24,7 @@ export const monitoring = {
     label: 'Map of the vehicles in transit',
     tag: '{trip} · {source}',
     vehicle: 'trip {trip}, {name} ({source})',
-    note: 'The route and stops are those of the selected trip; vehicles of other trips show their position only.',
+    note: 'The map shows only the route, stops and vehicle of the selected trip.',
     noPosition: 'Trip {id} still has a stop without coordinates, so there is no vehicle position.',
     pathFailed: 'Could not read the route of trip {id} from the server — the map joins the stops with straight lines.',
   },
@@ -42,6 +42,7 @@ export const monitoring = {
     arrived: 'Arrived {time}',
     noDeadline: 'No deadline',
     incidents: { one: '{count} incident', other: '{count} incidents' },
+    pagination: 'Trip list pages',
   },
   panel: {
     label: 'Monitoring of trip {id}',
@@ -61,10 +62,12 @@ export const monitoring = {
       columns: { time: 'Time', position: 'Latitude, longitude', speed: 'Speed', source: 'Source' },
       speed: '{speed} km/h',
       empty: 'No position point yet.',
+      pagination: 'Position history pages',
     },
   },
   exceptions: {
     title: 'Incidents of the trip',
+    pagination: 'Trip incident pages',
     report: 'Report incident',
     none: 'The trip has no incident.',
     statuses: { OPEN: 'Not handled', ESCALATED: 'Sent to manager', RESOLVED: 'Handled' },
@@ -136,7 +139,7 @@ export const monitoring = {
   reroute: {
     title: 'Find another route for trip {id}',
     description: 'Other roads to stop {number} · {name}, from the vehicle position at {time}.',
-    note: 'The order of the stops does not change. The map still draws straight lines; the routes differ only in distance and time.',
+    note: 'The order of the stops does not change. The options are suggested roads from the vehicle to the next undelivered stop; after you choose one, the server redraws the route on the map.',
     loading: 'Looking for routes…',
     options: 'Alternative routes',
     routes: { BYPASS: 'Nearby bypass', RING_ROAD: 'Ring road', HIGHWAY: 'Expressway' },

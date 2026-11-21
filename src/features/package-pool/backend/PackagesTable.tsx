@@ -37,10 +37,8 @@ type Props = {
  *
  * Search, handling class, status and sorting are applied server-side before paging.
  */
-const helper = createColumnHelper<
-  BaseTableFeatures,
-  CargoPackageRow
->()
+const helper = createColumnHelper<BaseTableFeatures, CargoPackageRow>()
+
 export function PackagesTable({
   rows,
   pending = false,
@@ -158,33 +156,38 @@ export function PackagesTable({
         <div className="relative overflow-x-auto">
           <div className={panelOpen ? 'min-w-180' : 'min-w-240'}>
             <PackageTableContext value={state}>
-              {pending ? <div role="status" className="p-8"><Spinner /></div>
-                : error ? <Banner tone="danger">{dataErrorMessage(error, t)}</Banner> : (
               <PackageSelectionContext value={selection}>
-                <DataTable
-                  data={data}
-                  columns={columns}
-                  getRowId={(row) => row.id}
-                  density="roomy"
-                  appearance="paper"
-                  serverPagination
-                  serverSorting
-                  totalRows={totalElements}
-                  sorting={list.sorting}
-                  onSortingChange={list.setSorting}
-                  pagination={{
-                    pageIndex: list.pageIndex,
-                    pageSize: list.pageSize,
-                    onPageChange: list.setPage,
-                    onPageSizeChange: list.setPageSize,
-                  }}
-                  isFiltering={list.isFiltering || tabbed}
-                  onClearFilters={list.clearAll}
-                  isRowSelected={(row) => row.id === open}
-                  onRowClick={(row) => toggleOpen(row.id)}
-                />
+                {pending ? (
+                  <div role="status" className="p-8">
+                    <Spinner />
+                  </div>
+                ) : error ? (
+                  <Banner tone="danger">{dataErrorMessage(error, t)}</Banner>
+                ) : (
+                  <DataTable
+                    data={data}
+                    columns={columns}
+                    getRowId={(row) => row.id}
+                    density="roomy"
+                    appearance="paper"
+                    serverPagination
+                    serverSorting
+                    totalRows={totalElements}
+                    sorting={list.sorting}
+                    onSortingChange={list.setSorting}
+                    pagination={{
+                      pageIndex: list.pageIndex,
+                      pageSize: list.pageSize,
+                      onPageChange: list.setPage,
+                      onPageSizeChange: list.setPageSize,
+                    }}
+                    isFiltering={list.isFiltering || tabbed}
+                    onClearFilters={list.clearAll}
+                    isRowSelected={(row) => row.id === open}
+                    onRowClick={(row) => toggleOpen(row.id)}
+                  />
+                )}
               </PackageSelectionContext>
-              )}
             </PackageTableContext>
           </div>
         </div>
