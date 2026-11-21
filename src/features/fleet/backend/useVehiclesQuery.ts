@@ -10,6 +10,7 @@ import {
   startVehicleMaintenance,
   updateVehicle,
   type CreateVehicleInput,
+  type VehicleListOptions,
 } from './vehicles-api'
 
 /**
@@ -31,6 +32,7 @@ export function useVehiclesQuery(
   size = 20,
   search?: string,
   vehicleTypeId?: string,
+  options: VehicleListOptions = {},
 ) {
   return useQuery({
     queryKey: [
@@ -40,14 +42,17 @@ export function useVehiclesQuery(
       size,
       search ?? '',
       vehicleTypeId ?? '',
+      options,
     ],
 
-    queryFn: () =>
+    queryFn: ({ signal }) =>
       fetchVehicles(
         page,
         size,
         search,
         vehicleTypeId,
+        options,
+        signal,
       ),
   })
 }

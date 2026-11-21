@@ -176,7 +176,7 @@ function BackendTripDetail({ tripId }: { tripId: string }) {
                   {t('trips.optimization.run')}
                 </Button>
               )}
-  
+
               {canReport ? (
                 <Button variant="secondary" asChild>
                   <Link to={`/chuyen/${encodeURIComponent(trip.tripCode)}/bao-cao`}>

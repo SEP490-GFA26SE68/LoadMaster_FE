@@ -2,6 +2,13 @@ import type { Dictionary } from '../types'
 import type { apiErrors as source } from '../vi/apiErrors'
 
 export const apiErrors = {
+DRIVER_VEHICLE_PRESENCE_UNVERIFIED: 'Vehicle presence at the departure warehouse is unverified. Ask assigned warehouse staff to physically verify the vehicle before departure.',
+DRIVER_VEHICLE_DEPARTURE_BLOCKED: 'Departure is blocked by the vehicle or warehouse state. Contact warehouse staff or your dispatcher to check.',
+VEHICLE_DEPARTURE_INELIGIBLE: "The vehicle is no longer eligible at this warehouse. Select a vehicle again.",
+WAREHOUSE_ASSIGNMENT_INVALID: "Only active warehouse workers can be assigned to active warehouses.",
+    VEHICLE_WAREHOUSE_FORBIDDEN: "You are not assigned to check in vehicles at this warehouse.",
+VEHICLE_PRESENCE_CONFLICT: "Vehicle state or confirmation key conflict. Check the current state.",
+
   NETWORK_ERROR: 'Cannot reach the server. Check the network and try again.',
   TIMEOUT: 'The server took too long to respond. Try again later.',
   UNAUTHENTICATED: 'Your session has ended. Sign in again.',
@@ -11,10 +18,17 @@ export const apiErrors = {
   NOT_FOUND: 'This item was not found on the server — it may have been deleted.',
   CONFLICT: 'The data is a duplicate or changed on the server. Reload and try again.',
   SERVER_ERROR: 'The server ran into an error. Try again later.',
+  DATASET_INCOMPLETE: 'The list exceeds the complete-data loading limit. Narrow the scope or contact an administrator; complete results are not available.',
+  INVALID_PAGE_RESPONSE: 'Pagination data is invalid or changed while loading. Reload; the list cannot yet be confirmed complete.',
   LIST_TOO_LONG: 'The list on the server is too long to load at once. Narrow the filters or contact support.',
 
   UNCATEGORIZED_EXCEPTION: 'The server ran into an unknown error. Try again later.',
   INTERNAL_SERVER_ERROR: 'The server ran into an error. Try again later.',
+  REQUIREMENT_PACKAGES_INCOMPLETE: 'Not all packages have been received. Received {receivedCount}/{expectedCount}; {missingCount} remaining.',
+  REQUIREMENT_PACKAGE_COUNT_INVALID: 'The expected package count is invalid. Check the requirement before assigning it.',
+  REQUIREMENT_PACKAGES_INELIGIBLE: 'Some linked packages are not eligible for assignment. Check their status.',
+  REQUIREMENT_PACKAGE_COMPANY_MISMATCH: 'A package does not belong to the requirement company.',
+  REQUIREMENT_PACKAGE_ALREADY_ASSIGNED: 'A package is already assigned to another trip.',
   INVALID_INPUT: 'The server did not accept this action: the data is not valid, or you are acting on your own account.',
   VALIDATION_ERROR: 'Some data is not valid. Check the fields.',
   RESOURCE_NOT_FOUND: 'The requested data was not found.',
@@ -124,6 +138,8 @@ export const apiErrors = {
   TRIP_NOT_READY_FOR_LOADING: 'Only a Planned trip can start loading.',
   LOADING_NOT_COMPLETED: 'The warehouse has not finished loading this trip yet, so it cannot depart.',
   LOADING_EXECUTION_NOT_FOUND: 'The loading session of this trip was not found.',
+  WAREHOUSE_GEOMETRY_INVALID: 'Plan coordinates or dimensions are missing or invalid. A reliable guide cannot be shown; refresh or contact the dispatcher.',
+  PACKAGE_CODE_MISMATCH: 'The code does not match this package in the current loading session. Check the Package Code on its label.',
   PLACEMENT_ALREADY_CONFIRMED: 'This package is already confirmed as loaded.',
   DEVIATION_ALREADY_RECORDED: 'A deviation is already recorded for this package.',
   INVALID_SEQUENCE_ORDER: 'It is not this package’s turn yet — load in order.',
@@ -212,4 +228,5 @@ export const apiErrors = {
   STOP_NOT_MOVABLE: 'A stop is completed or the vehicle has reached it, so it cannot move.',
   PICKUP_AFTER_DELIVERY: 'A pickup stop must come before the delivery stop of the same request.',
   STOP_ORDER_BLOCKS_CARGO: 'In this order a package is fully blocked by packages delivered later and cannot be unloaded. The stop order stays as it was.',
+  VEHICLE_TRANSFER_CONFLICT: 'Vehicle or transfer state has changed. Refresh before retrying the same action.',
 } satisfies Dictionary<typeof source>

@@ -5,6 +5,7 @@ export const nav = {
   dashboard: 'Bảng điều khiển',
   trips: 'Chuyến hàng',
   tripClaims: 'Phiếu xin chuyến',
+  warehouseVehicles: "Xe trong kho",
   warehouse: 'Kho',
   driver: 'Tài xế',
   fleet: 'Đội xe',

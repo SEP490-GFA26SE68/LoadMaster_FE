@@ -1,0 +1,78 @@
+import {expect,test} from './fixtures'
+import {catalogPage} from '../src/test/vehicle-type-catalog-fixture'
+async function open(page:import('@playwright/test').Page,count:number,path='/loai-xe',fail=false){
+ const calls:URL[]=[]
+ await page.route('**/*',r=>['localhost','127.0.0.1'].includes(new URL(r.request().url()).hostname)?r.fallback():r.abort())
+ await page.route('**/src/lib/backend-config.ts*',r=>r.fulfill({contentType:'application/javascript',body:"export const BACKEND_FEATURES=['fleet'];export const backendConfig={authSource:'mock',apiUrl:location.origin,features:new Set(['fleet']),keycloak:{url:'',realm:'',clientId:''}};export const usesBackend=name=>backendConfig.features.has(name);export const resolveBackendConfig=()=>backendConfig;"}))
+ await page.route(/\/api\//,r=>{
+  expect(r.request().method()).toBe('GET')
+  const u=new URL(r.request().url());calls.push(u)
+  expect(u.pathname).toBe('/api/vehicle-types')
+  return fail?r.fulfill({status:403,json:{success:false,code:'FORBIDDEN'}}):r.fulfill({json:catalogPage(u,count)})
+ })
+ await page.route(/\/(loai-xe|doi-xe\/them)(\?|$)/,async r=>{
+  if(r.request().resourceType()!=='document')return r.fallback()
+  const response=await r.fetch({url:new URL('/',r.request().url()).href,headers:{'if-none-match':'','if-modified-since':''}})
+  return r.fulfill({response,status:200,body:(await response.text()).replace('/src/main.tsx','/src/test/browser/vehicle-type-catalog-harness.tsx')})
+ })
+ await page.goto(path)
+ return calls
+}
+test('21 types: final row and correct total',async({page,browserErrors},info)=>{
+ await open(page,21)
+ await expect(page.getByText('Type 021',{exact:true})).toBeVisible()
+ await expect(page.getByText('1–21 / 21',{exact:true})).toBeVisible()
+ await page.screenshot({path:info.outputPath('catalog-21.png')})
+ expect(browserErrors).toEqual([])
+})
+test('50 types: page two, reload and browser history preserve URL',async({page,browserErrors},info)=>{
+ await open(page,50)
+ await expect(page.getByText('Type 001',{exact:true})).toBeVisible()
+ await page.getByRole('button',{name:'Trang sau',exact:true}).click()
+ await expect(page.getByText('Type 050',{exact:true})).toBeVisible()
+ await expect(page).toHaveURL(/trang=2/)
+ await page.reload()
+ await expect(page.getByText('26–50 / 50',{exact:true})).toBeVisible()
+ await page.goto('/loai-xe?trang=1')
+ await expect(page.getByText('Type 001',{exact:true})).toBeVisible()
+ await page.goBack()
+ await expect(page.getByText('Type 050',{exact:true})).toBeVisible()
+ await page.goForward()
+ await expect(page.getByText('Type 001',{exact:true})).toBeVisible()
+ await page.screenshot({path:info.outputPath('catalog-history.png')})
+ expect(browserErrors).toEqual([])
+})
+test('100 types: global numeric sort and page four',async({page,browserErrors},info)=>{
+ const calls=await open(page,100,'/loai-xe?trang=4')
+ await expect(page.getByText('Type 100',{exact:true})).toBeVisible()
+ await expect(page.getByText('76–100 / 100',{exact:true})).toBeVisible()
+ await page.getByRole('button',{name:'Tải trọng',exact:true}).click()
+ await expect(page.getByText('Type 100',{exact:true})).toBeVisible()
+ await expect(page.getByText('1–25 / 100',{exact:true})).toBeVisible()
+ expect(calls).toHaveLength(1)
+ await page.screenshot({path:info.outputPath('catalog-global-sort.png')})
+ expect(browserErrors).toEqual([])
+})
+test('vehicle form includes type101 without any POST',async({page,browserErrors},info)=>{
+ const calls=await open(page,101,'/doi-xe/them')
+ await page.getByRole('combobox',{name:'Loại xe',exact:true}).click()
+ await page.getByRole('option',{name:'Type 101',exact:true}).click()
+ await expect(page.getByRole('combobox',{name:'Loại xe',exact:true})).toContainText('Type 101')
+ expect(calls.some(u=>u.searchParams.get('page')==='1')).toBe(true)
+ await page.screenshot({path:info.outputPath('type101-dropdown.png')})
+ expect(browserErrors).toEqual([])
+})
+test('empty catalog is distinct from request error',async({page,browserErrors},info)=>{
+ await open(page,0)
+ await expect(page.getByRole('table')).toHaveCount(0)
+ await expect(page.getByRole('button',{name:'Thử lại',exact:true})).toHaveCount(0)
+ await page.screenshot({path:info.outputPath('catalog-empty.png')})
+ expect(browserErrors).toEqual([])
+})
+test('forbidden response shows retry, never successful empty table',async({page,browserErrors},info)=>{
+ await open(page,100,'/loai-xe',true)
+ await expect(page.getByRole('button',{name:'Thử lại',exact:true})).toBeVisible()
+ await expect(page.getByRole('table')).toHaveCount(0)
+ await page.screenshot({path:info.outputPath('catalog-error.png')})
+ expect(browserErrors).toEqual([])
+})

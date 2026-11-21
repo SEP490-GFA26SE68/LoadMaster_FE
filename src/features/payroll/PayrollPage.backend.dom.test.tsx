@@ -387,4 +387,3 @@ test('refreshes a later draft after its saved company rate changes', async () =>
   await waitFor(() => expect(calls.filter((call) => call.method === 'GET' && call.path === `/api/company/payroll/periods/${nextMonth}`).length).toBeGreaterThan(1))
   expect((await screen.findAllByText('30.000 ₫')).length).toBeGreaterThan(0)
 })
-

@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import { useSaveVehicleMutation } from './useVehiclesQuery'
-import { useVehicleTypesQuery } from '../../vehicle-types/backend/useVehicleTypesQuery'
+import { useVehicleTypeCatalogQuery } from '../../vehicle-types/backend/useVehicleTypesQuery'
 import {
   createVehicleFormSchema,
   toFormValues,
@@ -46,8 +46,8 @@ export function VehicleForm({
   const save = useSaveVehicleMutation()
   const [done, setDone] = useState(false)
 
-  const vehicleTypesQuery = useVehicleTypesQuery(0, 100)
-  const vehicleTypes = vehicleTypesQuery.data?.data ?? []
+  const vehicleTypesQuery = useVehicleTypeCatalogQuery()
+  const vehicleTypes = vehicleTypesQuery.data ?? []
 
   const schema = useMemo(() => createVehicleFormSchema(t), [t])
   const form = useForm<VehicleFormValues>({
@@ -68,7 +68,7 @@ export function VehicleForm({
   }, [done, navigate, onDone])
 
   function handleSave(values: VehicleFormValues) {
-    if (readOnly || save.isPending) return
+    if (readOnly || save.isPending || !vehicleTypesQuery.isSuccess) return
 
     save.mutate({ input: toVehicleInput(values), id: vehicle?.id }, {
       onSuccess: (saved) => {
@@ -110,9 +110,12 @@ export function VehicleForm({
         <div className="mx-auto w-full max-w-3xl">
           <Card className="flex min-w-0 flex-col rounded-xl shadow-sm">
             {notice}
+            {vehicleTypesQuery.isError && (
+              <p role="alert" className="px-5 py-4 text-danger">{dataErrorMessage(vehicleTypesQuery.error, t)}</p>
+            )}
 
             <fieldset
-              disabled={readOnly || save.isPending}
+              disabled={readOnly || save.isPending || !vehicleTypesQuery.isSuccess}
               className="m-0 flex min-w-0 flex-col border-0 p-0"
             >
               <VehicleFormSection
@@ -135,7 +138,7 @@ export function VehicleForm({
                   type="submit"
                   variant="primary"
                   loading={save.isPending}
-                  disabled={save.isPending}
+                  disabled={save.isPending || !vehicleTypesQuery.isSuccess}
                 >
                   <Save strokeWidth={1.5} />
                   {t('fleet.detail.save')}

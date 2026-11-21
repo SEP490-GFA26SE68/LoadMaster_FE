@@ -1,3 +1,5 @@
+import { useDepartureVehicles } from './useDepartureVehicles'
+import { DepartureVehicleState } from './DepartureVehicleState'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Save } from 'lucide-react'
 import { useCallback, useEffect, useId, useMemo, useState } from 'react'
@@ -16,7 +18,7 @@ import { BackendTripFormDepotSection } from './BackendTripFormDepotSection'
 import { TripFormInfoSection } from './TripFormInfoSection'
 import { TripFormLeaveDialog } from './TripFormLeaveDialog'
 import { TripFormShell } from './TripFormShell'
-import { useCreateBackendTripMutation, useTripFormOptionsQuery } from './useTripsQuery'
+import { useCreateBackendTripMutation } from './useTripsQuery'
 
 /**
  * Tạo chuyến khi nhóm `trips` nối backend (`/chuyen/moi`, `POST /api/trips`; V2.3 TaoChuyen.jpg): tên, ngày và giờ xuất phát, tài xế,
@@ -29,9 +31,9 @@ export function BackendTripFormPage() {
   const t = useT()
   const formId = useId()
   const navigate = useNavigate()
-  const options = useTripFormOptionsQuery()
   const warehousesQuery = useCompanyWarehousesQuery(true)
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>('')
+  const options = useDepartureVehicles(selectedWarehouseId)
 
   const create = useCreateBackendTripMutation()
   const schema = useMemo(() => createTripFormSchema(t), [t])
@@ -40,6 +42,9 @@ export function BackendTripFormPage() {
   const vehicleId = useWatch({ control: form.control, name: 'vehicleId' })
   const choices = useMemo(() => tripFormChoices(options.data, undefined, t), [options.data, t])
   const selected = options.data?.vehicles.find((option) => option.vehicle.id === vehicleId)
+  useEffect(() => {
+    if (vehicleId && options.isSuccess && !options.data.vehicles.some(({ vehicle }) => vehicle.id === vehicleId)) form.setValue('vehicleId', '', { shouldDirty: true, shouldValidate: true })
+  }, [vehicleId, options.isSuccess, options.data, form])
   const { isDirty } = form.formState
   // Lưu xong: rời trang trong effect ở lần render sau, để hộp hỏi "rời trang?" không chặn chính mình (như form xe, LM-041)
   const [savedPath, setSavedPath] = useState<string | null>(null)
@@ -60,6 +65,7 @@ export function BackendTripFormPage() {
       depotFormValues({ name: warehouse.warehouseName, address: warehouse.address, lat: warehouse.latitude, lng: warehouse.longitude }),
       { shouldDirty: false, shouldValidate: true },
     )
+    form.setValue('vehicleId', '', { shouldDirty: true, shouldValidate: false })
     setSelectedWarehouseId(warehouseId)
   }, [warehouses, form])
 
@@ -76,6 +82,9 @@ export function BackendTripFormPage() {
       toast.error(t('tripWarehouse.placeholder'))
       return
     }
+    if (!options.isSuccess || options.isFetching || !options.data.vehicles.some(({ vehicle }) => vehicle.id === values.vehicleId)) {
+      toast.error(t('trips.presence.invalid')); void options.refetch(); return
+    }
     create.mutate({
       name: values.name,
       vehicleId: values.vehicleId,
@@ -87,7 +96,7 @@ export function BackendTripFormPage() {
         toast.success(t('trips.create.created', { id: trip.id }))
         setSavedPath(`/chuyen/${trip.id}`)
       },
-      onError: (error) => toast.error(t('trips.create.failed'), { description: dataErrorMessage(error, t) }),
+      onError: (error) => { toast.error(t('trips.create.failed'), { description: dataErrorMessage(error, t) }); void options.refetch() },
     })
   }
 
@@ -108,7 +117,8 @@ export function BackendTripFormPage() {
       <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_416px]">
         <Card className="min-w-0 overflow-hidden">
           <form id={formId} noValidate onSubmit={form.handleSubmit(handleSubmit)}>
-            <TripFormInfoSection form={form} vehicles={choices.vehicles} drivers={choices.drivers} selected={selected} locked={false} />
+            <TripFormInfoSection form={form} vehicles={choices.vehicles} drivers={choices.drivers} selected={selected} locked={false} vehicleLocked={!selectedWarehouseId || !options.isSuccess || options.isFetching} />
+            <div className="px-7 pb-3"><DepartureVehicleState warehouse={selectedWarehouseId} loading={options.isFetching} error={options.error} empty={options.isSuccess && options.data.vehicles.length === 0} retry={() => void options.refetch()} /></div>
             <BackendTripFormDepotSection
               form={form}
               locked={false}

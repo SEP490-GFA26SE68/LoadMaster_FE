@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { DataTable } from '@/components/DataTable'
+import { useListUrlState } from '@/components/useListUrlState'
 import { EmptyState } from '@/components/EmptyState'
 import { PageHero } from '@/components/PageHero'
 import { Button } from '@/components/ui/Button'
@@ -30,7 +31,7 @@ import { VehicleTypeDialog } from './VehicleTypeDialog'
 import {
   useDeleteVehicleTypeMutation,
   useSaveVehicleTypeMutation,
-  useVehicleTypesQuery,
+  useVehicleTypeCatalogQuery,
 } from './useVehicleTypesQuery'
 
 /**
@@ -49,7 +50,8 @@ export function VehicleTypesPage() {
   const t = useT()
   const canEdit = useCan()('vehicleTypes.edit')
 
-  const typesQuery = useVehicleTypesQuery()
+  const typesQuery = useVehicleTypeCatalogQuery()
+  const list = useListUrlState({ defaultSort: { id: 'name', desc: false } })
   const save = useSaveVehicleTypeMutation()
   const remove = useDeleteVehicleTypeMutation()
 
@@ -57,7 +59,7 @@ export function VehicleTypesPage() {
   const [editing, setEditing] = useState<VehicleType | null>(null)
   const [deleting, setDeleting] = useState<VehicleType | null>(null)
 
-  const types = typesQuery.data?.data ?? []
+  const types = typesQuery.data ?? []
 
   const typeColumns = useMemo(
     () => createTypeColumns(t),
@@ -127,7 +129,7 @@ export function VehicleTypesPage() {
         title={t('vehicleTypes.title')}
         meta={
           typesQuery.isSuccess
-            ? t('vehicleTypes.server.count', { count: typesQuery.data.totalElements })
+            ? t('vehicleTypes.server.count', { count: types.length })
             : undefined
         }
         description={t('pageHero.vehicleTypes')}
@@ -180,6 +182,9 @@ export function VehicleTypesPage() {
               <DataTable
                 data={types}
                 columns={typeColumns}
+                sorting={list.sorting}
+                onSortingChange={list.setSorting}
+                pagination={{ pageIndex: list.pageIndex, pageSize: list.pageSize, onPageChange: list.setPage, onPageSizeChange: list.setPageSize }}
                 getRowId={(row) => row.id}
                 density="spacious"
                 appearance="paper"

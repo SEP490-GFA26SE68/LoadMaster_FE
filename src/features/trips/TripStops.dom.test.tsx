@@ -1,12 +1,12 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { Toaster } from 'sonner'
-import { expect, test } from 'vitest'
+import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { AuthProvider } from '@/features/auth/AuthProvider'
 import { I18nProvider } from '@/lib/i18n'
-import { getMockDb } from '@/lib/mock-db'
+import { createMockDb, getMockDb, peekMockDb } from '@/lib/mock-db'
 import { stopColor } from '@/lib/stops'
 import { signedInAs } from '@/test/signed-in'
 import { TripDetailPage } from './TripDetailPage'
@@ -17,6 +17,26 @@ import { TripDetailPage } from './TripDetailPage'
  * Thấp, hạn 17:00 18/09/2026), REQ-003 (KCN Thăng Long, Khẩn, hạn 12:00 19/09/2026) chép từ `seed-sourcing.ts`. Đồng hồ của kho là giờ
  * thật nên yêu cầu tạo trong test dùng hạn năm 2099.
  */
+// Exercise the real repository and its guards, without the app's 300 ms demonstration delay.
+// Latency itself has a separate fake-timer test in mock-db.test.ts.
+vi.mock('@/lib/mock-db/app-db', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/mock-db/app-db')>()
+  return { ...actual, getMockDb: vi.fn(), peekMockDb: vi.fn() }
+})
+
+let client: QueryClient | undefined
+
+beforeEach(() => {
+  const db = createMockDb({ latencyMs: 0 })
+  vi.mocked(getMockDb).mockReturnValue(db)
+  vi.mocked(peekMockDb).mockReturnValue(db)
+})
+
+afterEach(() => {
+  cleanup()
+  client?.clear()
+})
+
 const SLOW = { timeout: 8000 }
 
 async function renderTrip(name: string) {
@@ -28,10 +48,11 @@ async function renderTrip(name: string) {
     [{ path: '/chuyen/:tripId', element: <TripDetailPage /> }, { path: '*', element: <p>Màn khác</p> }],
     { initialEntries: [`/chuyen/${trip.id}`] },
   )
+  client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(
     <I18nProvider>
       <AuthProvider>
-        <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <QueryClientProvider client={client}>
           <RouterProvider router={router} />
           <Toaster />
         </QueryClientProvider>
@@ -90,14 +111,15 @@ test('a new trip has no stops: the route card says where stops come from, packag
 })
 
 test('requirements put on the trip generate its stops; the same place shares one stop with the earliest deadline and the highest priority', async () => {
-  const { user, trip, db } = await renderTrip('Tuyến thử điểm tự sinh')
+  // Seed the customer requirement before mounting observers that use the dispatcher session.
+  const db = getMockDb()
   // Yêu cầu thứ hai tới KCN Hoà Khánh: cùng địa chỉ (viết khác kiểu) và toạ độ với REQ-001, ưu tiên Cao, hạn muộn hơn
   db.restoreSession('US-0002')
   const extra = await db.createDeliveryRequirement({
     destinationName: 'Xưởng Hoà Khánh', address: 'kcn hoà khánh - q. liên chiểu, đà nẵng', lat: 16.0747, lng: 108.1506, deadline: '2099-12-31T17:00:00+07:00', priority: 'HIGH',
     packageIds: ['PK-0029'],
   })
-  db.restoreSession('US-0001')
+  const { user, trip } = await renderTrip('Tuyến thử điểm tự sinh')
   await screen.findByRole('region', { name: 'Sơ đồ tuyến' }, SLOW)
   const stopItems = () => within(within(route()).getByRole('list', { name: /^Kho xuất phát rồi/ })).getAllByRole('listitem').slice(1)
 

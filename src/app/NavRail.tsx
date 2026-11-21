@@ -98,7 +98,7 @@ export function NavRail() {
               <NavLink
                 key={to}
                 to={to}
-                end={to === '/'}
+                end={to === '/' || to === '/kho'}
                 aria-label={t(actualLabelKey)}
                 className={({ isActive }) =>
                   cn(

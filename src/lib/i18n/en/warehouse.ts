@@ -2,6 +2,10 @@ import type { Dictionary } from '../types'
 import type { warehouse as source } from '../vi/warehouse'
 
 export const warehouse = {
+  presence: {
+      confirmLoading: 'I see the vehicle here — confirm for trip {trip}',
+      loadingVerificationHint: 'This trip is loading but vehicle presence is unverified. Confirm only when you physically see the vehicle at its departure warehouse.',
+"changed": "The vehicle state changed after the original confirmation. Check its latest state; this does not confirm current presence.", "title": "Confirm vehicle arrival", "description": "Choose an assigned warehouse to view company vehicles. AVAILABLE does not mean present at the warehouse. Confirm only after physically seeing the vehicle at the selected warehouse.", "noScope": "No warehouse assignment. Contact your manager.", "warehouse": "Assigned warehouse", "choose": "Choose a warehouse", "search": "Plate or vehicle name", "find": "Find vehicle", "loading": "Loading…", "empty": "No matching vehicles.", "saved": "The server recorded the confirmation.", "uncertain": "Check the state and retry the same confirmation; do not create another action.", "retry": "Retry confirmation", "history": "Confirmation history", "confirm": "I confirm the vehicle is here", "in": "Checked in", "out": "Departed", "status": {"UNKNOWN": "Unknown", "AT_WAREHOUSE": "At warehouse", "IN_TRANSIT": "Departed"}, "pageTitle": "Warehouse vehicles", "workspace": "Warehouse workspace", "backendOnly": "Warehouse vehicles require a backend connection.", "selectHint": "Choose an assigned warehouse to view company vehicles.", "scopeChanged": "You are no longer assigned to this warehouse. Choose another warehouse.", "refresh": "Refresh vehicles", "companyVehicles": "Company vehicles ({count})", "operation": "Operational status", "lastConfirmed": "Latest presence record", "notRecorded": "Not recorded", "pagination": "Vehicle pages", "previous": "Previous page", "next": "Next page", "page": "Page {page} / {total}", "backToTrips": "Back to loading tasks"},
   loading: 'Loading the trip',
   starting: 'Starting to stage the trip',
   exit: 'Leave the warehouse screen',

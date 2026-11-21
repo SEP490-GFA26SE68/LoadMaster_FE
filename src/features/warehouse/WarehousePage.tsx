@@ -1,5 +1,6 @@
 import { useSearchParams } from 'react-router'
 import { LoadingStepPage } from './LoadingStepPage'
+import { ServerApprovedPlanPage } from './ServerApprovedPlanPage'
 import { ServerLoadingSession } from './ServerLoadingSession'
 import { ServerWarehouseTripsPage } from './ServerWarehouseTripsPage'
 import { useWarehouseCapabilities } from './useServerWarehouseQuery'
@@ -14,6 +15,7 @@ export function WarehousePage() {
   const [search] = useSearchParams()
   const caps = useWarehouseCapabilities()
   const tripId = search.get('chuyen')
+  if (caps.backend && tripId && search.get('xem') === '3d') return <ServerApprovedPlanPage key={tripId} tripId={tripId} />
   if (caps.backend) return tripId ? <ServerLoadingSession key={tripId} tripId={tripId} /> : <ServerWarehouseTripsPage />
   return tripId ? <LoadingStepPage key={tripId} tripId={tripId} /> : <WarehouseTripsPage />
 }

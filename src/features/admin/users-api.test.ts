@@ -50,12 +50,12 @@ const AS_USER: User = {
 }
 
 test('danh sách: một trang lớn, kèm token; vai trò và trạng thái của backend đổi sang của FE', async () => {
-  reply = envelope([
+  reply = { success: true, page: 0, size: 500, totalPages: 1, totalElements: 4, last: true, data: [
     DISPATCHER,
     { ...DISPATCHER, id: 3, email: 'thu.admin@loadmaster.local', userRoleType: 'ADMIN', status: 'LOCKED', phoneNumber: null },
     { ...DISPATCHER, id: 1, email: 'admin@loadmaster.local', userRoleType: 'SYSTEM_ADMIN', companyId: null },
     { ...DISPATCHER, id: 99, userRoleType: 'AUDITOR' },
-  ])
+  ] }
   const users = await fetchUsers()
   expect(calls).toStrictEqual([{ method: 'GET', url: 'http://be.test/api/users?page=0&size=500', body: undefined, auth: 'Bearer token-1' }])
   expect(users[0]).toStrictEqual(AS_USER)

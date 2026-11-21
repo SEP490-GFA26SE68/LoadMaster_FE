@@ -40,6 +40,7 @@ export const fleet = {
   obstacleZones: { one: '{count} vùng', other: '{count} vùng' },
   /** Trạng thái xe (D-53), key trùng `VehicleStatus`. "Đang phục vụ chuyến" gồm cả lúc xe đứng ở kho chờ xếp. */
   status: {
+    unknown: 'Chưa rõ trạng thái',
     /** Mã trạng thái của máy chủ (`fleet/backend`). */
     AVAILABLE: 'Sẵn sàng',
     IN_TRIP: 'Đang chạy chuyến',

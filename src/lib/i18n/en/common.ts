@@ -9,6 +9,7 @@ export const common = {
   loadingScreen: 'Loading screen',
   processing: 'Processing',
   noData: 'No data yet',
+  serverOrderOnly: 'Showing server order. Changing the sort order is not available for this table.',
   selectPlaceholder: 'Select…',
   backToTrips: 'Back to trips',
   on: 'On',

@@ -33,10 +33,10 @@ test('a Spring page inside the envelope: content plus last, or the newer page bl
 
 test('a plain list (bare or enveloped) is read once, never paged again', async () => {
   const bare = clientReturning([{ id: 1 }, { id: 2 }])
-  await expect(fetchAllPages('/api/subscription/plans', { size: 1 }, bare.client)).resolves.toStrictEqual([{ id: 1 }, { id: 2 }])
+  await expect(fetchAllPages('/api/subscription/plans', { size: 1, allowUnpaged: true }, bare.client)).resolves.toStrictEqual([{ id: 1 }, { id: 2 }])
   expect(bare.urls).toHaveLength(1)
   const enveloped = clientReturning({ success: true, data: [{ id: 1 }] })
-  await expect(fetchAllPages('/api/users', { size: 1 }, enveloped.client)).resolves.toStrictEqual([{ id: 1 }])
+  await expect(fetchAllPages('/api/unpaged-fixture', { size: 1, allowUnpaged: true }, enveloped.client)).resolves.toStrictEqual([{ id: 1 }])
   expect(enveloped.urls).toHaveLength(1)
 })
 
@@ -46,9 +46,9 @@ const endlessPages = () => clientReturning(
   { success: true, data: [{ id: 3 }], last: false },
 )
 
-test('a backend that never says "last" stops at maxPages with LIST_TOO_LONG, never a silently cut list', async () => {
+test('a backend that never says "last" stops at maxPages with DATASET_INCOMPLETE, never a silently cut list', async () => {
   const endless = endlessPages()
-  await expect(fetchAllPages('/api/x', { maxPages: 2 }, endless.client)).rejects.toMatchObject({ code: 'LIST_TOO_LONG', params: { maxPages: 2 } })
+  await expect(fetchAllPages('/api/x', { maxPages: 2 }, endless.client)).rejects.toMatchObject({ code: 'DATASET_INCOMPLETE', params: { maxPages: 2 } })
   expect(endless.urls).toHaveLength(2)
 })
 

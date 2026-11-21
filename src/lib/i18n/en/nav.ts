@@ -7,6 +7,7 @@ export const nav = {
   dashboard: 'Dashboard',
   trips: 'Trips',
   tripClaims: 'Trip claims',
+  warehouseVehicles: "Warehouse vehicles",
   warehouse: 'Warehouse',
   driver: 'Driver',
   fleet: 'Fleet',

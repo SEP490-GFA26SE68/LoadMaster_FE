@@ -71,7 +71,7 @@ export function WarehouseCustomersPage() {
     }, [rows, t])
 
     return (
-        <main className="flex min-w-0 flex-1 flex-col gap-6 px-6 py-6">
+        <main aria-label={t('warehouseCustomers.title')} tabIndex={0} className="flex min-h-0 min-w-0 flex-1 flex-col gap-6 overflow-y-auto px-6 py-6">
             <header>
                 <h1 className="text-2xl font-semibold text-ink-strong">
                     {t('warehouseCustomers.title')}

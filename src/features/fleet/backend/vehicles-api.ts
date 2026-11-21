@@ -127,11 +127,28 @@ function toCreateVehicleRequest(
   }
 }
 
+export type VehicleListOptions = {
+  status?: VehicleStatus
+  sortBy?: string
+  sortDir?: 'ASC' | 'DESC'
+}
+
+/** Only current-presence eligible vehicles; all pages, no fallback to the company fleet. */
+export async function fetchDepartureVehicles(warehouseId: string, tripId?: string): Promise<Vehicle[]> {
+  return (await fetchAllPages<VehicleApi>('/api/vehicles/departure-choices', { size: 100, query: { warehouseId, ...(tripId ? { tripId } : {}) } })).map(mapVehicle)
+}
+
+export async function fetchAllVehicles(): Promise<Vehicle[]> {
+  return (await fetchAllPages<VehicleApi>('/api/vehicles', { size: 100 })).map(mapVehicle)
+}
+
 export async function fetchVehicles(
   page = 0,
   size = 20,
   search?: string,
   vehicleTypeId?: string,
+  options: VehicleListOptions = {},
+  signal?: AbortSignal,
 ): Promise<PageResponse<Vehicle>> {
   const params =
     new URLSearchParams({
@@ -153,9 +170,13 @@ export async function fetchVehicles(
     )
   }
 
+  for (const [key, value] of Object.entries(options)) {
+    if (value !== undefined && value !== '') params.set(key, value)
+  }
+
   const response =
     await apiFetch<PageResponse<VehicleApi>>(
-      `/api/vehicles?${params.toString()}`,
+      `/api/vehicles?${params.toString()}`, { signal },
     )
 
   return {

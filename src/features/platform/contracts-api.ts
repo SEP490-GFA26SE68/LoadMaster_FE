@@ -4,7 +4,7 @@
  *   listContracts → GET /api/contracts
  */
 
-import { api } from '@/lib/api-client'
+import { api, ApiError } from '@/lib/api-client'
 import { usesBackend } from '@/lib/backend-config'
 import { isoFromBackend } from '@/lib/backend-time'
 import { getMockDb, PLAN_TIERS, type PlanTier } from '@/lib/mock-db'
@@ -91,7 +91,14 @@ function contractOf(dto: ContractDto): SubscriptionContract {
 /** Hợp đồng gói của mọi công ty, mới bắt đầu nhất trước. */
 // GET /api/contracts
 export async function listContracts(): Promise<SubscriptionContract[]> {
-  const contracts = ON_BACKEND ? ((await api().get<ContractDto[] | null>('/api/contracts')) ?? []).map(contractOf) : await mockContracts()
+  let contracts: SubscriptionContract[]
+  if (ON_BACKEND) {
+    const response = await api().get<ContractDto[] | null>('/api/contracts')
+    if (!Array.isArray(response)) throw new ApiError('INVALID_PAGE_RESPONSE')
+    contracts = response.map(contractOf)
+  } else {
+    contracts = await mockContracts()
+  }
   return contracts.toSorted((a, b) => (b.startedAt ?? '').localeCompare(a.startedAt ?? ''))
 }
 

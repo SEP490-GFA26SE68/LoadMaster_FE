@@ -1,5 +1,6 @@
 
 import { apiFetch } from '@/lib/api-client'
+import { listParams, type ListQuery } from './package-list-query'
 
 export type PackageTypeApi = {
   id: number
@@ -104,10 +105,12 @@ function toRequest(input: PackageTypeInput) {
 export async function fetchPackageTypes(
   page = 0,
   size = 25,
+  query: ListQuery = {},
+  signal?: AbortSignal,
 ): Promise<PageResponse<PackageType>> {
   const response =
     await apiFetch<PageResponse<PackageTypeApi>>(
-      `/api/package-types?page=${page}&size=${size}`,
+      `/api/package-types?${listParams(page, size, query)}`, { signal },
     )
 
   return {

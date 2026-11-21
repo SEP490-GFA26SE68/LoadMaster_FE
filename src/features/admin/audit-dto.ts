@@ -27,6 +27,7 @@ export type AuditLogDto = {
 }
 
 export type AuditLogPageDto = {
+  readonly success?: boolean
   readonly data?: readonly AuditLogDto[] | null
   readonly page?: number
   readonly size?: number
@@ -92,6 +93,10 @@ export function auditEntryOf(dto: AuditLogDto): ServerAuditEntry {
 }
 
 export function auditPageOf(dto: AuditLogPageDto | null): ServerAuditPage {
-  const entries = (dto?.data ?? []).map(auditEntryOf)
-  return { entries, total: dto?.totalElements ?? entries.length }
+  const total = dto?.totalElements
+  if (!dto || !Array.isArray(dto.data) || dto.success === false ||
+      typeof total !== 'number' || !Number.isSafeInteger(total) || total < dto.data.length) {
+    throw new ApiError('INVALID_PAGE_RESPONSE')
+  }
+  return { entries: dto.data.map(auditEntryOf), total }
 }

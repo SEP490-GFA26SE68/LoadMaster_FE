@@ -1,3 +1,4 @@
+import { transfers } from './en/transfers'
 import type { Dictionary } from './types'
 import type { vi } from './vi'
 import { language } from './en/language'
@@ -150,5 +151,7 @@ export const en = {
   serverWarehouse,
   trialRegistration,
   guestRegistration,
+  transfers,
+
   assistant,
 } satisfies Dictionary<typeof vi>

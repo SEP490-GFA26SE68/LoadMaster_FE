@@ -16,13 +16,22 @@ const TONE: Record<FleetStatus, { tone: BadgeTone; dot: BadgeDot }> = {
   retired: { tone: 'neutral', dot: 'solid' },
 }
 
-export function VehicleStatusBadge({ status }: { status: FleetStatus }) {
-  const t = useT()
-  const spec = TONE[status]
-  return <Badge tone={spec.tone} dot={spec.dot}>{t(`fleet.status.${status}`)}</Badge>
+function normalizedStatus(value: unknown): FleetStatus | null {
+  if (typeof value !== 'string') return null
+  if (value === 'IN_TRIP') return 'in_use'
+  const status = value.toLowerCase()
+  return status === 'available' || status === 'in_use' || status === 'maintenance' || status === 'retired' ? status : null
 }
 
-/** Liên kết trong dòng bảng: không để cú bấm lan lên dòng (dòng cũng mở trang khi bấm). */
+export function VehicleStatusBadge({ status }: { status: unknown }) {
+  const t = useT()
+  const normalized = normalizedStatus(status)
+  if (normalized === null) return <Badge tone="neutral">{t('fleet.status.unknown')}</Badge>
+  const spec = TONE[normalized]
+  return <Badge tone={spec.tone} dot={spec.dot}>{t(`fleet.status.${normalized}`)}</Badge>
+}
+
+/** Link clicks do not select the surrounding row. */
 function stopRowClick(event: MouseEvent) {
   event.stopPropagation()
 }
@@ -33,9 +42,10 @@ function stopRowClick(event: MouseEvent) {
  * sàng không có dòng phụ. Mã chuyến chỉ có ở kho mẫu: chuyến đọc backend thì mã là chữ thường (`tripLinkable`).
  */
 /** `serverSource`: trạng thái đọc từ máy chủ — mã chuyến là liên kết khi chuyến cũng đọc máy chủ (`tripLinkable`). */
-export function VehicleStatusCell({ state, serverSource = false }: { state: FleetVehicleState; serverSource?: boolean }) {
+export function VehicleStatusCell({ state, serverSource = false }: { state?: FleetVehicleState; serverSource?: boolean }) {
   const t = useT()
   const format = useFormat()
+  if (!state) return <VehicleStatusBadge status={undefined} />
   const maintenance = state.maintenance
   return (
     <span className="flex min-w-0 flex-col items-start gap-1 whitespace-normal">

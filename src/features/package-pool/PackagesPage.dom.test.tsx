@@ -54,8 +54,8 @@ const csvFile = (lines: readonly string[]) =>
   new File([['package_code,length,width,height,weight,handling_class,destination,package_type', ...lines].join('\r\n')], 'kien.csv', { type: 'text/csv' })
 
 // Ma trận quyền của nhánh nhóm: nhân viên kho quản lý kho kiện (`packages.manage`: thêm, nhập file, chọn kiện in nhãn, gỡ cờ)
-test('the warehouse worker sees the pool newest first with every column; search ignores accents and the filters live on the URL', async () => {
-  const user = renderPool('warehouse')
+test('the warehouse worker sees the pool newest first with every column', async () => {
+  renderPool('warehouse')
   expect(await screen.findByText('2.951 kiện trong kho kiện', {}, SLOW)).toBeInTheDocument()
   // Cột đầu là ô chọn (không chữ), rồi chín cột dữ liệu
   expect(headers().slice(1)).toStrictEqual(['Mã kiện', 'Kích thước (D × R × C)', 'Khối lượng', 'Loại hàng', 'Điểm đến', 'Trạng thái', 'Cờ', 'Yêu cầu', 'Chuyến'])
@@ -66,13 +66,26 @@ test('the warehouse worker sees the pool newest first with every column; search 
   const newest = screen.getByRole('row', { name: /PK-0088/ })
   for (const text of ['PT-QNH-2609-05', '70 × 50 × 45 cm', '26 kg', 'Thường', 'KCN Phú Tài, TP. Quy Nhơn, Bình Định', 'Đã nhập']) expect(newest).toHaveTextContent(text)
 
+})
+
+test('search ignores accents and clearing it restores the complete pool', async () => {
+  const user = renderPool('warehouse')
+  await screen.findByText('2.951 kiện trong kho kiện', {}, SLOW)
   // Tìm bỏ dấu theo điểm đến: 5 kiện đi Phú Bài
   await user.type(screen.getByRole('searchbox'), 'phu bai')
   await waitFor(() => expect(poolIds()).toStrictEqual(['PK-0058', 'PK-0057', 'PK-0056', 'PK-0055', 'PK-0054']), SLOW)
   expect(screen.getByRole('tab', { name: /^Tất cả/ })).toHaveTextContent(/^Tất cả\s*5$/)
   await user.click(screen.getByRole('button', { name: 'Xoá lọc' }))
 
-  // Lọc cờ, loại hàng, đã vào yêu cầu giao: giá trị là slug không dấu trên URL
+  await waitFor(() => expect(poolIds().slice(0, 3)).toStrictEqual(['PK-0088', 'PK-0087', 'PK-0086']), SLOW)
+  expect(screen.getByRole('tab', { name: /^Tất cả/ })).toHaveTextContent(/^Tất cả\s*2\.951$/)
+  expect(screen.getByTestId('url')).toHaveTextContent(/^\/kien-hang$/)
+})
+
+test('the flag filter lives on the URL and clearing it restores the complete pool', async () => {
+  const user = renderPool('warehouse')
+  await screen.findByText('2.951 kiện trong kho kiện', {}, SLOW)
+  // Giá trị bộ lọc là slug không dấu trên URL.
   await user.click(screen.getByRole('combobox', { name: 'Cờ' }))
   await user.click(await screen.findByRole('option', { name: 'Không tìm thấy' }))
   // Chỉ PK-0063 của file nhập; kiện hỏng lúc xếp của chuyến TRIP-003 mang cờ khác
@@ -80,6 +93,13 @@ test('the warehouse worker sees the pool newest first with every column; search 
   expect(screen.getByTestId('url')).toHaveTextContent('/kien-hang?co=khong-tim-thay')
   expect(within(screen.getByRole('row', { name: /PK-0063/ })).getByText('Không tìm thấy')).toBeInTheDocument()
   await user.click(screen.getByRole('button', { name: 'Xoá lọc' }))
+  await waitFor(() => expect(poolIds().slice(0, 3)).toStrictEqual(['PK-0088', 'PK-0087', 'PK-0086']), SLOW)
+  expect(screen.getByTestId('url')).toHaveTextContent(/^\/kien-hang$/)
+})
+
+test('the requirement filter lives on the URL, counts every status and respects warehouse permissions', async () => {
+  const user = renderPool('warehouse')
+  await screen.findByText('2.951 kiện trong kho kiện', {}, SLOW)
   await user.click(screen.getByRole('combobox', { name: 'Yêu cầu / chuyến' }))
   await user.click(await screen.findByRole('option', { name: 'Đã vào yêu cầu hoặc chuyến' }))
   // 30 kiện của sáu yêu cầu giao chờ xếp chuyến và 2.692 kiện đang thuộc chuyến; tab trạng thái đếm theo bộ lọc

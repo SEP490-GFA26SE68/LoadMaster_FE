@@ -1,3 +1,4 @@
+import { listParams, type CargoListQuery } from './package-list-query'
 import { auditEntryOf, type AuditLogDto, type ServerAuditEntry } from '@/features/admin/audit-dto'
 import { apiFetch, apiFetchBlob } from '@/lib/api-client'
 
@@ -6,6 +7,7 @@ export type PackageStatus =
   | 'PLANNED'
   | 'LOADED'
   | 'DELIVERED'
+  | 'RETURNED'
   | 'CANCELLED'
 
 /** Cờ kho đặt khi bỏ kiện khỏi chuyến: thiếu lúc soạn, hỏng lúc xếp. */
@@ -22,6 +24,8 @@ export type HandlingClass =
 export type CargoPackageApi = {
   id: number
   orderId: number | null
+  packageTypeName?: string | null
+  packageTypeCode?: string | null
   packageTypeId: number | null
   deliveryRequirementId: number | null
   customerName: string | null
@@ -59,6 +63,8 @@ export type CargoPackageApi = {
 export type CargoPackage = {
   id: string
   orderId: string | undefined
+  packageTypeName?: string | null
+  packageTypeCode?: string | null
   packageTypeId: string | undefined
   deliveryRequirementId: string | undefined
   customerName: string | null
@@ -144,6 +150,8 @@ export type PageResponse<T> = {
 function mapPackage(item: CargoPackageApi): CargoPackage {
   return {
     id: String(item.id),
+    packageTypeName: item.packageTypeName,
+    packageTypeCode: item.packageTypeCode,
     orderId:
       item.orderId == null
         ? undefined
@@ -256,14 +264,13 @@ export async function createPackages(
 export async function fetchPackages(
   page = 0,
   size = 25,
+  query: CargoListQuery = {},
+  signal?: AbortSignal,
 ): Promise<PageResponse<CargoPackage>> {
-  const params = new URLSearchParams({
-    page: String(page),
-    size: String(size),
-  })
+  const params = listParams(page, size, query)
 
   const response = await apiFetch<PageResponse<CargoPackageApi>>(
-    `/api/packages?${params.toString()}`,
+    `/api/packages?${params.toString()}`, { signal },
   )
 
   return {

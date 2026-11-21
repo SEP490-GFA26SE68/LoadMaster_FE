@@ -48,13 +48,17 @@ function settle(client: QueryClient, tripId: string, session: ServerLoadingSessi
 
 export function useStartServerLoadingMutation(tripId: string) {
   const client = useQueryClient()
-  return useMutation({ mutationFn: () => startServerLoading(tripId), onSuccess: (session) => settle(client, tripId, session) })
+  return useMutation({
+    // A failed/ambiguous write is never confirmation evidence. Reconcile by GET, retaining the original mutation error.
+    onError: () => client.refetchQueries({ queryKey: sessionKey(tripId), type: 'active' }), mutationFn: () => startServerLoading(tripId), onSuccess: (session) => settle(client, tripId, session) })
 }
 
 export function useConfirmServerPlacementMutation(tripId: string) {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: ({ placementId, method }: { placementId: string; method: 'QR' | 'CODE' }) => confirmServerPlacement(tripId, placementId, method),
+    // A failed/ambiguous write is never confirmation evidence. Reconcile by GET, retaining the original mutation error.
+    onError: () => client.refetchQueries({ queryKey: sessionKey(tripId), type: 'active' }),
+    mutationFn: ({ placementId, method, code }: { placementId: string; method: 'QR' | 'CODE'; code: string }) => confirmServerPlacement(tripId, placementId, { method, code }),
     onSuccess: (session) => settle(client, tripId, session),
   })
 }
@@ -62,6 +66,8 @@ export function useConfirmServerPlacementMutation(tripId: string) {
 export function useRecordServerDeviationMutation(tripId: string) {
   const client = useQueryClient()
   return useMutation({
+    // A failed/ambiguous write is never confirmation evidence. Reconcile by GET, retaining the original mutation error.
+    onError: () => client.refetchQueries({ queryKey: sessionKey(tripId), type: 'active' }),
     mutationFn: ({ placementId, input }: { placementId: string; input: DeviationInput }) => recordServerDeviation(tripId, placementId, input),
     onSuccess: (session) => settle(client, tripId, session),
   })
@@ -69,14 +75,18 @@ export function useRecordServerDeviationMutation(tripId: string) {
 
 export function useCompleteServerLoadingMutation(tripId: string) {
   const client = useQueryClient()
-  return useMutation({ mutationFn: () => completeServerLoading(tripId), onSuccess: (session) => settle(client, tripId, session) })
+  return useMutation({
+    // A failed/ambiguous write is never confirmation evidence. Reconcile by GET, retaining the original mutation error.
+    onError: () => client.refetchQueries({ queryKey: sessionKey(tripId), type: 'active' }), mutationFn: () => completeServerLoading(tripId), onSuccess: (session) => settle(client, tripId, session) })
 }
 
 /** Soạn một kiện bằng nhãn (quét hoặc gõ mã). */
 export function useStageServerPackageMutation(tripId: string) {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: ({ packageId, method }: { packageId: string; method: 'QR' | 'CODE' }) => stageServerPackage(tripId, packageId, method),
+    // A failed/ambiguous write is never confirmation evidence. Reconcile by GET, retaining the original mutation error.
+    onError: () => client.refetchQueries({ queryKey: sessionKey(tripId), type: 'active' }),
+    mutationFn: ({ packageId, method, code }: { packageId: string; method: 'QR' | 'CODE'; code: string }) => stageServerPackage(tripId, packageId, method, code),
     onSuccess: (result) => settle(client, tripId, result.session),
   })
 }
@@ -84,6 +94,8 @@ export function useStageServerPackageMutation(tripId: string) {
 export function useStageServerPackageManuallyMutation(tripId: string) {
   const client = useQueryClient()
   return useMutation({
+    // A failed/ambiguous write is never confirmation evidence. Reconcile by GET, retaining the original mutation error.
+    onError: () => client.refetchQueries({ queryKey: sessionKey(tripId), type: 'active' }),
     mutationFn: ({ packageId, input }: { packageId: string; input: ServerManualInput }) => stageServerPackageManually(tripId, packageId, input),
     onSuccess: (session) => settle(client, tripId, session),
   })
@@ -92,6 +104,8 @@ export function useStageServerPackageManuallyMutation(tripId: string) {
 export function useReportServerShortageMutation(tripId: string) {
   const client = useQueryClient()
   return useMutation({
+    // A failed/ambiguous write is never confirmation evidence. Reconcile by GET, retaining the original mutation error.
+    onError: () => client.refetchQueries({ queryKey: sessionKey(tripId), type: 'active' }),
     mutationFn: (packageId: string) => reportServerShortage(tripId, packageId),
     onSuccess: (session) => settle(client, tripId, session),
   })
@@ -100,6 +114,8 @@ export function useReportServerShortageMutation(tripId: string) {
 export function useConfirmServerPlacementManuallyMutation(tripId: string) {
   const client = useQueryClient()
   return useMutation({
+    // A failed/ambiguous write is never confirmation evidence. Reconcile by GET, retaining the original mutation error.
+    onError: () => client.refetchQueries({ queryKey: sessionKey(tripId), type: 'active' }),
     mutationFn: ({ placementId, input }: { placementId: string; input: ServerManualInput }) => confirmServerPlacementManually(tripId, placementId, input),
     onSuccess: (session) => settle(client, tripId, session),
   })
@@ -109,8 +125,9 @@ export function useConfirmServerPlacementManuallyMutation(tripId: string) {
 export function useReportServerDamagedMutation(tripId: string) {
   const client = useQueryClient()
   return useMutation({
+    // A failed/ambiguous write is never confirmation evidence. Reconcile by GET, retaining the original mutation error.
+    onError: () => client.refetchQueries({ queryKey: sessionKey(tripId), type: 'active' }),
     mutationFn: (placementId: string) => reportServerDamaged(tripId, placementId),
     onSuccess: (result) => settle(client, tripId, result.outcome === 'leftOut' ? result.session : undefined),
   })
 }
-

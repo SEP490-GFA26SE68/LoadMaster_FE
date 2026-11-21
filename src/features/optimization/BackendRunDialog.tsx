@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader } from '@/components/
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import type { OptimizationJob } from './load-plans-backend-api'
 import { RunFigure } from './RunFigure'
+import { getBackendJobStatusKey } from './backend-job-status'
 import { runAlgorithmLabel } from './server-algorithms'
 
 /**
@@ -12,19 +13,20 @@ import { runAlgorithmLabel } from './server-algorithms'
  * (`fraction={null}`), không dừng ở mức đầy nào; bên cạnh chỉ có đúng điều máy chủ trả: trạng thái, mã lần chạy, thời gian tính và số
  * phương án đã lưu khi xong. Không ra phương án (`NO_SOLUTION`, `FAILED`) thì nói rõ, kèm việc máy chủ không trừ credit.
  */
-export function BackendRunDialog({ open, onOpenChange, jobId, job, error, compareTo }: {
+export function BackendRunDialog({ open, onOpenChange, jobId, job, error, compareTo, hasPlans }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   jobId: string
   /** `null` cho tới lần đọc trạng thái đầu tiên. */
   job: OptimizationJob | null
   error: unknown
+  hasPlans: boolean
   compareTo: string
 }) {
   const t = useT()
   const format = useFormat()
   const status = job?.status ?? 'PENDING'
-  const failed = status === 'NO_SOLUTION' || status === 'FAILED'
+  const failed = status === 'NO_SOLUTION' || status === 'FAILED' || status === 'TIMEOUT' || status === 'CANCELLED'
   const finished = job?.finished === true
   const title = error ? t('serverPlans.job.loadError') : failed ? t('serverPlans.job.failedTitle') : finished ? t('serverPlans.job.finishedTitle') : t('serverPlans.job.title')
   return (
@@ -34,7 +36,7 @@ export function BackendRunDialog({ open, onOpenChange, jobId, job, error, compar
         <div className="flex flex-col gap-4 px-7 py-5">
           {finished || error ? null : <RunFigure fraction={null} className="h-36 w-full" />}
           <p role={failed || error ? 'alert' : 'status'} className={failed || error ? 'text-body text-danger' : 'text-body text-ink-1'}>
-            {error ? dataErrorMessage(error, t) : t(`serverPlans.job.status.${status}`)}
+            {error ? dataErrorMessage(error, t) : t(getBackendJobStatusKey(status))}
           </p>
           <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-small">
             <dt className="text-ink-3">{t('serverPlans.job.code')}</dt>
@@ -59,7 +61,7 @@ export function BackendRunDialog({ open, onOpenChange, jobId, job, error, compar
           <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
             {finished || error ? t('serverPlans.job.close') : t('serverPlans.job.keepWaiting')}
           </Button>
-          {finished && !failed ? <Button asChild><Link to={compareTo}>{t('serverPlans.job.compare')}</Link></Button> : null}
+          {finished && !failed && hasPlans ? <Button asChild><Link to={compareTo}>{t('serverPlans.job.compare')}</Link></Button> : null}
         </DialogFooter>
       </DialogContent>
     </Dialog>

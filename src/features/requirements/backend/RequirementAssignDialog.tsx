@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link2 } from 'lucide-react'
-import { useId, useMemo } from 'react'
+import { useId, useMemo, useRef } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader } from '@/components/ui/Dialog'
 import { FieldLabel, FieldMessage } from '@/components/ui/field-styles'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select'
+import type { RequirementRow } from './requirements-api'
 import { Spinner } from '@/components/ui/Spinner'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import { useAssignableTripsQuery, useAssignRequirementMutation } from './useRequirementsQuery'
@@ -20,26 +21,28 @@ type AssignValues = { tripId: string }
  * hoặc gộp điểm giao, nên hộp thoại không nói trước điểm nào — toast nói điểm máy chủ trả về. Máy chủ từ chối (yêu cầu chưa nhận đủ
  * kiện, chuyến vừa đổi trạng thái) thì câu lỗi hiện trong hộp thoại.
  */
-export function RequirementAssignDialog({ open, onOpenChange, requirementId }: {
+export function RequirementAssignDialog({ open, onOpenChange, requirementId, requirement }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   requirementId?: string
+  requirement?: RequirementRow['requirement']
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-140">
-        {open && requirementId ? <AssignForm requirementId={requirementId} onClose={() => onOpenChange(false)} /> : null}
+        {open && requirementId ? <AssignForm requirementId={requirementId} requirement={requirement} onClose={() => onOpenChange(false)} /> : null}
       </DialogContent>
     </Dialog>
   )
 }
 
-function AssignForm({ requirementId, onClose }: { requirementId: string; onClose: () => void }) {
+function AssignForm({ requirementId, requirement, onClose }: { requirementId: string; requirement?: RequirementRow['requirement']; onClose: () => void }) {
   const t = useT()
   const format = useFormat()
   const id = useId()
   const tripsQuery = useAssignableTripsQuery()
   const assign = useAssignRequirementMutation()
+  const submitting = useRef(false)
   const schema = useMemo(() => z.object({ tripId: z.string().min(1, t('requirements.assign.tripRequired')) }), [t])
   const form = useForm<AssignValues>({ resolver: zodResolver(schema), defaultValues: { tripId: '' } })
   const trips = tripsQuery.data ?? []
@@ -47,8 +50,11 @@ function AssignForm({ requirementId, onClose }: { requirementId: string; onClose
   const empty = !loading && !tripsQuery.isError && trips.length === 0
 
   function handleSubmit({ tripId }: AssignValues) {
+    if (submitting.current) return
+    submitting.current = true
     const trip = trips.find((item) => item.id === tripId)
     assign.mutate({ requirementId, tripId }, {
+      onSettled: () => { submitting.current = false },
       onSuccess: (stop) => {
         toast.success(t('requirements.assign.done', { id: requirementId, trip: trip?.code ?? tripId, number: stop.stopSequence }))
         onClose()
@@ -60,6 +66,11 @@ function AssignForm({ requirementId, onClose }: { requirementId: string; onClose
     <form noValidate onSubmit={form.handleSubmit(handleSubmit)}>
       <DialogHeader icon={Link2} title={t('requirements.assign.titleFor', { id: requirementId })} description={t('requirements.server.assignDescription')} />
       <div className="flex flex-col gap-4 px-7 py-5">
+        {requirement?.receivedPackageCount != null && requirement.expectedPackageCount != null ? (
+          <p className="text-body text-ink-2">{t('requirements.server.linkedForAssignment', {
+            linkedCount: requirement.receivedPackageCount, expectedCount: requirement.expectedPackageCount,
+          })}</p>
+        ) : null}
         {loading ? (
           <div className="grid place-items-center py-6"><Spinner /></div>
         ) : tripsQuery.isError ? (
@@ -94,7 +105,7 @@ function AssignForm({ requirementId, onClose }: { requirementId: string; onClose
       </div>
       <DialogFooter>
         <Button type="button" variant="secondary" onClick={onClose}>{t('requirements.assign.cancel')}</Button>
-        <Button type="submit" loading={assign.isPending} disabled={loading || empty || tripsQuery.isError}>{t('requirements.assign.submit')}</Button>
+        <Button type="submit" loading={assign.isPending} disabled={assign.isPending || loading || empty || tripsQuery.isError}>{t('requirements.assign.submit')}</Button>
       </DialogFooter>
     </form>
   )

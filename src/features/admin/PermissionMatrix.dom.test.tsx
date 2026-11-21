@@ -1,3 +1,5 @@
+import { PERMISSIONS } from '@/features/auth/permissions'
+import { PERMISSION_GROUPS } from './permission-groups'
 import { render, screen, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { I18nProvider } from '@/lib/i18n'
@@ -28,8 +30,8 @@ test('tám cột vai trò theo thứ tự nền tảng → công ty, 38 dòng qu
     'Quyền', 'Quản trị hệ thống', 'Quản lý nền tảng', 'Hỗ trợ khách hàng', 'Quản trị công ty', 'Quản lý công ty', 'Điều phối viên',
     'Nhân viên kho', 'Tài xế',
   ])
-  // Một dòng tiêu đề, 13 dòng khu vực, 38 dòng quyền (thêm payroll.manage của màn Lương), một dòng tổng
-  expect(within(matrix).getAllByRole('row')).toHaveLength(53)
+  // Một dòng tiêu đề, 14 dòng khu vực, 38 dòng quyền (thêm payroll.manage của màn Lương), một dòng tổng
+  expect(within(matrix).getAllByRole('row')).toHaveLength(2 + PERMISSION_GROUPS.length + PERMISSIONS.length)
   // Dòng quyền có chín ô (tên + tám vai trò); dòng khu vực chỉ một ô, dòng tổng tám ô
   const permissionRows = within(matrix).getAllByRole('row').filter((row) => within(row).queryAllByRole('cell').length === 9)
   expect(permissionRows).toHaveLength(38)

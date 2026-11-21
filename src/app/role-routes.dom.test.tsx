@@ -191,3 +191,15 @@ test('customer support gets from a 404 back to the support screen, with its nav 
   expect(within(screen.getByRole('navigation')).getAllByRole('link').map((link) => link.textContent)).toStrictEqual(['Hỗ trợ', 'Liên hệ của khách'])
   expect(screen.getByRole('link', { name: 'LoadMaster — về màn chính' })).toHaveAttribute('href', '/ho-tro')
 })
+
+test('warehouse vehicle presence route keeps the existing Warehouse-only permission', () => {
+  expect(routeAccess('/kho/xe').permissions).toEqual(['warehouse.operate'])
+  expect(canOpen('warehouse', '/kho/xe')).toBe(true)
+  for (const role of ROLES.filter(role => role !== 'warehouse')) expect(canOpen(role, '/kho/xe')).toBe(false)
+})
+
+test('warehouse vehicles screen has a return link rather than logging out at the back button', async () => {
+  openAt('/kho/xe', 'warehouse')
+  await screen.findByRole('heading', { name: 'Xe trong kho', level: 1 }, SLOW)
+  expect(screen.getByRole('link', { name: 'Về chuyến cần xếp' })).toHaveAttribute('href', '/kho')
+})

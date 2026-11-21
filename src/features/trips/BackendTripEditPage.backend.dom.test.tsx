@@ -10,6 +10,8 @@ import { envelope, page, stubBackend, type FakeRoutes } from '@/test/fake-backen
 import { TripFormPage } from './TripFormPage'
 import type { TripDetailApiResponse } from './trips-api'
 
+vi.mock('@/features/auth/AuthProvider', () => ({ useAuthSafe: () => ({ user: { id: '7', companyId: '1', role: 'dispatcher' } }) }))
+
 vi.mock('@/lib/backend-config', () => ({
   backendConfig: { authSource: 'keycloak', apiUrl: 'http://be.test', features: new Set(['trips', 'companies']), keycloak: { url: '', realm: '', clientId: '' } },
   usesBackend: (feature: string) => feature === 'trips' || feature === 'companies',
@@ -20,7 +22,7 @@ vi.mock('@/lib/backend-config', () => ({
  * máy chủ, lưu gửi `PATCH /api/trips/{id}` chỉ với trường đã đổi rồi mở Chi tiết chuyến; chuyến đã sang xếp hàng không có form.
  */
 const TRIP: TripDetailApiResponse = {
-  id: 42, tripCode: 'TRIP-2026-0042', tripName: 'Tân Bình – Quận 7', companyId: 1, vehicleId: 11, vehicleName: 'Hino 500',
+  originWarehouseId: 101, id: 42, tripCode: 'TRIP-2026-0042', tripName: 'Tân Bình – Quận 7', companyId: 1, vehicleId: 11, vehicleName: 'Hino 500',
   licensePlate: '51C-123.45', driverId: 7, driverName: 'Trần Văn Tài', createdByDispatcherId: 3, departureTime: '2026-11-12 08:30:00',
   originName: 'Kho Tân Bình', originAddress: '12 Cộng Hoà, Tân Bình', originLatitude: 10.8012, originLongitude: 106.6521,
   status: 'PLANNED', createdAt: '2026-11-10T09:00:00',
@@ -39,7 +41,7 @@ function routes(trip: TripDetailApiResponse, extra: FakeRoutes = {}): FakeRoutes
   return {
     'GET /api/trips': { body: envelope(page([{ id: trip.id, tripCode: trip.tripCode }])) },
     'GET /api/trips/42/detail': { body: envelope({ trip, stops: [] }) },
-    'GET /api/vehicles': { body: flatPage([{ id: 11, name: 'Hino 500', licensePlate: '51C-123.45', vehicleTypeId: 7, vehicleTypeName: TYPE.name, companyId: 1, companyName: 'Long Bình', status: 'AVAILABLE' }]) },
+    'GET /api/vehicles/departure-choices': { body: flatPage([{ id: 11, name: 'Hino 500', licensePlate: '51C-123.45', vehicleTypeId: 7, vehicleTypeName: TYPE.name, companyId: 1, companyName: 'Long Bình', status: 'AVAILABLE' }]) },
     'GET /api/vehicle-types': { body: flatPage([TYPE]) },
     'GET /api/trips/driver-options': { body: envelope([{ id: 7, fullName: 'Trần Văn Tài' }]) },
     'GET /api/company-warehouses': { body: envelope([WAREHOUSE]) },
@@ -103,6 +105,8 @@ test('chọn kho khác gửi mã kho; không đổi gì thì không gọi máy c
   expect(screen.getByRole('option', { name: 'Giữ kho hiện tại (Kho Tân Bình)' })).toBeInTheDocument()
   await user.selectOptions(warehouse, '5')
   expect(screen.getByRole('textbox', { name: 'Tên kho' })).toHaveValue('Kho Thủ Đức')
+  await user.click(screen.getByRole('combobox', { name: 'Xe' }))
+  await user.click(await screen.findByRole('option', { name: 'Hino 500' }))
   await user.click(screen.getByRole('button', { name: 'Lưu thay đổi' }))
   await waitFor(() => expect(router.state.location.pathname).toBe('/chuyen/TRIP-2026-0042'))
   expect(calls.filter((call) => call.method === 'PATCH').map((call) => call.body)).toEqual([{ originWarehouseId: 5 }])

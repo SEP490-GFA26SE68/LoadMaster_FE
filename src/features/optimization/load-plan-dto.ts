@@ -128,11 +128,11 @@ export type TripLoadPlansDto = {
 }
 
 /** Trạng thái job của dịch vụ tối ưu. `SUCCESS` (tên cũ) đọc là `COMPLETED`, `TIMEOUT` đọc là `FAILED`. */
-export const JOB_STATUSES = ['PENDING', 'RUNNING', 'COMPLETED', 'PARTIAL', 'NO_SOLUTION', 'FAILED'] as const
+export const JOB_STATUSES = ['PENDING', 'QUEUED', 'RUNNING', 'COMPLETED', 'SUCCESS', 'PARTIAL', 'NO_SOLUTION', 'TIMEOUT', 'FAILED', 'CANCELLED'] as const
 export type JobStatus = (typeof JOB_STATUSES)[number]
 
 /** Job đã kết thúc: có phương án (`COMPLETED`, `PARTIAL`) hoặc không (`NO_SOLUTION`, `FAILED` — máy chủ không trừ credit). */
-export const FINISHED_JOB_STATUSES: ReadonlySet<JobStatus> = new Set(['COMPLETED', 'PARTIAL', 'NO_SOLUTION', 'FAILED'])
+export const FINISHED_JOB_STATUSES: ReadonlySet<JobStatus> = new Set(['COMPLETED', 'SUCCESS', 'PARTIAL', 'NO_SOLUTION', 'TIMEOUT', 'FAILED', 'CANCELLED'])
 
 export type OptimizationJob = {
   readonly jobId: string
@@ -241,8 +241,6 @@ const percentOf = (ratio: Decimal | null | undefined) => {
 }
 
 export function jobStatusOf(value: string): JobStatus {
-  if (value === 'SUCCESS') return 'COMPLETED'
-  if (value === 'TIMEOUT') return 'FAILED'
   const status = JOB_STATUSES.find((item) => item === value)
   if (status === undefined) throw new ApiError('SERVER_ERROR')
   return status

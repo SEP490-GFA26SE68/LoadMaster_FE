@@ -95,4 +95,3 @@ export function useConfirmLoadingManuallyMutation(tripId: string) {
   const client = useQueryClient()
   return useMutation({ mutationFn: (input: ManualConfirmInput) => confirmLoadingManually(tripId, input), onSettled: () => refreshAfterWrite(client) })
 }
-

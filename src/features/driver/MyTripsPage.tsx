@@ -86,6 +86,7 @@ function TripGroups() {
           className="[&_span]:text-body-lg"
           title={t('driver.list.emptyTitle')}
           description={t(caps.upcomingTrips ? 'driver.list.emptyDescription' : 'driver.list.emptyDescriptionInTransit')}
+          action={<Button variant="secondary" size="touch" disabled={query.isFetching} onClick={() => void query.refetch()}>{t('driver.list.refresh')}</Button>}
         />
       </Card>
     )
@@ -94,6 +95,7 @@ function TripGroups() {
   const primaryId = (trips.inTransit[0] ?? trips.loaded[0])?.id
   return (
     <div className="flex flex-col gap-6">
+      <div><Button variant="secondary" size="touch" disabled={query.isFetching} onClick={() => void query.refetch()}>{t('driver.list.refresh')}</Button><p className="mt-2 text-ink-2">{t('driver.list.freshnessHint')}</p></div>
       {primaryId === undefined ? <p className="m-0 text-ink-2">{t('driver.list.noReady')}</p> : null}
       {WEB_TRIP_GROUPS.map((group) => (trips[group].length === 0 ? null : (
         <Group key={group} title={t(`driver.list.groups.${group}`)}>

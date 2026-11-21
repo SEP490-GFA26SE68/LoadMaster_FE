@@ -11,6 +11,7 @@ export const lookup = {
   codePlaceholder: 'E.g. LM-7K3F-9XQ2-M4TD or HK-DNG-2609-01',
   codePlaceholderBackend: 'E.g. the code under the QR image, or HK-DNG-2609-01',
   codeHint: 'Type the whole code as printed on the label; case does not matter.',
+  codeHintBackend: 'Enter the exact package code or QR token; preserve internal spaces. For an internal ID, use id:123.',
   codeRequired: 'Enter a code before looking it up.',
   submit: 'Look up',
   loading: 'Looking up',
@@ -19,7 +20,7 @@ export const lookup = {
     description: 'The QR code and the sender code are both printed on the label of the package.',
   },
   notFound: {
-    title: 'Not found',
+    title: 'No matching package found',
     description: 'No package of your company carries the code {code}. Check the code printed on the label.',
   },
   many: {

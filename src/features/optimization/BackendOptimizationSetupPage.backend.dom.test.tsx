@@ -16,6 +16,7 @@ vi.mock('@/lib/backend-config', () => ({
   backendConfig: { authSource: 'keycloak', apiUrl: 'http://be.test', features: new Set(['trips']), keycloak: { url: '', realm: '', clientId: '' } },
   usesBackend: (feature: string) => feature === 'trips',
 }))
+vi.mock('@/features/auth/AuthProvider', async original => ({ ...await original<typeof import('@/features/auth/AuthProvider')>(), useCurrentUser: () => ({ id: 'test-user', companyId: 'test-company' }) }))
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), warning: vi.fn(), success: vi.fn(), info: vi.fn() } }))
 
 const placement = (id: number, pinned: boolean) => ({
@@ -32,6 +33,7 @@ const PLAN = {
 let calls: ReturnType<typeof stubBackend>['calls']
 
 beforeEach(() => {
+  sessionStorage.clear()
   connectApiAuth(() => Promise.resolve('token-1'))
   calls = stubBackend({
     'GET /api/trips/42/detail': { body: envelope({ trip: { id: 42, tripCode: 'TRIP-0042', status: 'PLANNED' }, stops: [{ id: 91, stopSequence: 1 }] }) },
@@ -64,7 +66,7 @@ test('giữ ghim bật sẵn: lần chạy gửi mã số phương án nguồn, 
   const toggle = await screen.findByRole('switch', { name: 'Giữ nguyên chỗ 2 kiện đã ghim' })
   expect(toggle).toBeChecked()
 
-  await userEvent.click(screen.getByRole('button', { name: 'Chạy tối ưu' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Chạy tối ưu xếp hàng mới' }))
   await waitFor(() => expect(optimizeBodies()).toEqual([{ keepPinsFromPlanId: 12 }]))
   expect(await screen.findByText('Giữ 2 kiện đã ghim')).toBeInTheDocument()
 })
@@ -74,12 +76,12 @@ test('tắt giữ ghim: lần chạy bình thường, không gửi phương án 
   await userEvent.click(await screen.findByRole('switch', { name: 'Giữ nguyên chỗ 2 kiện đã ghim' }))
   expect(screen.getByText('Chạy bình thường: mọi kiện được xếp lại từ đầu.')).toBeInTheDocument()
 
-  await userEvent.click(screen.getByRole('button', { name: 'Chạy tối ưu' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Chạy tối ưu xếp hàng mới' }))
   await waitFor(() => expect(optimizeBodies()).toEqual([undefined]))
 })
 
 test('không mở từ Planner thì không có thẻ giữ ghim', async () => {
   renderSetup('')
-  expect(await screen.findByRole('button', { name: 'Chạy tối ưu' })).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Chạy tối ưu xếp hàng mới' })).toBeInTheDocument()
   expect(screen.queryByRole('heading', { name: 'Giữ kiện đã ghim' })).not.toBeInTheDocument()
 })

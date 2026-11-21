@@ -9,6 +9,7 @@ export const common = {
   loadingScreen: 'Đang tải màn hình',
   processing: 'Đang xử lý',
   noData: 'Chưa có dữ liệu',
+  serverOrderOnly: 'Hiển thị theo thứ tự máy chủ. Bảng này chưa hỗ trợ đổi sắp xếp.',
   selectPlaceholder: 'Chọn…',
   backToTrips: 'Về danh sách chuyến',
   on: 'Bật',

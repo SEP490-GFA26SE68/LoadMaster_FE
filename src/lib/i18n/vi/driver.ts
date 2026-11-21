@@ -25,6 +25,8 @@ export const driver = {
   exit: 'Thoát màn hình tài xế',
   /** Danh sách "Chuyến của tôi" `/tai-xe` (D-46). */
   list: {
+    refresh: 'Làm mới danh sách',
+    freshnessHint: 'Tự cập nhật khi còn chuyến đang chuẩn bị, 10 giây/lần trong 20 phút. Sau đó bấm Làm mới danh sách.',
     title: 'Chuyến của tôi',
     /** Nhóm theo trạng thái và dòng phụ của chuyến (FE-6-01). */
     groups: {
