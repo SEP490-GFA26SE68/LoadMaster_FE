@@ -26,6 +26,8 @@ test('Dispatcher creates requirement through server adapter', async ({ page, log
     const key = request.method() + ' ' + new URL(request.url()).pathname
     const pageReply = (data: unknown[]) => route.fulfill({ json: { success: true, data, page: 0, size: 100, totalPages: 1, totalElements: data.length, last: true } })
     if (key === 'GET /api/delivery-requirements') return pageReply(created ? [saved] : [])
+    // The current form loads eligible pool packages even when creating an expected-count-only requirement.
+    if (key === 'GET /api/packages') return pageReply([])
     if (key === 'GET /api/customers') return pageReply([{ id: 12, companyId: 1, name: 'Khách fixture', contactPhone: '', address: '' }])
     if (key === 'POST /api/delivery-requirements') {
       posts.push(request.postDataJSON())
