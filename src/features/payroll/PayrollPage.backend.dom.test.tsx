@@ -448,3 +448,264 @@ test('locks a later saved version from the versions dialog and shows that payrol
   ])))
   expect(await screen.findByText(`Bảng lương tháng ${nextMonth}`)).toBeInTheDocument()
 })
+
+test('shows KPI target and bonus on the same row as commission in the saved versions dialog', async () => {
+  const user = userEvent.setup()
+  const currentMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`
+  const nextMonth = nextMonthPeriod()
+  stubBackend({
+    'GET /api/company/payroll/settings': reply([
+      { id: 4, effectiveFrom: `${currentMonth}-01`, baseSalaryVnd: 8_000_000, rateVndPerKg: 100, commissionPercent: 15, handlingFeeVndPerKg: 150, handlingDriverPercent: 85, kpiTargetKg: 200, kpiBonusVnd: 150_000, periodStatus: 'DRAFT' },
+      { id: 5, effectiveFrom: `${nextMonth}-01`, baseSalaryVnd: 9_000_000, rateVndPerKg: 100, commissionPercent: 12, handlingFeeVndPerKg: 150, handlingDriverPercent: 85, kpiTargetKg: null, kpiBonusVnd: 0, periodStatus: 'DRAFT' },
+    ]),
+    [`GET /api/company/payroll/periods/${currentMonth}`]: { status: 404, body: { success: false, code: 'PAYROLL_PERIOD_NOT_FOUND', message: 'not found' } },
+  })
+
+  renderPayroll()
+  await user.click(await screen.findByRole('button', { name: 'Xem phiên bản đã lưu' }))
+  const dialog = await screen.findByRole('dialog', { name: 'Các phiên bản đã lưu' })
+
+  const withKpi = within(within(dialog).getByRole('button', { name: `Chọn phiên bản ${currentMonth}` }))
+  expect(withKpi.getByText('Hoa hồng')).toBeInTheDocument()
+  expect(withKpi.getByText('Chỉ tiêu KPI')).toBeInTheDocument()
+  expect(withKpi.getByText('Thưởng KPI')).toBeInTheDocument()
+  expect(withKpi.getByText('15%')).toBeInTheDocument()
+  expect(withKpi.getByText(/150\.000/)).toBeInTheDocument()
+
+  const withoutKpi = within(within(dialog).getByRole('button', { name: `Chọn phiên bản ${nextMonth}` }))
+  expect(withoutKpi.getByText('12%')).toBeInTheDocument()
+  expect(withoutKpi.getAllByText('—')).toHaveLength(2)
+})
+
+test('lets the manager look back at any locked month while several months stay locked', async () => {
+  const currentMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`
+  const nextMonth = nextMonthPeriod()
+  const board = (period: string, name: string, salary: number) => reply({
+    period,
+    status: 'LOCKED',
+    drivers: [{ driverId: 21, driverName: name, baseSalaryVnd: salary, totalKg: 0, kgAmountVnd: 0, handlingAmountVnd: 0, totalSalaryVnd: salary }],
+  })
+  stubBackend({
+    'GET /api/company/payroll/settings': reply([
+      { id: 4, effectiveFrom: `${currentMonth}-01`, baseSalaryVnd: 8_000_000, rateVndPerKg: 100, commissionPercent: 15, handlingFeeVndPerKg: 150, handlingDriverPercent: 85, periodStatus: 'LOCKED' },
+      { id: 5, effectiveFrom: `${nextMonth}-01`, baseSalaryVnd: 9_000_000, rateVndPerKg: 100, commissionPercent: 15, handlingFeeVndPerKg: 150, handlingDriverPercent: 85, periodStatus: 'LOCKED' },
+    ]),
+    [`GET /api/company/payroll/periods/${currentMonth}`]: board(currentMonth, 'Tai xe thang nay', 8_000_000),
+    [`GET /api/company/payroll/periods/${nextMonth}`]: board(nextMonth, 'Tai xe thang sau', 9_000_000),
+  })
+
+  renderPayroll()
+  expect(await screen.findByText(`Bảng lương tháng ${currentMonth}`)).toBeInTheDocument()
+
+  fireEvent.change(screen.getByLabelText('Kỳ lương'), { target: { value: nextMonth } })
+  expect(await screen.findByText(`Bảng lương tháng ${nextMonth}`)).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Tai xe thang sau' })).toBeInTheDocument()
+
+  fireEvent.change(screen.getByLabelText('Kỳ lương'), { target: { value: currentMonth } })
+  expect(await screen.findByText(`Bảng lương tháng ${currentMonth}`)).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Tai xe thang nay' })).toBeInTheDocument()
+})
+
+test('shows the KPI bonus field for a positive target and sends both KPI values on save', async () => {
+  const user = userEvent.setup()
+  const date = new Date()
+  const period = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+  const { calls } = stubBackend({
+    'GET /api/company/payroll/settings': reply([]),
+    [`GET /api/company/payroll/periods/${period}`]: {
+      status: 404,
+      body: { success: false, code: 'PAYROLL_PERIOD_NOT_FOUND', message: 'not found' },
+    },
+    'PUT /api/company/payroll/settings': ({ body }) => reply({ id: 1, ...(body as object) }),
+  })
+
+  renderPayroll()
+  const target = await screen.findByRole('spinbutton', { name: 'Chỉ tiêu KPI (kg/tháng)' })
+  expect(screen.queryByRole('spinbutton', { name: 'Tiền thưởng KPI (đ)' })).not.toBeInTheDocument()
+
+  fireEvent.change(target, { target: { value: '0' } })
+  expect(screen.queryByRole('spinbutton', { name: 'Tiền thưởng KPI (đ)' })).not.toBeInTheDocument()
+  fireEvent.change(target, { target: { value: '1234.12' } })
+  const bonus = await screen.findByRole('spinbutton', { name: 'Tiền thưởng KPI (đ)' })
+  await user.type(bonus, '2500000.25')
+
+  await user.type(screen.getByRole('spinbutton', { name: 'Lương cứng mỗi tài xế' }), '8000000')
+  await user.type(screen.getByRole('spinbutton', { name: 'Cước theo khối lượng' }), '100')
+  await user.type(screen.getByRole('spinbutton', { name: 'Hoa hồng tài xế trên cước' }), '15')
+  await user.type(screen.getByRole('spinbutton', { name: 'Phí bốc dỡ' }), '150')
+  await user.type(screen.getByRole('spinbutton', { name: 'Tài xế hưởng phí bốc dỡ' }), '85')
+  await user.click(screen.getByRole('button', { name: 'Lưu phiên bản mức lương' }))
+
+  await waitFor(() => expect(calls.find((call) => call.method === 'PUT' && call.path === '/api/company/payroll/settings')?.body).toStrictEqual({
+    effectiveFrom: `${period}-01`,
+    baseSalaryVnd: 8_000_000,
+    rateVndPerKg: 100,
+    commissionPercent: 15,
+    handlingFeeVndPerKg: 150,
+    handlingDriverPercent: 85,
+    kpiTargetKg: 1234.12,
+    kpiBonusVnd: 2_500_000.25,
+  }))
+})
+
+test('rate form gives a separate correction for each invalid KPI field', async () => {
+  const user = userEvent.setup()
+  const date = new Date()
+  const period = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+
+  stubBackend({
+    'GET /api/company/payroll/settings': reply([]),
+    [`GET /api/company/payroll/periods/${period}`]: {
+      status: 404,
+      body: { success: false, code: 'PAYROLL_PERIOD_NOT_FOUND', message: 'not found' },
+    },
+  })
+
+  renderPayroll()
+  await user.type(await screen.findByRole('spinbutton', { name: 'Lương cứng mỗi tài xế' }), '8000000')
+  await user.type(screen.getByRole('spinbutton', { name: 'Cước theo khối lượng' }), '100')
+  await user.type(screen.getByRole('spinbutton', { name: 'Hoa hồng tài xế trên cước' }), '15')
+  await user.type(screen.getByRole('spinbutton', { name: 'Phí bốc dỡ' }), '150')
+  await user.type(screen.getByRole('spinbutton', { name: 'Tài xế hưởng phí bốc dỡ' }), '85')
+  const target = screen.getByRole('spinbutton', { name: 'Chỉ tiêu KPI (kg/tháng)' })
+
+  fireEvent.change(target, { target: { value: '0' } })
+  await user.click(screen.getByRole('button', { name: 'Lưu phiên bản mức lương' }))
+  expect(await screen.findByText('Chỉ tiêu KPI phải lớn hơn 0 kg.')).toBeInTheDocument()
+
+  fireEvent.change(target, { target: { value: '1.234' } })
+  await user.click(screen.getByRole('button', { name: 'Lưu phiên bản mức lương' }))
+  expect(await screen.findByText('Chỉ tiêu KPI tối đa hai chữ số thập phân.')).toBeInTheDocument()
+
+  fireEvent.change(target, { target: { value: '10' } })
+  await user.click(screen.getByRole('button', { name: 'Lưu phiên bản mức lương' }))
+  expect(await screen.findByText('Có chỉ tiêu KPI thì phải nhập tiền thưởng KPI.')).toBeInTheDocument()
+
+  const bonus = screen.getByRole('spinbutton', { name: 'Tiền thưởng KPI (đ)' })
+  fireEvent.change(bonus, { target: { value: '0' } })
+  await user.click(screen.getByRole('button', { name: 'Lưu phiên bản mức lương' }))
+  expect(await screen.findByText('Tiền thưởng KPI phải lớn hơn 0.')).toBeInTheDocument()
+  fireEvent.change(bonus, { target: { value: '1.234' } })
+  await user.click(screen.getByRole('button', { name: 'Lưu phiên bản mức lương' }))
+  expect(await screen.findByText('Tiền thưởng KPI tối đa hai chữ số thập phân.')).toBeInTheDocument()
+})
+
+test('shows the translated backend error when KPI bonus is rejected', async () => {
+  const user = userEvent.setup()
+  const date = new Date()
+  const period = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+
+  stubBackend({
+    'GET /api/company/payroll/settings': reply([]),
+    [`GET /api/company/payroll/periods/${period}`]: {
+      status: 404,
+      body: { success: false, code: 'PAYROLL_PERIOD_NOT_FOUND', message: 'not found' },
+    },
+    'PUT /api/company/payroll/settings': {
+      status: 400,
+      body: { success: false, code: 'PAYROLL_KPI_BONUS_REQUIRED', message: 'invalid KPI bonus' },
+    },
+  })
+
+  renderPayroll()
+  await user.type(await screen.findByRole('spinbutton', { name: 'Lương cứng mỗi tài xế' }), '8000000')
+  await user.type(screen.getByRole('spinbutton', { name: 'Cước theo khối lượng' }), '100')
+  await user.type(screen.getByRole('spinbutton', { name: 'Hoa hồng tài xế trên cước' }), '15')
+  await user.type(screen.getByRole('spinbutton', { name: 'Phí bốc dỡ' }), '150')
+  await user.type(screen.getByRole('spinbutton', { name: 'Tài xế hưởng phí bốc dỡ' }), '85')
+  fireEvent.change(screen.getByRole('spinbutton', { name: 'Chỉ tiêu KPI (kg/tháng)' }), { target: { value: '10' } })
+  await user.type(screen.getByRole('spinbutton', { name: 'Tiền thưởng KPI (đ)' }), '1')
+  await user.click(screen.getByRole('button', { name: 'Lưu phiên bản mức lương' }))
+
+  expect(await screen.findByText('Đã nhập chỉ tiêu KPI thì phải nhập tiền thưởng KPI lớn hơn 0')).toBeInTheDocument()
+})
+
+test('restores saved KPI settings when editing a rate version', async () => {
+  const user = userEvent.setup()
+  const date = new Date()
+  const period = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+  const nextMonth = nextMonthPeriod(date)
+
+  stubBackend({
+    'GET /api/company/payroll/settings': reply([{
+      id: 4,
+      effectiveFrom: `${nextMonth}-01`,
+      baseSalaryVnd: 8_000_000,
+      rateVndPerKg: 100,
+      commissionPercent: 15,
+      handlingFeeVndPerKg: 150,
+      handlingDriverPercent: 85,
+      kpiTargetKg: 25000.5,
+      kpiBonusVnd: 1_500_000,
+    }]),
+    [`GET /api/company/payroll/periods/${period}`]: {
+      status: 404,
+      body: { success: false, code: 'PAYROLL_PERIOD_NOT_FOUND', message: 'not found' },
+    },
+  })
+
+  renderPayroll()
+  await chooseSavedVersion(user, nextMonth)
+  expect(screen.getByRole('spinbutton', { name: 'Chỉ tiêu KPI (kg/tháng)' })).toHaveValue(25000.5)
+  expect(screen.getByRole('spinbutton', { name: 'Tiền thưởng KPI (đ)' })).toHaveValue(1_500_000)
+})
+
+test('shows total kilograms and KPI achievement with the server bonus in payroll results', async () => {
+  const date = new Date()
+  const period = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+  stubBackend({
+    'GET /api/company/payroll/settings': reply([{
+      id: 4,
+      effectiveFrom: `${period}-01`,
+      baseSalaryVnd: 8_000_000,
+      rateVndPerKg: 100,
+      commissionPercent: 15,
+      handlingFeeVndPerKg: 150,
+      handlingDriverPercent: 85,
+      kpiTargetKg: 1000,
+      kpiBonusVnd: 250_000,
+    }]),
+    [`GET /api/company/payroll/periods/${period}`]: reply({
+      period,
+      status: 'LOCKED',
+      drivers: [
+        { driverId: 21, driverName: 'Nguyen Van An', baseSalaryVnd: 8_000_000, totalKg: 1200, kgAmountVnd: 60_000, handlingAmountVnd: 50_000, kpiAchieved: true, kpiAmountVnd: 250_000, totalSalaryVnd: 8_360_000 },
+        { driverId: 22, driverName: 'Tran Van Binh', baseSalaryVnd: 8_000_000, totalKg: 900, kgAmountVnd: 45_000, handlingAmountVnd: 50_000, kpiAchieved: false, kpiAmountVnd: 0, totalSalaryVnd: 8_095_000 },
+      ],
+    }),
+  })
+
+  renderPayroll()
+  expect(await screen.findByRole('columnheader', { name: 'Tổng kg' })).toBeInTheDocument()
+  expect(screen.getByRole('columnheader', { name: 'Thưởng KPI' })).toBeInTheDocument()
+  const achievedRow = screen.getByRole('button', { name: 'Nguyen Van An' }).closest('tr')
+  const missedRow = screen.getByRole('button', { name: 'Tran Van Binh' }).closest('tr')
+  expect(achievedRow).toHaveTextContent('1.200 kg')
+  expect(achievedRow).toHaveTextContent('Đạt')
+  expect(achievedRow).toHaveTextContent('250.000 ₫')
+  expect(missedRow).toHaveTextContent('900 kg')
+  expect(missedRow).toHaveTextContent('Chưa đạt')
+  expect(missedRow?.querySelectorAll('td')[4]).toHaveTextContent(/^Chưa đạt$/)
+  expect(screen.getByText('16.455.000 ₫')).toBeInTheDocument()
+})
+
+test('hides the KPI column when the rate effective in the period does not use KPI', async () => {
+  const date = new Date()
+  const period = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+  const futurePeriod = nextMonthPeriod(date)
+  stubBackend({
+    'GET /api/company/payroll/settings': reply([
+      { id: 4, effectiveFrom: `${period}-01`, baseSalaryVnd: 8_000_000, rateVndPerKg: 100, commissionPercent: 15, handlingFeeVndPerKg: 150, handlingDriverPercent: 85, kpiTargetKg: null, kpiBonusVnd: 0 },
+      { id: 5, effectiveFrom: `${futurePeriod}-01`, baseSalaryVnd: 8_000_000, rateVndPerKg: 100, commissionPercent: 15, handlingFeeVndPerKg: 150, handlingDriverPercent: 85, kpiTargetKg: 1000, kpiBonusVnd: 250_000 },
+    ]),
+    [`GET /api/company/payroll/periods/${period}`]: reply({
+      period,
+      status: 'LOCKED',
+      drivers: [{ driverId: 21, driverName: 'Nguyen Van An', baseSalaryVnd: 8_000_000, totalKg: 500, kgAmountVnd: 50_000, handlingAmountVnd: 50_000, kpiAchieved: false, kpiAmountVnd: 0, totalSalaryVnd: 8_100_000 }],
+    }),
+  })
+
+  renderPayroll()
+  expect(await screen.findByRole('columnheader', { name: 'Tổng kg' })).toBeInTheDocument()
+  expect(screen.queryByRole('columnheader', { name: 'Thưởng KPI' })).not.toBeInTheDocument()
+})

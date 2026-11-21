@@ -91,6 +91,7 @@ VEHICLE_PRESENCE_CONFLICT: "Vehicle state or confirmation key conflict. Check th
   PAYROLL_RATE_NOT_CONFIGURED: 'The company has not configured pay rates for this month.',
   PAYROLL_RATE_ALREADY_EXISTS: 'A pay rate version already starts in this month.',
   PAYROLL_RATE_EFFECTIVE_DATE_TOO_EARLY: 'New pay rates can only take effect from next month (or current month for new companies).',
+  PAYROLL_KPI_BONUS_REQUIRED: 'A KPI bonus greater than 0 is required when a KPI target is set.',
   PAYROLL_PERIOD_NOT_FOUND: 'There is no payroll for this month yet.',
   PAYROLL_PERIOD_LOCKED: 'This payroll is locked and cannot be changed or recalculated.',
   PAYROLL_DATA_INCOMPLETE: 'The trip is missing planned weight or distance data.',

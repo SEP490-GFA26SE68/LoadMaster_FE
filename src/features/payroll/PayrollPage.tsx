@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { toast } from 'sonner'
 
 import { ConfirmDialog } from '@/components/ConfirmDialog'
@@ -59,13 +59,18 @@ export function PayrollPage() {
   const minMonth = hasRates ? nextMonthPeriod() : currentMonth()
   const rateForm = useForm<PayrollRateFormInput, unknown, PayrollRateFormValues>({
     resolver: zodResolver(payrollRateFormSchema),
-    defaultValues: { effectiveFrom: minMonth, baseSalaryVnd: '', rateVndPerKg: '', commissionPercent: '', handlingFeeVndPerKg: '', handlingDriverPercent: '' },
+    defaultValues: { effectiveFrom: minMonth, baseSalaryVnd: '', rateVndPerKg: '', commissionPercent: '', handlingFeeVndPerKg: '', handlingDriverPercent: '', kpiTargetKg: '', kpiBonusVnd: '' },
   })
   const { isDirty } = rateForm.formState
 
-  const currentFormMonth = rateForm.watch('effectiveFrom')
+  const currentFormMonth = useWatch({ control: rateForm.control, name: 'effectiveFrom' })
   const isExistingMonth = rates.data?.some((r) => r.effectiveFrom.startsWith(currentFormMonth))
   const minMonthForInput = isExistingMonth ? currentFormMonth : minMonth
+  const rateForPeriod = rates.data?.reduce<PayrollRate | null>((latest, rate) => {
+    if (rate.effectiveFrom.slice(0, 7) > (board?.period ?? period)) return latest
+    return latest === null || rate.effectiveFrom > latest.effectiveFrom ? rate : latest
+  }, null)
+  const hasKpi = rateForPeriod?.kpiTargetKg != null || board?.drivers.some((driver) => driver.kpiAchieved) === true
 
   useEffect(() => {
     if (rates.data && !isDirty) {
@@ -81,6 +86,8 @@ export function PayrollPage() {
       commissionPercent: String(rate.commissionPercent),
       handlingFeeVndPerKg: String(rate.handlingFeeVndPerKg),
       handlingDriverPercent: String(rate.handlingDriverPercent),
+      kpiTargetKg: rate.kpiTargetKg == null ? '' : String(rate.kpiTargetKg),
+      kpiBonusVnd: rate.kpiTargetKg == null ? '' : String(rate.kpiBonusVnd),
     })
   }
 
@@ -97,6 +104,8 @@ export function PayrollPage() {
             commissionPercent: String(values.commissionPercent),
             handlingFeeVndPerKg: String(values.handlingFeeVndPerKg),
             handlingDriverPercent: String(values.handlingDriverPercent),
+            kpiTargetKg: values.kpiTargetKg == null ? '' : String(values.kpiTargetKg),
+            kpiBonusVnd: values.kpiBonusVnd == null ? '' : String(values.kpiBonusVnd),
           })
         },
       },
@@ -193,6 +202,7 @@ export function PayrollPage() {
               ) : board ? (
                 <PayrollResults
                   period={board}
+                  hasKpi={hasKpi}
                   statement={statement.data}
                   statementLoading={statement.isPending && selectedDriverId !== null}
                   statementError={statement.error ? dataErrorMessage(statement.error, t) : null}
