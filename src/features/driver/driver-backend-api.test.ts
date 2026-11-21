@@ -99,11 +99,25 @@ test('"Chuyến của tôi": mã tài xế của backend ở mọi lượt, đan
   expect(trips.inTransit[0]).toMatchObject({
     id: '1', code: 'TRIP-20261017-94EE14F0', scheduledDate: '2026-10-17', vehicleName: '51C-284.19', status: 'IN_TRANSIT', stopCount: 3, stops: [],
   })
-  // Backend chưa trả tên tuyến, số kiện, điểm đang giao: để trống, không điền số
+  // Chuyến không có tên (backend trả null hoặc không trả) và backend chưa trả số kiện, điểm đang giao: để trống, không điền số
   expect(trips.inTransit[0]?.name).toBeUndefined()
   expect(trips.inTransit[0]?.packageCount).toBeUndefined()
   expect(trips.inTransit[0]?.currentStop).toBeUndefined()
   expect(trips.inTransit[1]).toMatchObject({ code: '4', stopCount: 0 })
+})
+
+test('"Chuyến của tôi": tên chuyến của backend hiện trên thẻ; chuyến chưa đặt tên hoặc tên toàn khoảng trắng thì để trống', async () => {
+  routes['GET /api/driver/trips'] = ok([
+    { ...TRIP, tripName: 'Tuyến Biên Hoà - Vũng Tàu' },
+    { ...TRIP, tripId: 2, tripName: '   ' },
+    { ...TRIP, tripId: 3, tripName: null },
+  ])
+  const trips = await fetchMyTrips()
+  expect(trips.inTransit.map((row) => [row.id, row.name])).toStrictEqual([
+    ['1', 'Tuyến Biên Hoà - Vũng Tàu'],
+    ['2', undefined],
+    ['3', undefined],
+  ])
 })
 
 test('không đọc được mã tài xế: không gọi endpoint nào của tài xế (thiếu driverId là chuyến của mọi tài xế); lần sau hỏi lại', async () => {

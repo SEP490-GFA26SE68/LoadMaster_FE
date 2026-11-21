@@ -1,3 +1,4 @@
+import { transfers } from './vi/transfers'
 import { language } from './vi/language'
 import { nav } from './vi/nav'
 import { roles } from './vi/roles'
@@ -11,6 +12,7 @@ import { fleet } from './vi/fleet'
 import { issues } from './vi/issues'
 import { optimization } from './vi/optimization'
 import { trips } from './vi/trips'
+import { tripClaims } from './vi/tripClaims'
 import { warehouse } from './vi/warehouse'
 import { viewer } from './vi/viewer'
 import { fields } from './vi/fields'
@@ -95,6 +97,7 @@ export const vi = {
   issues,
   optimization,
   trips,
+  tripClaims,
   warehouse,
   viewer,
   fields,
@@ -154,5 +157,7 @@ export const vi = {
   serverWarehouse,
   trialRegistration,
   guestRegistration,
+  transfers,
+
   assistant,
 } as const

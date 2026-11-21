@@ -131,4 +131,3 @@ export function useReportServerDamagedMutation(tripId: string) {
     onSuccess: (result) => settle(client, tripId, result.outcome === 'leftOut' ? result.session : undefined),
   })
 }
-

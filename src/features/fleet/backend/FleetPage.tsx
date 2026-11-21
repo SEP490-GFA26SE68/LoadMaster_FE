@@ -112,6 +112,7 @@ export function FleetPage() {
         }
         actions={
           <>
+            {canEdit ? <Button variant="glass" asChild><Link to="/doi-xe/dieu-chuyen">{t('transfers.title')}</Link></Button> : null}
             {/* Review 1 (LM-104): danh mục loại xe nằm dưới Đội xe, không thêm mục vào thanh điều hướng */}
             <Button variant="glass" asChild>
               <Link to="/doi-xe/loai-xe">

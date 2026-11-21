@@ -158,4 +158,3 @@ export function nextMonthPeriod(from: Date = new Date()): string {
   const month = from.getMonth() === 11 ? 1 : from.getMonth() + 2
   return `${year}-${String(month).padStart(2, '0')}`
 }
-

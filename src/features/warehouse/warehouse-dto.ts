@@ -308,7 +308,6 @@ function warehouseObstacleOf(dto: BackendObstacle): VehicleObstacle {
   }
 }
 
-
 export function sessionOf(dto: StartLoadingDto): ServerLoadingSession {
   const id = String(dto.tripId)
   const steps = (dto.placements ?? []).map((step) => ({ status: step.status, placement: placementOf(step), staging: stagingOf(step) }))

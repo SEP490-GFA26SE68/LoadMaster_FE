@@ -1,6 +1,8 @@
 import type { Page } from '@playwright/test'
 import { DEMO_EMAILS, DEMO_PASSWORD, expect, test } from './fixtures'
 import { MOCK_DB } from './spec-flow-helpers'
+import { PERMISSIONS } from '../src/features/auth/permissions'
+import { PERMISSION_GROUPS } from '../src/features/admin/permission-groups'
 
 /**
  * Quản trị người dùng (LM-092, D-42): tài khoản quản trị công ty tạo đăng nhập được bằng mật khẩu tạm (gửi qua email) và mở đúng màn
@@ -167,8 +169,9 @@ for (const lang of ['vi', 'en'] as const) {
     await page.getByRole('tab', { name: lang === 'vi' ? 'Ma trận quyền' : 'Permission matrix', exact: true }).click()
     const matrix = page.getByRole('table')
     await expect(matrix.getByRole('columnheader')).toHaveCount(9)
-    // Một dòng tiêu đề, 14 dòng khu vực, 39 dòng quyền, một dòng tổng
-    await expect(matrix.getByRole('row')).toHaveCount(55)
+    // Header + current permission groups + every permission + total (payroll.manage, payroll.viewOwn, companyWarehouses.manage).
+    await expect(matrix.getByRole('row')).toHaveCount(2 + PERMISSION_GROUPS.length + PERMISSIONS.length)
+    await expect(matrix.getByText('companyWarehouses.manage', { exact: true })).toBeVisible()
 
     const layout = await page.evaluate(() => {
       const table = document.querySelector('table')!

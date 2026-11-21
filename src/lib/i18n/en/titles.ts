@@ -6,6 +6,7 @@ export const titles = {
   passwordReset: 'Set a new password',
   dashboard: 'Dashboard',
   trips: 'Trips',
+  tripClaims: 'Trip claims',
   trip: 'Trip {id}',
   newTrip: 'Create trip',
   editTrip: 'Edit trip {id}',

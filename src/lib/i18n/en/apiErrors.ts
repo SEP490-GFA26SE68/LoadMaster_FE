@@ -82,6 +82,12 @@ VEHICLE_PRESENCE_CONFLICT: "Vehicle state or confirmation key conflict. Check th
   EXPORT_TOO_MANY_PACKAGES: 'Too many packages selected for one label print.',
 
   TRIP_NOT_FOUND: 'The trip was not found.',
+  TRIP_CLAIM_NOT_FOUND: 'The trip claim was not found.',
+  TRIP_CLAIM_DUPLICATE: 'You have already submitted a claim for this trip.',
+  TRIP_CLAIM_TRIP_TAKEN: 'This trip already has an assigned driver.',
+  TRIP_CLAIM_TRIP_NOT_OPEN: 'This trip is no longer open for driver claims.',
+  TRIP_CLAIM_ALREADY_DECIDED: 'This trip claim has already been decided.',
+  TRIP_CLAIM_NOT_OWN: 'You cannot act on another driver\'s claim.',
   PAYROLL_RATE_NOT_CONFIGURED: 'The company has not configured pay rates for this month.',
   PAYROLL_RATE_ALREADY_EXISTS: 'A pay rate version already starts in this month.',
   PAYROLL_RATE_EFFECTIVE_DATE_TOO_EARLY: 'New pay rates can only take effect from next month (or current month for new companies).',
@@ -223,4 +229,5 @@ VEHICLE_PRESENCE_CONFLICT: "Vehicle state or confirmation key conflict. Check th
   STOP_NOT_MOVABLE: 'A stop is completed or the vehicle has reached it, so it cannot move.',
   PICKUP_AFTER_DELIVERY: 'A pickup stop must come before the delivery stop of the same request.',
   STOP_ORDER_BLOCKS_CARGO: 'In this order a package is fully blocked by packages delivered later and cannot be unloaded. The stop order stays as it was.',
+  VEHICLE_TRANSFER_CONFLICT: 'Vehicle or transfer state has changed. Refresh before retrying the same action.',
 } satisfies Dictionary<typeof source>

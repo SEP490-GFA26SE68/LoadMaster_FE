@@ -1,3 +1,5 @@
+import { PERMISSIONS } from '@/features/auth/permissions'
+import { PERMISSION_GROUPS } from './permission-groups'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent, { type UserEvent } from '@testing-library/user-event'
@@ -265,7 +267,7 @@ test('tab Ma trận quyền mở bảng chỉ đọc dựng từ ROLE_PERMISSION
   renderUsers()
   await user.click(screen.getByRole('tab', { name: 'Ma trận quyền' }))
   const matrix = await screen.findByRole('table')
-  // Một dòng tiêu đề, 14 dòng khu vực (có companyWarehouses), 39 quyền (payroll.manage + payroll.viewOwn) và một dòng tổng; cột đầu là tên quyền, tám cột còn lại là vai trò (FE-0-06)
-  expect(within(matrix).getAllByRole('row')).toHaveLength(55)
+  // Một dòng tiêu đề, các khu vực (có companyWarehouses), mọi quyền (payroll.manage + payroll.viewOwn) và một dòng tổng; cột đầu là tên quyền, tám cột còn lại là vai trò (FE-0-06)
+  expect(within(matrix).getAllByRole('row')).toHaveLength(2 + PERMISSION_GROUPS.length + PERMISSIONS.length)
   expect(within(matrix).getAllByRole('columnheader')).toHaveLength(9)
 })

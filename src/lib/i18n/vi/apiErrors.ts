@@ -91,6 +91,12 @@ VEHICLE_PRESENCE_CONFLICT: "Trạng thái xe hoặc mã xác nhận xung đột.
 
   // Chuyến, tuyến, phân tách hàng
   TRIP_NOT_FOUND: 'Không tìm thấy chuyến.',
+  TRIP_CLAIM_NOT_FOUND: 'Không tìm thấy phiếu xin chuyến.',
+  TRIP_CLAIM_DUPLICATE: 'Bạn đã gửi phiếu xin chuyến này rồi.',
+  TRIP_CLAIM_TRIP_TAKEN: 'Chuyến này đã có tài xế nhận.',
+  TRIP_CLAIM_TRIP_NOT_OPEN: 'Chuyến không còn ở trạng thái cho phép nhận.',
+  TRIP_CLAIM_ALREADY_DECIDED: 'Phiếu xin chuyến này đã có quyết định.',
+  TRIP_CLAIM_NOT_OWN: 'Bạn không thể thao tác trên phiếu của người khác.',
   PAYROLL_RATE_NOT_CONFIGURED: 'Công ty chưa cấu hình mức lương áp dụng cho tháng này.',
   PAYROLL_RATE_ALREADY_EXISTS: 'Đã có phiên bản mức lương bắt đầu từ tháng này.',
   PAYROLL_RATE_EFFECTIVE_DATE_TOO_EARLY: 'Mức lương mới chỉ được áp dụng từ tháng sau (hoặc từ tháng này đối với công ty mới).',
@@ -240,4 +246,5 @@ VEHICLE_PRESENCE_CONFLICT: "Trạng thái xe hoặc mã xác nhận xung đột.
   STOP_NOT_MOVABLE: 'Điểm đã hoàn tất hoặc xe đã tới nên không đổi chỗ được.',
   PICKUP_AFTER_DELIVERY: 'Điểm nhận hàng phải đứng trước điểm giao của cùng yêu cầu.',
   STOP_ORDER_BLOCKS_CARGO: 'Theo thứ tự này có kiện bị kiện giao sau che kín lối dỡ nên không dỡ được. Thứ tự điểm giữ nguyên.',
+  VEHICLE_TRANSFER_CONFLICT: "Xe hoặc yêu cầu điều chuyển đã thay đổi. Tải lại và kiểm tra trước khi thử lại cùng thao tác.",
 } as const

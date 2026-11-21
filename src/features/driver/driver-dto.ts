@@ -16,6 +16,8 @@ export type UserMeDto = { readonly id: number | null }
 export type DriverTripDto = {
   readonly tripId: number
   readonly tripCode: string | null
+  /** Tên chuyến điều phối viên đặt; chuyến chưa đặt tên là null (máy chủ cũ không có trường này). */
+  readonly tripName?: string | null
   readonly vehicleLicensePlate: string | null
   readonly stopCount: number | null
   /** `LocalDateTime` của backend: không kèm múi giờ, là giờ Việt Nam. */
@@ -90,15 +92,15 @@ export function departureDateOf(value: string | null): string | undefined {
 }
 
 /**
- * Một chuyến của "Chuyến của tôi": backend chưa có tên tuyến, số kiện, điểm đang giao, sự cố — để trống. Chuyến Đang xếp hàng mà kho đã
- * xếp xong (`loadingCompleted`) mang dòng phụ "Xếp xong — chờ xuất phát".
+ * Một chuyến của "Chuyến của tôi": tên chuyến lấy từ backend (`tripName`, để trống nếu chưa đặt); backend chưa có số kiện, điểm đang
+ * giao, sự cố — để trống. Chuyến Đang xếp hàng mà kho đã xếp xong (`loadingCompleted`) mang dòng phụ "Xếp xong — chờ xuất phát".
  */
 export function tripRowOf(dto: DriverTripDto, status: 'IN_TRANSIT' | 'LOADING' | 'DELIVERED' | 'PLANNED' = 'IN_TRANSIT'): MyTripRow {
   const id = String(dto.tripId)
   return {
     id,
     code: dto.tripCode ?? id,
-    name: undefined,
+    name: dto.tripName?.trim() || undefined,
     scheduledDate: departureDateOf(dto.departureTime),
     vehicleName: dto.vehicleLicensePlate ?? '',
     status,

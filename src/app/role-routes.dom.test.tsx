@@ -48,12 +48,13 @@ function leafRoutes(list: readonly RouteObject[], parentPath = ''): { path: stri
 
 test('the route table is what these checks think it is: known screens exist, removed and future screens do not', () => {
   expect([
-    '/', '/chuyen', '/chuyen/TRIP-001/phuong-an', '/ho-so', '/kho', '/tai-xe/diem-giao', '/yeu-cau-giao', '/giam-sat', '/nen-tang/goi', '/nen-tang/cong-ty',
+    '/', '/chuyen', '/chuyen/TRIP-001/phuong-an', '/phieu-xin-chuyen', '/ho-so', '/kho', '/tai-xe/diem-giao', '/yeu-cau-giao', '/giam-sat', '/nen-tang/goi', '/nen-tang/cong-ty',
     '/cong-ty', '/ho-tro', '/lien-he-khach', '/gioi-thieu', '/bang-gia', '/chinh-sach-bao-mat', '/phuong-an-mau', '/nen-tang/yeu-cau-dung-thu',
   ].filter((path) => !routeAccess(path).exists)).toStrictEqual([])
   expect(['/duyet', '/lo-hang', '/nhan-hang'].filter((path) => routeAccess(path).exists))
     .toStrictEqual([])
   expect(routeAccess('/chuyen/moi').permissions).toStrictEqual(['trips.edit'])
+  expect(routeAccess('/phieu-xin-chuyen').permissions).toStrictEqual(['trips.view'])
   // Yêu cầu giao thay Đơn hàng (FE-4b-02): đường dẫn cũ chuyển hướng, cùng nhóm quyền với màn mới
   expect(routeAccess('/yeu-cau-giao').permissions).toStrictEqual(['requirements.view'])
   expect(routeAccess('/don-hang').permissions).toStrictEqual(['requirements.view'])
@@ -95,6 +96,12 @@ test.each(ROLES)('%s: every nav item points to an existing route the role may op
   expect(items.map((item) => item.to)).toStrictEqual(NAV_ITEMS[role].map((id) => NAV_SCREENS[id].to))
   // Màn chính đứng đầu thanh của vai trò có mục
   if (items.length > 0) expect(items[0]?.to).toBe(ROLE_HOME[role])
+})
+
+test('tab phiếu xin chuyến chỉ được khai cho điều phối viên và quản lý công ty', () => {
+  expect(navItemsFor('dispatcher').some((item) => item.to === '/phieu-xin-chuyen')).toBe(true)
+  expect(navItemsFor('companyManager').some((item) => item.to === '/phieu-xin-chuyen')).toBe(true)
+  expect(navItemsFor('warehouse').some((item) => item.to === '/phieu-xin-chuyen')).toBe(false)
 })
 
 test('every nav screen names exactly the permission its route is guarded by, and is used by some role', () => {

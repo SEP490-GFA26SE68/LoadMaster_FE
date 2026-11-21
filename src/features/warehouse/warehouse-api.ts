@@ -138,4 +138,3 @@ export async function confirmLoadingByQr(tripId: string, { method, code }: Verif
 export function confirmLoadingManually(tripId: string, input: ManualConfirmInput): Promise<ScanResult<Trip>> {
   return getMockDb().confirmLoadingManually(tripId, input)
 }
-

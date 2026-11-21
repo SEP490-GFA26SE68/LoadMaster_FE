@@ -135,4 +135,3 @@ export function confirmServerPlacementManually(tripId: string, placementId: stri
 export function reportServerDamaged(tripId: string, placementId: string): Promise<DamageResult> {
   return ON_BACKEND ? backend().damaged(tripId, placementId) : mockOnly()
 }
-
