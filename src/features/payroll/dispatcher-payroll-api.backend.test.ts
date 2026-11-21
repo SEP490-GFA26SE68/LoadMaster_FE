@@ -9,6 +9,7 @@ import {
   fetchDispatcherPayrollRates,
   fetchDispatcherPayrollStatement,
   fetchOwnDispatcherPayroll,
+  kpiBonusForPeriod,
   lockDispatcherPayrollPeriod,
   updateDispatcherPayrollLine,
 } from './dispatcher-payroll-api'
@@ -41,7 +42,7 @@ afterEach(() => vi.unstubAllGlobals())
 test('reads dispatcher payroll settings and a monthly period from the server API', async () => {
   stubBackend({
     'GET /api/company/dispatcher-payroll/settings': reply([
-      { id: 4, effectiveFrom: '2026-11-01', baseSalaryVnd: 10_000_000, overtimeVndPerHour: 50_000, overtimeHoursPerDay: 2 },
+      { id: 4, effectiveFrom: '2026-11-01', baseSalaryVnd: 10_000_000, overtimeVndPerHour: 50_000, overtimeHoursPerDay: 2, overtimeDaysPerMonth: 4, kpiAmountVnd: 500_000 },
     ]),
     'GET /api/company/dispatcher-payroll/periods/2026-11': reply(period),
     'GET /api/company/dispatcher-payroll/periods/2026-11/dispatchers/31': reply({
@@ -68,7 +69,7 @@ test('reads dispatcher payroll settings and a monthly period from the server API
 test('creates a dispatcher rate, calculates, updates overtime and KPI, and locks', async () => {
   const { calls } = stubBackend({
     'PUT /api/company/dispatcher-payroll/settings': reply({
-      id: 5, effectiveFrom: '2026-12-01', baseSalaryVnd: 11_000_000, overtimeVndPerHour: 55_000, overtimeHoursPerDay: 2.5,
+      id: 5, effectiveFrom: '2026-12-01', baseSalaryVnd: 11_000_000, overtimeVndPerHour: 55_000, overtimeHoursPerDay: 2.5, overtimeDaysPerMonth: 4, kpiAmountVnd: 500_000,
     }),
     'POST /api/company/dispatcher-payroll/periods/2026-11/calculate': reply(period),
     'PUT /api/company/dispatcher-payroll/periods/2026-11/dispatchers/31': reply({
@@ -83,6 +84,8 @@ test('creates a dispatcher rate, calculates, updates overtime and KPI, and locks
     baseSalaryVnd: 11_000_000,
     overtimeVndPerHour: 55_000,
     overtimeHoursPerDay: 2.5,
+    overtimeDaysPerMonth: 4,
+    kpiAmountVnd: 500_000,
   })
   await calculateDispatcherPayrollPeriod('2026-11')
   await updateDispatcherPayrollLine('2026-11', 31, { overtimeDays: 4, kpiAmountVnd: 1_000_000 })
@@ -115,4 +118,14 @@ test('dispatcher reads their own payslip', async () => {
   })
 
   await expect(fetchOwnDispatcherPayroll('2026-11')).resolves.toMatchObject({ calculated: true, status: 'LOCKED' })
+})
+
+test('kpi bonus for a period prefers the period amount then the matching rate', () => {
+  const rates = [
+    { id: 1, effectiveFrom: '2026-11-01', baseSalaryVnd: 1, overtimeVndPerHour: 1, overtimeHoursPerDay: 1, overtimeDaysPerMonth: 0, kpiAmountVnd: 500_000 },
+    { id: 2, effectiveFrom: '2026-12-01', baseSalaryVnd: 1, overtimeVndPerHour: 1, overtimeHoursPerDay: 1, overtimeDaysPerMonth: 0, kpiAmountVnd: 2_000_000 },
+  ]
+  expect(kpiBonusForPeriod('2026-12', rates, 0)).toBe(2_000_000)
+  expect(kpiBonusForPeriod('2026-12', rates, 1_500_000)).toBe(1_500_000)
+  expect(kpiBonusForPeriod('2026-10', rates)).toBe(0)
 })

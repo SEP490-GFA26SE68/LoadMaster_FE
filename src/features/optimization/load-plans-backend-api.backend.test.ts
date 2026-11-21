@@ -28,7 +28,7 @@ const PLAN = (id: number, label: string | null, objective: string | null) => ({
   frontAxleLoad: null, rearAxleLoad: null, rehandlingCount: 2,
   placements: [{ id: id * 10, packageId: 301, packageCode: 'PK-301', weightKg: '20.5', posX: '0', posY: '0', posZ: '0',
     packedLength: '100', packedWidth: '50', packedHeight: '40', rotationType: 1, stepSequence: 1, stopId: 91, stopSequence: 1 }],
-  unplaced: [{ packageId: 302, trackingBarcode: 'BC-302', reason: 'OUT_OF_SPACE' }],
+  unplaced: [{ packageId: 302, trackingBarcode: 'BC-302', reason: 'CONSTRAINT_VIOLATED', violatedConstraints: ['AXLE_CONFIG_MISSING'] }],
 })
 
 test('chạy tối ưu gửi một lần chạy và đọc trạng thái job tới khi xong', async () => {
@@ -67,7 +67,10 @@ test('phương án của một lần chạy theo thứ tự A · B · C, kèm m�
   const [first] = plans
   expect(first).toMatchObject({ volumePercent: 62.5, payloadPercent: null, frontAxleLoadKg: null, centerOfGravityCm: null, rehandlingCount: 2, computationMs: 840 })
   expect(first?.placements[0]).toMatchObject({ code: 'PK-301', weightKg: 20.5, lengthCm: 100, rotationType: 1, stopId: '91', stopSequence: 1 })
-  expect(first?.unplaced).toEqual([{ packageId: '302', code: 'BC-302', reason: 'OUT_OF_SPACE', size: null, weightKg: null }])
+  expect(first?.unplaced).toEqual([{
+    packageId: '302', code: 'BC-302', reason: 'CONSTRAINT_VIOLATED',
+    violatedConstraints: ['AXLE_CONFIG_MISSING'], size: null, weightKg: null,
+  }])
 })
 
 test('phương án của chuyến kèm phương án đã duyệt; Duyệt gọi endpoint của phương án', async () => {

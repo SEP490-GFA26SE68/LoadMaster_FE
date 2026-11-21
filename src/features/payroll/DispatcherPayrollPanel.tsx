@@ -13,12 +13,13 @@ import { dataErrorMessage, useT } from '@/lib/i18n'
 import { DispatcherPayrollRateSettings } from './DispatcherPayrollRateSettings'
 import { DispatcherPayrollResults } from './DispatcherPayrollResults'
 import { nextMonthPeriod } from './payroll-api'
-import type { DispatcherPayrollRate } from './dispatcher-payroll-api'
+import { kpiBonusForPeriod, type DispatcherPayrollRate } from './dispatcher-payroll-api'
 import {
   dispatcherPayrollRateFormSchema,
   type DispatcherPayrollRateFormInput,
   type DispatcherPayrollRateFormValues,
 } from './dispatcher-payroll-rate-form'
+import { lockedPayrollMonth } from './payroll-version-row'
 import {
   useCalculateDispatcherPayrollPeriodMutation,
   useCreateDispatcherPayrollRateMutation,
@@ -27,6 +28,7 @@ import {
   useDispatcherPayrollRatesQuery,
   useDispatcherPayrollStatementQuery,
   useLockDispatcherPayrollPeriodMutation,
+  useUnlockDispatcherPayrollPeriodMutation,
 } from './useDispatcherPayrollQueries'
 
 function currentMonth(): string {
@@ -38,20 +40,28 @@ export function DispatcherPayrollPanel() {
   const t = useT()
   const [period, setPeriod] = useState(currentMonth)
   const [selectedDispatcherId, setSelectedDispatcherId] = useState<string | null>(null)
+  const [versionsOpen, setVersionsOpen] = useState(false)
   const [confirmLockOpen, setConfirmLockOpen] = useState(false)
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
+  const [confirmVersionLock, setConfirmVersionLock] = useState<string | null>(null)
+  const [confirmVersionUnlock, setConfirmVersionUnlock] = useState<string | null>(null)
   const rates = useDispatcherPayrollRatesQuery()
   const payroll = useDispatcherPayrollPeriodQuery(period)
-  const statement = useDispatcherPayrollStatementQuery(period, selectedDispatcherId)
+  const lockedMonth = lockedPayrollMonth(rates.data ?? [], period, payroll.data?.status)
+  const lockedBoard = useDispatcherPayrollPeriodQuery(lockedMonth ?? period, lockedMonth != null)
+  const board = lockedBoard.data?.status === 'LOCKED' ? lockedBoard.data : null
+  const statement = useDispatcherPayrollStatementQuery(board?.period ?? period, selectedDispatcherId)
   const createRate = useCreateDispatcherPayrollRateMutation()
   const calculate = useCalculateDispatcherPayrollPeriodMutation()
   const lock = useLockDispatcherPayrollPeriodMutation()
+  const unlock = useUnlockDispatcherPayrollPeriodMutation()
   const deleteDraft = useDeleteDraftDispatcherPayrollPeriodMutation()
+  const versionActionPending = calculate.isPending || lock.isPending || unlock.isPending
   const hasRates = (rates.data?.length ?? 0) > 0
   const minMonth = hasRates ? nextMonthPeriod() : currentMonth()
   const rateForm = useForm<DispatcherPayrollRateFormInput, unknown, DispatcherPayrollRateFormValues>({
     resolver: zodResolver(dispatcherPayrollRateFormSchema),
-    defaultValues: { effectiveFrom: minMonth, baseSalaryVnd: '', overtimeVndPerHour: '', overtimeHoursPerDay: '' },
+    defaultValues: { effectiveFrom: minMonth, baseSalaryVnd: '', overtimeVndPerHour: '', overtimeHoursPerDay: '', overtimeDaysPerMonth: '', kpiAmountVnd: '' },
   })
   const { isDirty } = rateForm.formState
 
@@ -71,6 +81,8 @@ export function DispatcherPayrollPanel() {
       baseSalaryVnd: String(rate.baseSalaryVnd),
       overtimeVndPerHour: String(rate.overtimeVndPerHour),
       overtimeHoursPerDay: String(rate.overtimeHoursPerDay),
+      overtimeDaysPerMonth: String(rate.overtimeDaysPerMonth),
+      kpiAmountVnd: String(rate.kpiAmountVnd ?? 0),
     })
   }
 
@@ -85,6 +97,8 @@ export function DispatcherPayrollPanel() {
             baseSalaryVnd: String(values.baseSalaryVnd),
             overtimeVndPerHour: String(values.overtimeVndPerHour),
             overtimeHoursPerDay: String(values.overtimeHoursPerDay),
+            overtimeDaysPerMonth: String(values.overtimeDaysPerMonth),
+            kpiAmountVnd: String(values.kpiAmountVnd),
           })
         },
       },
@@ -104,6 +118,11 @@ export function DispatcherPayrollPanel() {
           loadError={rates.isError ? dataErrorMessage(rates.error, t) : null}
           minMonth={minMonthForInput}
           onSelectRate={handleSelectRate}
+          versionsOpen={versionsOpen}
+          onVersionsOpenChange={setVersionsOpen}
+          onLockVersion={setConfirmVersionLock}
+          onUnlockVersion={setConfirmVersionUnlock}
+          versionActionPending={versionActionPending}
         />
 
         <section className="flex min-w-0 flex-col gap-4" aria-labelledby="dispatcher-payroll-period-title">
@@ -148,29 +167,36 @@ export function DispatcherPayrollPanel() {
             </div>
           </div>
 
-          {calculate.error || lock.error || deleteDraft.error ? (
-            <p role="alert" className="text-small text-danger">{dataErrorMessage(calculate.error ?? lock.error ?? deleteDraft.error, t)}</p>
+          {calculate.error || lock.error || unlock.error || deleteDraft.error ? (
+            <p role="alert" className="text-small text-danger">{dataErrorMessage(calculate.error ?? lock.error ?? unlock.error ?? deleteDraft.error, t)}</p>
           ) : null}
-          {payroll.isPending ? (
+          {rates.isPending || payroll.isPending || (lockedMonth != null && lockedBoard.isPending) ? (
             <div role="status" aria-label={t('payroll.loading')} className="flex justify-center py-16"><Spinner /></div>
-          ) : payroll.isError ? (
+          ) : payroll.isError || lockedBoard.isError ? (
             <EmptyState
               mascot="error"
               title={t('payroll.loadErrorTitle')}
-              description={dataErrorMessage(payroll.error, t)}
-              action={<Button variant="secondary" onClick={() => void payroll.refetch()}>{t('payroll.retry')}</Button>}
+              description={dataErrorMessage(payroll.error ?? lockedBoard.error, t)}
+              action={<Button variant="secondary" onClick={() => void (lockedBoard.isError ? lockedBoard.refetch() : payroll.refetch())}>{t('payroll.retry')}</Button>}
             />
-          ) : payroll.data === null ? (
-            <EmptyState mascot="empty" title={t('payroll.noPeriodTitle')} description={t('payroll.dispatcher.noPeriodDescription')} />
-          ) : (
+          ) : board ? (
             <DispatcherPayrollResults
-              period={payroll.data}
+              period={board}
+              kpiBonus={kpiBonusForPeriod(board.period, rates.data ?? [], board.kpiAmountVnd)}
               statement={statement.data}
               statementLoading={statement.isPending && selectedDispatcherId !== null}
               statementError={statement.error ? dataErrorMessage(statement.error, t) : null}
               selectedDispatcherId={selectedDispatcherId}
               onSelectDispatcher={setSelectedDispatcherId}
             />
+          ) : hasRates ? (
+            <EmptyState
+              mascot="empty"
+              title={t('payroll.selectVersionToLockTitle')}
+              description={t('payroll.selectVersionToLock')}
+            />
+          ) : (
+            <EmptyState mascot="empty" title={t('payroll.noPeriodTitle')} description={t('payroll.dispatcher.noPeriodDescription')} />
           )}
         </section>
       </div>
@@ -209,6 +235,53 @@ export function DispatcherPayrollPanel() {
             onSuccess: () => {
               toast.success(t('payroll.locked'))
               setConfirmLockOpen(false)
+            },
+          })
+        }}
+      />
+      <ConfirmDialog
+        open={confirmVersionLock !== null}
+        onOpenChange={(open) => { if (!open) setConfirmVersionLock(null) }}
+        title={t('payroll.lockVersionConfirmTitle', { period: confirmVersionLock ?? '' })}
+        description={t('payroll.lockVersionConfirmDescription')}
+        pending={versionActionPending}
+        confirmLabel={t('payroll.rate.lockVersion')}
+        cancelLabel={t('payroll.cancel')}
+        onConfirm={() => {
+          const version = confirmVersionLock
+          if (!version) return
+          const rate = rates.data?.find((item) => item.effectiveFrom.startsWith(version))
+          const run = rate?.periodStatus === 'DRAFT' || rate?.periodStatus === 'LOCKED'
+            ? Promise.resolve()
+            : calculate.mutateAsync(version)
+          void run.then(() => lock.mutateAsync(version)).then(() => {
+            toast.success(t('payroll.locked'))
+            setPeriod(version)
+            setSelectedDispatcherId(null)
+            setConfirmVersionLock(null)
+            setVersionsOpen(false)
+          })
+        }}
+      />
+      <ConfirmDialog
+        open={confirmVersionUnlock !== null}
+        onOpenChange={(open) => { if (!open) setConfirmVersionUnlock(null) }}
+        title={t('payroll.unlockVersionConfirmTitle', { period: confirmVersionUnlock ?? '' })}
+        description={t('payroll.unlockVersionConfirmDescription')}
+        danger
+        pending={unlock.isPending}
+        confirmLabel={t('payroll.rate.unlockVersion')}
+        cancelLabel={t('payroll.cancel')}
+        onConfirm={() => {
+          const version = confirmVersionUnlock
+          if (!version) return
+          unlock.mutate(version, {
+            onSuccess: () => {
+              toast.success(t('payroll.unlocked'))
+              setPeriod(version)
+              setSelectedDispatcherId(null)
+              setConfirmVersionUnlock(null)
+              setVersionsOpen(false)
             },
           })
         }}

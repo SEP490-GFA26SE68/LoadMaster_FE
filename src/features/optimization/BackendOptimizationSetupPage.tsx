@@ -51,12 +51,14 @@ function BackendTripOptimizationPage({ tripId }: { tripId: string }) {
   const [job, setJob] = useState<OptimizationJob | null>(null)
   const [jobError, setJobError] = useState<unknown>(null)
   const [hasPlans, setHasPlans] = useState(false)
+  const [constraintCodes, setConstraintCodes] = useState<readonly string[]>([])
   const lastJobId = useRef<string | null>(null)
-  const onJobChange = useCallback((id: string, state: OptimizationJob | null, savedPlans: boolean, error?: unknown) => {
+  const onJobChange = useCallback((id: string, state: OptimizationJob | null, savedPlans: boolean, error?: unknown, codes?: readonly string[]) => {
     setJobId(id)
     setJob(state)
     setHasPlans(savedPlans)
     setJobError(error ?? null)
+    setConstraintCodes(codes ?? [])
     if (lastJobId.current !== id) {
       lastJobId.current = id
       setDialogOpen(true)
@@ -109,6 +111,7 @@ function BackendTripOptimizationPage({ tripId }: { tripId: string }) {
           job={job}
           error={jobError}
           hasPlans={hasPlans}
+          constraintCodes={constraintCodes}
           compareTo={`${tripPath}/so-sanh?lan-chay=${encodeURIComponent(jobId)}`}
         />
       ) : null}

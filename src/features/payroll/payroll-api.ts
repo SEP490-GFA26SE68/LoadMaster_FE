@@ -11,6 +11,7 @@ export type PayrollRate = {
   readonly commissionPercent: number
   readonly handlingFeeVndPerKg: number
   readonly handlingDriverPercent: number
+  readonly periodStatus?: 'DRAFT' | 'LOCKED' | null
 }
 
 export type PayrollDriverSummary = {
@@ -116,6 +117,10 @@ export function calculatePayrollPeriod(period: string): Promise<PayrollPeriod> {
 // POST /api/company/payroll/periods/{period}/lock
 export function lockPayrollPeriod(period: string): Promise<PayrollPeriod> {
   return api().post(`/api/company/payroll/periods/${encodeURIComponent(period)}/lock`)
+}
+
+export function unlockPayrollPeriod(period: string): Promise<PayrollPeriod> {
+  return api().post(`/api/company/payroll/periods/${encodeURIComponent(period)}/unlock`)
 }
 
 // DELETE /api/company/payroll/periods/{period}

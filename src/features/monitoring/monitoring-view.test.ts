@@ -2,7 +2,7 @@ import { expect, test, vi } from 'vitest'
 import type { TripException, TripLiveStop, TripMonitoring } from '@/lib/mock-db'
 import type { MonitoringBoard, MonitoringTrip } from './monitoring-api'
 import { monitoringEvents, publish, publishFleet, subscribe } from './monitoring-events'
-import { escalationRows, matchesFilter, selectedTripId, tripSummary, worstDeadline } from './monitoring-view'
+import { escalationRows, matchesFilter, MONITORING_EXCEPTION_PAGE_SIZE, MONITORING_HISTORY_PAGE_SIZE, pageIndexOfTrip, pagedTrips, selectedTripId, tripSummary, worstDeadline } from './monitoring-view'
 
 const trip = (tripId: string, stops: string[]): MonitoringTrip => ({
   tripId, name: `Tuyến ${tripId}`, vehicleName: 'Thaco Ollin 720 · 61C-339.05', driverName: 'Ngô Văn Bảo',
@@ -38,6 +38,25 @@ test('a row summarises the next stop, the worst level and the incidents still to
     worst: 'AT_RISK', activeExceptions: 2, lateRisk: true,
   })
   expect(tripSummary(B, live('TRIP-B', [stop(1, { deadlineStatus: 'OK' })])).lateRisk).toBe(false)
+})
+
+test('exceptions and location history page to the same card height as each other', () => {
+  expect(pagedTrips(['a', 'b'], 0, MONITORING_EXCEPTION_PAGE_SIZE).items).toEqual(['a'])
+  expect(pagedTrips(['a', 'b'], 1, MONITORING_EXCEPTION_PAGE_SIZE).items).toEqual(['b'])
+  expect(pagedTrips([1, 2, 3, 4, 5, 6, 7], 0, MONITORING_HISTORY_PAGE_SIZE).items).toEqual([1, 2, 3, 4, 5, 6])
+  expect(pagedTrips([1, 2, 3, 4, 5, 6, 7], 1, MONITORING_HISTORY_PAGE_SIZE).items).toEqual([7])
+})
+
+test('the trip list next to the map pages two trips at a time', () => {
+  const trips = [A, B, trip('TRIP-C', ['Kho 3']), trip('TRIP-D', ['Kho 4']), trip('TRIP-E', ['Kho 5'])]
+  expect(pagedTrips(trips, 0)).toEqual({ pageIndex: 0, pageCount: 3, items: [A, B] })
+  expect(pagedTrips(trips, 1).items.map((item) => item.tripId)).toEqual(['TRIP-C', 'TRIP-D'])
+  expect(pagedTrips(trips, 2).items.map((item) => item.tripId)).toEqual(['TRIP-E'])
+  expect(pagedTrips(trips, 9).pageIndex).toBe(2)
+  expect(pagedTrips([], -1)).toEqual({ pageIndex: 0, pageCount: 1, items: [] })
+  expect(pageIndexOfTrip(trips, 'TRIP-E')).toBe(2)
+  expect(pageIndexOfTrip(trips, 'TRIP-Z')).toBeNull()
+  expect(pageIndexOfTrip(trips, null)).toBeNull()
 })
 
 test('the two filters narrow together, and the selected trip falls back to the first visible one', () => {

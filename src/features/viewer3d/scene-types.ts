@@ -60,6 +60,8 @@ export type SceneUnplaced = {
   readonly message?: string
   /** Lý do `CONSTRAINT_VIOLATED`: các ràng buộc đã chặn kiện (FE-5b-04), UI dịch bằng `formatIssue`. */
   readonly violatedConstraints?: readonly ConstraintIssue[]
+  /** Mã ràng buộc cứng do máy chủ ghi (`AXLE_CONFIG_MISSING`, …); UI dịch bằng `serverPlans.constraints`. */
+  readonly solverConstraints?: readonly string[]
   /** Nguồn chỉ báo mã và lý do (máy chủ): không có điểm giao, kích thước, khối lượng — danh sách không vẽ các số đó. */
   readonly detailUnknown?: true
 }

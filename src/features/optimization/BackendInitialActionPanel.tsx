@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Banner } from '@/components/Banner'
 import { useCurrentUser } from '@/features/auth/AuthProvider'
@@ -9,12 +9,13 @@ import { canFetchOptimizationPlans, getBackendJobStatusKey } from './backend-job
 import { optimizationJobOf, type OptimizationJob } from './load-plan-dto'
 import { isOptimizationTerminal, type OptimizationActionScope } from './initial-optimization-action'
 import { useInitialOptimizationAction } from './useInitialOptimizationAction'
+import { solverConstraintMessage, uniqueSolverConstraints } from './solver-constraints'
 
 type Props = {
   tripId: string
   disabledReason?: string | null
   keepPinsFromPlanId?: string
-  onJobChange?: (id: string, job: OptimizationJob | null, hasPlans: boolean, error?: unknown) => void
+  onJobChange?: (id: string, job: OptimizationJob | null, hasPlans: boolean, error?: unknown, constraintCodes?: readonly string[]) => void
 }
 
 /** Shared by the trip setup and scoped independently across user/company/trip switches. */
@@ -56,10 +57,11 @@ function ActionPanel({ scope, disabledReason, keepPinsFromPlanId, onJobChange }:
   const resolved = terminal ? jobId : null
   const mayStart = !disabledReason && !initial.isPending && initial.notice !== 'storage'
     && (!initial.action || (jobId !== null && resolved === jobId))
+  const constraintCodes = useMemo(() => uniqueSolverConstraints(plans.data ?? []), [plans.data])
 
   useEffect(() => {
-    if (jobId !== null) onJobChange?.(jobId, job.data ?? null, (plans.data?.length ?? 0) > 0, job.error ?? plans.error)
-  }, [jobId, job.data, job.error, plans.data, plans.error, onJobChange])
+    if (jobId !== null) onJobChange?.(jobId, job.data ?? null, (plans.data?.length ?? 0) > 0, job.error ?? plans.error, constraintCodes)
+  }, [jobId, job.data, job.error, plans.data, plans.error, constraintCodes, onJobChange])
 
   return <section className="flex flex-col gap-3" aria-label={t('optimization.title')}>
     <div className="flex flex-wrap gap-3">
@@ -82,6 +84,11 @@ function ActionPanel({ scope, disabledReason, keepPinsFromPlanId, onJobChange }:
     {job.isError ? <p role="alert">{dataErrorMessage(job.error, t)}</p> : null}
     {jobId && !terminal && !job.isError ? <p role="status">{t('optimization.backend.running')}</p> : null}
     {job.data ? <p>{t(getBackendJobStatusKey(job.data.status))}</p> : null}
+    {constraintCodes.length > 0 ? (
+      <ul className="m-0 flex list-disc flex-col gap-1 pl-5 text-body text-danger" role="alert">
+        {constraintCodes.map((code) => <li key={code}>{solverConstraintMessage(code, t)}</li>)}
+      </ul>
+    ) : null}
     {job.data?.creditStatus === 'REFUND_PENDING' ? <p role="status">{t('optimization.backend.action.refundPending')}</p> : null}
     {job.data?.creditStatus === 'REFUNDED' ? <p role="status">{t('optimization.backend.action.refunded')}</p> : null}
     {plans.isError ? <p role="alert">{t('optimization.backend.plansFailed')}</p> : null}

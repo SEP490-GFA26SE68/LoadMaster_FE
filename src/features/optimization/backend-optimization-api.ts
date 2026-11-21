@@ -26,6 +26,12 @@ export type BackendPackagePlacement = {
   stopZoneName: string | null
 }
 
+export type BackendUnplacedPackage = {
+  packageId?: number | null
+  reason?: string | null
+  violatedConstraints?: readonly string[] | null
+}
+
 export type BackendLoadPlan = {
   id: number
   planName?: string | null
@@ -43,6 +49,7 @@ export type BackendLoadPlan = {
   rearAxleLoad: number | null
   rehandlingCount: number
   placements: BackendPackagePlacement[]
+  unplaced?: BackendUnplacedPackage[] | null
 }
 
 type BackendApiResponse<T> = {

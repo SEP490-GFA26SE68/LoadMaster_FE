@@ -9,6 +9,9 @@ export type DispatcherPayrollRate = {
   readonly baseSalaryVnd: number
   readonly overtimeVndPerHour: number
   readonly overtimeHoursPerDay: number
+  readonly overtimeDaysPerMonth: number
+  readonly kpiAmountVnd: number
+  readonly periodStatus?: 'DRAFT' | 'LOCKED' | null
 }
 
 export type DispatcherPayrollSummary = {
@@ -24,6 +27,7 @@ export type DispatcherPayrollSummary = {
 export type DispatcherPayrollPeriod = {
   readonly period: string
   readonly status: 'DRAFT' | 'LOCKED'
+  readonly kpiAmountVnd?: number
   readonly dispatchers: readonly DispatcherPayrollSummary[]
 }
 
@@ -50,7 +54,20 @@ export type DispatcherPayrollStatement =
       readonly status: 'DRAFT' | 'LOCKED' | null
     })
 
-export type DispatcherPayrollRateInput = Omit<DispatcherPayrollRate, 'id'>
+export type DispatcherPayrollRateInput = Omit<DispatcherPayrollRate, 'id' | 'periodStatus'>
+
+export function kpiBonusForPeriod(
+  period: string,
+  rates: readonly DispatcherPayrollRate[],
+  periodKpiAmountVnd?: number,
+): number {
+  const fromPeriod = Number(periodKpiAmountVnd ?? 0)
+  if (fromPeriod > 0) return fromPeriod
+  const applicable = rates
+    .filter((rate) => rate.effectiveFrom.slice(0, 7) <= period)
+    .sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom))[0]
+  return Number(applicable?.kpiAmountVnd ?? 0)
+}
 
 export type SetDispatcherBaseSalaryInput = {
   readonly dispatcherId: number
@@ -86,6 +103,10 @@ export function calculateDispatcherPayrollPeriod(period: string): Promise<Dispat
 
 export function lockDispatcherPayrollPeriod(period: string): Promise<DispatcherPayrollPeriod> {
   return api().post(`/api/company/dispatcher-payroll/periods/${encodeURIComponent(period)}/lock`)
+}
+
+export function unlockDispatcherPayrollPeriod(period: string): Promise<DispatcherPayrollPeriod> {
+  return api().post(`/api/company/dispatcher-payroll/periods/${encodeURIComponent(period)}/unlock`)
 }
 
 export function deleteDraftDispatcherPayrollPeriod(period: string): Promise<void> {

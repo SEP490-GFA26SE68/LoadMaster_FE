@@ -2193,8 +2193,9 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
 - **Màn Giám sát `/giam-sat`** (FE-6-10; `monitoring.view`): `fetchMonitoringBoard` (`['trips', 'monitoring-board']`) đọc phần ít đổi — chuyến Đang
   vận chuyển, xe, tài xế, điểm giao, tên người dùng; vị trí, ETA và sự cố đi theo nhịp của `useFleetMonitoringQuery`. **Chỉ thành phần con đọc
   theo nhịp** (`MonitoringBoard`, `EscalationTab`, số trên tab, `BoardSync`): dải tiêu đề không vẽ lại theo từng điểm vị trí; dòng danh sách là
-  `memo`, và `RouteMap` giữ mốc theo khoá — xe chạy chỉ dời mốc của nó (`setLngLat`), không dựng lại mốc kho và điểm giao. Bản đồ vẽ xe của
-  **mọi** chuyến đang chạy (`RouteMap` `others`, mốc kèm nhãn "mã chuyến · nguồn vị trí"), còn tuyến, kho và điểm giao là của chuyến đang chọn;
+  `memo`, và `RouteMap` giữ mốc theo khoá — xe chạy chỉ dời mốc của nó (`setLngLat`), không dựng lại mốc kho và điểm giao. Bản đồ chỉ vẽ
+  **chuyến đang chọn**: tuyến, kho, điểm giao và xe GPS của chuyến đó (`followVehicle` canh cả tuyến lẫn xe, nhãn "mã chuyến · nguồn vị trí"); chọn dòng khác thì
+  xe kia biến;
   danh sách cạnh nó là bản thay thế bản đồ cho trình đọc màn hình. Tab, chuyến đang chọn và hai công tắc lọc nằm trên URL
   (`tab=su-co-can-xu-ly`, `chuyen`, `nguy-co-tre`, `co-su-co`). `subscribeTrip` (`monitoring-api.ts` → `monitoring-events.ts`) là kênh sự kiện
   **trong bộ nhớ** thay WebSocket của backend: sự kiện (`LocationUpdate`, `EtaUpdate`, `EtaRiskAlert`, `ExceptionUpdate`, `TripCompleted`) phát khi

@@ -2,28 +2,28 @@ import { Card, CardBody, CardHeader, CardMeta, CardTitle } from '@/components/ui
 import { formatCoordinate } from '@/components/map'
 import { useFormat, useT } from '@/lib/i18n'
 import { SourceTag } from './monitoring-chips'
+import { MONITORING_HISTORY_PAGE_SIZE } from './monitoring-view'
+import { MonitoringPager, usePagedItems } from './MonitoringPager'
 import { useLocationHistoryQuery } from './useMonitoringQuery'
 
-/** Số điểm vị trí gần nhất hiện trong bảng; tổng số điểm của lịch sử ghi ở đầu thẻ. */
-const SHOWN_POINTS = 6
-
 /**
- * Lịch sử vị trí của chuyến đang chọn (FE-6-10): các điểm vị trí gần nhất kho đã ghi — giờ, toạ độ, tốc độ, nguồn — mới nhất trước.
- * Truy vấn nằm ở đây: điểm vị trí mới chỉ vẽ lại thẻ này.
+ * Lịch sử vị trí của chuyến đang chọn (FE-6-10): các điểm vị trí kho đã ghi — giờ, toạ độ, tốc độ, nguồn — mới nhất trước, sáu điểm mỗi
+ * trang cho khung cao bằng card sự cố cạnh nó.
  */
 export function LocationHistory({ tripId }: { tripId: string }) {
   const t = useT()
   const format = useFormat()
   const points = useLocationHistoryQuery(tripId).data ?? []
-  const latest = points.slice(-SHOWN_POINTS).toReversed()
+  const newestFirst = points.toReversed()
+  const page = usePagedItems(newestFirst, MONITORING_HISTORY_PAGE_SIZE)
   return (
-    <Card>
+    <Card className="flex h-full min-h-0 min-w-0 flex-col">
       <CardHeader>
         <CardTitle>{t('monitoring.panel.history.title')}</CardTitle>
         <CardMeta>{t('monitoring.panel.history.count', { count: points.length })}</CardMeta>
       </CardHeader>
-      <CardBody>
-        {latest.length === 0 ? (
+      <CardBody className="flex min-h-0 flex-1 flex-col">
+        {page.items.length === 0 ? (
           <p className="m-0 text-small text-ink-3">{t('monitoring.panel.history.empty')}</p>
         ) : (
           <table className="w-full border-collapse text-small">
@@ -37,7 +37,7 @@ export function LocationHistory({ tripId }: { tripId: string }) {
               </tr>
             </thead>
             <tbody>
-              {latest.map((point) => (
+              {page.items.map((point) => (
                 <tr key={`${point.recordedAt}:${point.source}`} className="border-b border-line-soft last:border-b-0">
                   <td className="py-1.5 pr-2 font-mono text-ink-1 tabular-nums">{format.time(point.recordedAt)}</td>
                   <td className="px-2 py-1.5 font-mono text-ink-1 tabular-nums">{formatCoordinate(point.lat)}, {formatCoordinate(point.lng)}</td>
@@ -49,6 +49,14 @@ export function LocationHistory({ tripId }: { tripId: string }) {
           </table>
         )}
       </CardBody>
+      <MonitoringPager
+        pageIndex={page.pageIndex}
+        pageCount={page.pageCount}
+        pageSize={page.pageSize}
+        total={page.total}
+        label={t('monitoring.panel.history.pagination')}
+        onPageChange={page.setPageIndex}
+      />
     </Card>
   )
 }

@@ -10,6 +10,7 @@ import {
   fetchPayrollRates,
   fetchTripPayrollDrivers,
   lockPayrollPeriod,
+  unlockPayrollPeriod,
   setDriverBaseSalary,
   setTripPayrollDrivers,
   type PayrollRateInput,
@@ -26,8 +27,13 @@ export function usePayrollRatesQuery() {
   return useQuery({ queryKey: RATES_KEY, queryFn: fetchPayrollRates, enabled: PAYROLL_CAPABILITIES.server, staleTime: 0 })
 }
 
-export function usePayrollPeriodQuery(period: string) {
-  return useQuery({ queryKey: periodKey(period), queryFn: () => fetchPayrollPeriod(period), enabled: PAYROLL_CAPABILITIES.server, staleTime: 0 })
+export function usePayrollPeriodQuery(period: string, enabled = true) {
+  return useQuery({
+    queryKey: periodKey(period),
+    queryFn: () => fetchPayrollPeriod(period),
+    enabled: PAYROLL_CAPABILITIES.server && enabled && period.length === 7,
+    staleTime: 0,
+  })
 }
 
 export function usePayrollDriverStatementQuery(period: string, driverId: string | null) {
@@ -73,7 +79,18 @@ export function useLockPayrollPeriodMutation() {
     mutationFn: lockPayrollPeriod,
     onSuccess: (period) => {
       client.setQueryData(periodKey(period.period), period)
-      return client.invalidateQueries({ queryKey: [...KEY, 'statement', period.period] })
+      return client.invalidateQueries({ queryKey: KEY })
+    },
+  })
+}
+
+export function useUnlockPayrollPeriodMutation() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: unlockPayrollPeriod,
+    onSuccess: (period) => {
+      client.setQueryData(periodKey(period.period), period)
+      return client.invalidateQueries({ queryKey: KEY })
     },
   })
 }

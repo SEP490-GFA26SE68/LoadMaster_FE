@@ -38,7 +38,7 @@ export function VehicleMarker({ tag, muted = false, heading }: { tag?: string; m
         <Truck className="size-4" strokeWidth={1.75} />
       </span>
       {tag ? (
-        <span className="absolute top-full mt-1 rounded-sm border border-border bg-bg px-1.5 py-0.5 text-micro font-medium whitespace-nowrap text-ink-1 shadow-e1">
+        <span className={`absolute top-full mt-1 rounded-sm border px-1.5 py-0.5 text-micro font-semibold whitespace-nowrap shadow-e1 ${muted ? 'border-border bg-bg text-ink-1' : 'border-primary bg-primary-bg text-primary'}`}>
           {tag}
         </span>
       ) : null}

@@ -39,8 +39,8 @@ export function MonitoringBoard({ board, filter, requestedTripId, onToggleFilter
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="grid grid-cols-[minmax(0,1fr)_26rem] items-start gap-3 max-lg:grid-cols-1">
-        <FleetMap trips={board.trips} fleet={fleet ?? []} selected={selected} />
+      <div className="grid grid-cols-[minmax(0,1fr)_26rem] items-stretch gap-3 max-lg:grid-cols-1">
+        <FleetMap fleet={fleet ?? []} selected={selected} />
         <MonitoringTripList
           liveOf={(tripId) => byId.get(tripId)}
           visible={visible}
@@ -58,29 +58,25 @@ export function MonitoringBoard({ board, filter, requestedTripId, onToggleFilter
 }
 
 /**
- * Bản đồ các xe Đang vận chuyển: xe của mọi chuyến kèm nhãn mã chuyến và nguồn vị trí ("Mô phỏng" / "GPS"); tuyến, kho và điểm giao
- * (màu điểm giao kèm số) là của chuyến đang chọn. Vị trí mô phỏng là kết quả mock nên thẻ mang nhãn MOCK RESULT; vị trí của backend là
- * điểm GPS máy chủ nhận, chỉ mang nhãn khi backend tự báo là kết quả mock.
+ * Bản đồ chuyến đang chọn: tuyến, kho, điểm giao và **chỉ** xe của chuyến đó (điểm GPS máy chủ nhận, nhãn "mã chuyến · GPS/Mô phỏng").
+ * Chọn chuyến khác thì các xe kia biến; khung nhìn gồm kho, điểm giao và GPS của chuyến đó. Vị trí mô phỏng mang MOCK RESULT; backend chỉ khi tự báo mock.
  */
-function FleetMap({ trips, fleet, selected }: { trips: readonly MonitoringTrip[]; fleet: readonly LiveMonitoring[]; selected: MonitoringTrip | undefined }) {
+function FleetMap({ fleet, selected }: { fleet: readonly LiveMonitoring[]; selected: MonitoringTrip | undefined }) {
   const t = useT()
   const caps = useMonitoringCapabilities()
   const mock = !caps.backend || fleet.some((live) => live.isMockResult)
-  const tripOf = new Map(trips.map((trip) => [trip.tripId, trip]))
   const liveSelected = selected ? fleet.find((live) => live.tripId === selected.tripId) : undefined
-  const vehicles = fleet.flatMap((live) => {
-    const trip = tripOf.get(live.tripId)
-    if (!trip || !live.location) return []
-    const source = t(`monitoring.location.sources.${live.location.source}`)
-    return [{
-      id: live.tripId,
-      name: t('monitoring.map.vehicle', { trip: live.tripId, name: trip.vehicleName, source }),
-      tag: t('monitoring.map.tag', { trip: live.tripId, source }),
-      lat: live.location.lat,
-      lng: live.location.lng,
-      heading: live.location.heading,
-    }]
-  })
+  const location = liveSelected?.location
+  const source = location ? t(`monitoring.location.sources.${location.source}`) : ''
+  const vehicle = selected && location
+    ? {
+        name: t('monitoring.map.vehicle', { trip: selected.tripId, name: selected.vehicleName, source }),
+        tag: t('monitoring.map.tag', { trip: selected.tripId, source }),
+        lat: location.lat,
+        lng: location.lng,
+        heading: location.heading,
+      }
+    : undefined
   const stops = useMemo(
     () => (selected?.stops ?? []).flatMap((stop) => (stop.lat === undefined || stop.lng === undefined ? [] : [{ id: stop.id, number: stop.number, name: stop.name, lat: stop.lat, lng: stop.lng }])),
     [selected?.stops],
@@ -100,16 +96,15 @@ function FleetMap({ trips, fleet, selected }: { trips: readonly MonitoringTrip[]
     return path.length > 1 ? path : undefined
   }, [liveSelected?.routeLegs])
   const path = monitoringPath ?? routePathQuery.data
-  const vehicle = vehicles.find((item) => item.id === selected?.tripId)
   const hasPosition = selected === undefined || vehicle !== undefined || fleet.length === 0
   return (
-    <Card className="min-w-0">
+    <Card className="flex h-full min-w-0 flex-col">
       <CardHeader>
         <CardTitle as="h2">{t('monitoring.map.title')}</CardTitle>
         {mock ? <Badge shape="tag" tone="mock">MOCK RESULT</Badge> : null}
         <CardMeta className="basis-full">{t('monitoring.map.note')}</CardMeta>
       </CardHeader>
-      <CardBody className="flex flex-col gap-2.5">
+      <CardBody className="flex min-h-0 flex-1 flex-col gap-2.5">
         {hasPosition ? null : (
           <p role="status" className="m-0 text-small text-ink-2">
             {t(caps.backend ? 'monitoring.backend.noPosition' : 'monitoring.map.noPosition', { id: selected?.tripId ?? '' })}
@@ -120,11 +115,11 @@ function FleetMap({ trips, fleet, selected }: { trips: readonly MonitoringTrip[]
         ) : null}
         <RouteMap
           label={t('monitoring.map.label')}
-          className="h-112"
+          className="min-h-112 flex-1"
           depot={selected?.depot}
           stops={stops}
           vehicle={vehicle}
-          others={vehicles.filter((item) => item.id !== selected?.tripId)}
+          followVehicle={vehicle !== undefined}
           path={path}
         />
       </CardBody>

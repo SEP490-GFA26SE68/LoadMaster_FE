@@ -217,6 +217,18 @@ test.each(['PARTIAL', 'NO_SOLUTION', 'TIMEOUT', 'FAILED', 'COMPLETED', 'SUCCESS'
   },
 )
 
+test('NO_SOLUTION đọc kiện chưa xếp và nói ràng buộc cụ thể', async () => {
+  status = 'NO_SOLUTION'
+  plans = [{
+    id: 80, plan_name: 'Plan_d45ddc29', packed_items_count: 0, placements: [],
+    unplaced: [{ packageId: 747, reason: 'CONSTRAINT_VIOLATED', violatedConstraints: ['AXLE_CONFIG_MISSING'] }],
+  }]
+  mount(); fireEvent.click(runButton())
+  expect(await screen.findByText(/Loại xe chưa đủ thông số trục/)).toBeInTheDocument()
+  expect(screen.getByText('Không có phương án hợp lệ')).toBeInTheDocument()
+  expect(planReads).toBe(1); expect(posts).toHaveLength(1)
+})
+
 test('PARTIAL fetches the saved plan and shows its packed count without starting another job', async () => {
   status = 'PARTIAL'
   plans = [{ id: 47, plan_name: 'Validated partial plan', packed_items_count: 17,

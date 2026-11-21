@@ -1,18 +1,23 @@
+import { Wallet } from 'lucide-react'
 import { useEffect, useState, type FormEvent } from 'react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/Button'
 import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader } from '@/components/ui/Dialog'
 import { Input } from '@/components/ui/Input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select'
 import { Spinner } from '@/components/ui/Spinner'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 
 import { nextMonthPeriod } from './payroll-api'
 import type { DispatcherPayrollPeriod, DispatcherPayrollStatement, DispatcherPayrollSummary } from './dispatcher-payroll-api'
+import { PAYROLL_TABLE_PAGE_SIZE, PayrollDialogPager, usePagedPayrollItems } from './payroll-dialog-pager'
 import { useSetDispatcherBaseSalaryMutation, useUpdateDispatcherPayrollLineMutation } from './useDispatcherPayrollQueries'
 
 type DispatcherPayrollResultsProps = {
   period: DispatcherPayrollPeriod
+  kpiBonus: number
   statement: DispatcherPayrollStatement | undefined
   statementLoading: boolean
   statementError: string | null
@@ -22,6 +27,7 @@ type DispatcherPayrollResultsProps = {
 
 export function DispatcherPayrollResults({
   period,
+  kpiBonus,
   statement,
   statementLoading,
   statementError,
@@ -32,6 +38,15 @@ export function DispatcherPayrollResults({
   const format = useFormat()
   const total = period.dispatchers.reduce((sum, dispatcher) => sum + dispatcher.totalSalaryVnd, 0)
   const locked = period.status === 'LOCKED'
+  const page = usePagedPayrollItems(period.dispatchers, PAYROLL_TABLE_PAGE_SIZE)
+
+  useEffect(() => {
+    if (selectedDispatcherId === null) return
+    const index = period.dispatchers.findIndex((dispatcher) => String(dispatcher.dispatcherId) === selectedDispatcherId)
+    if (index < 0) return
+    const nextPage = Math.floor(index / PAYROLL_TABLE_PAGE_SIZE)
+    if (nextPage !== page.pageIndex) page.setPageIndex(nextPage)
+  }, [selectedDispatcherId, period.dispatchers])
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
@@ -59,12 +74,12 @@ export function DispatcherPayrollResults({
                   <th className="px-3 py-2 text-right">{t('payroll.results.total')}</th>
                 </tr></thead>
                 <tbody>
-                  {period.dispatchers.map((dispatcher) => (
+                  {page.items.map((dispatcher) => (
                     <DispatcherPayrollRow
                       key={dispatcher.dispatcherId}
                       period={period.period}
                       dispatcher={dispatcher}
-                      locked={locked}
+                      kpiBonus={kpiBonus}
                       selected={selectedDispatcherId === String(dispatcher.dispatcherId)}
                       onSelect={() => onSelectDispatcher(selectedDispatcherId === String(dispatcher.dispatcherId) ? null : String(dispatcher.dispatcherId))}
                     />
@@ -73,39 +88,67 @@ export function DispatcherPayrollResults({
               </table>
             </div>
           )}
+          {period.dispatchers.length === 0 ? null : (
+            <PayrollDialogPager
+              pageIndex={page.pageIndex}
+              pageCount={page.pageCount}
+              pageSize={page.pageSize}
+              total={page.total}
+              label={t('payroll.dispatcher.tablePagination')}
+              onPageChange={page.setPageIndex}
+              className="px-0"
+            />
+          )}
         </CardBody>
       </Card>
 
-      {selectedDispatcherId === null ? null : statementLoading ? (
-        <div role="status" aria-label={t('payroll.loading')} className="flex justify-center py-8"><Spinner /></div>
-      ) : statementError ? (
-        <p role="alert" className="text-small text-danger">{statementError}</p>
-      ) : statement?.calculated ? (
-        <Card>
-          <CardHeader><CardTitle as="h2">{t('payroll.statement.title', { name: statement.dispatcherName })}</CardTitle></CardHeader>
-          <CardBody className="flex flex-col gap-3">
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              <Metric label={t('payroll.statement.baseSalary')} value={format.currency(statement.baseSalaryVnd)} />
-              <Metric label={t('payroll.dispatcher.overtimeHour')} value={`${format.currency(statement.overtimeVndPerHour)} ${t('payroll.dispatcher.overtimeHourUnit')}`} />
-              <Metric label={t('payroll.dispatcher.overtimeHoursPerDay')} value={`${statement.overtimeHoursPerDay} ${t('payroll.dispatcher.hoursUnit')}`} />
-              <Metric label={t('payroll.dispatcher.overtimeDays')} value={format.integer(statement.overtimeDays)} />
-              <Metric label={t('payroll.dispatcher.overtimeAmount')} value={format.currency(statement.overtimeAmountVnd)} />
-              <Metric label={t('payroll.dispatcher.kpi')} value={format.currency(statement.kpiAmountVnd)} />
-              <Metric label={t('payroll.statement.totalSalary')} value={format.currency(statement.totalSalaryVnd)} />
-            </div>
-            <p className="text-small text-ink-2">
-              {t('payroll.dispatcher.overtimeFormula', {
-                rate: format.currency(statement.overtimeVndPerHour),
-                hours: String(statement.overtimeHoursPerDay),
-                days: format.integer(statement.overtimeDays),
-              })}
-            </p>
-            {locked ? null : (
-              <DispatcherBaseSalaryAdjustment dispatcherId={statement.dispatcherId} currentBaseSalary={statement.baseSalaryVnd} />
+      <Dialog open={selectedDispatcherId !== null} onOpenChange={(open) => { if (!open) onSelectDispatcher(null) }}>
+        {selectedDispatcherId === null ? null : (
+          <DialogContent className="w-[min(44rem,calc(100vw-3rem))] max-h-[min(90dvh,52rem)]">
+            {statementLoading ? (
+              <div role="status" aria-label={t('payroll.loading')} className="flex justify-center px-7 py-16"><Spinner /></div>
+            ) : statementError ? (
+              <>
+                <DialogHeader icon={Wallet} title={t('payroll.statement.title', { name: t('payroll.dispatcher.person') })} />
+                <p role="alert" className="px-7 py-5 text-small text-danger">{statementError}</p>
+              </>
+            ) : statement?.calculated ? (
+              <>
+                <DialogHeader icon={Wallet} title={t('payroll.statement.title', { name: statement.dispatcherName })} />
+                <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-7 py-5">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <Metric label={t('payroll.statement.baseSalary')} value={format.currency(statement.baseSalaryVnd)} />
+                    <Metric label={t('payroll.dispatcher.overtimeHour')} value={`${format.currency(statement.overtimeVndPerHour)} ${t('payroll.dispatcher.overtimeHourUnit')}`} />
+                    <Metric label={t('payroll.dispatcher.overtimeHoursPerDay')} value={`${statement.overtimeHoursPerDay} ${t('payroll.dispatcher.hoursUnit')}`} />
+                    <Metric label={t('payroll.dispatcher.overtimeDays')} value={format.integer(statement.overtimeDays)} />
+                    <Metric label={t('payroll.dispatcher.overtimeAmount')} value={format.currency(statement.overtimeAmountVnd)} />
+                    <Metric label={t('payroll.dispatcher.kpi')} value={statement.kpiAmountVnd > 0 ? t('payroll.dispatcher.kpiAchieved') : t('payroll.dispatcher.kpiMissed')} />
+                    <Metric label={t('payroll.dispatcher.kpiBonus')} value={format.currency(statement.kpiAmountVnd)} />
+                    <Metric label={t('payroll.statement.totalSalary')} value={format.currency(statement.totalSalaryVnd)} />
+                  </div>
+                  <p className="text-small text-ink-2">
+                    {t('payroll.dispatcher.overtimeFormula', {
+                      rate: format.currency(statement.overtimeVndPerHour),
+                      hours: String(statement.overtimeHoursPerDay),
+                      days: format.integer(statement.overtimeDays),
+                    })}
+                  </p>
+                  {locked ? null : (
+                    <DispatcherBaseSalaryAdjustment dispatcherId={statement.dispatcherId} currentBaseSalary={statement.baseSalaryVnd} />
+                  )}
+                </div>
+              </>
+            ) : (
+              <div role="status" aria-label={t('payroll.loading')} className="flex justify-center px-7 py-16"><Spinner /></div>
             )}
-          </CardBody>
-        </Card>
-      ) : null}
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button type="button" variant="secondary">{t('payroll.close')}</Button>
+              </DialogClose>
+            </DialogFooter>
+          </DialogContent>
+        )}
+      </Dialog>
     </div>
   )
 }
@@ -113,13 +156,13 @@ export function DispatcherPayrollResults({
 function DispatcherPayrollRow({
   period,
   dispatcher,
-  locked,
+  kpiBonus,
   selected,
   onSelect,
 }: {
   period: string
   dispatcher: DispatcherPayrollSummary
-  locked: boolean
+  kpiBonus: number
   selected: boolean
   onSelect: () => void
 }) {
@@ -127,19 +170,42 @@ function DispatcherPayrollRow({
   const format = useFormat()
   const update = useUpdateDispatcherPayrollLineMutation()
   const [overtimeDays, setOvertimeDays] = useState(String(dispatcher.overtimeDays))
-  const [kpiAmountVnd, setKpiAmountVnd] = useState(String(dispatcher.kpiAmountVnd))
+  const [kpiAchieved, setKpiAchieved] = useState(dispatcher.kpiAmountVnd > 0)
 
   useEffect(() => {
     setOvertimeDays(String(dispatcher.overtimeDays))
-    setKpiAmountVnd(String(dispatcher.kpiAmountVnd))
+    setKpiAchieved(dispatcher.kpiAmountVnd > 0)
   }, [dispatcher.overtimeDays, dispatcher.kpiAmountVnd])
 
-  function save(nextDays = overtimeDays, nextKpi = kpiAmountVnd) {
+  function revertLine() {
+    setOvertimeDays(String(dispatcher.overtimeDays))
+    setKpiAchieved(dispatcher.kpiAmountVnd > 0)
+  }
+
+  function save(nextDays = overtimeDays, nextAchieved = kpiAchieved) {
     const days = Number(nextDays)
-    const kpi = Number(nextKpi)
-    if (!Number.isInteger(days) || days < 0 || Number.isNaN(kpi) || kpi < 0) return
+    const kpi = nextAchieved ? kpiBonus : 0
+    if (!Number.isInteger(days) || days < 0) return
     if (days === dispatcher.overtimeDays && kpi === dispatcher.kpiAmountVnd) return
-    update.mutate({ period, dispatcherId: dispatcher.dispatcherId, input: { overtimeDays: days, kpiAmountVnd: kpi } })
+    update.mutate(
+      { period, dispatcherId: dispatcher.dispatcherId, input: { overtimeDays: days, kpiAmountVnd: kpi } },
+      {
+        onError: (error) => {
+          revertLine()
+          toast.error(dataErrorMessage(error, t))
+        },
+      },
+    )
+  }
+
+  function changeKpi(value: string) {
+    const nextAchieved = value === 'achieved'
+    if (nextAchieved && kpiBonus <= 0) {
+      toast.error(t('payroll.dispatcher.kpiBonusRequired'))
+      return
+    }
+    setKpiAchieved(nextAchieved)
+    save(overtimeDays, nextAchieved)
   }
 
   return (
@@ -162,7 +228,7 @@ function DispatcherPayrollRow({
           max="31"
           step="1"
           className="w-20 rounded-md border border-line-soft bg-surface px-2 py-1 text-right disabled:opacity-60"
-          disabled={locked || update.isPending}
+          disabled={update.isPending}
           value={overtimeDays}
           onChange={(event) => setOvertimeDays(event.currentTarget.value)}
           onBlur={() => save()}
@@ -170,17 +236,22 @@ function DispatcherPayrollRow({
       </td>
       <td className="px-3 py-2 text-right">{format.currency(dispatcher.overtimeAmountVnd)}</td>
       <td className="px-3 py-2 text-right">
-        <input
-          aria-label={t('payroll.dispatcher.kpiOf', { name: dispatcher.dispatcherName })}
-          type="number"
-          min="0"
-          step="1"
-          className="w-28 rounded-md border border-line-soft bg-surface px-2 py-1 text-right disabled:opacity-60"
-          disabled={locked || update.isPending}
-          value={kpiAmountVnd}
-          onChange={(event) => setKpiAmountVnd(event.currentTarget.value)}
-          onBlur={() => save()}
-        />
+        <Select
+          value={kpiAchieved ? 'achieved' : 'missed'}
+          onValueChange={changeKpi}
+          disabled={update.isPending}
+        >
+          <SelectTrigger
+            aria-label={t('payroll.dispatcher.kpiOf', { name: dispatcher.dispatcherName })}
+            className="ml-auto h-8 w-36 px-2 text-small"
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="missed">{t('payroll.dispatcher.kpiMissed')}</SelectItem>
+            <SelectItem value="achieved">{t('payroll.dispatcher.kpiAchieved')}</SelectItem>
+          </SelectContent>
+        </Select>
       </td>
       <td className="px-3 py-2 text-right font-semibold">{format.currency(dispatcher.totalSalaryVnd)}</td>
     </tr>

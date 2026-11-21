@@ -10,6 +10,7 @@ import {
   fetchDispatcherPayrollStatement,
   fetchOwnDispatcherPayroll,
   lockDispatcherPayrollPeriod,
+  unlockDispatcherPayrollPeriod,
   setDispatcherBaseSalary,
   updateDispatcherPayrollLine,
   type DispatcherPayrollLineInput,
@@ -36,7 +37,7 @@ export function useDispatcherPayrollPeriodQuery(period: string, enabled = true) 
   return useQuery({
     queryKey: periodKey(period),
     queryFn: () => fetchDispatcherPayrollPeriod(period),
-    enabled: DISPATCHER_PAYROLL_CAPABILITIES.server && enabled,
+    enabled: DISPATCHER_PAYROLL_CAPABILITIES.server && enabled && period.length === 7,
     staleTime: 0,
   })
 }
@@ -84,7 +85,18 @@ export function useLockDispatcherPayrollPeriodMutation() {
     mutationFn: lockDispatcherPayrollPeriod,
     onSuccess: (period) => {
       client.setQueryData(periodKey(period.period), period)
-      return client.invalidateQueries({ queryKey: [...KEY, 'statement', period.period] })
+      return client.invalidateQueries({ queryKey: KEY })
+    },
+  })
+}
+
+export function useUnlockDispatcherPayrollPeriodMutation() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: unlockDispatcherPayrollPeriod,
+    onSuccess: (period) => {
+      client.setQueryData(periodKey(period.period), period)
+      return client.invalidateQueries({ queryKey: KEY })
     },
   })
 }

@@ -67,6 +67,8 @@ export type UnplacedDto = {
   readonly packageCode?: string | null
   readonly trackingBarcode?: string | null
   readonly reason?: string | null
+  /** Mã ràng buộc cứng khi `reason` là `CONSTRAINT_VIOLATED`; máy chủ cũ không trả. */
+  readonly violatedConstraints?: readonly string[] | null
   /** Kích thước (cm) và khối lượng (kg) của kiện; máy chủ cũ không trả. */
   readonly lengthCm?: Decimal | null
   readonly widthCm?: Decimal | null
@@ -177,6 +179,8 @@ export type LoadUnplaced = {
   readonly packageId: string
   readonly code: string
   readonly reason: string | null
+  /** Mã ràng buộc cứng do solver ghi; vắng khi máy chủ không trả. */
+  readonly violatedConstraints?: readonly string[]
   /** Kích thước cm và khối lượng kg của kiện; `null` khi máy chủ không trả. */
   readonly size: { readonly lengthCm: number; readonly widthCm: number; readonly heightCm: number } | null
   readonly weightKg: number | null
@@ -289,10 +293,12 @@ function placementOf(dto: PlacementDto): LoadPlacement {
 function unplacedOf(dto: UnplacedDto): LoadUnplaced {
   const [lengthCm, widthCm, heightCm] = [numberOf(dto.lengthCm), numberOf(dto.widthCm), numberOf(dto.heightCm)]
   const weightKg = numberOf(dto.weightKg)
+  const violatedConstraints = [...new Set((dto.violatedConstraints ?? []).map((code) => code.trim()).filter(Boolean))]
   return {
     packageId: String(dto.packageId),
     code: codeOf(dto),
     reason: dto.reason ?? null,
+    ...(violatedConstraints.length > 0 ? { violatedConstraints } : {}),
     size: lengthCm === null || widthCm === null || heightCm === null
       ? null
       : { lengthCm: roundCm(lengthCm), widthCm: roundCm(widthCm), heightCm: roundCm(heightCm) },
