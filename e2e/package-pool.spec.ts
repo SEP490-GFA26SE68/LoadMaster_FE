@@ -93,7 +93,7 @@ test('the warehouse worker adds a package type, adds a package that gets its QR 
   await labelsHero.getByRole('link', { name: 'Về kho kiện', exact: true }).click()
   await page.waitForURL(/\/kien-hang$/)
   const poolHero = page.getByRole('heading', { level: 1, name: 'Kho kiện', exact: true }).locator('xpath=ancestor::header[1]')
-  await expect(nav.getByRole('link')).toHaveText(['Kho', 'Xe trong kho', 'Kho kiện', 'Khách hàng'])
+  await expect(nav.getByRole('link')).toHaveText(['Kho', 'Xe trong kho', 'Kho kiện', 'Khách hàng', 'Phiếu lương'])
   await poolHero.getByRole('link', { name: 'Loại kiện', exact: true }).click()
   await page.waitForURL(/\/loai-kien$/)
   await expect(page.getByRole('button', { name: /^Xoá Thùng nước mắm 12 chai\. Còn 1 kiện dùng loại này/ })).toHaveAttribute('aria-disabled', 'true')

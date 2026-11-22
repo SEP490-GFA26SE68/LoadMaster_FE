@@ -215,7 +215,7 @@ export const admin = {
       audit: { view: 'View the system log' },
       subscriptionPlans: { manage: 'Create and edit subscription plans and the credit policy' },
       billing: { manage: 'Buy plans, top up credits, view transactions' },
-      payroll: { manage: 'Manage payroll settings and driver payroll', viewOwn: 'View your own payslip' },
+      payroll: { manage: 'Manage payroll settings and driver, dispatcher, warehouse payroll', viewOwn: 'View your own payslip' },
       support: { create: 'Send support requests', handle: 'Handle support requests' },
       contacts: { handle: 'Handle guest contact requests' },
       trialRequests: { manage: 'Review trial requests' },

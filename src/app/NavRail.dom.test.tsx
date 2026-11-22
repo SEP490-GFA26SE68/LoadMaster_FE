@@ -54,7 +54,7 @@ test.each<[Role, string[]]>([
   // "Phiếu xin chuyến" chỉ hiện khi web nối backend (nhóm `trips`); test chạy dữ liệu mẫu nên không có. "Phiếu lương" là lương của chính họ.
   ['dispatcher', ['Chuyến hàng', 'Giám sát', 'Kho kiện', 'Yêu cầu giao', 'Đội xe', 'Bảng điều khiển', 'Phiếu lương']],
   ['companyManager', ['Bảng điều khiển', 'Yêu cầu giao', 'Kho kiện', 'Chuyến hàng', 'Giám sát', 'Đội xe', 'Kho bãi', 'Bảng lương']],
-  ['warehouse', ['Kho', 'Xe trong kho', 'Kho kiện', 'Khách hàng']],
+  ['warehouse', ['Kho', 'Xe trong kho', 'Kho kiện', 'Khách hàng', 'Phiếu lương']],
   ['driver', ['Tài xế']],
   ['systemManager', ['Gói cước', 'Lịch sử gói cước', 'Công ty', 'Đơn dùng thử']],
   ['systemSupporter', ['Hỗ trợ', 'Liên hệ của khách']],

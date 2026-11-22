@@ -130,6 +130,7 @@ export const ROLE_PERMISSIONS: Readonly<Record<Role, readonly Permission[]>> = {
   ],
 
   warehouse: [
+    'payroll.viewOwn',
     'support.create',
     'packages.view',
     'packages.manage',

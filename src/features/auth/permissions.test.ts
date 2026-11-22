@@ -32,7 +32,7 @@ const EXPECTED: Readonly<Record<Role, readonly Permission[]>> = {
     'monitoring.view', 'fleet.view', 'fleet.edit', 'vehicleTypes.edit', 'exceptions.report', 'exceptions.resolve', 'pickups.create',
     'pickups.approve',
   ],
-  warehouse: ['support.create', 'packages.view', 'packages.manage', 'packages.lookup', 'labels.print', 'warehouse.operate'],
+  warehouse: ['payroll.viewOwn', 'support.create', 'packages.view', 'packages.manage', 'packages.lookup', 'labels.print', 'warehouse.operate'],
   driver: ['support.create', 'exceptions.report', 'pickups.create', 'driver.operate'],
 }
 
