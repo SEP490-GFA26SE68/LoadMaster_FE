@@ -2,7 +2,8 @@
  * Chỗ của trợ lý "Hỏi Lumo" trên hai trang công khai. Nút mở và khung chat neo góc dưới phải, chừa vùng an toàn của máy (tai thỏ, thanh
  * home). `--assistant-lift` do `useLauncherLift` ghi lên <html>: nút nâng lên khi nút chính của phần mở đầu hay nút "Lên đầu trang" chạm
  * vào chỗ của nó; khung chat (từ 768 px) đứng ngay trên nút. Dưới 768 px khung chat là tờ phủ cả màn (`100dvh`: bàn phím ảo không che ô
- * nhập). Lớp z 200: trên đầu trang dính (z 20), dưới hộp thoại (z 300) và toast.
+ * nhập). Lớp z 200: trên đầu trang dính (z 20), dưới hộp thoại (z 300) và toast. Trong ứng dụng nút mở nằm trên thanh điều hướng
+ * (`AppAssistant`, `.assistant-rail`) và khung chat neo góc trên phải (`data-surface='app'`).
  */
 :root {
   /* Thứ tự màu của gradient AI AWS (`--genai-*` ở index.css), dùng cho viền nút và vạch "đang trả lời" */
@@ -245,6 +246,55 @@
     width: min(720px, calc(100vw - 3rem));
     height: min(880px, calc(100dvh - var(--assistant-base) - var(--assistant-launcher-h) - 5.75rem - var(--assistant-lift, 0px)));
   }
+
+  /* Trong ứng dụng: nút mở nằm trên thanh điều hướng 60 px nên khung neo góc trên phải, ngay dưới thanh, mép phải thẳng mép nội dung của
+     thanh (16 px; từ 1.280 px là lề `px-shell`) */
+  .assistant-panel[data-surface='app'] {
+    top: calc(3.75rem + 0.5rem);
+    right: max(1rem, env(safe-area-inset-right));
+    bottom: auto;
+    height: min(640px, calc(100dvh - 3.75rem - 0.5rem - var(--assistant-base)));
+  }
+
+  .assistant-panel[data-surface='app'][data-expanded] {
+    height: calc(100dvh - 3.75rem - 0.5rem - var(--assistant-base));
+  }
+}
+
+@media (min-width: 1280px) {
+  .assistant-panel[data-surface='app'] {
+    right: max(1.5rem, calc((100vw - var(--shell-max)) / 2 + 1.5rem));
+  }
+}
+
+/* Planner (không có thanh điều hướng): nút "Trợ lý AI" ở hàng góc dưới phải khung 3D, trên thanh tiến trình. Khung đứng ngay trên hàng nút
+   đó, mép phải thẳng lề 12 px của khung 3D, đỉnh khung không lên quá 5 rem — không che thanh trên (nút Duyệt) */
+@media (min-width: 768px) {
+  .assistant-panel[data-surface='app'][data-dock='planner'] {
+    --assistant-dock-bottom: 9.5rem;
+    top: auto;
+    right: 0.75rem;
+    bottom: var(--assistant-dock-bottom);
+    height: min(560px, calc(100dvh - var(--assistant-dock-bottom) - 5rem));
+  }
+
+  .assistant-panel[data-surface='app'][data-dock='planner'][data-expanded] {
+    height: calc(100dvh - var(--assistant-dock-bottom) - 5rem);
+  }
+}
+
+/* Từ 1.280 px nút của khung 3D và thanh tiến trình thấp hơn (40 px thay 56 px), và cột nổi bên phải khung 3D (thẻ kiện đang chọn, rộng
+   20,75 rem) hiện ra: khung chat đứng bên trái cột đó — trợ lý chọn kiện thì thẻ của kiện không bị khung chat che */
+@media (min-width: 1280px) {
+  .assistant-panel[data-surface='app'][data-dock='planner'] {
+    --assistant-dock-bottom: 8.25rem;
+    right: calc(0.75rem + 20.75rem + 0.75rem);
+  }
+}
+
+/* Nút "Trợ lý AI" của thanh điều hướng và của Planner: vòng gradient quay khi rê chuột / focus, như nút nổi của trang công khai */
+.assistant-rail:is(:hover, :focus-visible) .assistant-avatar-ring {
+  animation-play-state: running;
 }
 
 @media (min-width: 768px) and (prefers-reduced-motion: reduce) {

@@ -1,5 +1,5 @@
 import { CheckCircle2, Pin } from 'lucide-react'
-import { useId, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import type { ConstraintIssue } from '@/domain/constraints'
 import type { VehicleConfig } from '@/domain/models'
@@ -7,6 +7,7 @@ import { formatIssue, useFormat, useT } from '@/lib/i18n'
 import { solverConstraintMessage } from '@/features/optimization/solver-constraints'
 import { cn } from '@/lib/utils'
 import type { ScenePlacement, SceneStop, SceneUnplaced } from '@/features/viewer3d/scene-input'
+import type { LeftTab } from '../useLoadPlanViewer'
 import { describeWhere } from './placement-relations'
 import { PlacedPackageList } from './PlacedPackageList'
 import { DARK_FIELD, DARK_SUBCARD, GLASS_PRESSED, MUTED, StopMark } from './scene-ui'
@@ -14,9 +15,10 @@ import { DARK_FIELD, DARK_SUBCARD, GLASS_PRESSED, MUTED, StopMark } from './scen
 /**
  * Tab "Danh sách" của hộp thông tin (V2.3 Planner3DThongTin): ba khối xếp chồng — chưa xếp (lọc theo lý do), đã ghim, đã xếp
  * (LM-049: tìm, lọc điểm giao, chỉ kiện có cảnh báo). Lệch có chủ ý: bản design gốc gợi ý "kéo vào vùng 3D để xếp thủ công" —
- * thao tác đó chưa được nối nên không hiện cursor kéo lẫn câu gợi ý.
+ * thao tác đó chưa được nối nên không hiện cursor kéo lẫn câu gợi ý. `section` (trợ lý của Planner bản máy chủ mở một khối): cuộn tới khối đó
+ * khi mở danh sách và mỗi lần khối đổi.
  */
-export function PackageListPanel({ unplaced, pinned, placements, vehicle, selectedId, onSelect, stops, issues, tripId }: {
+export function PackageListPanel({ unplaced, pinned, placements, vehicle, selectedId, onSelect, stops, issues, tripId, section }: {
   unplaced: readonly SceneUnplaced[]
   pinned: readonly ScenePlacement[]
   placements: readonly ScenePlacement[]
@@ -27,6 +29,7 @@ export function PackageListPanel({ unplaced, pinned, placements, vehicle, select
   issues: readonly ConstraintIssue[]
   /** Mở kiện gốc trong Chi tiết chuyến (`?kien=`, LM-046) */
   tripId: string
+  section?: LeftTab
 }) {
   const t = useT()
   const format = useFormat()
@@ -34,8 +37,15 @@ export function PackageListPanel({ unplaced, pinned, placements, vehicle, select
   const reasons = useMemo(() => [...new Set(unplaced.flatMap((item) => item.reasonCode ? [item.reasonCode] : []))], [unplaced])
   const shownUnplaced = reason === '' ? unplaced : unplaced.filter((item) => item.reasonCode === reason)
   const total = placements.length + unplaced.length
+  const rootRef = useRef<HTMLElement>(null)
+  useEffect(() => {
+    if (section === undefined) return
+    const root = rootRef.current
+    const target = section === 'unplaced' ? root : root?.querySelector(`[data-list-section="${section}"]`)
+    target?.scrollIntoView({ block: 'start' })
+  }, [section])
   return (
-    <section aria-label={t('viewer.packageList.label')} className="flex min-h-full flex-col gap-2 p-3 text-body-lg xl:text-body">
+    <section ref={rootRef} aria-label={t('viewer.packageList.label')} className="flex min-h-full flex-col gap-2 p-3 text-body-lg xl:text-body">
       <Section title={t('viewer.packageList.unplacedTab')} count={unplaced.length} tone={unplaced.length ? 'warn' : 'plain'}
         action={reasons.length > 1 ? (
           <select aria-label={t('viewer.plan.filters.reason')} value={reason} onChange={(event) => setReason(event.target.value)} className={cn(DARK_FIELD, 'xl:h-7.5')}>
@@ -84,7 +94,7 @@ export function PackageListPanel({ unplaced, pinned, placements, vehicle, select
         </>}
       </Section>
 
-      <Section title={t('viewer.packageList.pinnedTab')} count={pinned.length} hint={t('viewer.packageList.pinnedHint')}
+      <Section listSection="pinned" title={t('viewer.packageList.pinnedTab')} count={pinned.length} hint={t('viewer.packageList.pinnedHint')}
         inline={pinned.length === 0 ? t('viewer.packageList.noPinned') : undefined}>
         {pinned.length ? <ul className="m-0 mt-2 flex list-none flex-col gap-1.5 p-0">
           {pinned.map((item) => (
@@ -106,7 +116,7 @@ export function PackageListPanel({ unplaced, pinned, placements, vehicle, select
         </ul> : null}
       </Section>
 
-      <div className={cn('flex min-h-96 flex-1 flex-col', DARK_SUBCARD)}>
+      <div data-list-section="placed" className={cn('flex min-h-96 flex-1 flex-col', DARK_SUBCARD)}>
         <SectionHeader title={t('viewer.plan.filters.placedTab')} count={placements.length} note={t('viewer.packageList.byLoadingOrder')} className="px-3 pt-2.5" />
         <PlacedPackageList placements={placements} stops={stops} issues={issues} selectedId={selectedId} onSelect={onSelect} />
       </div>
@@ -114,13 +124,13 @@ export function PackageListPanel({ unplaced, pinned, placements, vehicle, select
   )
 }
 
-function Section({ title, count, tone = 'plain', action, inline, hint, children }: {
-  title: string; count: number; tone?: 'plain' | 'warn'; action?: ReactNode; inline?: string; hint?: string; children?: ReactNode
+function Section({ listSection, title, count, tone = 'plain', action, inline, hint, children }: {
+  listSection?: LeftTab; title: string; count: number; tone?: 'plain' | 'warn'; action?: ReactNode; inline?: string; hint?: string; children?: ReactNode
 }) {
   const titleId = useId()
   // Vùng có tên (tiêu đề khối): "Kiện chưa xếp", "Kiện đã ghim" đọc được như một mục riêng, thay các tab con cũ
   return (
-    <section aria-labelledby={titleId} className={cn('px-3 py-2.5', DARK_SUBCARD, tone === 'warn' && 'border-amber-500/35')} title={hint}>
+    <section aria-labelledby={titleId} data-list-section={listSection} className={cn('px-3 py-2.5', DARK_SUBCARD, tone === 'warn' && 'border-amber-500/35')} title={hint}>
       <SectionHeader titleId={titleId} title={title} count={count} inline={inline} action={action} />
       {children}
     </section>

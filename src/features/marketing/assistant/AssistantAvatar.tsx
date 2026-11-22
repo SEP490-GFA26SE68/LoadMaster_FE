@@ -4,6 +4,8 @@ import { cn } from '@/lib/utils'
 const SIZES = {
   /** Cạnh câu trả lời trong khung chat: ô 28 px, ảnh 34 px. */
   xs: { box: 'size-7', px: 34 },
+  /** Nút "Trợ lý AI" trên thanh điều hướng: ô 32 px trong vòng gradient 2 px — đủ 36 px như mọi nút của thanh. */
+  rail: { box: 'size-8', px: 38 },
   /** Nút mở: ô 36 px, ảnh 42 px. */
   sm: { box: 'size-9', px: 42 },
   /** Đầu khung chat: ô 40 px, ảnh 48 px. */

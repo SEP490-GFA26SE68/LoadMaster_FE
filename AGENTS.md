@@ -78,7 +78,7 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   mười hai mục, **Điều khoản sử dụng** `/dieu-khoan-su-dung` (`marketing/terms/`, nhánh `terms`): mười một mục. Mỗi câu nói đúng điều mã hôm
   nay làm và chọn theo nguồn đang chạy (máy chủ hay bản demo: `usesBackend(…)`, `REGISTRATION_CAPABILITIES`, `backendConfig.authSource`) —
   người đọc yêu cầu liên hệ theo `CONTACT_READER_ROLES` (`contacts/contact-readers.ts`: máy chủ cho thêm quản lý nền tảng), máy chủ trả lời
-  qua email (Brevo), email của máy chủ khi đăng ký, VNPay khi thanh toán thật, Goong khi tìm địa chỉ và tính tuyến; dấu tích đồng ý chỉ để
+  qua email (Brevo), email của máy chủ khi đăng ký, VNPay khi thanh toán thật, Goong khi tìm địa chỉ và tính tuyến, Anthropic khi trợ lý AI nối máy chủ (nhóm `assistant`: câu hỏi cho Lumo và mô tả hàng của bản thử); dấu tích đồng ý chỉ để
   form cho gửi, không gửi đi. Mọi số là tham số từ hằng của code (credit, kỳ gói, ngưỡng sắp hết credit từ `BILLING_CONSTANTS`; hạn ký thoả
   thuận dùng thử, ngày xoá và ngày cập nhật ở `legal/legal-facts.ts`). Hạn lưu trữ chỉ nói thứ code có (dùng thử: khoá sau 72 giờ, xoá 30 ngày
   sau khi hết hạn); dữ liệu khác trên máy chủ ghi "chưa ấn định". Không pháp nhân, địa chỉ, mã số thuế, email hay cam kết tuân thủ nào chưa
@@ -188,6 +188,17 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   không bắt đầu bằng 0 ("0,500" là lỗi, không phải 500); đổi một ô số kiện thì các ô số kiện khác được kiểm lại (`deps`), để lỗi quá trần
   tổng tự hết. Form cao hơn một màn hình nên từ 1.280 px (màn cao từ 768 px) cột kết quả dính dưới đầu trang, và tính xong thì cột được cuộn
   vào khung nhìn nếu đang bị cắt (`try/try-scroll.ts`; nhảy thẳng khi giảm chuyển động; cột cao hơn màn hình thì không cuộn).
+  **Mô tả hàng bằng lời** (`TryDescribe`, đầu cột form, **chỉ khi nhóm `assistant` nối máy chủ** — kho mẫu, CI, E2E không có ô này): khách
+  gõ mô tả (tối đa 1.000 ký tự, có bộ đếm; một dòng nói mô tả đi tới máy chủ LoadMaster và Anthropic, Lumo có thể đọc nhầm), bấm "Điền giúp
+  tôi" (nút phụ, mờ khi ô trống) → `try-extract-api.ts` (`POST /api/assistant/public/try-extract`, không token, `{ text, locale, guestKey }` —
+  cùng mã khách với trợ lý) → `useTryExtract` (mutation; ô và lượt điền giữ ở `LandingTry` qua `useTryDescribe`, đổi tab vẫn còn). Kết quả
+  thành chữ của form (`try-extract-values.ts`: không nhóm nghìn, dấu thập phân theo ngôn ngữ, `null` là ô trống; xe `null` giữ thùng xe đang
+  có; một tới bốn loại kiện thay loại cũ; điểm giao không đọc được tạm để điểm 1) rồi `form.reset` và chỉ kiểm các ô còn thiếu — `missing` của
+  máy chủ cộng ô trống, quá bốn loại, quá 1.000 kiện mà FE tự thấy. **Bộ tối ưu không chạy**: khách kiểm lại rồi tự bấm "Tính ba phương án";
+  đã có kết quả thì câu báo kết quả cũ hiện như khi sửa tay. Dưới ô: vùng `status` nói đã điền gì (không toast), "Lumo đã giả định" (chữ của
+  máy chủ, giữ nguyên) và "Cần bạn nhập thêm" (nhãn ô của form, `try-extract-text.ts`). Không nhận ra kiện nào, hay máy chủ lỗi (`ASSISTANT_*`,
+  `INVALID_INPUT`, lỗi mạng): form giữ nguyên, một dòng nói chưa điền được. Chính sách bảo mật nói mô tả đi qua máy chủ tới Anthropic; dòng
+  riêng tư cuối form khi có ô này là `form.privacyWithDescribe` (số trong form ở lại trình duyệt, chỉ mô tả được gửi khi bấm "Điền giúp tôi").
   Chỉ chạy khi bấm "Tính ba phương án" — **nút phụ**, nút chính của trang ở phần mở đầu —: `try-api.ts` → `useTryRun` (mutation; bấm lại
   thì huỷ lần cũ) gọi `optimizeCandidates` của chính bộ tối ưu mô phỏng (Web Worker khi có, luồng gọi khi không), một lần chạy ra ba phương
   án A · B · C; không tài khoản, kho mẫu, credit hay máy chủ. Xe của bản thử: cửa sau bằng lòng thùng, không vật cản, **không trục**; kiện theo
@@ -260,10 +271,38 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   câu mô tả vẽ ngay, không chờ phần 3D. Câu mô tả khung
   (`landing.stage.caption`) là `sr-only`, nối bằng `aria-describedby`; canvas `aria-hidden`.
 - **Trợ lý "Hỏi Lumo"** (`marketing/assistant/`, gắn ở `PublicPage` nên có ở cả hai trang công khai): trợ lý **thụ động** — không tự mở, không
-  lời mời bật lên — trả lời từ **bộ câu trả lời soạn sẵn** (`assistant-kb.ts`, 16 chủ đề; câu ở nhánh `assistant` của từ điển), **không phải AI**
-  và không bao giờ nói mình là AI; dòng nhỏ dưới ô gõ — cũng là mô tả của hộp thoại — nói Lumo trả lời từ tài liệu của LoadMaster, không phải nhân viên tư vấn. Khớp câu hỏi bằng
-  từ khoá vi + en không dấu (`assistant-match.ts`, dưới ngưỡng thì nói thẳng là chưa có câu trả lời). Lớp mạng `assistant-api.ts`
-  (`askAssistant`, `POST /api/assistant/messages` — chưa có ở BE: khớp ở trình duyệt sau 500 ms) → `useAskAssistantMutation`. Nút mở góc
+  lời mời bật lên. **Hai chế độ theo nhóm `assistant`** (`ASSISTANT_USES_AI` ở `assistant-api.ts`). Kho mẫu: trả lời từ **bộ câu trả lời soạn
+  sẵn** (`assistant-kb.ts`, 16 chủ đề; câu ở nhánh `assistant` của từ điển), **không phải AI** và không bao giờ nói mình là AI; dòng nhỏ dưới ô
+  gõ — cũng là mô tả của hộp thoại — nói Lumo trả lời từ tài liệu của LoadMaster, không phải nhân viên tư vấn. Khớp câu hỏi bằng từ khoá vi +
+  en không dấu (`assistant-match.ts`, dưới ngưỡng thì nói thẳng là chưa có câu trả lời) sau 500 ms. **Nối máy chủ**: Lumo là **trợ lý AI** và
+  dòng dưới ô gõ nói vậy, kèm "có thể nhầm" (`panel.disclaimerAi`, trong ứng dụng `disclaimerAiApp`). Câu gõ đi tới mô hình qua
+  `askAssistant` (`assistant-api.ts`, giới hạn 45 giây): khách `POST /api/assistant/public/messages` kèm `guestKey` — mã ngẫu nhiên 32 ký tự giữ
+  ở `sessionStorage` `loadmaster.tro-ly-lumo` —, người đã đăng nhập `POST /api/assistant/messages` kèm đường dẫn và tiêu đề của màn đang mở;
+  lượt sau gửi `conversationId` máy chủ trả về, "Bắt đầu lại" mở hội thoại mới. Câu gợi ý (chủ đề) vẫn là câu soạn sẵn. Máy chủ bận, hết
+  ngân sách (`ASSISTANT_*`) hay không tới được thì trả câu soạn sẵn kèm một dòng "Trợ lý AI đang bận…" (`degraded`), không hiện thông điệp thô.
+  Câu trả lời của mô hình vẽ bằng phần tử thường (`assistant-text.ts`: đoạn, gạch đầu dòng, bước — bỏ dấu Markdown, không bao giờ đưa HTML vào
+  trang); liên kết máy chủ gợi ý chỉ giữ đường dẫn trong app mà người xem mở được (`openableLinks` + `canOpenRoute` của `app/route-access.ts`,
+  tối đa ba). Trong ứng dụng, trợ lý tự mời chuyển câu hỏi cho đội hỗ trợ: hai nút "Có, chuyển cho đội hỗ trợ" / "Không cần" gửi đi như một
+  lượt trả lời, máy chủ tạo yêu cầu hỗ trợ và màn nêu mã; lối "Hỏi đội LoadMaster" sang form liên hệ chỉ có ở trang công khai. Lớp mạng
+  → `useAskAssistantMutation`. **Trong ứng dụng** (`AppAssistant`): nút "Trợ lý AI" 36 px trên **thanh điều hướng**, ngay sau Tìm
+  nhanh (ảnh Lumo `wink` trong vòng gradient, tên ở `aria-label` / `title`) — không nổi đè lên bảng như nút góc dưới phải —, **chỉ khi nhóm
+  `assistant` nối máy chủ**, người dùng không bị gắn cờ và công ty còn gói hiệu lực (vai trò nền tảng không bị khoá; `appAssistantShown`, thanh
+  cũng hỏi hàm này để chừa chỗ); màn toàn màn hình kho, tài xế không có nút. Khung chat neo góc trên phải, ngay
+  dưới thanh (`data-surface="app"`). **Planner bản máy chủ** (`BackendPlannerSession`) có nút "Trợ lý AI" riêng ở hàng góc dưới phải khung 3D
+  (`PlannerAssistant`, mục 7 "Operations"; khung chat `data-dock="planner"` đứng trên hàng nút đó), cùng cuộc trò chuyện. Ở đó câu hỏi gửi kèm
+  `viewer` (mã chuyến, mã số phương án, mã kiện đang chọn) và câu trả lời mang `uiActions` — `selectPackage`, `setCameraPreset`, `setStep`,
+  `setColorMode`, `openTab` — qua cầu nối thuần `viewer-bridge.ts` (`registerViewer` / `viewerContext` / `dispatchUiActions`, không Three.js):
+  kiểm lại từng lệnh (lệnh lạ, tham số sai, mã kiện phương án không có thì bỏ im lặng, không toast), tối đa 5 lệnh mỗi lượt, chỉ chạy lệnh của
+  câu trả lời **vừa về** (không chạy lại khi mở lại khung chat), bỏ hết khi đang Chỉnh sửa, khi không có Planner hay Planner đã sang phương án
+  khác. Không có lệnh dời, xoay, ghim hay duyệt. Màn chào trong ứng dụng gợi ý câu theo vai trò (`app-starters.ts`: màn đang mở, chuyến, credit, phiếu
+  lương, yêu cầu hỗ trợ, gói cước — chỉ câu máy chủ có công cụ trả lời cho vai trò đó), gửi cho mô hình như câu gõ. Điều phối viên và quản lý
+  công ty có thêm nút phụ **"Tóm tắt hôm nay"** ở màn chào (`briefingAvailable`, `briefing-api.ts` → `useBriefingQuery`: `enabled: false`,
+  chỉ gọi `GET /api/assistant/briefing` khi bấm): máy chủ đếm số theo công ty và đệm bản tin 2 giờ, mô hình chỉ viết câu; bản tin vào cuộc
+  trò chuyện như câu trả lời của Lumo (gạch đầu dòng, "Số liệu lúc HH:mm", liên kết qua `AnswerLinks`), không toast; lỗi nói đúng lý do bằng
+  `apiErrors` (`ASSISTANT_*`, quyền, mạng) — không có câu soạn sẵn thay thế. Cuộc trò chuyện gắn với
+  bề mặt và người xem (`assistantSession.bind`): đổi người đăng nhập hay đi từ trang công khai vào app thì cuộc trò chuyện cũ đóng và mất.
+  Ngoài khung chat, trợ lý còn đọc tin nhắn đặt giao của khách thành bản nháp ở form tạo yêu cầu giao (mục 9 "Yêu cầu giao"). Trên
+  hai trang công khai nút mở góc
   dưới phải (chữ từ 640 px, 48 px / 56 px cảm ứng, chừa vùng an toàn) có **viền gradient quay** kiểu nút trợ lý AI của AWS (`animated gradient border`: `conic-gradient` theo gradient AI của AWS Cloudscape —
   token `--genai-1…5` ở `index.css`, xanh nhạt → xanh dương → chàm → tím, ngoại lệ duy nhất của luật không tím, quyết định của chủ sản phẩm
   19/11/2026 —, viền 2 px thay viền xám + quầng màu ngoài nút; đứng yên lúc nghỉ, quay khi rê chuột / focus và khi Lumo đang trả lời
@@ -286,7 +325,8 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   trình duyệt, 15 mức từ 50 tới 10.000, đứng sẵn ở 300); thẻ gói rẻ nhất đủ dùng có viền `--primary` kèm nhãn chữ "Rẻ nhất đủ dùng".
   "Hỏi đội LoadMaster" mở form liên hệ (Hỏi thông tin) và điền sẵn câu hỏi qua `state` của điều hướng (không lên URL;
   `ContactSection` đọc một lần mỗi lần điều hướng) — không hứa thời gian trả lời. Cuộc trò chuyện chỉ trong bộ nhớ
-  (`assistant-session.ts`): giữ qua hai trang, tải lại là mất; không `localStorage`. Thêm điều sản phẩm làm được thì thêm chủ đề, chỉ nói
+  (`assistant-session.ts`): giữ qua hai trang, tải lại là mất; không `localStorage` (nối máy chủ thì máy chủ lưu hội thoại — Chính sách bảo
+  mật nói vậy và nêu Anthropic là bên nhận dữ liệu). Thêm điều sản phẩm làm được thì thêm chủ đề, chỉ nói
   điều đang đúng; điều theo nguồn dữ liệu đi qua `AssistantContext` (luật nghỉ bắt buộc chỉ khi giờ đến là của mock).
 - **Số trên trang giới thiệu** đều có nguồn, mỗi số kèm câu nguồn: số dưới bộ chọn của khung 3D, bảng ba phương án và số của điểm 1 ở "Một
   chuyến hàng" — đều của lần chạy mẫu vừa tính; hai số cố định cạnh bảng — credit một lần chạy (`BILLING_CONSTANTS.optimizationCost`) và cổng
@@ -365,8 +405,10 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   toàn màn hình không có), chuông thông báo (LM-098 — sự kiện nhật ký liên quan vai trò, không gồm việc chính mình làm; "đã đọc" là state giao
   diện trong tab, `read-state.ts`) và mục "Hồ sơ cá nhân" trong menu tài khoản (`/ho-so`, LM-096 — mọi người đã đăng nhập; mục "Yêu cầu hỗ trợ" kế
   bên là của năm vai trò công ty, FE-8-07; kho/tài xế mở từ nút tài khoản 56 px ở màn chính — menu đó còn có "Phiếu lương" cho vai trò có `payroll.viewOwn`). Nút hành động trên thanh dùng
-  `components/NavRailButton.tsx`. Thêm mục vào thanh phải đo lại ở 1.366 px (`e2e/layout-1366.spec.ts` đo thanh của điều phối viên và quản lý
-  công ty ở cả hai ngôn ngữ).
+  `components/NavRailButton.tsx`. Nhóm `assistant` nối máy chủ thì sau Tìm nhanh có nút "Trợ lý AI" 36 px (mục 1 "Trợ lý"); để tám mục của
+  quản lý công ty vẫn vừa, chữ "LoadMaster" cạnh logo ẩn ở 1.340–1.439 px và ô tìm nhanh chỉ rộng (176 px kèm "Ctrl K") từ 1.680 px thay vì
+  1.536 px (`QuickSearch wideFrom`). Thêm mục vào thanh phải đo lại ở 1.366 px (`e2e/layout-1366.spec.ts` đo thanh của điều phối viên và quản lý
+  công ty ở cả hai ngôn ngữ) — spec chạy ở kho mẫu nên không có nút trợ lý: đo lại bản nối máy chủ ở 1.340–1.920 px khi đổi thanh.
 - **Màn kho** (`/kho`, soạn, xếp, xếp xong, chờ duyệt lại; V2.3 đợt 6) có thanh trên là dải trời cao 80 px (`components/TouchTopBar`) với điều
   khiển **đặc**, không kính: nền `--sky-solid`, viền `--sky-solid-border` (token ở `index.css`), nút `variant="skySolid"`, và `tone="sky"` của
   `ExitIconButton`, `LanguageSwitch`, `NotificationBell variant="touch"`, `AccountMenu` — mặc định vẫn nền sáng. **Màn tài xế** (`/tai-xe`, điểm
@@ -542,11 +584,13 @@ src/
                         xuể" `why/` (`LandingWhy`, phép đếm `why-count.ts`); "Một chuyến, bốn màn" `roles/` (`LandingRoles`, khung
                         `DeviceFrame`, bốn màn thu nhỏ, số mẫu `roles-model.ts`); "Thử với hàng của bạn"
                         `try/` (`LandingTry`, luật form `try-form.ts`, request `try-request.ts`, số của ba phương án `try-outcome.ts`,
-                        `try-api.ts` → `useTryRun`);
+                        `try-api.ts` → `useTryRun`; ô mô tả bằng lời `TryDescribe`, `try-extract-api.ts` → `useTryExtract`, giá trị
+                        điền form `try-extract-values.ts`);
                         chữ và khối hiện một lần `reveal/` (`RevealProvider` — một IntersectionObserver —, `Reveal`, `RevealWords`,
                         `FlowHeading`, `LineRise`, `TextRibbon`, `Odometer`, `LumoSays`, `split-text.ts` thuần, `reveal.css`); trợ lý "Hỏi Lumo"
                         `assistant/` (nút mở `AssistantLauncher`, khung chat lười `AssistantPanel`, bộ câu trả lời `assistant-kb.ts` + khớp
-                        `assistant-match.ts` + tính gói `assistant-advisor.ts` thuần, `assistant-api.ts`, `assistant-session.ts`)
+                        `assistant-match.ts` + tính gói `assistant-advisor.ts` thuần, `assistant-api.ts`, `assistant-session.ts`; nút của Planner
+                        `PlannerAssistant` + cầu nối thuần `viewer-bridge.ts`)
     contacts/           yêu cầu liên hệ của khách `/lien-he-khach` (quản trị hệ thống, hỗ trợ khách hàng): bảng, khung xử lý `ContactPanel`
   lib/                  format, helper, mock dùng chung, api client
     i18n/               từ điển vi/en (mỗi nhánh một file trong vi/, en/), provider, hook
@@ -1286,6 +1330,12 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
   cho thêm một nút. Chỉ hiện ở chế độ Xem, khi chuyến Đã lập kế hoạch và người xem
   có `trips.edit`. Mở cùng hộp thoại `trips/ChangeVehicleDialog` với Chi tiết chuyến (mục 9); đổi xong phương án đang xem thành lỗi
   thời ngay và thanh lỗi thời ghi "đã sửa Xe (giờ · ngày · người)". Đổi xe không bao giờ là nút chính.
+- **Trợ lý AI ở Planner** (chỉ Planner bản máy chủ, nhóm `assistant` nối máy chủ — mục 1 "Trợ lý"). Nút kính "Trợ lý AI" ở cùng hàng góc
+  dưới phải khung 3D, ngay trước "Chi tiết / Hiển thị" (slot `assistant` của `SceneHud`; từ 768 px, dưới 1.280 px chỉ ảnh Lumo), không trên
+  thanh trên 56 px; chế độ Chỉnh sửa ẩn hàng đó nên không có nút. Khung chat đứng trên hàng nút, từ 1.280 px bên trái cột nổi (thẻ kiện
+  đang chọn không bị che). `usePlannerAssistant` đăng ký Planner sau mỗi lần vẽ: chọn kiện theo mã in trên nhãn (tên của placement, chỉ khi
+  phương án có đúng một kiện mang mã đó), góc nhìn, bước xếp (đưa mô phỏng về Xếp hàng), chế độ màu; `openTab` mở tab Danh sách của hộp
+  thông tin và cuộn tới khối chưa xếp / đã ghim / đã xếp (`leftTab` → `section` của `PackageListPanel`).
 - **Kiện ghim ở Planner** (FE-BL-02). Phương án có kiện ghim thì hàng dưới phải khung 3D có `PinnedRerun` — nhãn "N kiện đã ghim" (biểu tượng
   ghim + chữ) và nút phụ "Chạy lại giữ ghim", bên trái "Đổi xe" / "Chi tiết" (từ 768 px, dưới 1.280 px chỉ biểu tượng; chọn chỗ này vì thanh trên không còn chỗ và
   cột nổi bên phải che mọi thứ đặt chồng lên trên nó). Cần quyền `optimization.run` và chuyến Đã lập kế hoạch.
@@ -1382,7 +1432,8 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
 - **Nhóm chức năng** (`BACKEND_FEATURES`): `VITE_API_FEATURES` là `all` (mặc định), `none` hoặc danh sách tên nhóm, chỉ có hiệu lực khi đăng
   nhập bằng Keycloak (kho mẫu luôn tắt hết). Mỗi `-api.ts` hỏi `usesBackend('<nhóm>')` một lần ở đầu file (`ON_BACKEND`); nhóm tắt chạy đúng
   như kho mẫu, nên CI, E2E và test cũ không đổi. Đã nối: `users`, `companies`, `billing`, `contacts`, `support`, `packages`, `driver`,
-  `monitoring`, `trips`, `fleet`, `warehouse`, `notifications`, `registration`, `payroll`. Nhóm `payroll` cấu hình phiên bản đơn giá công ty,
+  `monitoring`, `trips`, `fleet`, `warehouse`, `notifications`, `registration`, `payroll`, `assistant` (trợ lý AI Lumo — mục 1 "Trợ lý
+  Hỏi Lumo"; tắt thì Lumo trả lời bằng câu soạn sẵn và app không có nút trợ lý). Nhóm `payroll` cấu hình phiên bản đơn giá công ty,
   tính và chốt bảng lương theo tháng, đọc phiếu lương tài xế và gán tài xế cho chuyến; lương điều phối (`/api/company/dispatcher-payroll/*`, `/api/dispatcher/payroll`) và lương kho (`/api/company/warehouse-payroll/*`: lương cứng, tiền mỗi kg đã xếp, KPI tuỳ chọn, lương cứng riêng từng người từ tháng sau; phiếu của chính nhân viên kho `/api/warehouse/payroll` — kỳ chưa chốt chỉ có lương cứng, kỳ đã chốt có đủ số và từng chuyến đã xếp). Kho mẫu không có bảng lương: màn hiện trạng thái chưa bật. `platformOps` chưa có thân hàm nào — cờ bật vẫn là kho mẫu — nên không dựa vào `usesBackend`
   của nhóm đó cho tới khi nối. Nhóm `notifications` tắt thì chuông đọc nhật ký kho mẫu nên chỉ hiện khi mọi nhóm mà thông báo của vai trò
   nói về còn là kho mẫu (`notificationsReachable`, `notifications-api.ts`; bật thì mục "Chuông thông báo" dưới). Mã chuyến chỉ là liên kết khi màn đọc chuyến cùng nguồn với màn chuyến (`tripLinkable` ở
@@ -1625,6 +1676,13 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   nguồn với màn. Trang in nhãn của máy chủ chỉ xem trước và tải file PDF máy chủ dựng, không dựng tờ nhãn từ kho mẫu. Yêu cầu còn trong chuyến mà
   kho đã bỏ kiện của nó (máy chủ trả `shortDelivered`, `droppedPackageCount`) đọc là "Giao thiếu" (`PARTIAL`, suy lúc đọc như D-92); bỏ kiện
   cuối cùng thì máy chủ gỡ yêu cầu khỏi chuyến (về `PENDING`, điểm giao không còn kiện bị xoá). Máy chủ chưa có trạng thái hoàn trả của kiện.
+  **Bản nháp từ tin nhắn của khách** (nhóm `assistant`, chỉ form tạo; `RequirementDraftPanel`, `requirement-draft-api.ts`): điều phối viên dán
+  tin nhắn / email (tối đa 4.000 ký tự), `POST /api/assistant/requirement-draft` (`{ text }`, quyền `DELIVERY_DEMAND_MANAGE`, máy chủ không tạo
+  gì, không lưu nội dung) trả bản nháp; panel điền bằng `setValue` tên điểm đến + địa chỉ, hạn (giờ Việt Nam của máy chủ qua `isoFromBackend` →
+  `deadlineParts`), ưu tiên, số kiện dự kiến, ghi chú (`draftToFormValues`, thuần) — trường máy chủ để trống không đụng tới. **Không bao giờ tự
+  lưu** và không chạm khách hàng, kiện, toạ độ: tên bên gửi và danh sách hàng chỉ hiện để đối chiếu, "Cần bạn bổ sung" luôn có ô Khách hàng.
+  Dòng dưới ô dán nói nội dung đi tới máy chủ rồi tới Anthropic; trang Chính sách bảo mật có câu `privacy.company.requirementDraft`. Lỗi
+  `ASSISTANT_*` có câu riêng ở `requirements.draft.errors`.
 - **Kho** (`warehouse`; `warehouse-backend-api.ts`, DTO ở `warehouse-dto.ts`, `WAREHOUSE_CAPABILITIES` ở `warehouse-server-api.ts`): `/kho` là
   `ServerWarehouseTripsPage` — `GET /api/warehouse/tasks` trả chuyến chờ xếp và chuyến Đang xếp hàng kèm phiên (`executionId`,
   `executionStatus`; web và app di động gửi `includeAwaitingReplan=true` nên có thêm nhóm "Chờ điều phối tối ưu lại" — chuyến quay về lập kế hoạch vì

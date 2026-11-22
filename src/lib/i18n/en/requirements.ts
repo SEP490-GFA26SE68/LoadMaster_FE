@@ -137,6 +137,26 @@ export const requirements = {
     created: 'Requirement {id} created.',
     saved: 'Requirement {id} saved.',
   },
+  draft: {
+    title: 'Fill in from the customer’s message',
+    intro: 'Paste the customer’s message, email or phone notes. The AI assistant reads a draft and fills in the destination, deadline, priority, package count and note; you review it, pick the customer, then select Create requirement.',
+    text: 'Customer’s message',
+    disclosure: 'What you paste is sent to the LoadMaster server, then to Anthropic to read the draft. The server does not keep it. Paste only the part about this delivery.',
+    count: '{count}/{max} characters',
+    submit: 'Read and fill in',
+    reading: 'Reading the message…',
+    filled: { one: 'Filled in {count} field from the customer’s message. Review it before saving.', other: 'Filled in {count} fields from the customer’s message. Review them before saving.' },
+    nothing: 'No field could be read from this message. Fill in the fields below by hand.',
+    toComplete: 'Still for you to fill in: {fields}.',
+    customerGuess: 'Sender named in the message: {name} — pick or add the customer in the Customer field.',
+    packagesTitle: 'Goods in the message — for checking only; packages are still picked from the package pool:',
+    packageLine: '{quantity} × {description}',
+    errors: {
+      tooLong: 'The message is longer than {max} characters. Paste only the part about this delivery.',
+      rateLimited: 'You have used the AI assistant many times in the past hour. Try again in a few minutes, or fill in the fields below by hand.',
+      unavailable: 'The AI assistant is paused or could not read this message. Fill in the fields below by hand.',
+    },
+  },
   remove: {
     title: 'Delete requirement {id}?',
     description: {

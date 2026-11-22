@@ -4,7 +4,7 @@ import { isValidElement } from 'react'
 import { createMemoryRouter, matchRoutes, RouterProvider, type RouteObject } from 'react-router'
 import { beforeEach, expect, test } from 'vitest'
 import { ROLE_HOME } from '@/features/auth/landing'
-import { can, type Permission } from '@/features/auth/permissions'
+import { can } from '@/features/auth/permissions'
 import { RequireAuth } from '@/features/auth/RequireAuth'
 import { SEARCH_GROUPS, searchGroupsFor, searchSources, type SearchSources } from '@/features/search/quick-search'
 import { createTranslator } from '@/lib/i18n'
@@ -14,6 +14,7 @@ import { ROLES, type Role } from '@/types/user'
 import { routes } from './App'
 import { logoPath, NAV_ITEMS, NAV_SCREENS, navItemsFor } from './nav-items'
 import { Providers } from './providers'
+import { canOpenRoute, routeAccess } from './route-access'
 import { routeHandle } from './route-title'
 
 /**
@@ -22,20 +23,9 @@ import { routeHandle } from './route-title'
  * một route hay một quyền mà quên thanh điều hướng, màn chính là test đỏ.
  */
 
-/** Route khớp `path` trong bảng route: có tồn tại không (không rơi vào route bắt mọi đường dẫn lạ) và các quyền `guarded()` đòi. */
-function routeAccess(path: string): { exists: boolean; permissions: Permission[] } {
-  const matches = matchRoutes(routes, path) ?? []
-  const leaf = matches.at(-1)?.route
-  return {
-    exists: leaf !== undefined && leaf.path !== '*',
-    permissions: matches.flatMap(({ route }) => routeHandle(route.handle).permission ?? []),
-  }
-}
-
 /** Vai trò mở được `path`: route có thật và vai trò giữ mọi quyền route đòi — không phải màn 404, không phải màn 403. */
 function canOpen(role: Role, path: string): boolean {
-  const { exists, permissions } = routeAccess(path)
-  return exists && permissions.every((permission) => can(role, permission))
+  return canOpenRoute(path, (permission) => can(role, permission))
 }
 
 /** Route lá (màn thật) của bảng route, kèm đường dẫn để báo lỗi; route con `index` mang đường dẫn của cha. */

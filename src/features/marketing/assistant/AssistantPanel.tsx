@@ -6,11 +6,14 @@ import { SKY_FOCUS } from '@/components/sky-focus'
 import { Button } from '@/components/ui/Button'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+import { ASSISTANT_USES_AI } from './assistant-api'
 import { ASSISTANT_PANEL_ID, assistantSession, useAssistantSession } from './assistant-session'
+import { useAssistantSurface } from './assistant-surface'
 import { AssistantAvatar } from './AssistantAvatar'
 import { AssistantComposer, focusAssistantInput } from './AssistantComposer'
 import { AssistantLog } from './AssistantLog'
 import { useAssistantChat, useAssistantContext } from './useAssistantChat'
+import type { AssistantDock } from './useAssistantLauncher'
 
 const PHONE_QUERY = '(max-width: 767.98px)'
 const hasMatchMedia = () => typeof window !== 'undefined' && typeof window.matchMedia === 'function'
@@ -28,17 +31,21 @@ const isPhone = () => hasMatchMedia() && window.matchMedia(PHONE_QUERY).matches
  * màn hình, bẫy focus). Mở thì focus vào ô gõ; Esc (khi focus ở khung hoặc nút mở) hay nút đóng thì focus về nút mở — trừ khi đóng để
  * điều hướng (liên kết của câu trả lời, chuyển sang form liên hệ): trang đích tự đặt focus. `skipInitialFocus`: khung dựng lại khi đã mở
  * sẵn (chuyển giữa hai trang công khai) thì không giành focus của trang. Mô tả của hộp thoại là dòng nhỏ dưới ô gõ: Lumo trả lời từ tài
- * liệu, không phải nhân viên tư vấn. Từ 768 px nút phóng to ở đầu khung mở khung rộng 720 px, cao gần hết màn để đọc câu trả lời dài; nhãn
+ * liệu, không phải nhân viên tư vấn (nối máy chủ: Lumo là trợ lý AI và có thể nhầm). Từ 768 px nút phóng to ở đầu khung mở khung rộng 720 px, cao gần hết màn để đọc câu trả lời dài; nhãn
  * của nút đổi theo trạng thái ("Phóng to" / "Thu nhỏ").
  */
-export default function AssistantPanel({ launcherRef, skipInitialFocus = false }: {
+export default function AssistantPanel({ launcherRef, skipInitialFocus = false, dock }: {
   launcherRef: RefObject<HTMLButtonElement | null>
   skipInitialFocus?: boolean
+  /** `planner`: khung neo góc dưới phải, trên hàng nút của khung 3D (Planner không có thanh điều hướng). */
+  dock?: AssistantDock
 }) {
   const t = useT()
   const { open, entries, pending, expanded } = useAssistantSession()
   const phone = useSyncExternalStore(subscribePhone, isPhone, () => false)
   const context = useAssistantContext()
+  const surface = useAssistantSurface()
+  const disclaimer = !ASSISTANT_USES_AI ? 'assistant.panel.disclaimer' : surface === 'app' ? 'assistant.panel.disclaimerAiApp' : 'assistant.panel.disclaimerAi'
   const contentRef = useRef<HTMLDivElement>(null)
   const skipFocus = useRef(skipInitialFocus)
   const returnFocus = useRef(true)
@@ -62,6 +69,9 @@ export default function AssistantPanel({ launcherRef, skipInitialFocus = false }
           ref={contentRef}
           id={ASSISTANT_PANEL_ID}
           data-expanded={expanded || undefined}
+          // Trong ứng dụng khung neo góc trên phải, dưới nút "Trợ lý AI" của thanh điều hướng (assistant.css)
+          data-surface={surface}
+          data-dock={dock}
           aria-modal={phone ? true : undefined}
           onOpenAutoFocus={(event) => {
             event.preventDefault()
@@ -135,12 +145,13 @@ export default function AssistantPanel({ launcherRef, skipInitialFocus = false }
             onAsk={chat.send}
             onRuns={chat.sendRuns}
             onHandoff={chat.handoff}
+            onBriefing={chat.briefing}
             onNavigate={phone ? leave : undefined}
           />
           <AssistantComposer onSend={chat.send} pending={pending}>
             {/* Mô tả của hộp thoại: trình đọc màn hình đọc câu này cùng tên "Lumo" khi khung mở */}
             <DialogPrimitive.Description className="m-0 text-center text-fine text-ink-3 pointer-coarse:text-body-lg">
-              {t('assistant.panel.disclaimer', { name: LUMO_NAME })}
+              {t(disclaimer, { name: LUMO_NAME })}
             </DialogPrimitive.Description>
           </AssistantComposer>
         </DialogPrimitive.Content>

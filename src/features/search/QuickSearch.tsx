@@ -15,12 +15,22 @@ function isShortcut(event: KeyboardEvent): boolean {
 }
 
 /**
+ * Bề rộng từ đó nút thành ô kính 176px "Tìm nhanh · Ctrl K" (V2.3 `.glass-search.compact`); hẹp hơn thì chỉ còn icon 36px. Lớp viết đủ chữ
+ * để Tailwind sinh được.
+ */
+const WIDE = {
+  1536: { button: 'w-9 px-0 min-[1536px]:w-44 min-[1536px]:justify-start min-[1536px]:px-3', text: 'hidden min-[1536px]:contents' },
+  1680: { button: 'w-9 px-0 min-[1680px]:w-44 min-[1680px]:justify-start min-[1680px]:px-3', text: 'hidden min-[1680px]:contents' },
+} as const
+
+/**
  * Tìm nhanh (LM-099, D-55): nút "Tìm nhanh" trên nav rail và phím Ctrl+K / ⌘K ở mọi màn có nav rail mở hộp thoại tìm chuyến, kiện,
  * xe, người dùng, yêu cầu giao, kho kiện, loại kiện — chỉ nhóm người đăng nhập được xem và đọc được từ nguồn đang dùng
  * (`quickSearchGroups`). Không nhóm nào (kho, tài xế, quản lý nền tảng, hỗ trợ khách hàng) thì không có nút và không bắt phím: không mở
- * hộp thoại luôn rỗng (FE-0-04). Mở bằng phím tắt thì đóng xong con trỏ về chỗ cũ; mở bằng nút thì về nút.
+ * hộp thoại luôn rỗng (FE-0-04). Mở bằng phím tắt thì đóng xong con trỏ về chỗ cũ; mở bằng nút thì về nút. `wideFrom` dời mốc ô rộng khi
+ * thanh có thêm nút (trợ lý AI): ô rộng thêm 140px, tám mục của quản lý công ty không còn chỗ ở 1.536 px.
  */
-export function QuickSearch() {
+export function QuickSearch({ wideFrom = 1536 }: { wideFrom?: keyof typeof WIDE }) {
   const t = useT()
   const can = useCan()
   const navigate = useNavigate()
@@ -58,10 +68,9 @@ export function QuickSearch() {
           icon={Search}
           label={t('search.button')}
           aria-keyshortcuts="Control+K Meta+K"
-          // Màn rộng: ô kính 176px "Tìm nhanh · Ctrl K" (V2.3 `.glass-search.compact`); hẹp hơn thì chỉ còn icon 36px
-          className="w-9 px-0 min-[1536px]:w-44 min-[1536px]:justify-start min-[1536px]:px-3"
+          className={WIDE[wideFrom].button}
           text={
-            <span className="hidden min-[1536px]:contents">
+            <span className={WIDE[wideFrom].text}>
               <span className="text-small whitespace-nowrap">{t('search.button')}</span>
               <kbd className="ml-auto rounded-sm border border-sky-glass-border px-1.5 py-0.75 font-sans text-micro leading-none font-medium whitespace-nowrap">
                 {SHORTCUT_KEYS}
