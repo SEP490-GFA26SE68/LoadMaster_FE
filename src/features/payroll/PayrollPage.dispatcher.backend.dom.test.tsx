@@ -53,7 +53,7 @@ function renderPayroll() {
 test('manager calculates dispatcher payroll and sees the table only after locking', async () => {
   const user = userEvent.setup()
   const period = currentMonth()
-  const dispatchers = [{
+  const dispatcher = {
     dispatcherId: 31,
     dispatcherName: 'Nguyễn Thanh Tùng',
     baseSalaryVnd: 10_000_000,
@@ -61,7 +61,8 @@ test('manager calculates dispatcher payroll and sees the table only after lockin
     overtimeAmountVnd: 300_000,
     kpiAmountVnd: 0,
     totalSalaryVnd: 10_300_000,
-  }]
+  }
+  const dispatchers = [dispatcher]
   let payrollPeriod: { period: string; status: string; kpiAmountVnd: number; dispatchers: typeof dispatchers } | null = null
   let rate = {
     id: 7,
@@ -88,7 +89,7 @@ test('manager calculates dispatcher payroll and sees the table only after lockin
     },
     [`PUT /api/company/dispatcher-payroll/periods/${period}/dispatchers/31`]: () => {
       const next = [{
-        ...dispatchers[0],
+        ...dispatcher,
         kpiAmountVnd: 1_500_000,
         totalSalaryVnd: 11_800_000,
       }]
@@ -110,8 +111,8 @@ test('manager calculates dispatcher payroll and sees the table only after lockin
       overtimeHoursPerDay: 2,
       overtimeDays: 3,
       overtimeAmountVnd: 300_000,
-      kpiAmountVnd: payrollPeriod?.dispatchers[0].kpiAmountVnd ?? 0,
-      totalSalaryVnd: payrollPeriod?.dispatchers[0].totalSalaryVnd ?? 10_300_000,
+      kpiAmountVnd: payrollPeriod?.dispatchers[0]?.kpiAmountVnd ?? 0,
+      totalSalaryVnd: payrollPeriod?.dispatchers[0]?.totalSalaryVnd ?? 10_300_000,
     }),
   })
 
