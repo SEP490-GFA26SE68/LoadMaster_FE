@@ -3,6 +3,10 @@
  * theo revision đã duyệt, tiến độ ghi vào kho, màn xếp xong. Số cm theo locale.
  */
 export const warehouse = {
+  presence: {
+      confirmLoading: 'Tôi thấy xe tại kho — xác nhận cho chuyến {trip}',
+      loadingVerificationHint: 'Chuyến đang xếp nhưng chưa xác minh xe. Chỉ xác nhận khi bạn trực tiếp nhìn thấy xe tại đúng kho xuất phát.',
+"changed": "Trạng thái xe đã thay đổi sau lần xác nhận cũ. Vui lòng kiểm tra trạng thái mới nhất; không coi xe đang có mặt tại kho.", "title": "Xác nhận xe có mặt tại kho", "description": "Chọn kho được phân công để xem xe của công ty. Sẵn sàng khai thác (AVAILABLE) không có nghĩa xe đang ở kho. Chỉ xác nhận sau khi nhìn thấy xe thực tế tại kho đã chọn.", "noScope": "Bạn chưa được phân công quản lý kho. Liên hệ quản lý để được phân công.", "warehouse": "Kho được phân công", "choose": "Chọn kho", "search": "Biển số hoặc tên xe", "find": "Tìm xe", "loading": "Đang tải…", "empty": "Không tìm thấy xe phù hợp.", "saved": "Máy chủ đã ghi nhận xác nhận.", "uncertain": "Kiểm tra trạng thái và thử lại cùng lần xác nhận; không tạo lần mới.", "retry": "Thử lại lần xác nhận", "history": "Lịch sử xác nhận", "confirm": "Tôi xác nhận xe đang tại kho", "in": "Xe đến kho", "out": "Xe xuất phát", "status": {"UNKNOWN": "Chưa xác định", "AT_WAREHOUSE": "Đang ở kho", "IN_TRANSIT": "Đã rời kho"}, "pageTitle": "Xe trong kho", "workspace": "Khu vực kho", "backendOnly": "Màn xe trong kho cần kết nối máy chủ.", "selectHint": "Chọn một kho được phân công để xem danh sách xe của công ty.", "scopeChanged": "Kho này không còn trong danh sách được phân công. Vui lòng chọn lại kho.", "refresh": "Làm mới danh sách xe", "companyVehicles": "Xe thuộc công ty ({count})", "operation": "Trạng thái khai thác", "lastConfirmed": "Ghi nhận hiện diện gần nhất", "notRecorded": "Chưa ghi nhận", "pagination": "Phân trang xe", "previous": "Trang trước", "next": "Trang sau", "page": "Trang {page} / {total}", "backToTrips": "Về chuyến cần xếp"},
   loading: 'Đang tải chuyến',
   starting: 'Đang bắt đầu soạn hàng',
   exit: 'Thoát màn kho',

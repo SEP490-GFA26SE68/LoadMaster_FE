@@ -30,6 +30,8 @@ const payroll = {
       totalKg: 500,
       kgAmountVnd: 50_000,
       handlingAmountVnd: 120_000,
+      kpiAchieved: false,
+      kpiAmountVnd: 0,
       totalSalaryVnd: 8_170_000,
     },
   ],
@@ -42,7 +44,7 @@ afterEach(() => vi.unstubAllGlobals())
 test('reads company payroll settings and a monthly payroll with the server API', async () => {
   const { calls } = stubBackend({
     'GET /api/company/payroll/settings': reply([
-      { id: 4, effectiveFrom: '2026-11-01', baseSalaryVnd: 8_000_000, rateVndPerKg: 100, commissionPercent: 15, handlingFeeVndPerKg: 150, handlingDriverPercent: 85 },
+      { id: 4, effectiveFrom: '2026-11-01', baseSalaryVnd: 8_000_000, rateVndPerKg: 100, commissionPercent: 15, handlingFeeVndPerKg: 150, handlingDriverPercent: 85, kpiTargetKg: null, kpiBonusVnd: 0 },
     ]),
     'GET /api/company/payroll/periods/2026-11': reply(payroll),
     'GET /api/company/payroll/periods/2026-11/drivers/21': reply({
@@ -59,14 +61,17 @@ test('reads company payroll settings and a monthly payroll with the server API',
       handlingFeeVndPerKg: 150,
       handlingDriverPercent: 85,
       handlingAmountVnd: 120_000,
+      kpiTargetKg: null,
+      kpiAchieved: false,
+      kpiBonusVnd: 0,
       totalSalaryVnd: 8_170_000,
       trips: [],
     }),
   })
 
-  await expect(fetchPayrollRates()).resolves.toMatchObject([{ effectiveFrom: '2026-11-01', rateVndPerKg: 100 }])
+  await expect(fetchPayrollRates()).resolves.toMatchObject([{ effectiveFrom: '2026-11-01', rateVndPerKg: 100, kpiTargetKg: null, kpiBonusVnd: 0 }])
   await expect(fetchPayrollPeriod('2026-11')).resolves.toMatchObject(payroll)
-  await expect(fetchPayrollDriverStatement('2026-11', '21')).resolves.toMatchObject({ driverName: 'Nguyễn Văn An' })
+  await expect(fetchPayrollDriverStatement('2026-11', '21')).resolves.toMatchObject({ driverName: 'Nguyễn Văn An', kpiTargetKg: null, kpiAchieved: false, kpiBonusVnd: 0 })
   expect(calls.map(({ method, path }) => `${method} ${path}`)).toStrictEqual([
     'GET /api/company/payroll/settings',
     'GET /api/company/payroll/periods/2026-11',
@@ -81,7 +86,7 @@ test('creates an immutable company rate version, calculates the month, then lock
     'POST /api/company/payroll/periods/2026-11/lock': reply({ ...payroll, status: 'LOCKED' }),
   })
 
-  await createPayrollRate({ effectiveFrom: '2026-11-01', baseSalaryVnd: 8_000_000, rateVndPerKg: 100, commissionPercent: 15, handlingFeeVndPerKg: 150, handlingDriverPercent: 85 })
+  await createPayrollRate({ effectiveFrom: '2026-11-01', baseSalaryVnd: 8_000_000, rateVndPerKg: 100, commissionPercent: 15, handlingFeeVndPerKg: 150, handlingDriverPercent: 85, kpiTargetKg: null, kpiBonusVnd: null })
   await calculatePayrollPeriod('2026-11')
   await lockPayrollPeriod('2026-11')
 
@@ -90,7 +95,35 @@ test('creates an immutable company rate version, calculates the month, then lock
     'POST /api/company/payroll/periods/2026-11/calculate',
     'POST /api/company/payroll/periods/2026-11/lock',
   ])
-  expect(calls[0]?.body).toStrictEqual({ effectiveFrom: '2026-11-01', baseSalaryVnd: 8_000_000, rateVndPerKg: 100, commissionPercent: 15, handlingFeeVndPerKg: 150, handlingDriverPercent: 85 })
+  expect(calls[0]?.body).toStrictEqual({ effectiveFrom: '2026-11-01', baseSalaryVnd: 8_000_000, rateVndPerKg: 100, commissionPercent: 15, handlingFeeVndPerKg: 150, handlingDriverPercent: 85, kpiTargetKg: null, kpiBonusVnd: null })
+})
+
+test('sends KPI target and bonus when creating a company rate version', async () => {
+  const { calls } = stubBackend({
+    'PUT /api/company/payroll/settings': ({ body }) => reply({ id: 6, ...(body as object) }),
+  })
+
+  await createPayrollRate({
+    effectiveFrom: '2026-12-01',
+    baseSalaryVnd: 8_000_000,
+    rateVndPerKg: 100,
+    commissionPercent: 15,
+    handlingFeeVndPerKg: 150,
+    handlingDriverPercent: 85,
+    kpiTargetKg: 1234.125,
+    kpiBonusVnd: 2_500_000.25,
+  })
+
+  expect(calls[0]?.body).toStrictEqual({
+    effectiveFrom: '2026-12-01',
+    baseSalaryVnd: 8_000_000,
+    rateVndPerKg: 100,
+    commissionPercent: 15,
+    handlingFeeVndPerKg: 150,
+    handlingDriverPercent: 85,
+    kpiTargetKg: 1234.125,
+    kpiBonusVnd: 2_500_000.25,
+  })
 })
 
 test('loads and saves equal productivity shares for the drivers on one trip', async () => {

@@ -12,6 +12,12 @@ vi.mock('@/lib/backend-config', () => ({
   usesBackend: (feature: string) => feature === 'assistant',
 }))
 
+// Chỉ điều phối viên tạo được yêu cầu giao, nên form chỉ có ô dán tin nhắn với điều phối viên
+vi.mock('@/features/auth/AuthProvider', () => {
+  const auth = { user: { id: 'US-0002', fullName: 'Lê Quốc Bảo', email: 'dieuphoi@longbinh.vn', role: 'dispatcher', status: 'active' } }
+  return { useAuth: () => auth, useAuthSafe: () => auth }
+})
+
 /**
  * Kỹ năng E của trợ lý: điều phối viên dán tin nhắn của khách, máy chủ đọc ra bản nháp, panel điền năm ô của form tạo yêu cầu giao.
  * Bản nháp không bao giờ tự lưu và không chạm khách hàng, kiện, toạ độ — điều phối viên vẫn phải chọn khách rồi tự bấm Tạo yêu cầu.

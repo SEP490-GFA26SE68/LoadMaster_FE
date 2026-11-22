@@ -22,42 +22,64 @@ vi.mock('@/lib/backend-config', () => ({
  * là phiên kho mẫu (chỉ để dựng màn). Màn chỉ còn việc backend làm được, giờ đến của máy chủ không mang MOCK RESULT.
  */
 const TRIP = 'TRIP-20261018-0A1B2C3D'
+const TRIP_B = 'TRIP-20261018-OTHER01'
 const EXCEPTION = { id: '31', tripId: TRIP, type: 'TRAFFIC', description: 'Kẹt xe cầu Đồng Nai', delayMinutes: 25, reportedAt: '2026-10-18T09:10:00', reportedBy: '4' }
 
 let status = 'OPEN'
 /** Máy chủ từ chối đổi thứ tự vì kiện bị che kín lối dỡ. */
 let reorderBlocked = false
+/** Hai chuyến đang chạy: bản đồ chỉ xe của chuyến đang chọn. */
+let withOtherTrip = false
 let calls: FakeCall[] = []
+
+const tripABoard = {
+  tripId: TRIP, name: TRIP, vehicleName: 'Hino 500 · 51C-284.19', driverName: 'Trần Văn Hùng', depot: { name: 'Kho Long Bình', lat: 10.93, lng: 106.88 },
+  stops: [
+    { id: 7, number: 1, name: 'Co.opmart Biên Hoà', lat: 10.95, lng: 106.82 },
+    { id: 8, number: 2, name: 'Bách Hoá Xanh Dĩ An', lat: 10.9, lng: 106.77 },
+  ],
+}
+const tripBBoard = {
+  tripId: TRIP_B, name: TRIP_B, vehicleName: 'Isuzu 51C-111.11', driverName: 'Phạm Văn An', depot: { name: 'Kho 2', lat: 10.78, lng: 106.7 },
+  stops: [{ id: 9, number: 1, name: 'Điểm B', lat: 10.79, lng: 106.71 }],
+}
 
 beforeEach(() => {
   status = 'OPEN'
   reorderBlocked = false
+  withOtherTrip = false
   connectApiAuth(() => Promise.resolve('token-1'))
   calls = stubBackend({
-    'GET /api/dispatcher/dashboard': {
+    'GET /api/dispatcher/dashboard': () => ({
       body: envelope({
-        trips: [{
-          tripId: TRIP, name: TRIP, vehicleName: 'Hino 500 · 51C-284.19', driverName: 'Trần Văn Hùng', depot: { name: 'Kho Long Bình', lat: 10.93, lng: 106.88 },
-          stops: [
-            { id: 7, number: 1, name: 'Co.opmart Biên Hoà', lat: 10.95, lng: 106.82 },
-            { id: 8, number: 2, name: 'Bách Hoá Xanh Dĩ An', lat: 10.9, lng: 106.77 },
-          ],
-        }],
+        trips: withOtherTrip ? [tripABoard, tripBBoard] : [tripABoard],
         userNames: { '4': 'Lê Thị Mai' },
       }),
-    },
+    }),
     'GET /api/trips/monitoring': () => ({
-      body: envelope([{
-        tripId: TRIP,
-        location: { lat: 10.92, lng: 106.8, speedKmh: 40, heading: 270, recordedAt: '2026-10-18T09:05:00', source: 'GPS' },
-        stops: [{ stopId: 8, number: 2, eta: '2026-10-18T10:00:00', deadline: '2026-10-18T10:30:00', deadlineStatus: 'OK' }],
-        alerts: [],
-        exceptions: [{ ...EXCEPTION, status }],
-        refreshMs: 30000,
-        isMockResult: false,
-      }]),
+      body: envelope([
+        {
+          tripId: TRIP,
+          location: { lat: 10.92, lng: 106.8, speedKmh: 40, heading: 270, recordedAt: '2026-10-18T09:05:00', source: 'GPS' },
+          stops: [{ stopId: 8, number: 2, eta: '2026-10-18T10:00:00', deadline: '2026-10-18T10:30:00', deadlineStatus: 'OK' }],
+          alerts: [],
+          exceptions: [{ ...EXCEPTION, status }],
+          refreshMs: 30000,
+          isMockResult: false,
+        },
+        ...(withOtherTrip ? [{
+          tripId: TRIP_B,
+          location: { lat: 10.78, lng: 106.69, speedKmh: 32, heading: 90, recordedAt: '2026-10-18T09:06:00', source: 'GPS' },
+          stops: [{ stopId: 9, number: 1, eta: '2026-10-18T10:20:00', deadlineStatus: 'OK' }],
+          alerts: [],
+          exceptions: [],
+          refreshMs: 30000,
+          isMockResult: false,
+        }] : []),
+      ]),
     }),
     [`GET /api/trips/${TRIP}/location/history`]: { body: envelope([]) },
+    [`GET /api/trips/${TRIP_B}/location/history`]: { body: envelope([]) },
     [`POST /api/trips/${TRIP}/exceptions/31/resolve`]: () => {
       status = 'RESOLVED'
       return { body: envelope({ ...EXCEPTION, status, resolution: { at: '2026-10-18T09:20:00', by: '4' } }) }
@@ -182,4 +204,17 @@ test('quản lý công ty: không xử lý sự cố ở tab chuyến; tab "Sự
   const post = calls.find((call) => call.path === `/api/trips/${TRIP}/exceptions/31/renegotiate`)
   expect(post?.body).toEqual({ requirementId: 41, newDeadline: '2026-10-18T10:30:00', contactNote: 'Khách đồng ý nhận muộn' })
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull(), SLOW)
+})
+
+test('chọn một chuyến: bản đồ chỉ xe GPS của chuyến đó, không hiện xe chuyến khác', async () => {
+  withOtherTrip = true
+  const user = userEvent.setup()
+  renderPage('dispatcher')
+  const map = within(await screen.findByRole('region', { name: 'Bản đồ các xe đang vận chuyển' }, SLOW))
+  expect(await map.findByText(`${TRIP} · GPS`)).toBeInTheDocument()
+  expect(map.queryByText(`${TRIP_B} · GPS`)).toBeNull()
+
+  await user.click(within(screen.getByRole('list', { name: 'Chuyến đang vận chuyển' })).getByRole('button', { name: new RegExp(TRIP_B) }))
+  expect(await map.findByText(`${TRIP_B} · GPS`)).toBeInTheDocument()
+  expect(map.queryByText(`${TRIP} · GPS`)).toBeNull()
 })

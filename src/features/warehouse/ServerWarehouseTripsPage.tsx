@@ -1,3 +1,4 @@
+import { WarehouseWorkspaceTabs } from './WarehouseWorkspaceTabs'
 import { ScanLine } from 'lucide-react'
 import { useId } from 'react'
 import { Link } from 'react-router'
@@ -36,7 +37,7 @@ export function ServerWarehouseTripsPage() {
   const query = useServerWarehouseTripsQuery()
   return (
     <div className="flex h-dvh flex-col bg-app text-body-lg">
-      <TouchTopBar
+      <TouchTopBar wrap below={<WarehouseWorkspaceTabs />}
         leading={<ExitIconButton tone="sky" screenHome="/kho" label={t('warehouse.exit')} iconClassName="size-7" />}
         trailing={
           <>

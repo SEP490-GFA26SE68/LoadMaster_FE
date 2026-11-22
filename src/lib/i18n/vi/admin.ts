@@ -231,6 +231,7 @@ export const admin = {
       pickups: 'Nhận hàng dọc đường',
       warehouse: 'Kho',
       driver: 'Tài xế',
+      companyWarehouses: 'Kho công ty',
     },
     labels: {
       companies: { manage: 'Tạo và quản lý công ty khách hàng' },
@@ -239,7 +240,7 @@ export const admin = {
       audit: { view: 'Xem nhật ký hệ thống' },
       subscriptionPlans: { manage: 'Tạo, sửa gói cước và chính sách credit' },
       billing: { manage: 'Mua gói cước, nạp credit, xem giao dịch' },
-      payroll: { manage: 'Quản lý cấu hình và tính bảng lương tài xế' },
+      payroll: { manage: 'Quản lý cấu hình và tính bảng lương tài xế', viewOwn: 'Xem phiếu lương của mình' },
       support: { create: 'Gửi yêu cầu hỗ trợ', handle: 'Xử lý yêu cầu hỗ trợ' },
       contacts: { handle: 'Xử lý yêu cầu liên hệ của khách' },
       trialRequests: { manage: 'Duyệt yêu cầu dùng thử' },

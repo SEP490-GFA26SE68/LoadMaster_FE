@@ -4,6 +4,7 @@ import { Link } from 'react-router'
 import type { ConstraintIssue } from '@/domain/constraints'
 import type { VehicleConfig } from '@/domain/models'
 import { formatIssue, useFormat, useT } from '@/lib/i18n'
+import { solverConstraintMessage } from '@/features/optimization/solver-constraints'
 import { cn } from '@/lib/utils'
 import type { ScenePlacement, SceneStop, SceneUnplaced } from '@/features/viewer3d/scene-input'
 import type { LeftTab } from '../useLoadPlanViewer'
@@ -73,6 +74,11 @@ export function PackageListPanel({ unplaced, pinned, placements, vehicle, select
                     </span>
                   )}
                   <span className="text-caption text-amber-200">{t(`viewer.unplacedReasons.${item.reasonCode ?? 'UNKNOWN'}`)}</span>
+                  {item.solverConstraints?.length ? (
+                    <ul className={cn('m-0 flex list-none flex-col gap-0.5 p-0 text-caption', MUTED)}>
+                      {item.solverConstraints.map((code) => <li key={code}>{solverConstraintMessage(code, t)}</li>)}
+                    </ul>
+                  ) : null}
                   {/* `CONSTRAINT_VIOLATED` (FE-5b-04): ràng buộc nào chặn, bằng chính câu của ràng buộc đó */}
                   {item.violatedConstraints?.length ? (
                     <ul className={cn('m-0 flex list-none flex-col gap-0.5 p-0 text-caption', MUTED)}>

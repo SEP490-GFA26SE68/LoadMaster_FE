@@ -38,12 +38,13 @@ function leafRoutes(list: readonly RouteObject[], parentPath = ''): { path: stri
 
 test('the route table is what these checks think it is: known screens exist, removed and future screens do not', () => {
   expect([
-    '/', '/chuyen', '/chuyen/TRIP-001/phuong-an', '/ho-so', '/kho', '/tai-xe/diem-giao', '/yeu-cau-giao', '/giam-sat', '/nen-tang/goi', '/nen-tang/cong-ty',
+    '/', '/chuyen', '/chuyen/TRIP-001/phuong-an', '/phieu-xin-chuyen', '/ho-so', '/kho', '/tai-xe/diem-giao', '/yeu-cau-giao', '/giam-sat', '/nen-tang/goi', '/nen-tang/cong-ty',
     '/cong-ty', '/ho-tro', '/lien-he-khach', '/gioi-thieu', '/bang-gia', '/chinh-sach-bao-mat', '/phuong-an-mau', '/nen-tang/yeu-cau-dung-thu',
   ].filter((path) => !routeAccess(path).exists)).toStrictEqual([])
   expect(['/duyet', '/lo-hang', '/nhan-hang'].filter((path) => routeAccess(path).exists))
     .toStrictEqual([])
   expect(routeAccess('/chuyen/moi').permissions).toStrictEqual(['trips.edit'])
+  expect(routeAccess('/phieu-xin-chuyen').permissions).toStrictEqual(['trips.view'])
   // Yêu cầu giao thay Đơn hàng (FE-4b-02): đường dẫn cũ chuyển hướng, cùng nhóm quyền với màn mới
   expect(routeAccess('/yeu-cau-giao').permissions).toStrictEqual(['requirements.view'])
   expect(routeAccess('/don-hang').permissions).toStrictEqual(['requirements.view'])
@@ -59,8 +60,9 @@ test('the route table is what these checks think it is: known screens exist, rem
   expect(routeAccess('/cong-ty').permissions).toStrictEqual(['companyProfile.manage'])
   // Hỗ trợ (FE-8-07): Hỗ trợ khách hàng
   expect(routeAccess('/ho-tro').permissions).toStrictEqual(['support.handle'])
-  // Bảng lương: quản lý công ty
+  // Bảng lương: quản lý công ty. Phiếu lương điều phối: điều phối viên
   expect(routeAccess('/bang-luong').permissions).toStrictEqual(['payroll.manage'])
+  expect(routeAccess('/phieu-luong').permissions).toStrictEqual(['payroll.viewOwn'])
   // Liên hệ của khách: ba vai trò nền tảng
   expect(routeAccess('/lien-he-khach').permissions).toStrictEqual(['contacts.handle'])
   expect(routeAccess('/ho-so').permissions).toStrictEqual([])
@@ -84,6 +86,12 @@ test.each(ROLES)('%s: every nav item points to an existing route the role may op
   expect(items.map((item) => item.to)).toStrictEqual(NAV_ITEMS[role].map((id) => NAV_SCREENS[id].to))
   // Màn chính đứng đầu thanh của vai trò có mục
   if (items.length > 0) expect(items[0]?.to).toBe(ROLE_HOME[role])
+})
+
+test('tab phiếu xin chuyến chỉ được khai cho điều phối viên và quản lý công ty', () => {
+  expect(navItemsFor('dispatcher').some((item) => item.to === '/phieu-xin-chuyen')).toBe(true)
+  expect(navItemsFor('companyManager').some((item) => item.to === '/phieu-xin-chuyen')).toBe(true)
+  expect(navItemsFor('warehouse').some((item) => item.to === '/phieu-xin-chuyen')).toBe(false)
 })
 
 test('every nav screen names exactly the permission its route is guarded by, and is used by some role', () => {
@@ -173,4 +181,16 @@ test('customer support gets from a 404 back to the support screen, with its nav 
   await waitFor(() => expect(document.title).toBe('Hỗ trợ khách hàng · LoadMaster'))
   expect(within(screen.getByRole('navigation')).getAllByRole('link').map((link) => link.textContent)).toStrictEqual(['Hỗ trợ', 'Liên hệ của khách'])
   expect(screen.getByRole('link', { name: 'LoadMaster — về màn chính' })).toHaveAttribute('href', '/ho-tro')
+})
+
+test('warehouse vehicle presence route keeps the existing Warehouse-only permission', () => {
+  expect(routeAccess('/kho/xe').permissions).toEqual(['warehouse.operate'])
+  expect(canOpen('warehouse', '/kho/xe')).toBe(true)
+  for (const role of ROLES.filter(role => role !== 'warehouse')) expect(canOpen(role, '/kho/xe')).toBe(false)
+})
+
+test('warehouse vehicles screen has a return link rather than logging out at the back button', async () => {
+  openAt('/kho/xe', 'warehouse')
+  await screen.findByRole('heading', { name: 'Xe trong kho', level: 1 }, SLOW)
+  expect(screen.getByRole('link', { name: 'Về chuyến cần xếp' })).toHaveAttribute('href', '/kho')
 })

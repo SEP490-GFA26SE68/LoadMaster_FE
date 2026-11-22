@@ -38,17 +38,19 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
 
 **Phân quyền**
 
-- Ma trận `features/auth/permissions.ts`: **một bảng** `ROLE_PERMISSIONS` theo PRD v2 mục 5.2 cộng `contacts.handle`, `companyProfile.manage`, `trialRequests.manage`, `companyWarehouses.manage`, `payroll.manage`, đúng 38 quyền; đọc quyền qua
+- Ma trận `features/auth/permissions.ts`: **một bảng** `ROLE_PERMISSIONS` theo PRD v2 mục 5.2 cộng `contacts.handle`, `companyProfile.manage`, `trialRequests.manage`, `companyWarehouses.manage`, `payroll.manage`, `payroll.viewOwn`, đúng 39 quyền; đọc quyền qua
   `can`/`permissionsOf`; thứ tự `PERMISSIONS` là thứ tự dòng của Ma trận quyền. Ba vai trò nền tảng **không có quyền vận hành**: quản trị hệ
   thống có `companies.manage`, `users.manage`, `audit.view`, `contacts.handle`, `trialRequests.manage`; quản lý nền tảng `subscriptionPlans.manage`,
   `companies.manage`, `trialRequests.manage`; hỗ trợ khách hàng `support.handle`, `contacts.handle`. Quản trị công ty có `companyProfile.manage`,
-  `users.manage`, `audit.view`, `billing.manage`, `support.create`. Quản lý công ty thêm `companyWarehouses.manage` (`/quan-ly-kho`) và `payroll.manage` (`/bang-luong`).
+  `users.manage`, `audit.view`, `billing.manage`, `support.create`. Quản lý công ty thêm `companyWarehouses.manage` (`/quan-ly-kho`) và `payroll.manage` (`/bang-luong`). Điều phối viên thêm `payroll.viewOwn` (`/phieu-luong`).
 - Mỗi nhóm route bọc `RequirePermission` trong `app/App.tsx`, thiếu quyền là màn 403 (`app/ForbiddenPage.tsx`) có nút về màn chính; thanh
   điều hướng chỉ hiện mục có quyền; nút ghi ẩn qua `useCan()`. Backend thật phải kiểm lại ở server. Màn mới thêm route vào đúng nhóm quyền.
 - **Quyền theo màn:** `requirements.view` mở `/yeu-cau-giao` (quản lý công ty, điều phối viên; `/don-hang` chuyển hướng sang đó), tạo, sửa, xoá theo
   `requirements.edit` — của **điều phối viên** (như backend); đưa yêu cầu vào chuyến / gỡ khỏi chuyến là sửa chuyến, theo `trips.edit` của điều
   phối viên; kho không xét vai trò cho các hàm yêu cầu giao (D-72). `packages.view` mở Kho kiện `/kien-hang` (nhân viên kho, điều phối viên, quản lý
   công ty); nút ghi của màn đó và `/loai-kien` theo `packages.manage` của **nhân viên kho** — backend giao `PACKAGE_MANAGE`, `PACKAGE_TYPE_MANAGE`
+  cho `WAREHOUSE_WORKER`; gỡ cờ kiện: điều phối viên hoặc nhân viên kho. Nhân viên kho còn có `/kho-khach-hang` (khách gửi hàng, `warehouse.operate`).
+  Trang khách gửi hàng sở hữu vùng cuộn dọc ở main (`min-h-0 overflow-y-auto`, focus được bằng bàn phím); card và accordion cuộn cùng trang, không có scrollbar riêng. AppShell giữ 100dvh/overflow-hidden và navbar ở ngoài vùng cuộn.
   cho `WAREHOUSE_WORKER`; gỡ cờ kiện: chỉ điều phối viên (`trips.edit`, như máy chủ), "đã tìm thấy" kiện
   mang cờ "Không tìm thấy": chỉ nhân viên kho. Nhân viên kho còn có `/kho-khach-hang` (khách gửi hàng, `warehouse.operate`).
   `labels.print` mở In nhãn `/kien-hang/nhan`, `packages.lookup` mở Tra cứu kiện `/tra-cuu-kien` — điều phối viên và nhân viên kho.
@@ -56,7 +58,7 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   `routes.optimize`: nút "Tối ưu tuyến" ở Chi tiết chuyến (điều phối viên, FE-4b-09). `manualConfirm.approve`: Duyệt / Từ chối ở thẻ "Xác nhận
   tay chờ duyệt" (điều phối viên, FE-6-04). `pickups.create`: nút "Nhận hàng dọc đường" ở Chi tiết chuyến và `/giam-sat` (điều phối viên) và ở
   màn điểm giao (tài xế, FE-7-03); `pickups.approve`: Từ chối / Duyệt (điều phối viên, FE-7-04). `subscriptionPlans.manage`: `/nen-tang/goi`
-  (FE-8-02). `payroll.manage`: `/bang-luong` (quản lý công ty). `billing.manage`: `/goi-cuoc`, `/thanh-toan/gia-lap` và `/thanh-toan/ket-qua` (FE-8-03, FE-8-04). `companies.manage`: `/nen-tang/cong-ty`
+  (FE-8-02). `payroll.manage`: `/bang-luong` (quản lý công ty: tab tài xế và điều phối). `payroll.viewOwn`: `/phieu-luong` (điều phối viên xem phiếu lương của mình). `billing.manage`: `/goi-cuoc`, `/thanh-toan/gia-lap` và `/thanh-toan/ket-qua` (FE-8-03, FE-8-04). `companies.manage`: `/nen-tang/cong-ty`
   (FE-8-06). `companyProfile.manage`: `/cong-ty` (quản trị công ty).
   `support.create`: mục "Yêu cầu hỗ trợ" của menu tài khoản (năm vai trò công ty); `support.handle`: `/ho-tro` (FE-8-07). `contacts.handle`:
   `/lien-he-khach` (quản trị hệ thống, hỗ trợ khách hàng; gửi yêu cầu liên hệ không cần quyền). Giám sát (FE-6-10 → FE-6-12):
@@ -1062,6 +1064,12 @@ icon/badge (tên + mã có icon xe; trạng thái + mã chuyến / ghi chú tố
 
 Danh sách có tìm/lọc/sắp xếp/phân trang (LM-085, D-52) ghép `FilterBar` + `@/lib/list-filter` (tìm bỏ dấu: "bien hoa" khớp "Biên Hoà") + `DataTable` +
 `useListUrlState`. Cột chỉ sắp xếp được khi khai `enableSorting: true`; tiêu đề là nút có `aria-sort`. Phân trang 25/50/100 qua prop `pagination`.
+Với `serverPagination=true`, DataTable luôn dùng manualSorting và giữ thứ tự server; mặc định không có nút sort. Chỉ bật `serverSorting=true` cùng controlled `sorting`/`onSortingChange` khi API/caller thực sự hỗ trợ sort toàn tập. Bảng client vẫn sort trước pagination. TripListTable có manualSorting riêng, không đổi.
+Kho kiện và Loại kiện bản backend gửi search/filter/sortBy/sortDir trước pagination; query key chứa đủ params, dùng serverSorting. Không lọc hoặc sort current page; exact packageCode lookup và Warehouse CODE/QR confirmation là contract riêng. Search danh sách không fuzzy QR token mã hóa.
+Đội xe bản backend lọc effective status bằng CASE/EXISTS trước paging (RETIRED/MAINTENANCE ưu tiên, còn lại theo Trip LOADING/IN_TRANSIT), sort theo whitelist và ID tie. Query key chứa status/type/sort; DataTable dùng serverSorting, không filter/sort current page. Không suy diễn BUSY/IN_USE thành mã API mới và không dùng list AVAILABLE thay cho guard assignment.
+Requirements bản backend gửi search/status/priority/deadline/sort trước pagination; PARTIAL là trip còn gắn và có dropped/RETURNED package, không phải enum persisted. Search dùng requirement.tripCode/customer thật, không dựa row.trip. Ngày hạn cuối dùng < midnight ngày kế tiếp, không đổi deadline sang UTC. Query key đủ params và giữ toolbar/CREATE khi empty/error; caller cần all rows dùng fetchAllPages có completeness/error rõ. Trip filter options lấy GET vehicles (complete hoặc lỗi) và driver-options (Dispatcher, company + DRIVER + ACTIVE), không lấy từ current Trip page; không nới quyền Manager. Assignment giữ DRAFT lookup có giới hạn/completeness và POST/locks/eligibility/error mapping hiện hành.
+
+
 Bảng rỗng vì lọc truyền `isFiltering` để nói "không có kết quả khớp", khác "chưa có dữ liệu". Tham số URL tiếng Việt không dấu: `q`, `sap-xep`,
 `trang`, `so-dong` + tên bộ lọc của màn. Ô nhập nối vào URL giữ bản nháp tại chỗ (router đổi URL trong `startTransition`) — dùng `FilterBar`, không
 nối thẳng `value` vào `useSearchParams`. Setter của `useListUrlState` dựng URL từ bản nháp mới nhất (hai lần lọc liên tiếp không ghi đè nhau); cỡ
@@ -1471,6 +1479,7 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   hàm nối có test với `fetch` giả: `vi.mock('@/lib/backend-config', …)` bật đúng nhóm, `fetch` giả qua `src/test/fake-backend.ts`
   (`stubBackend`, `envelope`, `page`); test màn ở chế độ backend đặt tên `*.backend.dom.test.tsx`.
 - **Công cụ chung:** `api()` có `get` / `post` / `put` / `patch` / `delete` (mở phong bì, trả `data`), `getRaw` (cả thân), `postForm`
+  (multipart), `download` (Blob); `fetchAllPages` (`lib/api-page.ts`) chỉ trả T[] khi xác nhận đủ trang; chạm cap (mặc định50, size200) hoặc metadata sai/mất/mâu thuẫn thì throw, không trả partial như complete. Endpoint unpaged đã xác minh phải opt-in `allowUnpaged:true`. Preview cố ý chỉ đọc trang đầu dùng `fetchFirstPage` và cờ `complete`; không dùng preview thiếu trang để kết luận một mã không tồn tại. Không thay tenant/auth hoặc tự tăng cap.
   (multipart), `download` (Blob); `fetchAllPages` (`lib/api-page.ts`) đọc đủ mọi trang rồi màn lọc, sắp, phân trang ở client như với kho mẫu —
   quá `maxPages` mà máy chủ chưa báo trang cuối là lỗi `LIST_TOO_LONG`, không cắt im lặng; chỉ đọc phần đầu thì gọi kèm `truncate`.
   Mã số của backend thành chuỗi (`String(id)`) ngay ở DTO. Mốc giờ qua `isoFromBackend` (`lib/backend-time.ts`): `LocalDateTime` không múi
@@ -1653,6 +1662,11 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   `trips` và `monitoring` cùng nguồn.
 - **Yêu cầu giao** (theo nhóm `trips`; `requirements/backend/requirements-api.ts`): đọc `GET /api/delivery-requirements`; "Đưa vào chuyến" chỉ
   chọn chuyến Nháp (`GET /api/trips?status=DRAFT`) rồi `POST /api/trips/{tripId}/delivery-requirements/{requirementId}` bằng mã số của máy chủ —
+  máy chủ tự sinh / gộp điểm giao, hộp thoại không nói trước điểm nào; thêm toạ độ còn thiếu `PATCH …/coordinates`. CREATE dùng capability
+  `REQUIREMENT_SERVER_SUPPORT.create`, role Dispatcher và `requirements.edit`; backend POST kiểm `DELIVERY_DEMAND_MANAGE` rồi lấy company/người tạo từ phiên.
+  `manage=false` vẫn khóa sửa/xoá/gia hạn/lịch; `unassign=false` vẫn khóa gỡ khỏi chuyến. CREATE không bật các thao tác này.
+  Phân chuyến: số kiện ở list/dialog là số liên kết, không tự bảo đảm eligibility. Backend kiểm package state/company/flag/trip và số kiện;
+  `REQUIREMENT_PACKAGES_INCOMPLETE` trả counts qua `errors`, FE dịch VI/EN và giữ dialog/selection khi thất bại. Không suy mọi 400/409/403 là thiếu kiện. Tìm nhanh đọc yêu cầu giao và người dùng (`fetchUsers`) cùng
   máy chủ tự sinh / gộp điểm giao, hộp thoại không nói trước điểm nào; thêm toạ độ còn thiếu `PATCH …/coordinates`. Điều phối viên tạo, sửa,
   xoá, gia hạn (`DELIVERY_DEMAND_MANAGE`; `requirement-writes-api.ts`) và gỡ khỏi chuyến (`DELETE /api/trips/{tripId}/delivery-requirements/{id}`;
   chuyến đã sang pha vận hành là `TRIP_NOT_EDITABLE`) — `REQUIREMENT_SERVER_SUPPORT` bật cả hai. Form chọn kiện từ kho kiện của máy chủ
@@ -1680,12 +1694,34 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   (`ServerStagingStep`, như `StagingStepPage`): đối chiếu không cần thứ tự `POST …/tasks/{tripId}/staging/packages/{packageId}/confirm` (quét lại
   là `alreadyStaged`, không ghi), xác nhận tay `…/manual` (chỉ tính là đã soạn khi điều phối viên duyệt; còn chờ thì dòng ghi "chờ duyệt" và bước soạn chưa xong, bị từ
   chối thì về chưa soạn), "Báo thiếu" `…/shortage`; soạn đủ thì màn tự sang bước xếp (`STAGING_INCOMPLETE`).
+  Step 6 regression: Driver useMyTripsQuery đọc GET mỗi 10s chỉ khi backend-mode còn preparing, foreground,
+  tối đa 20 phút/lần mở; lỗi/hết preparing thì dừng. Nút làm mới GET có cả khi danh sách rỗng.
+  loadingCompleted luôn từ server, start bị từ chối không navigate thành công; IN_TRANSIT/DELIVERED giữ nguyên nhóm.
+  **Warehouse 3D Loading Guide**: `/kho?chuyen=<id>&xem=3d` → ServerApprovedPlanPage, preview đọc
+  GET /api/warehouse/tasks/{tripId}/plan, không start/confirm/complete khi chỉ xem. Mọi thẻ chuyến không stale có link mở 3D. Chọn kiện là inspection,
+  không phải tiến độ; PositionViewer preview không ẩn kiện phía sau theo selected step. Kết quả/kiện cần xếp lấy riêng từ backend.
+  Position Guide dùng minimum-corner XYZ và packed dimensions theo cm; sáu mặt = x, L-(x+l), y, W-(y+w), z, H-(z+h).
+  Không clamp số âm; thiếu/sai geometry hoặc rotation 0–5 thì cảnh báo, không bịa số đo/hướng nhãn. Giữ đúng 3=WHL, 4=HLW.
+  Scene giữ loadPlanId thật và obstacles thật; thiếu metadata cần thiết thì không dựng scene thay thế. Poll GET 10s khi foreground,
+  tối đa 20 phút/lần mở, có nút làm mới. Plan đổi thì bỏ selection cũ và thông báo; stale/lỗi refresh ẩn scene cache.
+  Step 5: IN_PROGRESS + soạn đủ + không manual pending mới mở PackageVerify CODE cho next required từ server,
+  không dùng kiện đang inspect làm target. Trước POST GET lại approved plan; đổi plan/execution/geometry thì hủy form và yêu cầu xem lại.
+  Tái sử dụng confirm mutation/adapter Step 3 POST→GET, không queue/auto-retry CODE. Timeout/conflict chỉ GET đối soát;
+  GET lỗi thì khóa ghi cho tới đối soát thành công. NOT_STARTED không start tự động, dẫn về danh sách bắt đầu phiên.
+  COMPLETED chỉ đọc và chờ tài xế; staging/QR/manual/deviation/damaged/complete vẫn ở phiên hiện có, không nhân đôi workflow.
+  **Xếp**: CODE chỉ đối chiếu Package Code; QR đối chiếu QR/mã vạch. FE gửi nguyên mã đã nhập và phương thức,
+  backend kiểm lại nhãn của đúng kiện; không dùng packageId/placementId làm bằng chứng. Confirm gửi `{ tripId, method, code }` vào
+  `POST /api/warehouse/placements/{id}/confirm`, xác nhận tay `…/manual`, ghi sai lệch vị trí `…/deviation` (cm nguyên + lý do), "Kiện hỏng"
   **Xếp**: đối chiếu bằng quét QR hoặc gõ mã (mã QR, mã vạch, mã kiện — tab kiểm vì máy chủ không kiểm) rồi
   `POST /api/warehouse/placements/{id}/confirm` (`{ method: QR | CODE }`, như bước soạn), xác nhận tay `…/manual`, ghi sai lệch vị trí `…/deviation` (cm nguyên + lý do), "Kiện hỏng"
   `…/damaged` (không kiện nào tựa lên thì bỏ lại kho — trạng thái `DAMAGED` —, có thì chuyến về Đã lập kế hoạch; số kiện tựa lên trên hộp
   thoại đếm như máy chủ, `restingCount`), xong thì `POST /api/warehouse/tasks/{tripId}/complete` (`INCOMPLETE_LOADING`; còn xác nhận tay chờ:
   nút mờ kèm lý do, máy chủ `LOADING_MANUAL_CONFIRM_PENDING`); xếp xong là màn `ServerLoadingFinished`, nút
-  về danh sách là nút chính duy nhất — app không gọi `POST …/tasks/{tripId}/seal` của máy chủ nữa. Điều phối viên quyết báo thiếu ở thẻ "Kiện kho báo thiếu" của Chi tiết chuyến máy chủ (`MissingPackagesCard server`,
+  về danh sách là nút chính duy nhất — app không gọi `POST …/tasks/{tripId}/seal` của máy chủ nữa.
+  Staging gửi `{ method, code }`; deviation có `tripId` trong body, manual/damaged có query `tripId`.
+  Mọi POST thành công đều GET lại phiên; khi lỗi/timeout/conflict, query đang mở GET lại trạng thái thật và giữ lỗi, không xác nhận cục bộ.
+  Backend chỉ ghi trên approved plan hiện hành không stale, Trip LOADING và execution IN_PROGRESS; complete kiểm soạn đủ, còn kiện hợp lệ
+  và không manual pending, giữ Trip LOADING cho Driver xuất phát. Đọc/chọn kiện 3D không gửi confirm. Điều phối viên quyết báo thiếu ở thẻ "Kiện kho báo thiếu" của Chi tiết chuyến máy chủ (`MissingPackagesCard server`,
   `shortage-backend-api.ts`: `GET /api/trips/{id}/staging-shortages`, `POST …/{shortageId}/resolve` — tìm tiếp, hoặc bỏ kiện: chuyến về Đã lập kế
   hoạch, phương án lỗi thời) và duyệt / từ chối xác nhận tay của kho ở cùng thẻ `ManualConfirmCard` với tài xế (`step` `STAGING` / `LOADING`).
   Khung 3D vị trí kiện dựng từ phiên (`server-session-scene.ts`), chỉ khi có lòng thùng và mọi kiện có điểm giao; khối lượng kiện
@@ -1923,8 +1959,8 @@ Nút quay lại về nơi bấm in (`labelsBackTarget`): chuyến, Tra cứu ki�
 kiện.
 
 **Tra cứu kiện** `/tra-cuu-kien` (`PackageLookupPage`, hàm thuần `package-lookup.ts`, FE-3b-06, D-63, D-92): quét bằng `QrScanDialog`
-(`scanPackage` → `GET /api/packages/scan/{qrToken}`) hoặc gõ mã QR / mã của bên gửi / mã của kho (`lookupPackages`, khớp đúng cả mã, không
-phân biệt hoa thường). Mã đang tra nằm trên URL (`?ma=`, kiện đã chọn `&kien=`). Một kiện: thẻ kiện;  nhiều kiện trùng mã của bên gửi: danh sách để chọn; không khớp, hoặc là kiện của công ty
+(`scanPackage` → `GET /api/packages/scan/{qrToken}`) hoặc gõ mã QR / mã của bên gửi (`lookupPackages`, khớp đúng cả mã, không
+phân biệt hoa thường). Backend: mã số thường vẫn là Package Code; tra ID nội bộ phải dùng `id:123`. Query `packageCode` được server lọc exact theo company từ principal, trim đầu/cuối và giữ khoảng trắng bên trong. FE kiểm lại mã và identity trước khi mở detail, không union/fallback sang ID khác; lỗi 403/500/network được hiển thị. Quyền đọc lookup là `packages.lookup`, không phải `packages.manage`; không đổi quyền ghi hoặc workflow CODE/QR của Warehouse. Mã đang tra nằm trên URL (`?ma=`, kiện đã chọn `&kien=`). Một kiện: thẻ kiện;  nhiều kiện trùng mã của bên gửi: danh sách để chọn; không khớp, hoặc là kiện của công ty
 khác: "Không tìm thấy" (`QR_UNKNOWN`), không lộ dữ liệu. Hành động theo vai trò (`lookupActions`): "In lại nhãn" (`labels.print`); điều phối
 viên gỡ cờ, mở kiện ở Kho kiện và mở chuyến; nhân viên kho **quét** thấy kiện mang cờ "Không tìm thấy" thì cờ được gỡ ngay, **gõ mã** thì thẻ
 có nút "Đã tìm thấy kiện này" — cả hai gọi `reportPackageFound` (chỉ vai trò kho, chỉ cờ `NOT_FOUND`; máy chủ `POST /api/packages/{id}/found`), kho
@@ -1995,6 +2031,12 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   đổi xe, huỷ vẫn theo `trips.edit`. Bản in: chữ dài xuống dòng (`print:line-clamp-none`), không cắt.
 - Test và E2E đưa chuyến qua các bước bằng `src/test/trip-flow.ts` (`stageAll`, `loadAll`, `loadTrip`, `unloadStop`) — E2E gọi qua
   `e2e/operations-helpers.ts`. Seed: mọi chuyến đã ở kho đều soạn đủ và mọi kiện đều đối chiếu bằng quét; điểm đã tới có `arrivedAt`.
+
+### INITIAL optimization request identity (step 2A)
+
+- Numeric backend trips use one `crypto.randomUUID()` per explicit INITIAL action. Persist the action before POST and keep its key/request snapshot for uncertain responses, network errors and 409; never rotate a key on failure.
+- `Idempotency-Key` is sent by `createBackendOptimizationJob`. Once `job_id` is known, retry only reads that job. A new action needs a confirmed terminal status and a deliberate user click.
+- Session action metadata and backend query keys are scoped by user/company/trip; never store access tokens. Invalid/unavailable session storage blocks new POSTs rather than forgetting an unresolved action.
 
 ### Dữ liệu dùng chung và tối ưu
 
@@ -2209,8 +2251,9 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
 - **Màn Giám sát `/giam-sat`** (FE-6-10; `monitoring.view`): `fetchMonitoringBoard` (`['trips', 'monitoring-board']`) đọc phần ít đổi — chuyến Đang
   vận chuyển, xe, tài xế, điểm giao, tên người dùng; vị trí, ETA và sự cố đi theo nhịp của `useFleetMonitoringQuery`. **Chỉ thành phần con đọc
   theo nhịp** (`MonitoringBoard`, `EscalationTab`, số trên tab, `BoardSync`): dải tiêu đề không vẽ lại theo từng điểm vị trí; dòng danh sách là
-  `memo`, và `RouteMap` giữ mốc theo khoá — xe chạy chỉ dời mốc của nó (`setLngLat`), không dựng lại mốc kho và điểm giao. Bản đồ vẽ xe của
-  **mọi** chuyến đang chạy (`RouteMap` `others`, mốc kèm nhãn "mã chuyến · nguồn vị trí"), còn tuyến, kho và điểm giao là của chuyến đang chọn;
+  `memo`, và `RouteMap` giữ mốc theo khoá — xe chạy chỉ dời mốc của nó (`setLngLat`), không dựng lại mốc kho và điểm giao. Bản đồ chỉ vẽ
+  **chuyến đang chọn**: tuyến, kho, điểm giao và xe GPS của chuyến đó (`followVehicle` canh cả tuyến lẫn xe, nhãn "mã chuyến · nguồn vị trí"); chọn dòng khác thì
+  xe kia biến;
   danh sách cạnh nó là bản thay thế bản đồ cho trình đọc màn hình. Tab, chuyến đang chọn và hai công tắc lọc nằm trên URL
   (`tab=su-co-can-xu-ly`, `chuyen`, `nguy-co-tre`, `co-su-co`). `subscribeTrip` (`monitoring-api.ts` → `monitoring-events.ts`) là kênh sự kiện
   **trong bộ nhớ** thay WebSocket của backend: sự kiện (`LocationUpdate`, `EtaUpdate`, `EtaRiskAlert`, `ExceptionUpdate`, `TripCompleted`) phát khi
@@ -2576,7 +2619,7 @@ cuối mục này. Chữ trong mockup không phải chuẩn — chuẩn là `lib
 | Tổng kết chuyến: Lumo thay dấu kiểm | Giữ Lumo nhỏ ở đầu thẻ, dấu kiểm ở từng điểm | Mục "Thương hiệu": tư thế xong việc |
 | Card đè lên dải trời (mọi màn có `PageHero`, màn Xếp xong, chờ duyệt lại) | Card nằm dưới dải, không đè | Quyết định của chủ sản phẩm: card che tiến trình và tab khi cuộn |
 | Đội xe: tab trạng thái trên dải trời; bảng vật cản một dòng 10 cột; nhãn "Chưa dùng trong tính toán" ở Trục xe | Giữ ô số làm công tắc lọc; bảng vật cản hai dòng; bỏ nhãn | Quyết định của chủ sản phẩm; trục xe đã dùng để tính tải trục |
-| Ma trận quyền 13 quyền × 5 vai trò | 38 quyền × 8 vai trò | Ma trận thật của sản phẩm |
+| Ma trận quyền 13 quyền × 5 vai trò | 39 quyền × 8 vai trò | Ma trận thật của sản phẩm |
 | Nhật ký nhóm theo ngày, có đường thời gian | Giữ bảng có sắp xếp, phân trang | Quyết định của chủ sản phẩm |
 | Đăng nhập có ảnh xe tải 3D; màn lỗi dùng ô icon và khối "Chi tiết kỹ thuật" | Hình đẳng cự từ `lib/isometric.ts`; Lumo; không hiện chi tiết kỹ thuật | Không mượn ảnh ngoài; mục "Thương hiệu"; không lộ stack cho người dùng cuối |
 | Ảnh đại diện tròn ở thẻ Hồ sơ | Ô vuông bo góc | Luật ảnh đại diện trong nội dung |

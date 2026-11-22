@@ -34,11 +34,25 @@ const ROTATIONS: Readonly<Record<number, OrientationCode>> = { 0: 'LWH', 1: 'WLH
 const UNPLACED_REASONS: Readonly<Record<string, UnplacedPackage['reasonCode']>> = {
   OVER_WEIGHT: 'OVER_PAYLOAD',
   WEIGHT_LIMIT_EXCEEDED: 'OVER_PAYLOAD',
+  PAYLOAD_EXCEEDED: 'OVER_PAYLOAD',
   OUT_OF_SPACE: 'NO_SPACE',
   VOLUME_EXCEEDED: 'NO_SPACE',
+  NO_FEASIBLE_SPACE: 'NO_SPACE',
   DOES_NOT_FIT_DIMENSIONS: 'NO_ALLOWED_ORIENTATION',
+  ORIENTATION_NOT_ALLOWED: 'NO_ALLOWED_ORIENTATION',
   STACKING_CONFLICT: 'STACKING_VIOLATION',
   LIFO_BLOCK: 'LIFO_VIOLATION',
+  MULTI_DROP_LIFO_VIOLATION: 'LIFO_VIOLATION',
+  PACKAGE_CANNOT_PASS_DOOR: 'DOOR_TOO_SMALL',
+  CONSTRAINT_VIOLATED: 'CONSTRAINT_VIOLATED',
+}
+
+function reasonCodeOf(item: LoadPlan['unplaced'][number]): UnplacedPackage['reasonCode'] {
+  for (const code of item.violatedConstraints ?? []) {
+    const mapped = UNPLACED_REASONS[code]
+    if (mapped && mapped !== 'CONSTRAINT_VIOLATED') return mapped
+  }
+  return (item.reason === null ? undefined : UNPLACED_REASONS[item.reason]) ?? 'UNKNOWN'
 }
 
 export function orientationOf(rotationType: number | null): OrientationCode {
@@ -233,7 +247,8 @@ export function backendPlanScene({ tripCode, plan, vehicle, stops }: {
     widthCm: item.size?.widthCm ?? 0,
     heightCm: item.size?.heightCm ?? 0,
     weightKg: item.weightKg ?? 0,
-    reasonCode: (item.reason === null ? undefined : UNPLACED_REASONS[item.reason]) ?? 'UNKNOWN',
+    reasonCode: reasonCodeOf(item),
+    ...(item.violatedConstraints?.length ? { solverConstraints: item.violatedConstraints } : {}),
     ...(item.size === null || item.weightKg === null ? { detailUnknown: true } : {}),
   }))
   const metrics = metricsOf(plan, vehicle)

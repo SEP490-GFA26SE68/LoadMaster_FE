@@ -221,6 +221,7 @@ export const requirements = {
     receivedOf: '{received}/{expected} packages',
     viewTrip: 'View trip #{code}',
     assignDescription: 'The server only accepts requirements on Draft trips and creates or merges the delivery stop from the requirement address.',
+    linkedForAssignment: 'Linked {linkedCount}/{expectedCount} packages. The server will recheck counts and assignment eligibility; linked packages may still be ineligible.',
     noDraftTrips: 'No Draft trip is available to take this requirement.',
   },
 } satisfies Dictionary<typeof source>

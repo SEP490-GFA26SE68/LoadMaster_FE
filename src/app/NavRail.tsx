@@ -21,6 +21,7 @@ import { QuickSearch } from '@/features/search/QuickSearch'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { initialsOf } from '@/types/user'
+import { usesBackend } from '@/lib/backend-config'
 import { logoPath, navItemsFor } from './nav-items'
 import { useGlassFollow } from '@/components/useGlassFollow'
 
@@ -57,6 +58,7 @@ export function NavRail() {
   const [supportOpen, setSupportOpen] = useState(false)
   // Mục và thứ tự theo vai trò (`NAV_ITEMS`), chỉ mục vai trò có quyền mở
   let items = user ? navItemsFor(user.role) : []
+  if (!usesBackend('trips')) items = items.filter((item) => item.to !== '/phieu-xin-chuyen')
 
   // Nếu Company Admin có gói cước hết hạn: Chỉ hiển thị duy nhất mục "Gói và Credit" (/goi-cuoc)
   if (user?.subscriptionExpired && user.role === 'companyAdmin') {
@@ -107,7 +109,7 @@ export function NavRail() {
               <NavLink
                 key={to}
                 to={to}
-                end={to === '/'}
+                end={to === '/' || to === '/kho'}
                 aria-label={t(actualLabelKey)}
                 className={({ isActive }) =>
                   cn(

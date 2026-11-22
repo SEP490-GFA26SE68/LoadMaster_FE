@@ -4,6 +4,8 @@ export const nav = {
   label: 'Điều hướng chính',
   dashboard: 'Bảng điều khiển',
   trips: 'Chuyến hàng',
+  tripClaims: 'Phiếu xin chuyến',
+  warehouseVehicles: "Xe trong kho",
   warehouse: 'Kho',
   driver: 'Tài xế',
   fleet: 'Đội xe',
@@ -21,6 +23,7 @@ export const nav = {
   trialRequests: 'Đơn dùng thử',
   billing: 'Gói và credit',
   payroll: 'Bảng lương',
+  payrollOwn: 'Phiếu lương',
   // Công ty (FE-8-06): quản trị hệ thống. Hỗ trợ (FE-8-07): Hỗ trợ khách hàng; mục menu tài khoản của người dùng công ty
   companies: 'Công ty',
   // Thông tin công ty của chính mình: quản trị công ty

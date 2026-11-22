@@ -5,26 +5,30 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader } from '@/components/
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import type { OptimizationJob } from './load-plans-backend-api'
 import { RunFigure } from './RunFigure'
+import { getBackendJobStatusKey } from './backend-job-status'
 import { runAlgorithmLabel } from './server-algorithms'
+import { solverConstraintMessage } from './solver-constraints'
 
 /**
- * Hộp thoại một lần chạy tối ưu của máy chủ. Máy chủ chỉ báo trạng thái job — không báo số kiện đã xét — nên hình là dải khối chạy vòng
- * (`fraction={null}`), không dừng ở mức đầy nào; bên cạnh chỉ có đúng điều máy chủ trả: trạng thái, mã lần chạy, thời gian tính và số
- * phương án đã lưu khi xong. Không ra phương án (`NO_SOLUTION`, `FAILED`) thì nói rõ, kèm việc máy chủ không trừ credit.
+ * Hộp thoại một lần chạy tối ưu của máy chủ. Hình là dải khối chạy vòng (`fraction={null}`). Khi xong: trạng thái, mã lần chạy, thời gian
+ * tính, số phương án đã lưu, và — nếu lần chạy không ra chỗ đặt — các mã ràng buộc cứng đã chặn (`violatedConstraints`).
  */
-export function BackendRunDialog({ open, onOpenChange, jobId, job, error, compareTo }: {
+export function BackendRunDialog({ open, onOpenChange, jobId, job, error, compareTo, hasPlans, constraintCodes = [] }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   jobId: string
   /** `null` cho tới lần đọc trạng thái đầu tiên. */
   job: OptimizationJob | null
   error: unknown
+  hasPlans: boolean
   compareTo: string
+  /** Mã ràng buộc cứng gom từ kiện chưa xếp của lần chạy. */
+  constraintCodes?: readonly string[]
 }) {
   const t = useT()
   const format = useFormat()
   const status = job?.status ?? 'PENDING'
-  const failed = status === 'NO_SOLUTION' || status === 'FAILED'
+  const failed = status === 'NO_SOLUTION' || status === 'FAILED' || status === 'TIMEOUT' || status === 'CANCELLED'
   const finished = job?.finished === true
   const title = error ? t('serverPlans.job.loadError') : failed ? t('serverPlans.job.failedTitle') : finished ? t('serverPlans.job.finishedTitle') : t('serverPlans.job.title')
   return (
@@ -34,8 +38,18 @@ export function BackendRunDialog({ open, onOpenChange, jobId, job, error, compar
         <div className="flex flex-col gap-4 px-7 py-5">
           {finished || error ? null : <RunFigure fraction={null} className="h-36 w-full" />}
           <p role={failed || error ? 'alert' : 'status'} className={failed || error ? 'text-body text-danger' : 'text-body text-ink-1'}>
-            {error ? dataErrorMessage(error, t) : t(`serverPlans.job.status.${status}`)}
+            {error ? dataErrorMessage(error, t) : t(getBackendJobStatusKey(status))}
           </p>
+          {constraintCodes.length > 0 ? (
+            <div className="flex flex-col gap-2">
+              <p className="text-small font-medium text-ink-2">{t('serverPlans.job.constraintsHeading')}</p>
+              <ul className="m-0 flex list-disc flex-col gap-1 pl-5 text-body text-danger">
+                {constraintCodes.map((code) => (
+                  <li key={code}>{solverConstraintMessage(code, t)}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
           <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-small">
             <dt className="text-ink-3">{t('serverPlans.job.code')}</dt>
             <dd className="font-mono break-all">{jobId}</dd>
@@ -59,7 +73,7 @@ export function BackendRunDialog({ open, onOpenChange, jobId, job, error, compar
           <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
             {finished || error ? t('serverPlans.job.close') : t('serverPlans.job.keepWaiting')}
           </Button>
-          {finished && !failed ? <Button asChild><Link to={compareTo}>{t('serverPlans.job.compare')}</Link></Button> : null}
+          {finished && !failed && hasPlans ? <Button asChild><Link to={compareTo}>{t('serverPlans.job.compare')}</Link></Button> : null}
         </DialogFooter>
       </DialogContent>
     </Dialog>

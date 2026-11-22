@@ -17,16 +17,18 @@ type RouteMapProps = RouteMapData & {
   label: string
   /** Mặc định cao 320 px; truyền lớp chiều cao khác khi màn cần. */
   className?: string
+  /** Canh khung gồm kho, điểm giao, tuyến và xe GPS của chuyến đang chọn. */
 }
 
 /**
  * Bản đồ tuyến dùng chung (FE-4b-07, D-75): kho xuất phát, điểm giao theo thứ tự đi (màu điểm giao kèm số), đường tuyến (nối thẳng,
  * hoặc `path` khi backend trả polyline) và vị trí xe. MapLibre GL tải lười trên nền Goong; không có khoá thì nền trống, lớp dữ liệu
- * vẫn vẽ. `others` là xe của các chuyến khác (màn Giám sát): chỉ vị trí. Không có WebGL thì là sơ đồ SVG cùng dữ liệu. Hình luôn `aria-hidden`: nội dung tương đương là danh sách điểm `sr-only`.
+ * vẫn vẽ. `others` là xe phụ (không dùng trên màn Giám sát — chỉ xe chuyến đang chọn). `followVehicle` canh cả tuyến lẫn GPS.
+ * Không có WebGL thì là sơ đồ SVG cùng dữ liệu. Hình luôn `aria-hidden`: nội dung tương đương là danh sách điểm `sr-only`.
  *
  * Nút Maximize2 trên canvas (và trên sơ đồ SVG) mở hộp thoại bản đồ lớn để quan sát dễ hơn — mọi chỗ dùng `RouteMap` đều có.
  */
-export function RouteMap({ label, className, depot, stops, vehicle, others, path }: RouteMapProps) {
+export function RouteMap({ label, className, depot, stops, vehicle, others, path, followVehicle = false }: RouteMapProps) {
   const t = useT()
   const { locale } = useLocale()
   const [unavailable, setUnavailable] = useState(false)
@@ -45,6 +47,7 @@ export function RouteMap({ label, className, depot, stops, vehicle, others, path
             <RouteMapCanvas
               key={locale}
               data={data}
+              followVehicle={followVehicle}
               onUnavailable={() => setUnavailable(true)}
               onExpand={() => setExpanded(true)}
             />
@@ -99,6 +102,7 @@ export function RouteMap({ label, className, depot, stops, vehicle, others, path
                     <RouteMapCanvas
                       key={`expanded-${locale}`}
                       data={data}
+                      followVehicle={followVehicle}
                       onUnavailable={() => setUnavailable(true)}
                     />
                   </Suspense>

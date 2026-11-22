@@ -128,6 +128,12 @@ export const sourcing = {
     dimensionFields: { length: 'Length', width: 'Width', height: 'Height' },
   },
   detail: {
+    delete: 'Delete package',
+    deleteTitle: 'Delete package {code}?',
+    deleteDescription: 'The package will be removed from the pool. Confirm only if you intend to delete it.',
+    deleteCancel: 'Cancel',
+    deleteOnlyPending: 'Only pending packages can be deleted. Planned or completed packages are retained.',
+    deleted: 'Deleted package {code}.',
     region: 'Details of package {code}',
     close: 'Close package details',
     info: 'Package information',
@@ -166,6 +172,7 @@ export const sourcing = {
       PLANNED: 'Planned',
       LOADED: 'Loaded',
       DELIVERED: 'Delivered',
+      RETURNED: 'Returned',
       CANCELLED: 'Cancelled',
     },
     events: {
@@ -242,6 +249,7 @@ export const sourcing = {
     lookup: 'Package lookup',
     added: 'Added package {code} to the pool.',
     search: 'Search by package code, destination, QR code, requirement, trip',
+    searchBackend: 'Search package code, name, type, barcode or destination',
     tabs: { label: 'Filter by status', all: 'All' },
     addedMany: 'Successfully created {count} packages.',
     filters: {
@@ -300,8 +308,8 @@ export const sourcing = {
     pdfFile: 'package-labels',
   },
   server: {
-    statuses: { PENDING: 'Pending', PLANNED: 'Planned', LOADED: 'Loaded', DELIVERED: 'Delivered', CANCELLED: 'Cancelled' },
-    tabs: { PENDING: 'Pending', PLANNED: 'Planned', LOADED: 'Loaded', DELIVERED: 'Delivered', CANCELLED: 'Cancelled' },
+    statuses: { PENDING: 'Pending', PLANNED: 'Planned', LOADED: 'Loaded', DELIVERED: 'Delivered', RETURNED: 'Returned', CANCELLED: 'Cancelled' },
+    tabs: { PENDING: 'Pending', PLANNED: 'Planned', LOADED: 'Loaded', DELIVERED: 'Delivered', RETURNED: 'Returned', CANCELLED: 'Cancelled' },
     noPackageType: 'No package type',
     noRequirement: 'No delivery requirement yet',
     noCustomerName: 'No customer name yet',

@@ -17,11 +17,15 @@ export {
 } from './eta'
 export {
   GUIDANCE_PASSED_METERS,
+  activeStepIndex,
   nextGuidance,
   parseGuidanceSteps,
   remainingTo,
+  remainingTrip,
+  type FollowingGuidance,
   type GuidanceStep,
   type NextGuidance,
+  type RemainingTrip,
 } from './guidance'
 export { EARTH_RADIUS_KM, haversineKm, type GeoPoint } from './haversine'
 export { decodePolyline, encodePolyline, pathFromEncodedPolylines } from './polyline'

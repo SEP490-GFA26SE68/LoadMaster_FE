@@ -18,6 +18,7 @@ import { BackendTripRouteCard } from './BackendTripRouteCard'
 import { BackendTripWriteActions, isEditableStatus, RemoveRequirementButton } from './BackendTripWriteActions'
 import { SERVER_MANUAL_CONFIRMS } from './manual-confirm-backend-api'
 import { ManualConfirmCard } from './ManualConfirmCard'
+import { TripClaimsCard } from './TripClaimsCard'
 import { MissingPackagesCard } from './MissingPackagesCard'
 import { SERVER_SHORTAGES } from './shortage-backend-api'
 import { RealTripDetailHeader } from './TripDetailHeader'
@@ -175,7 +176,7 @@ function BackendTripDetail({ tripId }: { tripId: string }) {
                   {t('trips.optimization.run')}
                 </Button>
               )}
-  
+
               {canReport ? (
                 <Button variant="secondary" asChild>
                   <Link to={`/chuyen/${encodeURIComponent(trip.tripCode)}/bao-cao`}>
@@ -205,6 +206,7 @@ function BackendTripDetail({ tripId }: { tripId: string }) {
 
 
           {SERVER_MANUAL_CONFIRMS ? <ManualConfirmCard tripId={tripId} server live={live} /> : null}
+          {trip.driverId === null && (trip.status === 'DRAFT' || trip.status === 'PLANNED') ? <TripClaimsCard tripId={tripId} /> : null}
           {SERVER_SHORTAGES ? <MissingPackagesCard tripId={tripId} server live={live} /> : null}
 
           <BackendTripRouteCard

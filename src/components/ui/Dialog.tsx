@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils'
  * `sheet` (V2.3 đợt 6, màn tài xế): dưới 768 px hộp thoại thành **tờ trượt từ đáy** — bo góc trên `--r-xl`, thanh nắm chỉ để trang trí, nội
  * dung cuộn bên trong, cao tối đa `100dvh − 5rem` để thanh trên còn thấy (dùng `dvh` để bàn phím ảo không che ô đang nhập). Vẫn là
  * Radix Dialog: bẫy focus, Esc, tiêu đề có nhãn không đổi. Từ 768 px vẫn là hộp thoại giữa màn. Chân hộp thoại trong tờ nên là `sticky bottom-0`.
+ * `overlayClassName` chồng lên lớp phủ (ví dụ tờ đối chiếu cắm đáy, mờ dần phía trên).
  */
 export const Dialog = DialogPrimitive.Root
 export const DialogTrigger = DialogPrimitive.Trigger
@@ -21,8 +22,9 @@ export function DialogContent({
   className,
   children,
   sheet = false,
+  overlayClassName,
   ...props
-}: ComponentProps<typeof DialogPrimitive.Content> & { sheet?: boolean }) {
+}: ComponentProps<typeof DialogPrimitive.Content> & { sheet?: boolean; overlayClassName?: string }) {
   return (
     <DialogPrimitive.Portal>
       <DialogPrimitive.Overlay
@@ -31,6 +33,7 @@ export function DialogContent({
           'bg-scrim',
           'data-[state=open]:animate-[lm-fade-in_220ms_var(--ease-standard)]',
           sheet && 'max-md:place-items-end max-md:p-0',
+          overlayClassName,
         )}
       >
         <DialogPrimitive.Content

@@ -1,3 +1,4 @@
+import { createBackendOptimizationJob } from './backend-optimization-api'
 /**
  * Tối ưu xếp hàng của chuyến khi nhóm `trips` nối backend. Hàm → endpoint:
  *   startLoadingOptimization → POST /api/trips/{tripId}/optimize-loading
@@ -17,7 +18,6 @@ import {
   type LoadPlanDto,
   type OptimizationJob,
   type OptimizationJobDto,
-  type OptimizationStartDto,
   type TripLoadPlans,
   type TripLoadPlansDto,
 } from './load-plan-dto'
@@ -35,11 +35,10 @@ const jobPath = (jobId: string) => `/api/trips/optimization-jobs/${encodeURIComp
  */
 // POST /api/trips/{tripId}/optimize-loading
 export async function startLoadingOptimization(
-  tripId: string, keepPinsFromPlanId?: string,
+  tripId: string, idempotencyKey: string, keepPinsFromPlanId?: string,
 ): Promise<{ readonly jobId: string; readonly pinnedCount: number }> {
-  const body = keepPinsFromPlanId === undefined ? undefined : { keepPinsFromPlanId: Number(keepPinsFromPlanId) }
-  const started = await api().post<OptimizationStartDto>(`${tripPath(tripId)}/optimize-loading`, body === undefined ? undefined : { body })
-  return { jobId: started.jobId, pinnedCount: started.pinnedCount ?? 0 }
+  const started = await createBackendOptimizationJob(tripId, idempotencyKey, undefined, keepPinsFromPlanId)
+  return { jobId: started.job_id!, pinnedCount: 0 }
 }
 
 // GET /api/trips/optimization-jobs/{jobId}

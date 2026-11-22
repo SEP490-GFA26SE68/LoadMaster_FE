@@ -22,7 +22,7 @@ let completed = false
 let calls: FakeCall[] = []
 
 const step = (placementId: number, sequence: number, barcode: string) => ({
-  placementId, packageId: placementId * 10, packageName: `Thùng nước ${sequence}`, packageCode: null, trackingBarcode: barcode, qrToken: `qr-${placementId}`,
+  placementId, packageId: placementId * 10, packageName: `Thùng nước ${sequence}`, packageCode: barcode, trackingBarcode: barcode, qrToken: `qr-${placementId}`,
   // Hai kiện nằm cạnh nhau trên sàn: không kiện nào tựa lên kiện nào
   posX: (sequence - 1) * 60, posY: 0, posZ: 0, packedLength: 60, packedWidth: 40, packedHeight: 30, rotation: 0, weightKg: 12.5, sequence,
   stopId: 31, stopSequence: 1, stopName: 'Co.opmart Biên Hoà', ...rows[placementId],
@@ -99,6 +99,15 @@ test('soạn hàng: đối chiếu bằng mã gõ không cần thứ tự, báo 
   const user = userEvent.setup()
   renderWarehouse('/kho?chuyen=7')
   await screen.findByRole('heading', { level: 1, name: 'Kiện chưa soạn (2)' }, LOAD)
+  const heading = screen.getByRole('heading', { level: 1, name: 'Kiện chưa soạn (2)' })
+  expect(heading.closest('.h-dvh')).not.toBeNull()
+  const scroller = screen.getByRole('main')
+  expect(scroller).toHaveClass('overflow-y-auto')
+  expect(scroller).toHaveAttribute('tabindex', '0')
+  const pendingList = screen.getByRole('list', { name: 'Kiện chưa soạn' })
+  expect(pendingList).not.toHaveClass('overflow-hidden')
+  expect(pendingList).not.toHaveClass('overflow-y-auto')
+  expect(screen.getByRole('button', { name: 'Đối chiếu kiện' }).parentElement).toHaveClass('flex-none')
 
   // Mã lạ: màn nói ngay, không gọi máy chủ
   const dialog = await verify(user, 'LB-9999')
@@ -125,7 +134,7 @@ test('soạn hàng: đối chiếu bằng mã gõ không cần thứ tự, báo 
     '/api/warehouse/tasks/7/staging/packages/1020/shortage',
     '/api/warehouse/tasks/7/staging/packages/1020/confirm',
   ])
-  expect(calls.find((call) => call.method === 'POST')?.body).toEqual({ method: 'CODE' })
+  expect(calls.find((call) => call.method === 'POST')?.body).toEqual({ method: 'CODE', code: 'lb-0001' })
 })
 
 test('soạn hàng: xác nhận tay chờ điều phối viên duyệt chưa tính là đã soạn, bước soạn chưa xong', async () => {

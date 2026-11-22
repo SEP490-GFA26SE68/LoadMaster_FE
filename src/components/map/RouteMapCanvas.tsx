@@ -6,7 +6,7 @@ import type { GeoPoint } from '@/domain/routing'
 import { useT } from '@/lib/i18n'
 import { baseStyle, emptyStyle, goongMapTilesKey } from './map-style'
 import { LngLatBounds, MapLibreMap, Marker, type GeoJSONSource } from './maplibre-runtime'
-import { routeExtent, routeLine, routePins, staticExtent, type RouteMapData, type RouteMapPin } from './route-map-model'
+import { routeExtent, routeLine, routePins, staticExtent, viewExtent, type RouteMapData, type RouteMapPin } from './route-map-model'
 import { DepotMarker, StopMarker, VehicleMarker } from './RouteMapMarker'
 
 const ROUTE = 'route-line'
@@ -19,7 +19,7 @@ const FALLBACK_CENTER: [number, number] = [106.8, 10.9]
 type Mounted = { pin: RouteMapPin; element: HTMLElement; marker: Marker }
 
 /** Nội dung mốc không đổi (cùng loại, số, nhãn): chỉ cần dời chỗ. */
-const sameLook = (a: RouteMapPin, b: RouteMapPin) => a.kind === b.kind && a.number === b.number && a.tag === b.tag
+const sameLook = (a: RouteMapPin, b: RouteMapPin) => a.kind === b.kind && a.number === b.number && a.tag === b.tag && a.heading === b.heading
 
 const lngLat = (point: GeoPoint): [number, number] => [point.lng, point.lat]
 const token = (element: Element, name: string) => getComputedStyle(element).getPropertyValue(name).trim()
@@ -51,10 +51,12 @@ function fit(map: MapLibreMap, extent: readonly GeoPoint[]) {
  */
 export default function RouteMapCanvas({
   data,
+  followVehicle = false,
   onUnavailable,
   onExpand,
 }: {
   data: RouteMapData
+  /** Canh khung theo tuyến và xe của chuyến đang chọn (kho, điểm giao, GPS). */
   onUnavailable: () => void
   /** Có thì nút Maximize2 mở modal phóng lớn; không thì canh toàn tuyến. */
   onExpand?: () => void
@@ -69,8 +71,11 @@ export default function RouteMapCanvas({
   const mountedRef = useRef(new Map<string, Mounted>())
   /** Mốc React đang vẽ; chỉ đổi khi có mốc thêm, bớt hoặc đổi nội dung — không đổi khi mốc dời chỗ. */
   const [portals, setPortals] = useState<readonly Mounted[]>([])
-  /** Khung nhìn chỉ canh lại khi kho, điểm giao hoặc đường tuyến đổi — xe chạy (F6) không giật khung nhìn của người đang xem. */
-  const extentKey = JSON.stringify(staticExtent(data).map(lngLat))
+  /** Canh lại khi tuyến đổi, hoặc khi GPS chuyến chọn xuất hiện / mất — không theo từng mét xe chạy. */
+  const extentKey = JSON.stringify({
+    line: staticExtent(data).map(lngLat),
+    vehicle: followVehicle && data.vehicle ? 1 : 0,
+  })
 
   useEffect(() => {
     const container = containerRef.current
@@ -161,8 +166,8 @@ export default function RouteMapCanvas({
   }, [data])
 
   useEffect(() => {
-    if (mapRef.current) fit(mapRef.current, staticExtent(dataRef.current))
-  }, [extentKey])
+    if (mapRef.current) fit(mapRef.current, viewExtent(dataRef.current, followVehicle))
+  }, [extentKey, followVehicle])
 
   // Khung ngoài của `RouteMap` đã mang tên bản đồ; canvas (MapLibre tự đặt role="region") chỉ nói nó là phần điều khiển được.
   useEffect(() => {
@@ -200,7 +205,7 @@ export default function RouteMapCanvas({
       </div>
       {portals.map(({ pin, element }) =>
         createPortal(
-          pin.kind === 'stop' ? <StopMarker number={pin.number ?? 0} /> : pin.kind === 'depot' ? <DepotMarker /> : <VehicleMarker tag={pin.tag} muted={pin.kind === 'other'} />,
+          pin.kind === 'stop' ? <StopMarker number={pin.number ?? 0} /> : pin.kind === 'depot' ? <DepotMarker /> : <VehicleMarker tag={pin.tag} muted={pin.kind === 'other'} heading={pin.heading} />,
           element,
           pin.key,
         ),

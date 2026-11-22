@@ -11,6 +11,12 @@ vi.mock('@/lib/backend-config', () => ({
   usesBackend: (feature: string) => feature === 'trips',
 }))
 
+// Điều phối viên — người tạo được yêu cầu giao — để phép thử chỉ còn phụ thuộc nhóm `assistant` có nối hay không
+vi.mock('@/features/auth/AuthProvider', () => {
+  const auth = { user: { id: 'US-0002', fullName: 'Lê Quốc Bảo', email: 'dieuphoi@longbinh.vn', role: 'dispatcher', status: 'active' } }
+  return { useAuth: () => auth, useAuthSafe: () => auth }
+})
+
 /** Nhóm `assistant` tắt: form tạo yêu cầu giao không có ô dán tin nhắn — không nút nào gọi tới trợ lý không có. */
 window.matchMedia ??= (query: string) => ({
   matches: false, media: query, onchange: null,

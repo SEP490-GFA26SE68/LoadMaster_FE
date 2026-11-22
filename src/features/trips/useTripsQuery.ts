@@ -74,7 +74,7 @@ export function useTripsPageQuery(params: TripListParams) {
       params.sortBy ?? 'departureTime',
       params.sortDir ?? 'desc',
     ],
-    queryFn: () => fetchTripsPage(params),
+    queryFn: ({ signal }) => fetchTripsPage(params, signal),
     staleTime: 0,
   })
 }

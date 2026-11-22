@@ -36,6 +36,7 @@ export const fleet = {
   },
   obstacleZones: { one: '{count} zone', other: '{count} zones' },
   status: {
+    unknown: 'Unknown status',
     AVAILABLE: 'Available',
     IN_TRIP: 'In trip',
     MAINTENANCE: 'Maintenance',

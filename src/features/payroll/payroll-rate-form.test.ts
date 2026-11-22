@@ -9,6 +9,8 @@ const base = {
   commissionPercent: '15',
   handlingFeeVndPerKg: '150',
   handlingDriverPercent: '85',
+  kpiTargetKg: '',
+  kpiBonusVnd: '',
 }
 
 const ok = (patch: Partial<typeof base>) => payrollRateFormSchema.safeParse({ ...base, ...patch }).success
@@ -30,4 +32,35 @@ test('percent fields reject negative values and values above 100', () => {
   expect(ok({ commissionPercent: '100.01' })).toBe(false)
   expect(ok({ handlingDriverPercent: '101' })).toBe(false)
   expect(ok({ handlingFeeVndPerKg: '-5' })).toBe(false)
+})
+
+test('payroll rates without KPI normalize both optional fields to null', () => {
+  const result = payrollRateFormSchema.safeParse(base)
+
+  expect(result.success).toBe(true)
+  if (result.success) {
+    expect(result.data).toMatchObject({ kpiTargetKg: null, kpiBonusVnd: null })
+  }
+})
+
+test('KPI target accepts positive kilograms with up to two decimals and a positive bonus', () => {
+  const result = payrollRateFormSchema.safeParse({ ...base, kpiTargetKg: '1234.12', kpiBonusVnd: '2500000.25' })
+
+  expect(result.success).toBe(true)
+  if (result.success) {
+    expect(result.data).toMatchObject({ kpiTargetKg: 1234.12, kpiBonusVnd: 2500000.25 })
+  }
+})
+
+test.each([
+  ['zero KPI target', { kpiTargetKg: '0' }],
+  ['negative KPI target', { kpiTargetKg: '-1' }],
+  ['KPI target over two decimals', { kpiTargetKg: '1.234' }],
+  ['missing KPI bonus', { kpiTargetKg: '1', kpiBonusVnd: '' }],
+  ['zero KPI bonus', { kpiTargetKg: '1', kpiBonusVnd: '0' }],
+  ['negative KPI bonus', { kpiTargetKg: '1', kpiBonusVnd: '-1' }],
+  ['KPI bonus over two decimals', { kpiTargetKg: '1', kpiBonusVnd: '1.234' }],
+  ['KPI bonus that rounds down to zero dong', { kpiTargetKg: '1', kpiBonusVnd: '0.49' }],
+] as const)('rejects %s', (_case, patch) => {
+  expect(payrollRateFormSchema.safeParse({ ...base, ...patch }).success).toBe(false)
 })

@@ -1,3 +1,4 @@
+import { fetchDepartureVehicles } from '@/features/fleet/backend/vehicles-api'
 /**
  * Hàm → endpoint backend của danh sách và Chi tiết chuyến khi nhóm `trips` nối backend (`usesBackend('trips')`):
  *   listTrips  → GET /api/trips (đọc hết mọi trang, tối đa 100 dòng mỗi trang)
@@ -5,12 +6,12 @@
  *   phần của nhóm (lập chuyến, tối ưu tuyến, gắn yêu cầu giao…) ở cuối file, tái xuất qua `trips-api.ts`
  */
 import { apiFetch, ApiError } from '@/lib/api-client'
-import { fetchVehicles } from '@/features/fleet/backend/vehicles-api'
-import { fetchVehicleTypes } from '@/features/vehicle-types/backend/vehicle-types-api'
+import { fetchAllVehicles } from '@/features/fleet/backend/vehicles-api'
+import { fetchAllVehicleTypes } from '@/features/vehicle-types/backend/vehicle-types-api'
 import { getCachedCurrentUser } from '@/features/auth/auth-api'
 import { fetchCompanyWarehouses } from '@/features/company-warehouses/company-warehouses-api'
 import type { CompanyDepot, VehicleStatus } from '@/lib/mock-db'
-import { fetchAllPages } from '@/lib/api-page'
+import { fetchAllPages, fetchFirstPage } from '@/lib/api-page'
 import type { TripRow } from './trip-list'
 import type { TripFormOptions, VehicleOption } from './trips-api'
 import { tripRowOf, type TripDto } from './trips-dto'
@@ -133,7 +134,7 @@ export async function fetchTripsPage({
   unassignedDriver,
   sortBy = 'departureTime',
   sortDir = 'desc',
-}: TripListParams): Promise<TripListPageResult> {
+}: TripListParams, signal?: AbortSignal): Promise<TripListPageResult> {
   const params = new URLSearchParams({
     page: String(page),
     size: String(size),
@@ -168,7 +169,7 @@ export async function fetchTripsPage({
   }
 
   const response = await apiFetch<TripListApiResponse>(
-    `/api/trips?${params.toString()}`,
+    `/api/trips?${params.toString()}`, { signal },
   )
 
   return {
@@ -266,6 +267,7 @@ export type BackendActiveRoutePlan = {
 
 
 export type TripDetailApiResponse = {
+  originWarehouseId?: number | null
   id: number
   tripCode: string
   tripName: string
@@ -477,18 +479,6 @@ export async function optimizeBackendTrip(
   return response.data
 }
 
-async function fetchEveryPage<T>(
-  fetchPage: (page: number, size: number) => Promise<{
-    data: T[]
-    totalPages: number
-  }>,
-): Promise<T[]> {
-  const size = 100
-  const first = await fetchPage(0, size)
-  // Biết số trang sau trang đầu: đọc các trang còn lại cùng lúc, giữ đúng thứ tự trang
-  const rest = await Promise.all(Array.from({ length: Math.max(0, first.totalPages - 1) }, (_, index) => fetchPage(index + 1, size)))
-  return [first, ...rest].flatMap((response) => response.data)
-}
 /**
  * Công ty và kho xuất phát của form chuyến lấy từ máy chủ, không từ kho mẫu: công ty là của người đăng nhập (`getCachedCurrentUser`),
  * kho xuất phát mặc định là kho mặc định đang hoạt động của công ty (`GET /api/company-warehouses`). Nhóm `companies` chưa nối thì
@@ -507,10 +497,10 @@ async function defaultServerDepot(): Promise<CompanyDepot | null> {
 }
 
 // GET /api/vehicles · GET /api/vehicle-types · GET /api/trips/driver-options · GET /api/company-warehouses?activeOnly=true
-export async function fetchBackendTripFormOptions(): Promise<TripFormOptions> {
+export async function fetchBackendTripFormOptions(warehouseId?: string, tripId?: string): Promise<TripFormOptions> {
   const [vehicles, vehicleTypes, drivers, depot] = await Promise.all([
-    fetchEveryPage((page, size) => fetchVehicles(page, size)),
-    fetchEveryPage((page, size) => fetchVehicleTypes(page, size)),
+    warehouseId ? fetchDepartureVehicles(warehouseId, tripId) : fetchAllVehicles(),
+    fetchAllVehicleTypes(),
     fetchDriverOptions(),
     defaultServerDepot(),
   ])
@@ -635,10 +625,11 @@ export async function assignBackendRequirementToTrip(
 export async function resolveBackendTripId(idOrCode: string): Promise<string> {
   if (/^[1-9]\d*$/.test(idOrCode)) return idOrCode
   const wanted = idOrCode.trim().toUpperCase()
-  const rows = wanted === ''
-    ? []
-    : await fetchAllPages<TripDto>('/api/trips', { query: { search: idOrCode.trim() }, size: PAGE_SIZE, maxPages: 1, truncate: true })
-  const listed = rows.find((row) => row.tripCode.toUpperCase() === wanted)
+  const page = wanted === ''
+    ? { rows: [] as TripDto[], complete: true }
+    : await fetchFirstPage<TripDto>('/api/trips', { query: { search: idOrCode.trim() }, size: PAGE_SIZE })
+  const listed = page.rows.find((row) => row.tripCode.toUpperCase() === wanted)
+  if (!listed && !page.complete) throw new ApiError('DATASET_INCOMPLETE')
   if (!listed) throw new ApiError('TRIP_NOT_FOUND', { status: 404 })
   return String(listed.id)
 }

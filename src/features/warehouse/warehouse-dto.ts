@@ -1,5 +1,7 @@
 import { ApiError } from '@/lib/api-client'
 import { isoFromBackend } from '@/lib/backend-time'
+import type { VehicleObstacle } from '@/domain/models'
+import type { BackendObstacle } from '@/features/fleet/fleet-dto'
 
 /**
  * DTO của `WarehouseController` và `WarehouseStagingController` backend (`WarehouseTaskResponse`, `StartLoadingResponse`,
@@ -60,7 +62,10 @@ export type PlacementStepDto = {
 
 /** Phiên xếp: `POST /api/warehouse/tasks/{tripId}/start` và `GET /api/warehouse/tasks/{tripId}` trả cùng dạng. Lòng thùng và cửa: cm. */
 export type StartLoadingDto = {
-  readonly executionId: number
+  readonly executionId: number | null
+  readonly approved?: boolean | null
+  readonly stale?: boolean | null
+  readonly obstacles?: readonly BackendObstacle[] | null
   readonly loadPlanId?: number | null
   readonly tripId: number
   readonly tripCode: string | null
@@ -177,6 +182,12 @@ export type ServerCargoBox = {
 
 export type ServerLoadingSession = {
   readonly tripId: string
+  readonly loadPlanId?: string | null
+  readonly executionId?: string | null
+  readonly executionStatus?: string | null
+  readonly approved?: boolean | null
+  readonly stale?: boolean | null
+  readonly obstacles?: readonly VehicleObstacle[] | null
   readonly code: string
   readonly vehicle: string
   readonly box: ServerCargoBox | null
@@ -281,6 +292,22 @@ function stagingOf(dto: PlacementStepDto): ServerStagingState {
   return { staged: dto.staged === true, shortage, manual: manualOf(dto) }
 }
 
+function warehouseObstacleOf(dto: BackendObstacle): VehicleObstacle {
+  const number = (value: number | string | null | undefined, positive: boolean) => {
+    if (value == null || value === '') throw new ApiError('WAREHOUSE_GEOMETRY_INVALID')
+    const parsed = Number(value)
+    if (!Number.isFinite(parsed) || (positive ? parsed <= 0 : parsed < 0)) throw new ApiError('WAREHOUSE_GEOMETRY_INVALID')
+    return parsed
+  }
+  const types = ['WHEEL_ARCH', 'COOLING_UNIT', 'PARTITION', 'RESERVED_ZONE'] as const
+  return {
+    id: String(dto.id), type: types.find((type) => type === dto.type) ?? 'RESERVED_ZONE',
+    xCm: number(dto.x, false), yCm: number(dto.y, false), zCm: number(dto.z, false),
+    lengthCm: number(dto.length, true), widthCm: number(dto.width, true), heightCm: number(dto.height, true),
+    loadBearing: dto.loadBearing === true,
+  }
+}
+
 export function sessionOf(dto: StartLoadingDto): ServerLoadingSession {
   const id = String(dto.tripId)
   const steps = (dto.placements ?? []).map((step) => ({ status: step.status, placement: placementOf(step), staging: stagingOf(step) }))
@@ -291,6 +318,12 @@ export function sessionOf(dto: StartLoadingDto): ServerLoadingSession {
   const vehicle = dto.vehicleInfo?.trim() ?? ''
   return {
     tripId: id,
+    loadPlanId: dto.loadPlanId == null ? null : String(dto.loadPlanId),
+    executionId: dto.executionId == null ? null : String(dto.executionId),
+    executionStatus: dto.status,
+    approved: dto.approved ?? null,
+    stale: dto.stale ?? null,
+    obstacles: dto.obstacles == null ? null : dto.obstacles.map(warehouseObstacleOf),
     code: dto.tripCode ?? id,
     vehicle: vehicle !== '' ? vehicle : (dto.licensePlate?.trim() ?? ''),
     box: boxOf(dto),
@@ -311,10 +344,10 @@ export function sessionOf(dto: StartLoadingDto): ServerLoadingSession {
 const normalized = (value: string | null | undefined) => value?.trim().toLocaleUpperCase('vi') ?? ''
 
 /**
- * Mã quét hoặc gõ có khớp kiện không: mã QR, mã vạch, mã của bên gửi hoặc mã của kho kiện, không phân biệt hoa thường (mã QR của máy chủ là
- * chữ thường, máy quét hay người gõ có thể đưa chữ hoa).
+ * CODE checks only Package Code; QR checks the printed QR/barcode. IDs never count as label evidence.
+ * Client matching is a convenience; the backend always verifies the submitted code against its own package.
  */
-export function codeMatches(placement: ServerPlacement, code: string): boolean {
+export function codeMatches(placement: ServerPlacement, code: string, method: 'QR' | 'CODE' = 'CODE'): boolean {
   const typed = normalized(code)
-  return typed !== '' && [placement.qrToken, placement.barcode, placement.packageCode, placement.packageId].some((value) => typed === normalized(value))
+  return typed !== '' && (method === 'CODE' ? [placement.packageCode] : [placement.qrToken, placement.barcode]).some((value) => typed === normalized(value))
 }

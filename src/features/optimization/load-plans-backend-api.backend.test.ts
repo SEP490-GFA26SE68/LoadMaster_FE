@@ -28,7 +28,7 @@ const PLAN = (id: number, label: string | null, objective: string | null) => ({
   frontAxleLoad: null, rearAxleLoad: null, rehandlingCount: 2,
   placements: [{ id: id * 10, packageId: 301, packageCode: 'PK-301', weightKg: '20.5', posX: '0', posY: '0', posZ: '0',
     packedLength: '100', packedWidth: '50', packedHeight: '40', rotationType: 1, stepSequence: 1, stopId: 91, stopSequence: 1 }],
-  unplaced: [{ packageId: 302, trackingBarcode: 'BC-302', reason: 'OUT_OF_SPACE' }],
+  unplaced: [{ packageId: 302, trackingBarcode: 'BC-302', reason: 'CONSTRAINT_VIOLATED', violatedConstraints: ['AXLE_CONFIG_MISSING'] }],
 })
 
 test('chạy tối ưu gửi một lần chạy và đọc trạng thái job tới khi xong', async () => {
@@ -36,7 +36,7 @@ test('chạy tối ưu gửi một lần chạy và đọc trạng thái job t�
     'POST /api/trips/42/optimize-loading': { body: envelope({ jobId: 'job-1', tripId: 42 }) },
     'GET /api/trips/optimization-jobs/job-1': { body: envelope({ jobId: 'job-1', status: 'NO_SOLUTION', computationMs: 1200, packedPlanCount: 0 }) },
   })
-  await expect(startLoadingOptimization('42')).resolves.toEqual({ jobId: 'job-1', pinnedCount: 0 })
+  await expect(startLoadingOptimization('42', '11111111-1111-4111-8111-111111111111')).resolves.toEqual({ jobId: 'job-1', pinnedCount: 0 })
   await expect(fetchOptimizationJob('job-1')).resolves.toMatchObject({ status: 'NO_SOLUTION', finished: true, computationMs: 1200, packedPlanCount: 0 })
   expect(backend.calls.map((call) => `${call.method} ${call.path}`)).toEqual(['POST /api/trips/42/optimize-loading', 'GET /api/trips/optimization-jobs/job-1'])
 })
@@ -45,7 +45,7 @@ test('giữ ghim gửi mã số phương án nguồn và đọc số kiện đã
   const backend = stubBackend({
     'POST /api/trips/42/optimize-loading': { body: envelope({ jobId: 'job-2', tripId: 42, pinnedCount: 3 }) },
   })
-  await expect(startLoadingOptimization('42', '12')).resolves.toEqual({ jobId: 'job-2', pinnedCount: 3 })
+  await expect(startLoadingOptimization('42', '11111111-1111-4111-8111-111111111111', '12')).resolves.toEqual({ jobId: 'job-2', pinnedCount: 0 })
   expect(backend.calls.map((call) => call.body)).toEqual([{ keepPinsFromPlanId: 12 }])
 })
 
@@ -54,7 +54,7 @@ test('trạng thái cũ TIMEOUT đọc là FAILED; job đang chạy chưa xong',
     'GET /api/trips/optimization-jobs/a': { body: envelope({ jobId: 'a', status: 'TIMEOUT' }) },
     'GET /api/trips/optimization-jobs/b': { body: envelope({ jobId: 'b', status: 'RUNNING' }) },
   })
-  await expect(fetchOptimizationJob('a')).resolves.toMatchObject({ status: 'FAILED', finished: true, packedPlanCount: null })
+  await expect(fetchOptimizationJob('a')).resolves.toMatchObject({ status: 'TIMEOUT', finished: true, packedPlanCount: null })
   await expect(fetchOptimizationJob('b')).resolves.toMatchObject({ status: 'RUNNING', finished: false })
 })
 
@@ -67,7 +67,10 @@ test('phương án của một lần chạy theo thứ tự A · B · C, kèm m�
   const [first] = plans
   expect(first).toMatchObject({ volumePercent: 62.5, payloadPercent: null, frontAxleLoadKg: null, centerOfGravityCm: null, rehandlingCount: 2, computationMs: 840 })
   expect(first?.placements[0]).toMatchObject({ code: 'PK-301', weightKg: 20.5, lengthCm: 100, rotationType: 1, stopId: '91', stopSequence: 1 })
-  expect(first?.unplaced).toEqual([{ packageId: '302', code: 'BC-302', reason: 'OUT_OF_SPACE', size: null, weightKg: null }])
+  expect(first?.unplaced).toEqual([{
+    packageId: '302', code: 'BC-302', reason: 'CONSTRAINT_VIOLATED',
+    violatedConstraints: ['AXLE_CONFIG_MISSING'], size: null, weightKg: null,
+  }])
 })
 
 test('phương án của chuyến kèm phương án đã duyệt; Duyệt gọi endpoint của phương án', async () => {

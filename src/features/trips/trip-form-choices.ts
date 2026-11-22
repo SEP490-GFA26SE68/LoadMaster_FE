@@ -16,7 +16,7 @@ export function tripFormChoices(data: TripFormOptions | undefined, existing: Pic
     return {
       value: vehicle.id,
       label: maintenance ? t('trips.create.vehicleMaintenance', { name: vehicle.name }) : vehicle.name,
-      disabled: maintenance && vehicle.id !== existing?.vehicleId,
+      disabled: status === 'in_use' || (maintenance && vehicle.id !== existing?.vehicleId),
     }
   })
   const drivers: SelectOption[] = (data?.drivers ?? [])

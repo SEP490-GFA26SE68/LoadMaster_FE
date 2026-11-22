@@ -86,7 +86,7 @@ test('a code that matches nothing and a code of another company read exactly the
   const foreign = await getMockDb().getPackage('PK-PN-0005')
   const { user } = renderLookup('dispatcher', '/tra-cuu-kien?ma=LM-0000-0000-0000')
   expect(await screen.findByText('Không có kiện nào của công ty bạn mang mã LM-0000-0000-0000. Xem lại mã in trên nhãn.', {}, SLOW)).toBeInTheDocument()
-  expect(screen.getByText('Không tìm thấy')).toBeInTheDocument()
+  expect(screen.getByText('Không tìm thấy kiện hàng phù hợp')).toBeInTheDocument()
   for (const code of [foreign.qrToken, foreign.packageCode, foreign.id]) {
     await lookUp(user, code)
     expect(await screen.findByText(`Không có kiện nào của công ty bạn mang mã ${code}. Xem lại mã in trên nhãn.`, {}, SLOW)).toBeInTheDocument()

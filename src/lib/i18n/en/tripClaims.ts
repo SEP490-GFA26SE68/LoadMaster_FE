@@ -1,0 +1,38 @@
+import type { Dictionary } from '../types'
+import type { tripClaims as source } from '../vi/tripClaims'
+
+export const tripClaims = {
+  pageTitle: 'Trip claims',
+  loading: 'Loading trip claims',
+  listLoadError: 'Could not load trip claims.',
+  retry: 'Try again',
+  empty: 'There are no pending trip claims',
+  unnamedTrip: 'Unnamed trip',
+  departureAt: 'Departure: {time} · {date}',
+  departureUnknown: 'Departure time unavailable',
+  origin: 'Origin warehouse: {name}',
+  originUnknown: 'Not provided',
+  stopCount: '{count} delivery stops',
+  viewTrip: 'View trip',
+  title: 'Trip claims ({count})',
+  noPhone: 'No phone number provided',
+  sentAt: 'Sent at {time} · {date}',
+  note: 'Message: {note}',
+  approve: 'Approve',
+  reject: 'Reject',
+  approveLabel: 'Approve {name}\'s claim',
+  rejectLabel: 'Reject {name}\'s claim',
+  approved: 'Approved {name}\'s claim.',
+  rejected: 'Rejected {name}\'s claim.',
+  readOnly: 'You can view trip claims but cannot decide them.',
+  rejectDialog: {
+    title: 'Reject {name}\'s trip claim?',
+    description: 'Enter a reason so the driver knows why the claim was rejected.',
+    reason: 'Rejection reason',
+    reasonHint: 'Up to {max} characters.',
+    reasonRequired: 'Enter a rejection reason.',
+    reasonTooLong: 'The rejection reason must be no longer than {max} characters.',
+    cancel: 'Cancel',
+    confirm: 'Reject claim',
+  },
+} satisfies Dictionary<typeof source>

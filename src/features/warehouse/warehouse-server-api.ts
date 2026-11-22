@@ -16,6 +16,7 @@ import { ApiError } from '@/lib/api-client'
 import { usesBackend } from '@/lib/backend-config'
 import {
   createWarehouseBackend,
+  type LabelInput,
   type DamageResult,
   type DeviationInput,
   type ServerLoadingSession,
@@ -82,6 +83,10 @@ export function fetchServerWarehouseTrips(): Promise<ServerWarehouseTrip[]> {
 }
 
 // GET /api/warehouse/tasks/{tripId}
+export function fetchServerApprovedPlan(tripId: string): Promise<ServerLoadingSession> {
+  return ON_BACKEND ? backend().fetchApprovedPlan(tripId) : mockOnly()
+}
+
 export function fetchServerLoadingSession(tripId: string): Promise<ServerLoadingSession> {
   return ON_BACKEND ? backend().fetchSession(tripId) : mockOnly()
 }
@@ -92,8 +97,8 @@ export function startServerLoading(tripId: string): Promise<ServerLoadingSession
 }
 
 // POST /api/warehouse/placements/{id}/confirm
-export function confirmServerPlacement(tripId: string, placementId: string, method: 'QR' | 'CODE'): Promise<ServerLoadingSession> {
-  return ON_BACKEND ? backend().confirm(tripId, placementId, method) : mockOnly()
+export function confirmServerPlacement(tripId: string, placementId: string, input: LabelInput): Promise<ServerLoadingSession> {
+  return ON_BACKEND ? backend().confirm(tripId, placementId, input) : mockOnly()
 }
 
 // POST /api/warehouse/placements/{id}/deviation
@@ -107,8 +112,8 @@ export function completeServerLoading(tripId: string): Promise<ServerLoadingSess
 }
 
 // POST /api/warehouse/tasks/{tripId}/staging/packages/{packageId}/confirm
-export function stageServerPackage(tripId: string, packageId: string, method: 'QR' | 'CODE'): Promise<StagingResult> {
-  return ON_BACKEND ? backend().stage(tripId, packageId, method) : mockOnly()
+export function stageServerPackage(tripId: string, packageId: string, method: 'QR' | 'CODE', code: string): Promise<StagingResult> {
+  return ON_BACKEND ? backend().stage(tripId, packageId, method, code) : mockOnly()
 }
 
 // POST /api/warehouse/tasks/{tripId}/staging/packages/{packageId}/manual
@@ -130,4 +135,3 @@ export function confirmServerPlacementManually(tripId: string, placementId: stri
 export function reportServerDamaged(tripId: string, placementId: string): Promise<DamageResult> {
   return ON_BACKEND ? backend().damaged(tripId, placementId) : mockOnly()
 }
-

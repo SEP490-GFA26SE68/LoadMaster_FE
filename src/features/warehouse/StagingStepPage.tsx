@@ -54,12 +54,15 @@ export function StagingStepPage({ trip, plan }: { trip: Trip; plan: Revision }) 
         </p>
       ) : null}
 
-      <main className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3">
-        <div className="flex flex-col gap-1">
+      <main
+        tabIndex={0}
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 outline-none"
+      >
+        <div className="mb-3 flex flex-col gap-1">
           <h1 className="font-display text-h2 font-bold text-ink-strong font-stretch-106%">{t('warehouse.staging.title', { count: format.integer(progress.pending.length) })}</h1>
           <p className="m-0 text-pretty text-ink-2">{t('warehouse.staging.hint')}</p>
         </div>
-        <ul aria-label={t('warehouse.staging.listLabel')} className="m-0 flex list-none flex-col overflow-hidden rounded-lg border border-border bg-bg p-0 shadow-card">
+        <ul aria-label={t('warehouse.staging.listLabel')} className="m-0 flex list-none flex-col rounded-lg border border-border bg-bg p-0 shadow-card">
           {progress.pending.map((placement) => {
             const reported = progress.shortageIds.has(placement.id)
             return (
@@ -86,7 +89,7 @@ export function StagingStepPage({ trip, plan }: { trip: Trip; plan: Revision }) 
         </ul>
       </main>
 
-      <div className="flex-none px-3 pb-3">
+      <div className="flex-none border-t border-border bg-app px-3 py-3">
         <Button variant="primary" className="h-14 w-full gap-3 text-body-lg [&_svg]:size-6" disabled={scan.pending} onClick={() => scan.setOpen(true)}>
           <ScanLine strokeWidth={2} />
           {t('warehouse.scan.open')}

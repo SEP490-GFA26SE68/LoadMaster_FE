@@ -67,6 +67,8 @@ export type UnplacedDto = {
   readonly packageCode?: string | null
   readonly trackingBarcode?: string | null
   readonly reason?: string | null
+  /** Mã ràng buộc cứng khi `reason` là `CONSTRAINT_VIOLATED`; máy chủ cũ không trả. */
+  readonly violatedConstraints?: readonly string[] | null
   /** Kích thước (cm) và khối lượng (kg) của kiện; máy chủ cũ không trả. */
   readonly lengthCm?: Decimal | null
   readonly widthCm?: Decimal | null
@@ -128,11 +130,11 @@ export type TripLoadPlansDto = {
 }
 
 /** Trạng thái job của dịch vụ tối ưu. `SUCCESS` (tên cũ) đọc là `COMPLETED`, `TIMEOUT` đọc là `FAILED`. */
-export const JOB_STATUSES = ['PENDING', 'RUNNING', 'COMPLETED', 'PARTIAL', 'NO_SOLUTION', 'FAILED'] as const
+export const JOB_STATUSES = ['PENDING', 'QUEUED', 'RUNNING', 'COMPLETED', 'SUCCESS', 'PARTIAL', 'NO_SOLUTION', 'TIMEOUT', 'FAILED', 'CANCELLED'] as const
 export type JobStatus = (typeof JOB_STATUSES)[number]
 
 /** Job đã kết thúc: có phương án (`COMPLETED`, `PARTIAL`) hoặc không (`NO_SOLUTION`, `FAILED` — máy chủ không trừ credit). */
-export const FINISHED_JOB_STATUSES: ReadonlySet<JobStatus> = new Set(['COMPLETED', 'PARTIAL', 'NO_SOLUTION', 'FAILED'])
+export const FINISHED_JOB_STATUSES: ReadonlySet<JobStatus> = new Set(['COMPLETED', 'SUCCESS', 'PARTIAL', 'NO_SOLUTION', 'TIMEOUT', 'FAILED', 'CANCELLED'])
 
 export type OptimizationJob = {
   readonly jobId: string
@@ -177,6 +179,8 @@ export type LoadUnplaced = {
   readonly packageId: string
   readonly code: string
   readonly reason: string | null
+  /** Mã ràng buộc cứng do solver ghi; vắng khi máy chủ không trả. */
+  readonly violatedConstraints?: readonly string[]
   /** Kích thước cm và khối lượng kg của kiện; `null` khi máy chủ không trả. */
   readonly size: { readonly lengthCm: number; readonly widthCm: number; readonly heightCm: number } | null
   readonly weightKg: number | null
@@ -241,8 +245,6 @@ const percentOf = (ratio: Decimal | null | undefined) => {
 }
 
 export function jobStatusOf(value: string): JobStatus {
-  if (value === 'SUCCESS') return 'COMPLETED'
-  if (value === 'TIMEOUT') return 'FAILED'
   const status = JOB_STATUSES.find((item) => item === value)
   if (status === undefined) throw new ApiError('SERVER_ERROR')
   return status
@@ -291,10 +293,12 @@ function placementOf(dto: PlacementDto): LoadPlacement {
 function unplacedOf(dto: UnplacedDto): LoadUnplaced {
   const [lengthCm, widthCm, heightCm] = [numberOf(dto.lengthCm), numberOf(dto.widthCm), numberOf(dto.heightCm)]
   const weightKg = numberOf(dto.weightKg)
+  const violatedConstraints = [...new Set((dto.violatedConstraints ?? []).map((code) => code.trim()).filter(Boolean))]
   return {
     packageId: String(dto.packageId),
     code: codeOf(dto),
     reason: dto.reason ?? null,
+    ...(violatedConstraints.length > 0 ? { violatedConstraints } : {}),
     size: lengthCm === null || widthCm === null || heightCm === null
       ? null
       : { lengthCm: roundCm(lengthCm), widthCm: roundCm(widthCm), heightCm: roundCm(heightCm) },

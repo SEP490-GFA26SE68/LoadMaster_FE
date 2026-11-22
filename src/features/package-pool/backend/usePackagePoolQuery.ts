@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
+import type { ListQuery, CargoListQuery } from './package-list-query'
 import { downloadBlob } from '@/features/trips/download-file'
 import {
   fetchPackages as fetchCargoPackages,
@@ -45,6 +46,7 @@ export const CARGO_PACKAGES_KEY = ['cargo-packages'] as const
 export function usePackageTypesQuery(
   page = 0,
   size = 25,
+  query: ListQuery = {},
 ) {
   return useQuery({
     queryKey: [
@@ -52,8 +54,9 @@ export function usePackageTypesQuery(
       'list',
       page,
       size,
+      query,
     ],
-    queryFn: () => fetchPackageTypes(page, size),
+    queryFn: ({ signal }) => fetchPackageTypes(page, size, query, signal),
   })
 }
 
@@ -177,6 +180,7 @@ export function useDownloadImportTemplateMutation() {
 export function useCargoPackagesQuery(
   page = 0,
   size = 25,
+  query: CargoListQuery = {},
 ) {
   return useQuery({
     queryKey: [
@@ -184,8 +188,9 @@ export function useCargoPackagesQuery(
       'list',
       page,
       size,
+      query,
     ],
-    queryFn: () => fetchCargoPackages(page, size),
+    queryFn: ({ signal }) => fetchCargoPackages(page, size, query, signal),
     staleTime: 0,
   })
 }
@@ -296,13 +301,16 @@ export function useDeleteCargoPackageMutation() {
   const client = useQueryClient()
 
   return useMutation({
-    mutationFn: (id: string) =>
-      deleteCargoPackage(id),
-
-    onSuccess: async () => {
-      await client.invalidateQueries({
-        queryKey: CARGO_PACKAGES_KEY,
-      })
+    retry: false,
+    mutationFn: (id: string) => deleteCargoPackage(id),
+    onSuccess: async (_data, id) => {
+      await Promise.all([
+        client.invalidateQueries({ queryKey: [...CARGO_PACKAGES_KEY, 'list'] }),
+        // Do not refetch a deleted detail before its confirmation can close the panel.
+        client.invalidateQueries({ queryKey: [...CARGO_PACKAGES_KEY, 'detail', id], refetchType: 'none' }),
+        client.invalidateQueries({ queryKey: PACKAGE_POOL_KEY }),
+        client.invalidateQueries({ queryKey: ['requirements'] }),
+      ])
     },
   })
 }

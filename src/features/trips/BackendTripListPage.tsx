@@ -9,13 +9,15 @@ import { useListUrlState } from '@/components/useListUrlState'
 import { useCan } from '@/features/auth/useCan'
 import { useFormat, useT } from '@/lib/i18n'
 import { todayInVietnam } from './trip-dates'
-import { normalizeStatusFilter, TRIP_STATUS_SLUGS, TRIP_LIST_FILTERS, TRIP_LIST_TABS, tripFilterOptions, tripsPerDate, UNASSIGNED_DRIVER, type TripRow } from './trip-list'
+import { normalizeStatusFilter, TRIP_STATUS_SLUGS, TRIP_LIST_FILTERS, TRIP_LIST_TABS, tripsPerDate, UNASSIGNED_DRIVER, type TripRow } from './trip-list'
 import { createTripColumns } from './trip-list-columns'
 import { TripListSkeleton } from './TripListSkeleton'
 import { TripListTable } from './TripListTable'
 import { TripListStats, TripListTabs } from './TripListTabs'
 import { TripListToolbar } from './TripListToolbar'
 import { useTripsPageQuery } from './useTripsQuery'
+import {useTripFilterLookups,retainSelected} from './trip-filter-lookups'
+import {dataErrorMessage} from '@/lib/i18n'
 import type { TripStatus } from '@/types/trip'
 
 const NO_ROWS: TripRow[] = []
@@ -47,6 +49,7 @@ export function BackendTripListPage() {
     )?.[0] ?? ''
   ) as TripStatus | ''
 
+  const lookups = useTripFilterLookups()
   const driverFilter = list.filters['tai-xe']
 
   const [currentSort] = list.sorting
@@ -80,7 +83,7 @@ export function BackendTripListPage() {
     [t, format],
   )
 
-  const trips = query.data?.data ?? NO_ROWS
+  const trips = query.isFetching ? NO_ROWS : query.data?.data ?? NO_ROWS
   const totalRows = query.data?.totalElements ?? 0
 
   // Backend đã phân trang, không lọc hoặc cắt trang lần nữa ở FE.
@@ -91,20 +94,13 @@ export function BackendTripListPage() {
     [rows],
   )
 
-  const options = useMemo(() => {
-    const { vehicles, drivers } = tripFilterOptions(trips)
-
-    return {
-      vehicles,
-      drivers: [
-        {
-          value: UNASSIGNED_DRIVER,
-          label: t('trips.list.unassigned'),
-        },
-        ...drivers,
-      ],
-    }
-  }, [trips, t])
+  const options = {
+    vehicles: retainSelected(lookups.vehicles.isSuccess ? lookups.vehicles.data : [], list.filters.xe, t('trips.list.vehicle')),
+    drivers: [
+      { value: UNASSIGNED_DRIVER, label: t('trips.list.unassigned') },
+      ...retainSelected(lookups.drivers.isSuccess ? lookups.drivers.data : [], driverFilter === UNASSIGNED_DRIVER ? '' : driverFilter, t('trips.list.driver')),
+    ],
+  }
 
   const status = list.filters['trang-thai']
 
@@ -141,33 +137,7 @@ export function BackendTripListPage() {
         <TripListTabs counts={null} />
       </PageHero>
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-auto px-shell pt-6 pb-7">
-        {query.isPending ? (
-          <TripListSkeleton />
-        ) : query.isError ? (
-          <p role="alert" className="text-body text-danger">{t('trips.list.loadError')}</p>
-        ) : !hasTrips ? (
-          <EmptyState
-            mascot="empty"
-            title={t('trips.list.emptyTitle')}
-            description={t('trips.list.emptyDescription')}
-            action={
-              hasActiveFilters ? (
-                <Button variant="secondary" onClick={list.clearAll}>
-                  {t('common.clearFilters')}
-                </Button>
-              ) : canCreate ? (
-                <Button variant="primary" asChild>
-                  <Link to="/chuyen/moi">
-                    <Plus strokeWidth={1.5} />
-                    {t('trips.list.createFirst')}
-                  </Link>
-                </Button>
-              ) : undefined
-            }
-          />
-        ) : (
-          // Một thẻ: thanh tìm/lọc là đầu thẻ, bảng ngay dưới. flex-none: con overflow-hidden của cột flex không được co.
+      <div className="flex min-h-0 flex-1 flex-col overflow-auto px-shell py-6">
           <TabsContent value={tab} className="relative flex-none overflow-hidden rounded-lg border border-border bg-bg shadow-card outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
             <TripListToolbar
               list={list}
@@ -188,6 +158,12 @@ export function BackendTripListPage() {
               }}
             />
             {/* Màn điều phối là màn desktop (AGENTS mục 5): khung hẹp hơn bảng thì cuộn ngang trong khung, không bóp cột */}
+            {lookups.vehicles.isError || lookups.drivers.isError ? <p role="alert" className="p-4 text-danger">{dataErrorMessage(lookups.vehicles.error ?? lookups.drivers.error, t)}</p> : null}
+            {query.isFetching ? <TripListSkeleton />
+              : query.isError ? <p role="alert" className="p-4 text-danger">{t('trips.list.loadError')}</p>
+              : !hasTrips ? <EmptyState mascot="empty" title={t('trips.list.emptyTitle')} description={t('trips.list.emptyDescription')}
+                action={hasActiveFilters ? <Button onClick={list.clearAll}>{t('common.clearFilters')}</Button> : canCreate ? <Button asChild><Link to="/chuyen/moi">{t('trips.list.createFirst')}</Link></Button> : undefined} />
+              : <>
             <div className="relative overflow-x-auto">
               <div className="min-w-285">
                 <TripListTable
@@ -210,8 +186,8 @@ export function BackendTripListPage() {
                 />
               </div>
             </div>
+            </>}
           </TabsContent>
-        )}
       </div>
     </Tabs>
   )

@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useId, useMemo, useRef, type KeyboardEvent } from 'react'
 
+import { Banner } from '@/components/Banner'
+import { Spinner } from '@/components/ui/Spinner'
 import { DataTable } from '@/components/DataTable'
 import { FilterBar, type FilterField } from '@/components/FilterBar'
 import type { ListUrlState } from '@/components/useListUrlState'
 import { HANDLING_CLASSES } from '@/domain/models'
-import { useT } from '@/lib/i18n'
+import { dataErrorMessage, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { createColumnHelper } from '@tanstack/react-table'
 import type { BaseTableFeatures } from '@/components/DataTable'
@@ -16,6 +18,8 @@ import { CLASS_FILTER, HANDLING_CLASS_SLUGS, STATUS_FILTER, type CargoPackageRow
 type CargoFilterName = typeof STATUS_FILTER | typeof CLASS_FILTER
 
 type Props = {
+  pending?: boolean
+  error?: Error | null
   rows: readonly CargoPackageRow[]
   list: ListUrlState<CargoFilterName>
   totalElements: number
@@ -31,12 +35,22 @@ type Props = {
  * Bảng CargoPackage từ BE.
  * Hỗ trợ phân trang server-side và panel chi tiết kiện.
  *
- * Tìm kiếm, lọc loại hàng và sorting hiện vẫn hoạt động
- * trên trang đã tải, chờ BE hỗ trợ lọc toàn bộ kho.
+ * Search, handling class, status and sorting are applied server-side before paging.
  */
 const helper = createColumnHelper<BaseTableFeatures, CargoPackageRow>()
 
-export function PackagesTable({ rows, list, totalElements, tabbed, openId, onOpenChange, selectedIds, onSelectionChange }: Props) {
+export function PackagesTable({
+  rows,
+  pending = false,
+  error,
+  list,
+  totalElements,
+  tabbed,
+  openId,
+  onOpenChange,
+  selectedIds,
+  onSelectionChange,
+}: Props) {
   const t = useT()
   const panelId = useId()
 
@@ -132,7 +146,7 @@ export function PackagesTable({ rows, list, totalElements, tabbed, openId, onOpe
           className="min-h-14 border-b border-border px-4 py-2"
           query={list.query}
           onQueryChange={list.setQuery}
-          searchLabel={t('sourcing.packages.search')}
+          searchLabel={t('sourcing.packages.searchBackend')}
           fields={fields}
           values={list.filters}
           onValueChange={list.setFilter}
@@ -143,27 +157,36 @@ export function PackagesTable({ rows, list, totalElements, tabbed, openId, onOpe
           <div className={panelOpen ? 'min-w-180' : 'min-w-240'}>
             <PackageTableContext value={state}>
               <PackageSelectionContext value={selection}>
-                <DataTable
-                  data={data}
-                  columns={columns}
-                  getRowId={(row) => row.id}
-                  density="roomy"
-                  appearance="paper"
-                  serverPagination
-                  totalRows={totalElements}
-                  sorting={list.sorting}
-                  onSortingChange={list.setSorting}
-                  pagination={{
-                    pageIndex: list.pageIndex,
-                    pageSize: list.pageSize,
-                    onPageChange: list.setPage,
-                    onPageSizeChange: list.setPageSize,
-                  }}
-                  isFiltering={list.isFiltering || tabbed}
-                  onClearFilters={list.clearAll}
-                  isRowSelected={(row) => row.id === open}
-                  onRowClick={(row) => toggleOpen(row.id)}
-                />
+                {pending ? (
+                  <div role="status" className="p-8">
+                    <Spinner />
+                  </div>
+                ) : error ? (
+                  <Banner tone="danger">{dataErrorMessage(error, t)}</Banner>
+                ) : (
+                  <DataTable
+                    data={data}
+                    columns={columns}
+                    getRowId={(row) => row.id}
+                    density="roomy"
+                    appearance="paper"
+                    serverPagination
+                    serverSorting
+                    totalRows={totalElements}
+                    sorting={list.sorting}
+                    onSortingChange={list.setSorting}
+                    pagination={{
+                      pageIndex: list.pageIndex,
+                      pageSize: list.pageSize,
+                      onPageChange: list.setPage,
+                      onPageSizeChange: list.setPageSize,
+                    }}
+                    isFiltering={list.isFiltering || tabbed}
+                    onClearFilters={list.clearAll}
+                    isRowSelected={(row) => row.id === open}
+                    onRowClick={(row) => toggleOpen(row.id)}
+                  />
+                )}
               </PackageSelectionContext>
             </PackageTableContext>
           </div>

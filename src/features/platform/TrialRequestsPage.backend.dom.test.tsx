@@ -48,7 +48,7 @@ beforeEach(() => {
   connectApiAuth(() => Promise.resolve('token-1'))
   backend = stubBackend({
     'GET /api/trial-requests': { body: { success: true, data: [APPROVED, PENDING, AI_REJECTED], page: 0, totalPages: 1, last: true } },
-    'GET /api/subscription/plans': { body: [PLAN] },
+    'GET /api/subscription/plans': { body: { success: true, data: [PLAN], page: 0, size: 100, totalElements: 1, totalPages: 1, last: true } },
     'POST /api/trial-requests/2/manager-approve': { body: envelope({ ...PENDING, status: 'PENDING_ADMIN_CREATION', managerReviewedByName: 'Manager Hoàng' }) },
     'POST /api/trial-requests/2/manager-reject': { body: envelope({ ...PENDING, status: 'REJECTED' }) },
     'POST /api/trial-requests/2/approve': { body: envelope({ ...PENDING, status: 'APPROVED' }) },

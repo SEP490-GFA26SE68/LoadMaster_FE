@@ -25,9 +25,12 @@ const DashboardPage = lazy(() => import('@/features/manager/DashboardPage').then
 const TripListPage = lazy(() => import('@/features/trips/TripListPage').then((m) => ({ default: m.TripListPage })))
 const TripFormPage = lazy(() => import('@/features/trips/TripFormPage').then((m) => ({ default: m.TripFormPage })))
 const TripDetailPage = lazy(() => import('@/features/trips/TripDetailPage').then((m) => ({ default: m.TripDetailPage })))
+const TripClaimsPage = lazy(() => import('@/features/trips/TripClaimsPage').then((m) => ({ default: m.TripClaimsPage })))
 const OptimizationSetupPage = lazy(() => import('@/features/optimization/OptimizationSetupPage').then((m) => ({ default: m.OptimizationSetupPage })))
 const PlanComparisonPage = lazy(() => import('@/features/trips/PlanComparisonPage').then((m) => ({ default: m.PlanComparisonPage })))
 const ViewerPage = lazy(() => import('@/features/viewer3d/ViewerPage').then((m) => ({ default: m.ViewerPage })))
+const VehicleTransferPage = lazy(() => import('@/features/vehicle-transfers/VehicleTransferPage').then(m => ({ default: m.VehicleTransferPage })))
+const WarehouseVehiclesPage = lazy(() => import('@/features/warehouse/WarehouseVehiclesPage').then((m) => ({ default: m.WarehouseVehiclesPage })))
 const WarehousePage = lazy(() => import('@/features/warehouse/WarehousePage').then((m) => ({ default: m.WarehousePage })))
 const CompanyWarehousesPage = lazy(() =>
   import('@/features/company-warehouses/CompanyWarehousesPage')
@@ -57,6 +60,7 @@ const SubscriptionHistoryPage = lazy(() => import('@/features/platform/Subscript
 const TrialRequestsPage = lazy(() => import('@/features/platform/TrialRequestsPage').then((m) => ({ default: m.TrialRequestsPage })))
 const BillingPage = lazy(() => import('@/features/billing/BillingPage').then((m) => ({ default: m.BillingPage })))
 const PayrollPage = lazy(() => import('@/features/payroll/PayrollPage').then((m) => ({ default: m.PayrollPage })))
+const DispatcherPayslipPage = lazy(() => import('@/features/payroll/DispatcherPayslipPage').then((m) => ({ default: m.DispatcherPayslipPage })))
 const PaymentSimulationPage = lazy(() => import('@/features/billing/PaymentSimulationPage').then((m) => ({ default: m.PaymentSimulationPage })))
 const PaymentResultPage = lazy(() => import('@/features/billing/PaymentResultPage').then((m) => ({ default: m.PaymentResultPage })))
 // Trang công khai (giới thiệu, bảng giá, chính sách bảo mật, điều khoản sử dụng) và màn liên hệ của khách gửi từ trang giới thiệu
@@ -194,6 +198,7 @@ export const routes: RouteObject[] = [
                   ]),
                   guarded('trips.view', [
                     { path: '/chuyen', element: <TripListPage />, handle: titled((t) => t('titles.trips')) },
+                    { path: '/phieu-xin-chuyen', element: <TripClaimsPage />, handle: titled((t) => t('titles.tripClaims')) },
                     { path: '/chuyen/:tripId', element: <TripDetailPage />, handle: titled((t, s) => t('titles.trip', idParam(s, 'tripId'))) },
                   ]),
                   guarded('trips.edit', [
@@ -217,7 +222,7 @@ export const routes: RouteObject[] = [
                       handle: titled((t) => t('companyWarehouses.title')),
                     },
                   ]),
-                  guarded('fleet.edit', [{ path: '/doi-xe/moi', element: <VehicleDetailPage />, handle: titled((t) => t('titles.newVehicle')) }]),
+                  guarded('fleet.edit', [{ path: '/doi-xe/dieu-chuyen', element: <VehicleTransferPage />, handle: titled(t => t('transfers.title')) }, { path: '/doi-xe/moi', element: <VehicleDetailPage />, handle: titled((t) => t('titles.newVehicle')) }]),
                   guarded('users.manage', [{ path: '/nguoi-dung', element: <UsersPage />, handle: titled((t) => t('titles.users')) }]),
                   guarded('audit.view', [{ path: '/nhat-ky', element: <AuditLogPage />, handle: titled((t) => t('titles.audit')) }]),
                   // Công ty: màn chính của quản trị hệ thống (FE-8-06, D-65)
@@ -241,9 +246,13 @@ export const routes: RouteObject[] = [
                     { path: '/thanh-toan/gia-lap', element: <PaymentSimulationPage />, handle: titled((t) => t('titles.payment')) },
                     { path: '/thanh-toan/ket-qua', element: <PaymentResultPage />, handle: titled((t) => t('titles.paymentResult')) },
                   ]),
-                  // Bảng lương tài xế: quản lý công ty
+                  // Bảng lương tài xế và điều phối: quản lý công ty
                   guarded('payroll.manage', [
                     { path: '/bang-luong', element: <PayrollPage />, handle: titled((t) => t('titles.payroll')) },
+                  ]),
+                  // Phiếu lương điều phối: điều phối viên xem của mình
+                  guarded('payroll.viewOwn', [
+                    { path: '/phieu-luong', element: <DispatcherPayslipPage />, handle: titled((t) => t('titles.dispatcherPayroll')) },
                   ]),
                   // Hồ sơ cá nhân (LM-096): mọi người đã đăng nhập, không cần quyền riêng.
                   { path: '/ho-so', element: <ProfilePage />, handle: titled((t) => t('titles.profile')) },
@@ -292,7 +301,7 @@ export const routes: RouteObject[] = [
                 path: '/kho',
                 element: <WarehousePage />,
                 handle: titled((t, s) => withSearchId(s, 'chuyen', (id) => t('titles.loading', { id }), t('titles.warehouse'))),
-              }]),
+              }, { path: '/kho/xe', element: <WarehouseVehiclesPage />, handle: titled((t) => t('warehouse.presence.pageTitle')) }]),
               // `/tai-xe` là "Chuyến của tôi"; `/tai-xe/diem-giao?chuyen=<mã>` là một chuyến; đường dẫn lạ về danh sách (LM-087).
               guarded('driver.operate', [
                 { path: '/tai-xe', element: <MyTripsPage />, handle: titled((t) => t('titles.driverTrips')) },

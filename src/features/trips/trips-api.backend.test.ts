@@ -98,3 +98,14 @@ test('lệnh ghi của chuyến từ chối NOT_SUPPORTED, không gọi mạng v
   expect(calls).toEqual([])
   for (const write of writes) expect(write).not.toHaveBeenCalled()
 })
+
+
+test('a bounded trip-code lookup cannot claim NOT_FOUND from an incomplete first page',async()=>{
+ const {calls}=stubBackend({'GET /api/trips':{body:{success:true,data:[{id:42,tripCode:'OTHER'}],page:0,totalPages:2,totalElements:2,last:false}}})
+ await expect(resolveBackendTripId('TARGET')).rejects.toMatchObject({code:'DATASET_INCOMPLETE'})
+ expect(calls).toHaveLength(1)
+})
+test('a verified exact trip-code match on the bounded page remains usable',async()=>{
+ stubBackend({'GET /api/trips':{body:{success:true,data:[{id:42,tripCode:'TARGET'}],page:0,totalPages:2,totalElements:2,last:false}}})
+ await expect(resolveBackendTripId('target')).resolves.toBe('42')
+})

@@ -8,6 +8,8 @@
  *   chưa có ở BE: fetchOptimizationSetup, fetchOptimizationRuns, fetchRunHistory
  *   nhóm `trips` nối backend: load-plans-backend-api.ts
  */
+export { createBackendOptimizationJob } from './backend-optimization-api'
+
 import { pinnedIssues } from '@/domain/constraints'
 import type { OptimizationRequest, OptimizationResult, PackagePlacement, VehicleConfig } from '@/domain/models'
 import { usesBackend } from '@/lib/backend-config'
@@ -212,3 +214,5 @@ export async function fetchRunHistory(tripId: string): Promise<RunHistoryRow[]> 
   ])
   return buildRunHistory({ trip, runs, revisions, userNames: new Map(users.map((user) => [user.id, user.fullName])) })
 }
+
+export type { BackendPackagePlacement } from './backend-optimization-api'
