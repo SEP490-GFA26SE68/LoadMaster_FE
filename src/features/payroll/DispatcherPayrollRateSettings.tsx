@@ -51,7 +51,6 @@ export function DispatcherPayrollRateSettings({
   versionActionPending,
 }: DispatcherPayrollRateSettingsProps) {
   const t = useT()
-  const format = useFormat()
   const [internalVersionsOpen, setInternalVersionsOpen] = useState(false)
   const open = versionsOpen ?? internalVersionsOpen
   const setOpen = onVersionsOpenChange ?? setInternalVersionsOpen

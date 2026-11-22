@@ -57,6 +57,7 @@ export default function RouteMapCanvas({
 }: {
   data: RouteMapData
   /** Canh khung theo tuyến và xe của chuyến đang chọn (kho, điểm giao, GPS). */
+  followVehicle?: boolean
   onUnavailable: () => void
   /** Có thì nút Maximize2 mở modal phóng lớn; không thì canh toàn tuyến. */
   onExpand?: () => void

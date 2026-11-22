@@ -91,7 +91,8 @@ for (const terminal of ['PARTIAL', 'NO_SOLUTION', 'TIMEOUT']) {
     const count = polls
     await page.waitForTimeout(4500)
     expect(polls).toBe(count); expect(posts).toBe(1)
-    expect(planReads).toBe(terminal === 'PARTIAL' ? 1 : 0)
+    // NO_SOLUTION also reads its empty plan once, to show which hard constraints blocked it
+    expect(planReads).toBe(terminal === 'TIMEOUT' ? 0 : 1)
   })
 }
 

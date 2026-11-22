@@ -145,7 +145,7 @@ test('the dispatcher writes delivery requirements and reads the pool; the shipme
   const nav = page.getByRole('navigation', { name: 'Điều hướng chính' })
   await login('/', 'dispatcher')
   await page.waitForURL((url) => url.pathname === '/chuyen')
-  await expect(nav.getByRole('link')).toHaveText(['Chuyến hàng', 'Giám sát', 'Kho kiện', 'Yêu cầu giao', 'Đội xe', 'Bảng điều khiển'])
+  await expect(nav.getByRole('link')).toHaveText(['Chuyến hàng', 'Giám sát', 'Kho kiện', 'Yêu cầu giao', 'Đội xe', 'Bảng điều khiển', 'Phiếu lương'])
   // Yêu cầu giao là việc của điều phối viên (requirements.edit, như backend): có nút tạo
   await nav.getByRole('link', { name: 'Yêu cầu giao', exact: true }).click()
   await page.waitForURL((url) => url.pathname === '/yeu-cau-giao')
