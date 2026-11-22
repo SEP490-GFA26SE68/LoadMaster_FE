@@ -18,6 +18,7 @@ type RouteMapProps = RouteMapData & {
   /** Mặc định cao 320 px; truyền lớp chiều cao khác khi màn cần. */
   className?: string
   /** Canh khung gồm kho, điểm giao, tuyến và xe GPS của chuyến đang chọn. */
+  followVehicle?: boolean
 }
 
 /**
