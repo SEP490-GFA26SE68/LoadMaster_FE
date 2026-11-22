@@ -14,9 +14,11 @@ import { TRY_ANCHOR } from './try-anchor'
 import { TryAxleTab } from './TryAxleTab'
 import { toTryInput, TRY_DEFAULTS, tryFormSchema, type TryFormValues } from './try-form'
 import { TryCartonFields } from './TryCartonFields'
+import { TryDescribe } from './TryDescribe'
 import { TRY_NOTE } from './TryNumberInput'
 import { TryResults } from './TryResults'
 import { TryTruckFields } from './TryTruckFields'
+import { TRY_DESCRIBE_AVAILABLE, useTryDescribe } from './useTryExtract'
 import { useTryRun } from './useTryRun'
 
 /** Tab 56 px, chữ 16 px trên máy cảm ứng (AGENTS mục 10). */
@@ -33,11 +35,14 @@ const PANEL = 'mt-6 rounded-lg outline-none focus-visible:outline-2 focus-visibl
  * bấm lại trong lúc đang tính thì lần cũ bị bỏ. Từ 1.280 px form trái, kết quả phải; hẹp hơn xếp chồng. Form có thể cao hơn một màn hình
  * (tới bốn loại kiện): cột kết quả dính dưới đầu trang (khi màn cao từ 768 px), và tính xong thì cột được cuộn vào khung nhìn nếu đang bị
  * cắt (`try-scroll.ts`) — nút chạy nằm cuối form nên cột dính bị đáy form kéo lên. Trong lúc tính, nút giữ nguyên chiều rộng (icon đổi thành vòng quay) và vẫn bấm được.
+ * Khi trợ lý AI chạy trên máy chủ (nhóm `assistant`), đầu cột form có ô "Mô tả hàng bằng lời" (`TryDescribe`): máy chủ đọc mô tả ra số và
+ * điền form, khách vẫn tự bấm "Tính ba phương án". Ô và lượt điền của nó cũng giữ ở đây (`useTryDescribe`) để còn nguyên khi đổi tab.
  */
 export function LandingTry() {
   const t = useT()
   const form = useForm<TryFormValues>({ resolver: zodResolver(tryFormSchema), defaultValues: TRY_DEFAULTS, mode: 'onTouched' })
   const run = useTryRun()
+  const describe = useTryDescribe(form)
   const running = run.isPending
 
   const handleValid = (values: TryFormValues) => {
@@ -55,7 +60,8 @@ export function LandingTry() {
         </TabsList>
         <TabsContent value="pack" className={cn(PANEL, 'grid gap-6 xl:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] xl:items-start')}>
           <Reveal className="min-w-0">
-            <Card className="p-4 sm:p-5">
+            <Card className="flex flex-col gap-5 p-4 sm:p-5">
+              {TRY_DESCRIBE_AVAILABLE ? <TryDescribe describe={describe} /> : null}
               <form noValidate aria-label={t('landingTry.form.label')} onSubmit={form.handleSubmit(handleValid)} className="flex flex-col gap-5">
                 <TryTruckFields form={form} />
                 <TryCartonFields form={form} />
@@ -71,7 +77,7 @@ export function LandingTry() {
                   </Button>
                   <p className={cn(TRY_NOTE, 'flex items-start gap-2')}>
                     <ShieldCheck aria-hidden strokeWidth={1.5} className="mt-0.5 size-4 flex-none text-primary" />
-                    {t('landingTry.form.privacy')}
+                    {t(TRY_DESCRIBE_AVAILABLE ? 'landingTry.form.privacyWithDescribe' : 'landingTry.form.privacy')}
                   </p>
                 </div>
               </form>

@@ -4,6 +4,7 @@ import type { assistant as source } from '../vi/assistant'
 export const assistant = {
   launcher: {
     label: 'Ask {name}',
+    labelApp: 'AI assistant',
   },
   panel: {
     subtitle: 'Questions about LoadMaster',
@@ -13,6 +14,17 @@ export const assistant = {
     shrink: 'Shrink the chat',
     log: 'Conversation with {name}',
     disclaimer: '{name} answers from the LoadMaster documentation — not a sales or support person.',
+    disclaimerAi: '{name} is an AI assistant that answers from the LoadMaster documentation and can be wrong — ask the LoadMaster team about anything important.',
+    disclaimerAiApp: '{name} is an AI assistant that answers from the documentation and the data you can see, and can be wrong — check before acting on anything important.',
+    introHintApp: 'Ask me about the screen you have open or the data you can see in LoadMaster.',
+    appStarters: {
+      page: 'What is this screen for?',
+      trips: 'Which trips are in transit?',
+      credit: 'How many credits does the company have left?',
+      payroll: 'What does my pay slip look like this month?',
+      tickets: 'Where are my support requests at?',
+      plans: 'How do the plans differ?',
+    },
     greeting: 'Hi, I’m {name}.',
     introHint: 'Ask me about plans, credits, how LoadMaster plans a load or how to try it.',
     starters: 'Suggested questions',
@@ -140,6 +152,20 @@ export const assistant = {
     trial: 'Start a trial',
     registerNow: 'Sign up now',
     requestTrial: 'Request a trial',
+  },
+  ai: {
+    links: 'Open a related screen',
+    handoffQuestion: 'Pass the question to the support team?',
+    handoffYes: 'Yes, pass it to support',
+    handoffNo: 'No need',
+    handoffYesMessage: 'Yes, pass it to the support team.',
+    handoffNoMessage: 'No need to pass it on.',
+    ticket: 'Support request {code} has been created. The support team replies under “Support requests” in the account menu.',
+    degraded: 'The AI assistant is busy, so this is a prepared answer.',
+  },
+  briefing: {
+    button: 'Today’s summary',
+    generatedAt: 'Figures as of {time}.',
   },
   fallback: 'I have no answer for that in the LoadMaster documentation yet. Pick a question below, or send your question to the LoadMaster team.',
   handoff: {

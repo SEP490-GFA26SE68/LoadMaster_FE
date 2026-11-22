@@ -6,7 +6,7 @@ import type { ConstraintIssue } from '@/domain/constraints'
 import type { ScenePlacement } from '@/features/viewer3d/scene-input'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import type { LoadPlanViewerState } from '../useLoadPlanViewer'
+import type { LeftTab, LoadPlanViewerState } from '../useLoadPlanViewer'
 import type { OperationsState } from '../operations/useOperations'
 import { MassCard, OperationsPanel, UnloadingPanel } from '../operations/OperationsPanel'
 import { SelectedPackagePanel, type PinAction } from './SelectedPackagePanel'
@@ -29,6 +29,8 @@ type InspectorProps = {
   /** Ghim / bỏ ghim kiện đang chọn ở chế độ Xem (Planner bản máy chủ); vắng thì thẻ kiện không có nút ghim. */
   pin?: PinAction
   tab: InspectorTab | null; onTab: (tab: InspectorTab) => void; onClose: () => void
+  /** Khối của tab Danh sách cần cuộn tới (trợ lý của Planner bản máy chủ, `openTab`); vắng thì danh sách mở ở đầu. */
+  listSection?: LeftTab
 }
 
 /**
@@ -61,7 +63,7 @@ function FloatingColumn({ state, operations, tripId, issues, onEdit, pin, onFocu
   </div>
 }
 
-function InspectorDialog({ state, operations, tripId, colorContext, issues, onEdit, pin, onFocus, onSelect, tab, onTab, onClose }: InspectorProps) {
+function InspectorDialog({ state, operations, tripId, colorContext, issues, onEdit, pin, onFocus, onSelect, tab, onTab, onClose, listSection }: InspectorProps) {
   const t = useT()
   const metrics = state.sceneModel.metrics
   const tabs: { value: InspectorTab; label: string }[] = [
@@ -117,7 +119,7 @@ function InspectorDialog({ state, operations, tripId, colorContext, issues, onEd
           </div> : null}
           {tab === 'packages' ? <PackageListPanel unplaced={state.sceneModel.unplaced} pinned={state.placements.filter((p) => p.pinned)}
             placements={state.placements} vehicle={state.sceneModel.vehicle} selectedId={state.selectedId}
-            onSelect={(id) => { state.select(id); onTab('package') }} stops={state.sceneModel.stops} issues={issues} tripId={tripId} /> : null}
+            onSelect={(id) => { state.select(id); onTab('package') }} stops={state.sceneModel.stops} issues={issues} tripId={tripId} section={listSection} /> : null}
           {tab === 'metrics' && metrics ? <PlanMetricsPanel metrics={metrics} /> : null}
         </div>
       </DialogPrimitive.Content>

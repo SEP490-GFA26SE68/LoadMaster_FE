@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import { AlertTriangle, Focus, Maximize, Pencil, Settings2, SkipForward, Truck, Undo2 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useFormat, useT } from '@/lib/i18n'
@@ -19,9 +19,9 @@ const HUD_BUTTON = cn('pointer-events-auto h-14 px-3 text-body-lg xl:h-8 xl:px-2
  * dỡ hàng nổi bên phải nằm ở `SceneInspector` (cần lỗi ràng buộc của phương án). Dưới 1.280 px bỏ danh sách điểm giao và dùng
  * thanh kiện gọn ở góc dưới trái. Góc dưới phải: "Đổi xe" (FE-5b-08, D-80 — nút phụ, từ 768 px; thanh trên của Planner không còn chỗ
  * cho nó ở 1.536–1.760 px) cạnh "Chi tiết / Hiển thị". Cùng hàng, bên trái hai nút đó: nhãn kiện đã ghim và "Chạy lại giữ ghim" khi phương án có kiện ghim (FE-BL-02) — hàng này nằm dưới cột
- * nổi bên phải nên không bị nó che.
+ * nổi bên phải nên không bị nó che. Planner bản máy chủ đặt thêm nút "Trợ lý AI" (`assistant`) ngay trước "Chi tiết / Hiển thị".
  */
-export function SceneHud({ state, operations, onInspect, onFocus, onEdit, onResetFocus, onChangeVehicle, onRerunPinned, rerunBlockedReason }: {
+export function SceneHud({ state, operations, onInspect, onFocus, onEdit, onResetFocus, onChangeVehicle, onRerunPinned, rerunBlockedReason, assistant }: {
   state: LoadPlanViewerState; operations: OperationsState; onInspect: (tab: InspectorTab) => void
   onFocus: (p?: ScenePlacement) => void; onEdit?: () => void; onResetFocus?: () => void
   /** Mở hộp thoại Đổi xe; vắng khi chuyến không ở trạng thái Đã lập kế hoạch hoặc người xem không sửa được chuyến. */
@@ -30,6 +30,8 @@ export function SceneHud({ state, operations, onInspect, onFocus, onEdit, onRese
   onRerunPinned?: () => void
   /** Lý do "Chạy lại giữ ghim" đang bị chặn (nút mờ, câu đứng cạnh); vắng là chạy được. */
   rerunBlockedReason?: string
+  /** Nút "Trợ lý AI" (Planner bản máy chủ khi nhóm `assistant` nối máy chủ), đứng trước "Chi tiết / Hiển thị". */
+  assistant?: ReactNode
 }) {
   const p = operations.current, stopNumber = operations.focusStop ?? p?.stop
   const stops = state.sceneModel.stops
@@ -106,6 +108,7 @@ export function SceneHud({ state, operations, onInspect, onFocus, onEdit, onRese
             <Truck strokeWidth={1.5} /><span className="hidden xl:inline">{t('viewer.plan.changeVehicle')}</span>
           </Button>
         ) : null}
+        {assistant}
         <Button variant="glass" className="pointer-events-auto size-14 shrink-0 p-0 glass-dark xl:h-10 xl:w-auto xl:px-3.5" aria-label={t('viewer.hud.detailsLabel')} onClick={() => onInspect('operations')}>
           <Settings2 strokeWidth={1.5} /><span className="hidden xl:inline">{t('viewer.hud.detailsLabel')}</span>
         </Button>

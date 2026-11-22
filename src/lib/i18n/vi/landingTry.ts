@@ -16,6 +16,60 @@ export const landingTry = {
     run: 'Tính ba phương án',
     howSubject: 'bản thử',
     privacy: 'Số bạn nhập chỉ nằm trên trình duyệt này, không gửi lên máy chủ.',
+    /** Khi có ô mô tả (trợ lý AI): số trong form vẫn ở lại trình duyệt, chỉ mô tả bằng lời được gửi đi. */
+    privacyWithDescribe: 'Số trong form chỉ nằm trên trình duyệt này. Chỉ mô tả bằng lời ở trên được gửi đi, và chỉ khi bạn bấm “Điền giúp tôi”.',
+  },
+  /**
+   * Ô "Mô tả hàng bằng lời" đầu tab xếp thử (`try/TryDescribe`), chỉ khi nhóm `assistant` nối máy chủ: khách gõ mô tả, máy chủ đọc ra số
+   * rồi app điền form — khách tự bấm "Tính ba phương án". `{run}` là chữ của nút đó (`form.run`).
+   */
+  describe: {
+    label: 'Mô tả hàng bằng lời',
+    hint: 'Ví dụ: “Xe 5 tấn, thùng 6 × 2,3 × 2,4 m. 200 thùng 40 × 30 × 30 cm nặng 12 kg giao điểm 1, 20 kiện 120 × 100 × 150 cm 80 kg giao điểm 2.”',
+    count: '{count} / {max} ký tự',
+    submit: 'Điền giúp tôi',
+    disclosure: 'Khi bạn bấm “Điền giúp tôi”, mô tả này được gửi tới máy chủ LoadMaster và Anthropic — nhà cung cấp mô hình AI — để điền form. Lumo là trợ lý AI và có thể đọc nhầm: kiểm lại số trước khi tính.',
+    reading: 'Lumo đang đọc mô tả…',
+    filled: {
+      one: 'Đã điền thùng xe và {count} loại kiện. Kiểm lại rồi bấm “{run}”.',
+      other: 'Đã điền thùng xe và {count} loại kiện. Kiểm lại rồi bấm “{run}”.',
+    },
+    filledCartons: {
+      one: 'Đã điền {count} loại kiện, thùng xe giữ nguyên. Kiểm lại rồi bấm “{run}”.',
+      other: 'Đã điền {count} loại kiện, thùng xe giữ nguyên. Kiểm lại rồi bấm “{run}”.',
+    },
+    noCartons: 'Chưa nhận ra kiện hàng nào trong mô tả, nên form giữ nguyên. Hãy ghi rõ kích thước, khối lượng và số kiện.',
+    assumptions: 'Lumo đã giả định',
+    missing: 'Cần bạn nhập thêm',
+    /** Nhãn của từng mục trong `missing` của máy chủ. */
+    gaps: {
+      truck: {
+        lengthCm: 'Chiều dài thùng',
+        widthCm: 'Chiều rộng thùng',
+        heightCm: 'Chiều cao thùng',
+        payloadKg: 'Tải trọng xe',
+      },
+      carton: {
+        lengthCm: 'Chiều dài — loại kiện {number}',
+        widthCm: 'Chiều rộng — loại kiện {number}',
+        heightCm: 'Chiều cao — loại kiện {number}',
+        weightKg: 'Khối lượng — loại kiện {number}',
+        quantity: 'Số kiện — loại kiện {number}',
+        stop: 'Điểm giao — loại kiện {number} (đang tạm để điểm 1)',
+      },
+      cartonKinds: 'Chỉ giữ {max} loại kiện đầu',
+      totalQuantity: 'Tổng số kiện vượt {max}',
+    },
+    /** Chưa điền được: form giữ nguyên, khách nhập tay. */
+    errors: {
+      rateLimited: 'Lumo đang nhận quá nhiều yêu cầu nên chưa điền giúp được. Thử lại sau ít phút, hoặc nhập số vào form.',
+      budget: 'Hôm nay Lumo đã hết lượt đọc mô tả nên chưa điền giúp được. Bạn nhập số vào form nhé.',
+      unavailable: 'Lumo chưa đọc được mô tả lúc này nên chưa điền giúp được. Bạn nhập số vào form nhé.',
+      tooLong: 'Mô tả dài quá {max} ký tự nên chưa điền giúp được. Rút gọn mô tả, hoặc nhập số vào form.',
+      invalid: 'Máy chủ không nhận mô tả này nên chưa điền giúp được. Sửa lại mô tả, hoặc nhập số vào form.',
+      network: 'Không kết nối được máy chủ nên chưa điền giúp được. Thử lại sau, hoặc nhập số vào form.',
+      other: 'Chưa điền giúp được. Bạn nhập số vào form nhé.',
+    },
   },
   truck: {
     legend: 'Thùng xe',

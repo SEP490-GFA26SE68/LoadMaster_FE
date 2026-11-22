@@ -138,6 +138,22 @@ test('no response at all is NETWORK_ERROR; a request that outlives the limit is 
   expect((await failure(() => slow.get('/x'))).code).toBe('TIMEOUT')
 })
 
+test('one call can wait longer than the client limit (the assistant waits for the model)', async () => {
+  const answerAfter = (ms: number) =>
+    ((_url: string, init: RequestInit) =>
+      new Promise<Response>((resolve, reject) => {
+        const timer = setTimeout(() => resolve(respond(200, { success: true, data: 'đã trả lời' })), ms)
+        init.signal?.addEventListener('abort', () => {
+          clearTimeout(timer)
+          reject(new Error('aborted'))
+        })
+      })) as unknown as typeof fetch
+  const client = createApiClient({ baseUrl: 'http://api.test', accessToken: () => Promise.resolve(null), timeoutMs: 10, fetch: answerAfter(40) })
+
+  expect((await failure(() => client.post('/x', { body: {} }))).code).toBe('TIMEOUT')
+  await expect(client.post('/x', { body: {}, timeoutMs: 200 })).resolves.toBe('đã trả lời')
+})
+
 test('getRaw returns the whole body, keeping the page numbers of a paged list', async () => {
   const page = { success: true, data: [{ id: 1 }], page: 0, totalPages: 3, last: false }
   const { client } = clientWith(respond(200, page))

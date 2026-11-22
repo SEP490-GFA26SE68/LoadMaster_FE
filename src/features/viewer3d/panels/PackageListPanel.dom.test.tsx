@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
-import { expect, test } from 'vitest'
+import { expect, test, vi } from 'vitest'
 import { I18nProvider } from '@/lib/i18n'
 import { seedScene } from '@/test/scene'
 import type { SceneUnplaced } from '../scene-input'
@@ -32,4 +32,26 @@ test('a package left out for a constraint shows the reason and the sentence of e
   const noSpace = within(section.getByRole('link', { name: 'PKG-010-01' }).closest('li')!)
   expect(noSpace.getByText('Không còn chỗ trống vừa kiện')).toBeInTheDocument()
   expect(noSpace.queryByRole('list')).not.toBeInTheDocument()
+})
+
+/** Trợ lý của Planner bản máy chủ mở danh sách ở một khối (`openTab`): danh sách cuộn tới khối đó, và tới khối mới khi khối đổi. */
+test('the list scrolls to the section the assistant asked for, and again when the section changes', async () => {
+  const scene = await seedScene()
+  const scrolled: string[] = []
+  const spy = vi.spyOn(Element.prototype, 'scrollIntoView').mockImplementation(function (this: Element) {
+    scrolled.push(this.getAttribute('data-list-section') ?? this.getAttribute('aria-label') ?? '')
+  })
+  const panel = (section: 'unplaced' | 'pinned' | 'placed') => (
+    <MemoryRouter>
+      <I18nProvider>
+        <PackageListPanel unplaced={[]} pinned={[]} placements={scene.placements} vehicle={scene.vehicle} selectedId={null} onSelect={() => undefined}
+          stops={scene.stops} issues={[]} tripId={scene.tripId} section={section} />
+      </I18nProvider>
+    </MemoryRouter>
+  )
+  const { rerender } = render(panel('placed'))
+  rerender(panel('pinned'))
+  rerender(panel('unplaced'))
+  expect(scrolled).toStrictEqual(['placed', 'pinned', 'Danh sách kiện'])
+  spy.mockRestore()
 })

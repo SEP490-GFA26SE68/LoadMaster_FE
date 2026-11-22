@@ -1,12 +1,15 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 import { LUMO_NAME } from '@/components/brand/Lumo'
-import { useT } from '@/lib/i18n'
+import { dataErrorMessage, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { FALLBACK_TOPICS, topicOf, type AssistantContext, type TopicId } from './assistant-kb'
 import type { AssistantEntry } from './assistant-session'
+import { useAssistantSurface } from './assistant-surface'
 import { AdvisorAsk, AdvisorResult } from './AssistantAdvisor'
+import { AiAnswer, DegradedNote } from './AssistantAiAnswer'
 import { TopicAnswer } from './AssistantAnswer'
 import { AssistantAvatar } from './AssistantAvatar'
+import { BriefingAnswer } from './AssistantBriefing'
 import { CHAT_TOUCH, HandoffButton, TopicChips } from './AssistantChips'
 import { AssistantWelcome } from './AssistantWelcome'
 
@@ -20,6 +23,8 @@ type LogProps = {
   onAsk: (question: string, topicId?: TopicId) => void
   onRuns: (label: string, runs: number) => void
   onHandoff: () => void
+  /** Bản tin "Tóm tắt hôm nay" (trong ứng dụng): nút ở màn chào. */
+  onBriefing?: (label: string) => void
   onNavigate?: () => void
 }
 
@@ -63,12 +68,14 @@ function Typing() {
  * cuộn sao cho câu hỏi mới nhất nằm đầu vùng nhìn — câu trả lời dài vẫn đọc được từ đầu. Bấm một nút gợi ý thì nút đó biến mất cùng lượt
  * cũ: focus chuyển vào vùng trò chuyện (không mở bàn phím ảo như khi về ô gõ) để Esc vẫn đóng khung và trình đọc màn hình không lạc.
  */
-export function AssistantLog({ entries, pending, context, onAsk, onRuns, onHandoff, onNavigate }: LogProps) {
+export function AssistantLog({ entries, pending, context, onAsk, onRuns, onHandoff, onBriefing, onNavigate }: LogProps) {
   const t = useT()
   const scroller = useRef<HTMLDivElement>(null)
   const log = useRef<HTMLDivElement>(null)
   const name = LUMO_NAME
   const last = entries.at(-1)
+  // Lối "Hỏi đội LoadMaster" mở form liên hệ của trang giới thiệu: chỉ cho khách; trong ứng dụng trợ lý tự mời chuyển cho đội hỗ trợ
+  const guest = useAssistantSurface() === 'public'
 
   useEffect(() => {
     const box = scroller.current
@@ -83,6 +90,11 @@ export function AssistantLog({ entries, pending, context, onAsk, onRuns, onHando
     log.current?.focus({ preventScroll: true })
   }
 
+  function briefing(label: string) {
+    onBriefing?.(label)
+    log.current?.focus({ preventScroll: true })
+  }
+
   function runs(label: string, count: number) {
     onRuns(label, count)
     log.current?.focus({ preventScroll: true })
@@ -91,7 +103,7 @@ export function AssistantLog({ entries, pending, context, onAsk, onRuns, onHando
   function followUps(topics: readonly TopicId[]) {
     return (
       <div className="flex flex-col gap-2 self-stretch pl-9">
-        <HandoffButton onHandoff={onHandoff} />
+        {guest ? <HandoffButton onHandoff={onHandoff} /> : null}
         <TopicChips label={t('assistant.panel.followUps')} topics={topics} onAsk={ask} disabled={pending} />
       </div>
     )
@@ -107,6 +119,7 @@ export function AssistantLog({ entries, pending, context, onAsk, onRuns, onHando
         return (
           <div key={entry.id} className="contents">
             <LumoBubble who={says}>
+              {entry.degraded ? <DegradedNote /> : null}
               <TopicAnswer topicId={entry.topicId} context={context} onNavigate={onNavigate} />
               {advisorAsk ? <AdvisorAsk onRuns={runs} disabled={pending} /> : null}
             </LumoBubble>
@@ -125,8 +138,9 @@ export function AssistantLog({ entries, pending, context, onAsk, onRuns, onHando
         return (
           <div key={entry.id} className="contents">
             <LumoBubble who={says}>
+              {entry.degraded ? <DegradedNote /> : null}
               <p className="m-0">{t('assistant.fallback')}</p>
-              <HandoffButton strong onHandoff={onHandoff} />
+              {guest ? <HandoffButton strong onHandoff={onHandoff} /> : null}
             </LumoBubble>
             {isLast && !pending ? (
               <div className="pl-9">
@@ -135,14 +149,27 @@ export function AssistantLog({ entries, pending, context, onAsk, onRuns, onHando
             ) : null}
           </div>
         )
-      case 'error':
-        return <LumoBubble key={entry.id} who={says}><p className="m-0">{t('assistant.panel.error')}</p></LumoBubble>
+      case 'ai':
+        return (
+          <div key={entry.id} className="contents">
+            <LumoBubble who={says}>
+              <AiAnswer entry={entry} isLast={isLast} pending={pending} onAsk={ask} onNavigate={onNavigate} />
+            </LumoBubble>
+            {isLast && !pending && guest ? <div className="pl-9"><HandoffButton onHandoff={onHandoff} /></div> : null}
+          </div>
+        )
+      case 'briefing':
+        return <LumoBubble key={entry.id} who={says}><BriefingAnswer entry={entry} onNavigate={onNavigate} /></LumoBubble>
+      case 'error': {
+        const message = entry.cause === undefined ? t('assistant.panel.error') : dataErrorMessage(entry.cause, t)
+        return <LumoBubble key={entry.id} who={says}><p className="m-0">{message}</p></LumoBubble>
+      }
     }
   }
 
   return (
     <div ref={scroller} className="relative flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-4 py-4">
-      {entries.length === 0 ? <AssistantWelcome onAsk={ask} disabled={pending} /> : null}
+      {entries.length === 0 ? <AssistantWelcome onAsk={ask} onBriefing={onBriefing ? briefing : undefined} disabled={pending} /> : null}
       <div
         ref={log}
         tabIndex={-1}

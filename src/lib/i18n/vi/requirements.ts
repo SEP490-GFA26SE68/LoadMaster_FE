@@ -144,6 +144,27 @@ export const requirements = {
     created: 'Đã tạo yêu cầu {id}.',
     saved: 'Đã lưu yêu cầu {id}.',
   },
+  /** Ô "Điền nhanh từ tin nhắn của khách" của form tạo yêu cầu (kỹ năng E của trợ lý AI, chỉ khi nhóm `assistant` nối máy chủ). */
+  draft: {
+    title: 'Điền nhanh từ tin nhắn của khách',
+    intro: 'Dán tin nhắn, email hay ghi chú điện thoại của khách. Trợ lý AI đọc ra bản nháp và điền sẵn điểm đến, hạn giao, ưu tiên, số kiện và ghi chú; bạn xem lại, chọn khách hàng rồi mới bấm Tạo yêu cầu.',
+    text: 'Nội dung khách gửi',
+    disclosure: 'Nội dung bạn dán được gửi tới máy chủ của LoadMaster, rồi tới Anthropic để đọc ra bản nháp. Máy chủ không lưu nội dung này. Chỉ dán phần nói về lần giao.',
+    count: '{count}/{max} ký tự',
+    submit: 'Đọc và điền form',
+    reading: 'Đang đọc nội dung…',
+    filled: { one: 'Đã điền {count} ô từ nội dung khách gửi. Xem lại trước khi lưu.', other: 'Đã điền {count} ô từ nội dung khách gửi. Xem lại trước khi lưu.' },
+    nothing: 'Không đọc ra được ô nào từ nội dung này. Nhập tay các ô bên dưới.',
+    toComplete: 'Cần bạn bổ sung: {fields}.',
+    customerGuess: 'Bên gửi trong tin nhắn: {name} — chọn hoặc thêm khách hàng ở ô Khách hàng.',
+    packagesTitle: 'Hàng trong tin nhắn — để đối chiếu, kiện vẫn chọn từ kho kiện:',
+    packageLine: '{quantity} × {description}',
+    errors: {
+      tooLong: 'Nội dung dài quá {max} ký tự. Chỉ dán phần nói về lần giao.',
+      rateLimited: 'Bạn đã dùng trợ lý AI nhiều lần trong giờ qua. Thử lại sau ít phút, hoặc nhập tay các ô bên dưới.',
+      unavailable: 'Trợ lý AI đang tạm ngưng hoặc không đọc được nội dung này. Nhập tay các ô bên dưới.',
+    },
+  },
   remove: {
     title: 'Xoá yêu cầu {id}?',
     description: {

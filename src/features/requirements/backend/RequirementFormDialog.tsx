@@ -25,6 +25,8 @@ import { initialValues, toChanges, toInput, type RequirementFormValues } from '.
 import { requirementSchema } from './requirement-form-schema'
 import { REQUIREMENT_PRIORITY_ORDER } from './requirement-list'
 import { RequirementPoolField } from './RequirementPoolField'
+import { REQUIREMENT_DRAFT_AVAILABLE } from './requirement-draft-api'
+import { RequirementDraftPanel } from './RequirementDraftPanel'
 import { useCreateRequirementMutation, useUpdateRequirementMutation } from './useRequirementsQuery'
 import { useRequirementSideSaves } from './useRequirementSideSaves'
 
@@ -128,6 +130,8 @@ function RequirementForm({ row, onClose }: { row?: RequirementRow; onClose: () =
 
       <div className="grid min-h-0 flex-1 grid-cols-1 items-start gap-5 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6 lg:grid-cols-2 lg:gap-6">
         {locked ? <Banner tone="info" className="md:col-span-2">{t('requirements.form.lockedNote')}</Banner> : null}
+        {/* Bản nháp từ tin nhắn của khách: chỉ form tạo, chỉ khi trợ lý AI nối máy chủ; không bao giờ tự lưu */}
+        {!current && !locked && REQUIREMENT_DRAFT_AVAILABLE ? <RequirementDraftPanel form={form} /> : null}
 
         <div className="flex flex-col gap-3.5">
           {customers.isPending ? (

@@ -55,6 +55,9 @@ test('the visitor runs the optimiser in the browser and gets three plans side by
   // Nút phụ: nút chính duy nhất của trang ở phần mở đầu
   expect(runButton.className).not.toMatch(/from-primary-fill/)
   expect(section.getByText('Bấm “Tính ba phương án” để xem kết quả với số đang nhập.')).toBeInTheDocument()
+  // Kho mẫu: không có ô "Mô tả hàng bằng lời" (chỉ có khi trợ lý AI chạy trên máy chủ)
+  expect(section.queryByRole('textbox', { name: 'Mô tả hàng bằng lời' })).not.toBeInTheDocument()
+  expect(section.queryByRole('button', { name: 'Điền giúp tôi' })).not.toBeInTheDocument()
 
   await user.click(runButton)
 
