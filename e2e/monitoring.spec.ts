@@ -93,14 +93,14 @@ test('1.366 px: an incident on a trip in transit goes from the dispatcher to the
   const panel = tripPanel(page, tripId)
   await expect(panel.getByRole('status', { name: 'Vị trí xe', exact: true })).toContainText('đang chạy 50 km/h')
 
-  // Bản đồ: hai xe đang chạy kèm nhãn mã chuyến và nguồn vị trí; điểm giao của chuyến đang chọn; danh sách cho trình đọc màn hình
+  // Bản đồ: chỉ xe của chuyến đang chọn kèm nhãn mã chuyến và nguồn vị trí; điểm giao của chuyến đó; danh sách cho trình đọc màn hình
   const map = page.getByRole('region', { name: 'Bản đồ các xe đang vận chuyển', exact: true })
   const markers = map.locator('.maplibregl-marker')
-  await expect(markers.filter({ has: page.locator('svg.lucide-truck') })).toHaveCount(2)
+  await expect(markers.filter({ has: page.locator('svg.lucide-truck') })).toHaveCount(1)
   await expect(markers.filter({ hasText: `${tripId} · Mô phỏng` })).toHaveCount(1)
-  await expect(markers.filter({ hasText: 'TRIP-009 · Mô phỏng' })).toHaveCount(1)
+  await expect(markers.filter({ hasText: 'TRIP-009 · Mô phỏng' })).toHaveCount(0)
   await expect(markers.filter({ hasText: /^1$/ })).toHaveCount(1)
-  await expect(map.getByRole('listitem').filter({ hasText: 'Vị trí xe:' })).toHaveCount(2)
+  await expect(map.getByRole('listitem').filter({ hasText: 'Vị trí xe:' })).toHaveCount(1)
   await expect(page.getByText('MOCK RESULT', { exact: true }).first()).toBeVisible()
   expect(await overflowingText(page)).toStrictEqual([])
   // Xe chạy: mốc xe của chuyến dời chỗ trên bản đồ

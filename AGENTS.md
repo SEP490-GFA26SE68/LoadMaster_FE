@@ -335,7 +335,7 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   `NAV_ITEMS` là danh sách của từng vai trò theo thứ tự của vai trò đó, màn chính đứng đầu; quyền vẫn là cổng (`navItemsFor` bỏ mục thiếu quyền).
   Quản trị hệ thống: Công ty · Người dùng · Nhật ký · Liên hệ của khách · Đơn dùng thử. Quản trị công ty: Người dùng · Nhật ký · Gói và credit ·
   Thông tin công ty. Quản lý công ty: Bảng điều khiển · Yêu cầu giao · Kho kiện (chỉ đọc) · Chuyến hàng · Giám sát · Đội xe · Kho bãi (`/quan-ly-kho`; nhãn ngắn `nav.companyWarehouses` để thanh vừa 1.366 px ở cả hai ngôn ngữ) · Bảng lương (`/bang-luong`). Tám mục chỉ vừa 1.366 px khi lề mục là 8 px tới dưới 1.536 px (`2xl:px-3.5` từ 1.536 px). Điều phối
-  viên: Chuyến hàng · Giám sát · Kho kiện (chỉ đọc) · Yêu cầu giao · Đội xe · Bảng điều khiển. Nhân viên kho: Kho · Kho kiện · Khách hàng. Tài xế: một
+  viên: Chuyến hàng · Giám sát · Kho kiện (chỉ đọc) · Yêu cầu giao · Đội xe · Bảng điều khiển · Phiếu lương (`/phieu-luong`). Nhân viên kho: Kho · Kho kiện · Khách hàng. Tài xế: một
   mục về màn của mình (thanh chỉ hiện ở màn hồ sơ). Quản lý nền tảng: Gói cước · Lịch sử gói cước · Công ty (chỉ xem danh sách; tạo, sửa công ty là của quản trị hệ thống) · Đơn dùng thử. Hỗ trợ khách hàng: Hỗ trợ ·
   Liên hệ của khách (không có nút đổi gói của khách trên thanh). Màn chính của ba vai trò nền tảng vẫn là màn riêng của từng vai trò. Màn mới
   thêm một dòng vào `NAV_SCREENS` và mã của nó vào `NAV_ITEMS`, trong issue của màn đó.
