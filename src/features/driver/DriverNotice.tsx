@@ -6,6 +6,7 @@ import { TouchTopBar } from '@/components/TouchTopBar'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ExitIconButton } from '@/features/auth/ExitControl'
+import { TouchAssistant } from '@/features/marketing/assistant/TouchAssistant'
 import { useT } from '@/lib/i18n'
 import { DRIVER_TRIP_SCREEN } from './DriverStopHeader'
 
@@ -24,7 +25,10 @@ export function DriverNotice({ mascot = 'driverWaiting', title, description, act
   const t = useT()
   return (
     <div className="flex h-dvh flex-col bg-app text-body-lg">
-      <TouchTopBar leading={<ExitIconButton tone="sky" screenHome={DRIVER_TRIP_SCREEN} contextual="/tai-xe" label={t('driver.toTrips')} iconClassName="size-7" />} />
+      <TouchTopBar
+        leading={<ExitIconButton tone="sky" screenHome={DRIVER_TRIP_SCREEN} contextual="/tai-xe" label={t('driver.toTrips')} iconClassName="size-7" />}
+        assistant={<TouchAssistant />}
+      />
       <div className="flex flex-1 flex-col justify-center p-4">
         {/* Lumo trong card trắng (V2.3 đợt 6) */}
         <Card>

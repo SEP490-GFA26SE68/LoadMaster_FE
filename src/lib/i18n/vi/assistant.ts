@@ -28,6 +28,9 @@ export const assistant = {
     appStarters: {
       page: 'Màn này dùng để làm gì?',
       trips: 'Có chuyến nào đang vận chuyển?',
+      myTrips: 'Hôm nay tôi chạy chuyến nào, điểm giao kế tiếp ở đâu?',
+      warehouseTasks: 'Hôm nay kho có chuyến nào chờ soạn, chờ xếp?',
+      packageLookup: 'Tra giúp tôi một kiện theo mã',
       credit: 'Công ty còn bao nhiêu credit?',
       payroll: 'Phiếu lương tháng này của tôi thế nào?',
       tickets: 'Yêu cầu hỗ trợ của tôi tới đâu rồi?',

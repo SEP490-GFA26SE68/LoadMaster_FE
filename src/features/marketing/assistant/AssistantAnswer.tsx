@@ -30,7 +30,7 @@ export function TopicAnswer({ topicId, context, onNavigate, actionClassName }: {
       {actions.length > 0 ? (
         <div role="group" aria-label={t('assistant.actions.label')} className="flex flex-wrap gap-2 pt-1">
           {actions.map((action) => (
-            <Button key={action.id} asChild variant="secondary" size="sm" className={cn('pointer-coarse:h-12', CHAT_TOUCH, actionClassName)}>
+            <Button key={action.id} asChild variant="secondary" size="sm" className={cn('pointer-coarse:h-12 in-[.assistant-touch]:h-14', CHAT_TOUCH, actionClassName)}>
               <Link to={action.to} onClick={onNavigate}>
                 {t(`assistant.actions.${action.id}`)}
                 <ArrowRight aria-hidden />

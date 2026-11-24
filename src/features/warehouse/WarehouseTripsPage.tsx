@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/Card'
 import { Spinner } from '@/components/ui/Spinner'
 import { AccountMenu } from '@/features/auth/AccountMenu'
 import { ExitIconButton } from '@/features/auth/ExitControl'
+import { TouchAssistant } from '@/features/marketing/assistant/TouchAssistant'
 import { useCan } from '@/features/auth/useCan'
 import { NotificationBell } from '@/features/notifications/NotificationBell'
 import { packagePoolReachable } from '@/features/package-pool/usePackagePoolQuery'
@@ -35,6 +36,7 @@ export function WarehouseTripsPage() {
       {/* Dải trời với điều khiển đặc (V2.3 đợt 6): kính chưa đo ở thiết bị kho */}
       <TouchTopBar
         leading={<ExitIconButton tone="sky" screenHome="/kho" label={t('warehouse.exit')} iconClassName="size-7" />}
+        assistant={<TouchAssistant />}
         trailing={
           <>
             {/* Tra cứu kiện (FE-3b-06): nút phụ 56 px; dưới 1.024 px chỉ còn icon để tiêu đề không bị cắt, tên ở `aria-label` */}

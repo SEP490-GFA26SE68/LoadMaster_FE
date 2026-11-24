@@ -6,6 +6,7 @@ import { VehicleName } from '@/components/VehicleName'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ExitIconButton } from '@/features/auth/ExitControl'
+import { TouchAssistant } from '@/features/marketing/assistant/TouchAssistant'
 import { calendarDate } from '@/lib/calendar-date'
 import { useFormat, useT } from '@/lib/i18n'
 import type { Revision, Trip } from '@/lib/mock-db'
@@ -35,6 +36,7 @@ export function LoadingFinished({ trip, plan }: { trip: Trip; plan: Revision }) 
     <div className="flex h-dvh flex-col bg-app text-body-lg">
       <TouchTopBar
         leading={<ExitIconButton tone="sky" screenHome={loadingSessionPath(trip.id)} contextual={`/chuyen/${trip.id}`} label={t('warehouse.header.exit')} iconClassName="size-7" />}
+        assistant={<TouchAssistant />}
         trailing={<LanguageSwitch size="touch" tone="sky" className="flex-none" />}
       >
         <span className="min-w-0 flex-1 truncate font-mono text-[18px] leading-6 font-semibold text-sky-text">{trip.id}</span>

@@ -2,6 +2,7 @@ import { LanguageSwitch } from '@/components/LanguageSwitch'
 import { StopDot } from '@/components/StopChip'
 import { TouchTopBar } from '@/components/TouchTopBar'
 import { ExitIconButton } from '@/features/auth/ExitControl'
+import { TouchAssistant } from '@/features/marketing/assistant/TouchAssistant'
 import { useT } from '@/lib/i18n'
 import { stopColor } from '@/lib/stops'
 import { cn } from '@/lib/utils'
@@ -12,8 +13,9 @@ export const DRIVER_TRIP_SCREEN = '/tai-xe/diem-giao'
 
 /**
  * Thanh trên của màn điểm giao (dải trời, điều khiển đặc — V2.3 đợt 6): lối về danh sách chuyến (56px), số điểm có màu điểm giao kèm số
- * (mục 10), nút chuyển ngôn ngữ, và dải tiến độ theo điểm nằm trong dải trời — điểm đã hoàn tất màu cyan, điểm hiện tại màu của điểm,
- * điểm chưa tới nền tối. Dải chỉ để nhìn (`aria-hidden`): chữ "Điểm n / N" nói đủ.
+ * (mục 10), nút trợ lý (`TouchAssistant`), nút chuyển ngôn ngữ, và dải tiến độ theo điểm nằm trong dải trời — điểm đã hoàn tất màu cyan,
+ * điểm hiện tại màu của điểm, điểm chưa tới nền tối. Dải chỉ để nhìn (`aria-hidden`): chữ "Điểm n / N" nói đủ. Dưới 480 px (`wrap`) số
+ * điểm xuống hàng thứ hai, hàng trên còn thoát, trợ lý và ngôn ngữ: 360 px không đủ cho cả tiêu đề trên cùng một hàng.
  */
 export function DriverStopHeader({ stop, stops, completedStops }: {
   stop: Pick<StopDelivery, 'number'>
@@ -23,6 +25,8 @@ export function DriverStopHeader({ stop, stops, completedStops }: {
   const t = useT()
   return (
     <TouchTopBar
+      wrap
+      assistant={<TouchAssistant />}
       leading={<ExitIconButton tone="sky" screenHome={DRIVER_TRIP_SCREEN} contextual="/tai-xe" label={t('driver.toTrips')} iconClassName="size-7" />}
       trailing={<LanguageSwitch size="touch" tone="sky" className="flex-none [&>svg]:hidden min-[400px]:[&>svg]:block" />}
       below={

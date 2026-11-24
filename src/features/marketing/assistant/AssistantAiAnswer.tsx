@@ -14,7 +14,7 @@ import { CHAT_TOUCH } from './AssistantChips'
 
 type AiEntry = Extract<AssistantEntry, { kind: 'ai' }>
 
-const ACTION = cn('pointer-coarse:h-12', CHAT_TOUCH)
+const ACTION = cn('pointer-coarse:h-12 in-[.assistant-touch]:h-14', CHAT_TOUCH)
 
 function Block({ block }: { block: AnswerBlock }) {
   if (block.kind === 'paragraph') return <p className="m-0 whitespace-pre-line">{block.text}</p>
@@ -29,7 +29,7 @@ function Block({ block }: { block: AnswerBlock }) {
 /** Câu soạn sẵn thay cho câu của mô hình (máy chủ bận, hết ngân sách, không tới được): một dòng nói rõ, đứng đầu câu trả lời. */
 export function DegradedNote() {
   const t = useT()
-  return <p className="m-0 text-small text-ink-3">{t('assistant.ai.degraded')}</p>
+  return <p className="m-0 text-small text-ink-3 in-[.assistant-touch]:text-body-lg">{t('assistant.ai.degraded')}</p>
 }
 
 /**

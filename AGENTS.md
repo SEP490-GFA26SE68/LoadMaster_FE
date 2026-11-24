@@ -285,15 +285,20 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   → `useAskAssistantMutation`. **Trong ứng dụng** (`AppAssistant`): nút "Trợ lý AI" 36 px trên **thanh điều hướng**, ngay sau Tìm
   nhanh (ảnh Lumo `wink` trong vòng gradient, tên ở `aria-label` / `title`) — không nổi đè lên bảng như nút góc dưới phải —, **chỉ khi nhóm
   `assistant` nối máy chủ**, người dùng không bị gắn cờ và công ty còn gói hiệu lực (vai trò nền tảng không bị khoá; `appAssistantShown`, thanh
-  cũng hỏi hàm này để chừa chỗ); màn toàn màn hình kho, tài xế không có nút. Khung chat neo góc trên phải, ngay
-  dưới thanh (`data-surface="app"`). **Planner bản máy chủ** (`BackendPlannerSession`) có nút "Trợ lý AI" riêng ở hàng góc dưới phải khung 3D
+  cũng hỏi hàm này để chừa chỗ). Khung chat neo góc trên phải, ngay dưới thanh (`data-surface="app"`). **Màn cảm ứng kho, tài xế**
+  (không có thanh điều hướng) có nút "Trợ lý AI" 56 px trên thanh dải trời `TouchTopBar` (`TouchAssistant`, prop `assistant`; điều khiển đặc
+  `--sky-solid` như các nút của thanh, cùng điều kiện `appAssistantShown` — kho mẫu không có nút): `/kho`, `/kho/xe`, soạn, xếp, xếp xong,
+  phương án đã duyệt của kho; `/tai-xe`, điểm giao, tổng kết, màn thông báo (gồm "đã giao xong" của bản máy chủ). Khung chat bản cảm ứng (`data-dock="touch"`, lớp
+  `assistant-touch`: chữ 16 px, nút 56 px qua biến thể `in-[.assistant-touch]:`): dưới 768 px phủ cả màn (`100dvh`, modal), từ 768 px neo
+  góc phải ngay dưới thanh — nút đo đáy thanh và ghi `--assistant-touch-top` lên `<html>`. Cùng cuộc trò chuyện, câu hỏi gửi kèm màn đang
+  mở (cả `?chuyen=`). **Planner bản máy chủ** (`BackendPlannerSession`) có nút "Trợ lý AI" riêng ở hàng góc dưới phải khung 3D
   (`PlannerAssistant`, mục 7 "Operations"; khung chat `data-dock="planner"` đứng trên hàng nút đó), cùng cuộc trò chuyện. Ở đó câu hỏi gửi kèm
   `viewer` (mã chuyến, mã số phương án, mã kiện đang chọn) và câu trả lời mang `uiActions` — `selectPackage`, `setCameraPreset`, `setStep`,
   `setColorMode`, `openTab` — qua cầu nối thuần `viewer-bridge.ts` (`registerViewer` / `viewerContext` / `dispatchUiActions`, không Three.js):
   kiểm lại từng lệnh (lệnh lạ, tham số sai, mã kiện phương án không có thì bỏ im lặng, không toast), tối đa 5 lệnh mỗi lượt, chỉ chạy lệnh của
   câu trả lời **vừa về** (không chạy lại khi mở lại khung chat), bỏ hết khi đang Chỉnh sửa, khi không có Planner hay Planner đã sang phương án
-  khác. Không có lệnh dời, xoay, ghim hay duyệt. Màn chào trong ứng dụng gợi ý câu theo vai trò (`app-starters.ts`: màn đang mở, chuyến, credit, phiếu
-  lương, yêu cầu hỗ trợ, gói cước — chỉ câu máy chủ có công cụ trả lời cho vai trò đó), gửi cho mô hình như câu gõ. Điều phối viên và quản lý
+  khác. Không có lệnh dời, xoay, ghim hay duyệt. Màn chào trong ứng dụng gợi ý câu theo vai trò (`app-starters.ts`: màn đang mở, chuyến — tài xế: chuyến của mình và điểm kế tiếp —, việc của kho và tra kiện (nhân viên kho), credit, phiếu
+  lương (tài xế, nhân viên kho), yêu cầu hỗ trợ, gói cước — chỉ câu máy chủ có công cụ trả lời cho vai trò đó), gửi cho mô hình như câu gõ. Điều phối viên và quản lý
   công ty có thêm nút phụ **"Tóm tắt hôm nay"** ở màn chào (`briefingAvailable`, `briefing-api.ts` → `useBriefingQuery`: `enabled: false`,
   chỉ gọi `GET /api/assistant/briefing` khi bấm): máy chủ đếm số theo công ty và đệm bản tin 2 giờ, mô hình chỉ viết câu; bản tin vào cuộc
   trò chuyện như câu trả lời của Lumo (gạch đầu dòng, "Số liệu lúc HH:mm", liên kết qua `AnswerLinks`), không toast; lỗi nói đúng lý do bằng
@@ -411,7 +416,9 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   khiển **đặc**, không kính: nền `--sky-solid`, viền `--sky-solid-border` (token ở `index.css`), nút `variant="skySolid"`, và `tone="sky"` của
   `ExitIconButton`, `LanguageSwitch`, `NotificationBell variant="touch"`, `AccountMenu` — mặc định vẫn nền sáng. **Màn tài xế** (`/tai-xe`, điểm
   giao, tổng kết, màn thông báo) dùng cùng thanh và điều khiển đặc: không logo ở thanh; `wrap` cho thanh cao theo nội dung và dưới 480 px đẩy
-  tiêu đề xuống hàng riêng (hàng trên là thoát, ngôn ngữ, chuông, tài khoản — bốn điều khiển 56 px), `below` đặt dải tiến độ theo điểm giao
+  tiêu đề xuống hàng riêng (hàng trên là thoát, ngôn ngữ, chuông, tài khoản — bốn điều khiển 56 px). Nút "Trợ lý AI" 56 px
+  (`TouchAssistant`, mục 1 "Trợ lý") đứng ở hàng trên, trước ngôn ngữ; riêng "Chuyến của tôi" hàng trên 360 px đã đủ bốn điều khiển nên nó
+  xuống cuối hàng tiêu đề (`assistantBesideTitle`); màn điểm giao và tổng kết cũng `wrap` để tiêu đề có hàng riêng. `below` đặt dải tiến độ theo điểm giao
   ngay trong dải trời; thanh thấp hơn offset 152 px của toast nên toast không che điều khiển nào. Panel và nút nổi trên khung 3D của kho và
   tài xế cũng là bề mặt tối đặc (`--panel-dark`, `--border-dark`), không `glass`. Kính ở hai màn này chờ số đo thiết bị thật (mục 5, luật kính).
 - **Tìm nhanh theo vai trò** (FE-0-04): quản trị hệ thống, quản trị công ty tìm người dùng; quản lý công ty tìm chuyến, kiện, yêu cầu giao
@@ -585,7 +592,7 @@ src/
                         `FlowHeading`, `LineRise`, `TextRibbon`, `Odometer`, `LumoSays`, `split-text.ts` thuần, `reveal.css`); trợ lý "Hỏi Lumo"
                         `assistant/` (nút mở `AssistantLauncher`, khung chat lười `AssistantPanel`, bộ câu trả lời `assistant-kb.ts` + khớp
                         `assistant-match.ts` + tính gói `assistant-advisor.ts` thuần, `assistant-api.ts`, `assistant-session.ts`; nút của Planner
-                        `PlannerAssistant` + cầu nối thuần `viewer-bridge.ts`)
+                        `PlannerAssistant` + cầu nối thuần `viewer-bridge.ts`; nút trên thanh màn cảm ứng kho, tài xế `TouchAssistant`)
     contacts/           yêu cầu liên hệ của khách `/lien-he-khach` (quản trị hệ thống, hỗ trợ khách hàng): bảng, khung xử lý `ContactPanel`
   lib/                  format, helper, mock dùng chung, api client
     i18n/               từ điển vi/en (mỗi nhánh một file trong vi/, en/), provider, hook

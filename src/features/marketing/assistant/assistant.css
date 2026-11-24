@@ -292,6 +292,25 @@
   }
 }
 
+/* Màn cảm ứng kho, tài xế (`TouchAssistant`, nút 56 px trên thanh dải trời `TouchTopBar`): từ 768 px (máy tính bảng ở kho) khung neo góc
+   phải ngay dưới thanh — `--assistant-touch-top` là đáy thanh do nút đo, vì thanh của màn tài xế cao theo nội dung — rộng hơn khung của
+   khung ứng dụng một chút cho chữ 16 px. Dưới 768 px vẫn là tờ phủ cả màn như mọi khung chat (`100dvh`). Đứng sau luật 1.280 px của khung
+   ứng dụng ở trên để thắng nó. */
+@media (min-width: 768px) {
+  .assistant-panel[data-surface='app'][data-dock='touch'] {
+    top: calc(var(--assistant-touch-top, 5rem) + 0.5rem);
+    right: max(0.75rem, env(safe-area-inset-right));
+    bottom: auto;
+    width: min(420px, calc(100vw - 1.5rem));
+    height: min(680px, calc(100dvh - var(--assistant-touch-top, 5rem) - 0.5rem - var(--assistant-base)));
+  }
+
+  .assistant-panel[data-surface='app'][data-dock='touch'][data-expanded] {
+    width: min(720px, calc(100vw - 1.5rem));
+    height: calc(100dvh - var(--assistant-touch-top, 5rem) - 0.5rem - var(--assistant-base));
+  }
+}
+
 /* Nút "Trợ lý AI" của thanh điều hướng và của Planner: vòng gradient quay khi rê chuột / focus, như nút nổi của trang công khai */
 .assistant-rail:is(:hover, :focus-visible) .assistant-avatar-ring {
   animation-play-state: running;

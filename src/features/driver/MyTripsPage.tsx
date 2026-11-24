@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/Card'
 import { Spinner } from '@/components/ui/Spinner'
 import { AccountMenu } from '@/features/auth/AccountMenu'
 import { ExitIconButton } from '@/features/auth/ExitControl'
+import { TouchAssistant } from '@/features/marketing/assistant/TouchAssistant'
 import { NotificationBell } from '@/features/notifications/NotificationBell'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import { type MyTripGroup } from './my-trips'
@@ -24,7 +25,7 @@ const WEB_TRIP_GROUPS = ['inTransit', 'loaded', 'preparing', 'recent'] as const 
  * trạng thái và dòng phụ (FE-6-01): Đang vận chuyển · Xếp xong — chờ xuất phát · Kho đang soạn / xếp (chỉ xem trước) · Đã giao gần đây
  * (5 chuyến). Điện thoại: chữ 16px, nút 56px. Nút thoát ở đây là đăng xuất; nút tài khoản mở hồ sơ cá nhân hoặc đăng xuất (LM-096);
  * chuông báo xác nhận tay của mình bị điều phối viên từ chối (FE-6-04). Dưới 480 px tiêu đề xuống hàng riêng: hàng trên chỉ đủ chỗ cho
- * bốn điều khiển 56 px.
+ * bốn điều khiển 56 px; nút trợ lý (`TouchAssistant`) đứng cuối hàng tiêu đề.
  */
 export function MyTripsPage() {
   const t = useT()
@@ -36,6 +37,8 @@ export function MyTripsPage() {
       <TouchTopBar
         wrap
         leading={<ExitIconButton tone="sky" screenHome="/tai-xe" label={t('driver.exit')} iconClassName="size-7" />}
+        assistant={<TouchAssistant />}
+        assistantBesideTitle
         trailing={
           <>
             <LanguageSwitch size="touch" tone="sky" className="flex-none [&>svg]:hidden min-[400px]:[&>svg]:block" />

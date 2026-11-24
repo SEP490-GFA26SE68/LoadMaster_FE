@@ -51,10 +51,10 @@ export function AdvisorAsk({ onRuns, disabled }: { onRuns: (label: string, runs:
             step={1}
             aria-invalid={error ? true : undefined}
             aria-describedby={error ? errorId : undefined}
-            className={cn(fieldBoxClass(Boolean(error)), focusClass, 'h-9 w-28 px-3 font-mono tabular-nums pointer-coarse:h-12', CHAT_TOUCH)}
+            className={cn(fieldBoxClass(Boolean(error)), focusClass, 'h-9 w-28 px-3 font-mono tabular-nums pointer-coarse:h-12 in-[.assistant-touch]:h-14', CHAT_TOUCH)}
             {...form.register('runs', { valueAsNumber: true })}
           />
-          <Button type="submit" variant="secondary" size="sm" disabled={disabled} className={cn('pointer-coarse:h-12', CHAT_TOUCH)}>
+          <Button type="submit" variant="secondary" size="sm" disabled={disabled} className={cn('pointer-coarse:h-12 in-[.assistant-touch]:h-14', CHAT_TOUCH)}>
             {t('assistant.advisor.submit')}
           </Button>
         </div>
@@ -96,7 +96,7 @@ export function AdvisorResult({ runs, onHandoff }: { runs: number; onHandoff: ()
           <HandoffButton strong onHandoff={onHandoff} />
         </>
       ) : null}
-      <p className="m-0 text-small text-ink-3">{t('assistant.advisor.caveat')}</p>
+      <p className="m-0 text-small text-ink-3 in-[.assistant-touch]:text-body-lg">{t('assistant.advisor.caveat')}</p>
     </div>
   )
 }

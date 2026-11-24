@@ -21,7 +21,7 @@ export function BriefingAnswer({ entry, onNavigate }: { entry: BriefingEntry; on
           {entry.bullets.map((bullet, index) => <li key={index}>{bullet}</li>)}
         </ul>
       )}
-      <p className="m-0 text-small text-ink-3">{t('assistant.briefing.generatedAt', { time: format.time(entry.generatedAt) })}</p>
+      <p className="m-0 text-small text-ink-3 in-[.assistant-touch]:text-body-lg">{t('assistant.briefing.generatedAt', { time: format.time(entry.generatedAt) })}</p>
       <AnswerLinks links={entry.links} onNavigate={onNavigate} />
     </div>
   )

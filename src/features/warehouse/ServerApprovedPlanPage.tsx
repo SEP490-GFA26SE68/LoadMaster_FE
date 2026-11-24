@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { Button } from '@/components/ui/Button'
+import { TouchAssistant } from '@/features/marketing/assistant/TouchAssistant'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import { fetchServerApprovedPlan } from './warehouse-server-api'
 import { serverLoadingView } from './server-loading'
@@ -26,6 +27,7 @@ export function ServerApprovedPlanPage({ tripId }: { tripId: string }) {
       <Button asChild variant="skySolid" size="touch"><Link to="/kho">{t('warehouse.backToList')}</Link></Button>
       <h1 className="m-0 min-w-0 flex-1 text-body-lg font-semibold text-sky-text">{query.data?.code ?? tripId}</h1>
       <span className="text-sky-text">{t(query.data?.executionStatus === 'IN_PROGRESS' ? 'serverWarehouse.guide.executionGuide' : 'serverWarehouse.guide.readOnly')}</span>
+      <TouchAssistant />
       <Button variant="skySolid" size="touch" disabled={query.isFetching || writing} onClick={() => void query.refetch()}>{t('serverWarehouse.guide.refresh')}</Button>
     </header>
     {query.isError ? <main className="grid flex-1 place-items-center p-6"><p role="alert">{dataErrorMessage(query.error, t)}</p></main> :

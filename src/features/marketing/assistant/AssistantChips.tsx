@@ -5,8 +5,8 @@ import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import type { TopicId } from './assistant-kb'
 
-/** Cỡ chữ và vùng chạm của khung chat trên máy cảm ứng: chữ 16 px, nút 48 px. */
-export const CHAT_TOUCH = 'pointer-coarse:text-body-lg'
+/** Cỡ chữ của khung chat trên máy cảm ứng và trong bản cảm ứng của màn kho, tài xế (`.assistant-touch`): 16 px. Nút cao 48 px trên máy cảm ứng, 56 px ở bản cảm ứng. */
+export const CHAT_TOUCH = 'pointer-coarse:text-body-lg in-[.assistant-touch]:text-body-lg'
 
 /** Một nút gợi ý: câu hỏi ngắn hay mức chọn nhanh. Bo 10 px như nút (không dạng viên thuốc), chữ xuống dòng được. */
 export function Chip({ children, onClick, disabled }: { children: ReactNode; onClick: () => void; disabled?: boolean }) {
@@ -19,7 +19,7 @@ export function Chip({ children, onClick, disabled }: { children: ReactNode; onC
         'inline-flex min-h-9 items-center rounded-md border border-cyan-200 bg-bg px-3 py-1.5 text-left text-small font-medium text-primary',
         'transition-colors duration-(--dur-fast) hover:bg-primary-bg disabled:cursor-not-allowed disabled:border-border disabled:text-text-disabled',
         'outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
-        'pointer-coarse:min-h-12',
+        'pointer-coarse:min-h-12 in-[.assistant-touch]:min-h-14',
         CHAT_TOUCH,
       )}
     >
@@ -59,7 +59,7 @@ export function HandoffButton({ onHandoff, strong = false }: { onHandoff: () => 
       variant={strong ? 'secondary' : 'ghost'}
       size="sm"
       onClick={onHandoff}
-      className={cn('self-start', !strong && 'px-2 text-primary hover:text-primary-hover', 'pointer-coarse:h-12', CHAT_TOUCH)}
+      className={cn('self-start', !strong && 'px-2 text-primary hover:text-primary-hover', 'pointer-coarse:h-12 in-[.assistant-touch]:h-14', CHAT_TOUCH)}
     >
       <MessageSquareText aria-hidden />
       {t(strong ? 'assistant.handoff.ask' : 'assistant.handoff.notRight')}
