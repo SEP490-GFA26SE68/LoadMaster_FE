@@ -17,7 +17,8 @@ vi.mock('@/lib/backend-config', () => ({
 }))
 
 /**
- * Trợ lý khi nhóm `assistant` nối máy chủ: câu gõ đi tới mô hình, lượt sau nói tiếp cùng hội thoại với cùng mã khách; câu trả lời vẽ
+ * Trợ lý khi nhóm `assistant` nối máy chủ: câu cơ bản là câu soạn sẵn kèm nút "Hỏi Lumo chi tiết" (gửi đúng câu đó cho mô hình), câu xã
+ * giao là câu của từ điển — cả hai không gọi mô hình, chỉ gửi một lượt đếm không có chữ khách gõ; câu cần mô hình đi tới mô hình, lượt sau nói tiếp cùng hội thoại với cùng mã khách; câu trả lời vẽ
  * bằng phần tử thường, chỉ giữ liên kết trong app mà người xem mở được; máy chủ hết ngân sách thì câu soạn sẵn kèm một dòng nói rõ; trợ lý
  * mời chuyển cho đội hỗ trợ thì có hai nút trả lời. jsdom không có `matchMedia` nên khung chat ở dạng máy tính.
  */
@@ -79,7 +80,7 @@ test('a typed question gets the model answer; the next turn continues the same c
   const { user, panel, ask } = await openAssistant()
   expect(panel.getByText('Lumo là trợ lý AI, trả lời từ tài liệu của LoadMaster và có thể nhầm — việc quan trọng hãy hỏi đội LoadMaster.')).toBeInTheDocument()
 
-  await ask('Gói Pro giá bao nhiêu?')
+  await ask('Gói Pro hơn gói Basic ở điểm nào?')
   expect(await panel.findByText('Gói Pro giá 3.500.000 đ mỗi tháng.', {}, ANSWER)).toBeInTheDocument()
   expect(panel.getAllByRole('listitem').map((item) => item.textContent)).toStrictEqual(['10.000 credit', 'Hạng Nâng cao'])
   // Chỉ liên kết trong app mà khách mở được: bảng giá. Trang ngoài, màn không có, màn cần quyền đều bị bỏ
@@ -89,17 +90,57 @@ test('a typed question gets the model answer; the next turn continues the same c
   await ask('Một lần chạy tốn bao nhiêu?')
   expect(await panel.findByText('Một lần chạy dùng 2 credit.', {}, ANSWER)).toBeInTheDocument()
   const [first, second] = calls.map(bodyOf)
-  expect(first).toMatchObject({ message: 'Gói Pro giá bao nhiêu?', locale: 'vi' })
+  expect(first).toMatchObject({ message: 'Gói Pro hơn gói Basic ở điểm nào?', locale: 'vi' })
   expect(first).not.toHaveProperty('conversationId')
   expect(first?.guestKey).toMatch(/^[A-Za-z0-9_-]{32}$/)
   expect(second).toMatchObject({ conversationId: 'c-1', guestKey: first?.guestKey })
   expect(sessionStorage.getItem(GUEST_KEY_STORAGE)).toBe(first?.guestKey)
 
   await user.click(panel.getByRole('button', { name: 'Bắt đầu lại' }))
-  await ask('Chào')
+  await ask('Lumo trả lời được những gì?')
   await panel.findByText('Một lần chạy dùng 2 credit.', {}, ANSWER)
   expect(bodyOf(calls[2])).not.toHaveProperty('conversationId')
   expect(bodyOf(calls[2])?.guestKey).toBe(first?.guestKey)
+})
+
+test('a basic question gets the prepared answer without the model; "ask Lumo for details" sends the same question to the model', async () => {
+  const { calls } = stubBackend({ 'POST /api/assistant/public/messages': reply('c-3', 'Gói Pro giá 3.500.000 đ, gồm 10.000 credit mỗi tháng.') })
+  const { user, panel, ask } = await openAssistant()
+
+  await ask('Gói Pro giá bao nhiêu?')
+  const detail = await panel.findByRole('button', { name: 'Chưa đúng ý? Hỏi Lumo chi tiết' }, ANSWER)
+  // Cạnh nút đó, lối sang form liên hệ không mở đầu bằng "Chưa đúng ý?" nữa
+  expect(panel.getByRole('button', { name: 'Gửi câu hỏi cho đội LoadMaster' })).toBeInTheDocument()
+  expect(calls.map((call) => call.path)).toStrictEqual(['/api/assistant/public/route-events'])
+  expect(bodyOf(calls[0])).toStrictEqual({ route: 'PREPARED', topicId: 'plans', locale: 'vi' })
+
+  await user.click(detail)
+  expect(panel.getByRole('log')).toHaveFocus()
+  expect(await panel.findByText('Gói Pro giá 3.500.000 đ, gồm 10.000 credit mỗi tháng.', {}, ANSWER)).toBeInTheDocument()
+  expect(calls.map(({ path, body }) => ({ path, body: { ...(body as object), guestKey: undefined } }))).toStrictEqual([
+    { path: '/api/assistant/public/route-events', body: { route: 'PREPARED', topicId: 'plans', locale: 'vi', guestKey: undefined } },
+    { path: '/api/assistant/public/route-events', body: { route: 'ESCALATED', topicId: 'plans', locale: 'vi', guestKey: undefined } },
+    { path: '/api/assistant/public/messages', body: { message: 'Gói Pro giá bao nhiêu?', locale: 'vi', guestKey: undefined } },
+  ])
+  // Mỗi lượt đếm chỉ có mức, chủ đề, ngôn ngữ — không chữ khách gõ, không mã khách
+  for (const call of calls.slice(0, 2)) expect(Object.keys(bodyOf(call) ?? {}).sort()).toStrictEqual(['locale', 'route', 'topicId'])
+
+  // Đã nói chuyện với mô hình: câu cơ bản sau đó cũng đi tới mô hình, cùng hội thoại
+  await ask('Gói Basic giá bao nhiêu?')
+  await vi.waitFor(() => expect(calls).toHaveLength(4), ANSWER)
+  expect(bodyOf(calls[3])).toMatchObject({ conversationId: 'c-3', message: 'Gói Basic giá bao nhiêu?' })
+})
+
+test('small talk gets a short reply and suggested questions, never the model', async () => {
+  const { calls } = stubBackend({})
+  const { panel, ask } = await openAssistant()
+
+  await ask('cảm ơn bạn nhé')
+  expect(await panel.findByText('Không có gì! Bạn còn thắc mắc gì cứ hỏi mình nhé.', {}, ANSWER)).toBeInTheDocument()
+  expect(within(panel.getByRole('group', { name: 'Hỏi tiếp' })).getAllByRole('button')).toHaveLength(4)
+  expect(calls.map(({ path, body }) => ({ path, body }))).toStrictEqual([
+    { path: '/api/assistant/public/route-events', body: { route: 'SMALL_TALK', topicId: null, locale: 'vi' } },
+  ])
 })
 
 test('out of budget: the prepared answer, with one line saying the AI assistant is busy', async () => {
@@ -108,7 +149,7 @@ test('out of budget: the prepared answer, with one line saying the AI assistant 
   })
   const { panel, ask } = await openAssistant()
 
-  await ask('Giá các gói thế nào?')
+  await ask('Giá các gói đã gồm VAT chưa?')
   expect(await panel.findByText('Trợ lý AI đang bận nên đây là câu trả lời soạn sẵn.', {}, ANSWER)).toBeInTheDocument()
   expect(panel.queryByText('thô')).not.toBeInTheDocument()
 })

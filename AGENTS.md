@@ -273,10 +273,26 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   sẵn** (`assistant-kb.ts`, 16 chủ đề; câu ở nhánh `assistant` của từ điển), **không phải AI** và không bao giờ nói mình là AI; dòng nhỏ dưới ô
   gõ — cũng là mô tả của hộp thoại — nói Lumo trả lời từ tài liệu của LoadMaster, không phải nhân viên tư vấn. Khớp câu hỏi bằng từ khoá vi +
   en không dấu (`assistant-match.ts`, dưới ngưỡng thì nói thẳng là chưa có câu trả lời) sau 500 ms. **Nối máy chủ**: Lumo là **trợ lý AI** và
-  dòng dưới ô gõ nói vậy, kèm "có thể nhầm" (`panel.disclaimerAi`, trong ứng dụng `disclaimerAiApp`). Câu gõ đi tới mô hình qua
+  dòng dưới ô gõ nói vậy, kèm "có thể nhầm" (`panel.disclaimerAi`, trong ứng dụng `disclaimerAiApp`). Câu cần mô hình đi tới mô hình qua
   `askAssistant` (`assistant-api.ts`, giới hạn 45 giây): khách `POST /api/assistant/public/messages` kèm `guestKey` — mã ngẫu nhiên 32 ký tự giữ
   ở `sessionStorage` `loadmaster.tro-ly-lumo` —, người đã đăng nhập `POST /api/assistant/messages` kèm đường dẫn và tiêu đề của màn đang mở;
-  lượt sau gửi `conversationId` máy chủ trả về, "Bắt đầu lại" mở hội thoại mới. Câu gợi ý (chủ đề) vẫn là câu soạn sẵn. Máy chủ bận, hết
+  lượt sau gửi `conversationId` máy chủ trả về, "Bắt đầu lại" mở hội thoại mới. **Ba mức trả lời** — bộ định tuyến thuần `routeQuestion` (`assistant-route.ts`,
+  trả `{ route, topicId?, reason }`, `reason` là mã): `SMALL_TALK` (chào, cảm ơn, tạm biệt, "ok" → câu ngắn của nhánh `assistant.smallTalk`
+  kèm câu hỏi gợi ý ở trang công khai; không gọi mô hình ở mọi bề mặt, kể cả khi đang nói tiếp với mô hình và ở kho mẫu) · `PREPARED` (câu
+  soạn sẵn của một chủ đề) · `MODEL`. **Chất lượng trước**: thà gọi mô hình còn hơn trả câu soạn sẵn qua loa hay sai chủ đề — `PREPARED` chỉ
+  khi không đang nói tiếp với mô hình, khớp đúng một chủ đề (chủ đề thứ hai dưới `MIN_SCORE`), câu ngắn (`MAX_PREPARED_WORDS`) một ý, không
+  có tín hiệu sâu (bực / báo lỗi / gấp, cố lừa, hỏi tiếp lượt trước, nhiều ý, có số, so sánh, điều kiện, kể về công ty mình, "tại sao", "tính
+  thế nào", "là gì") và mọi chữ đều là chữ chức năng hoặc chữ câu soạn sẵn của chủ đề đã nói tới (`assistant-route-words.ts`). Chữ viết tắt
+  kiểu nhắn tin ("ko", "dc", "bn", "thx") mở ở bước chuẩn hoá chung `chatText` (`assistant-chat-text.ts`) của cả bộ khớp và bộ định
+  tuyến. Cổng: `assistant-route-corpus.ts` (199 câu khách gõ đã gắn nhãn) — không câu sâu nào bị trả sẵn, không câu soạn sẵn nào sai chủ
+  đề, và tỷ lệ câu cơ bản trả sẵn không rớt dưới mức đã chốt; sửa luật thì chạy `assistant-route.test.ts`, không sửa nhãn cho dễ qua. Nối
+  máy chủ, trang công khai: câu gõ đi qua bộ định tuyến; câu gợi ý (chủ đề) là câu soạn sẵn; dưới câu soạn sẵn (khi không `degraded`) có nút
+  phụ "Chưa đúng ý? Hỏi Lumo chi tiết" gửi lại **đúng câu đó** cho mô hình, bỏ qua bộ định tuyến (`escalate`), focus vào vùng trò chuyện như
+  nút gợi ý; cạnh nó lối sang form liên hệ đổi chữ thành "Gửi câu hỏi cho đội LoadMaster". Từ lúc có hội thoại với mô hình, câu sau (trừ xã
+  giao) nói tiếp với mô hình. Mỗi lượt trang công khai không gọi mô hình (`SMALL_TALK`, `PREPARED`) và mỗi lần bấm "Hỏi Lumo chi tiết"
+  (`ESCALATED`) gửi một lượt đếm `POST /api/assistant/public/route-events` `{ route, topicId, locale }` (`recordRoute`): client không
+  token, gửi rồi quên, lỗi bỏ qua, không bao giờ có chữ khách gõ hay mã khách; kho mẫu không gửi. Trong ứng dụng chỉ câu xã giao không gọi
+  mô hình. Trang Chính sách bảo mật nói đúng điều này. Máy chủ bận, hết
   ngân sách (`ASSISTANT_*`) hay không tới được thì trả câu soạn sẵn kèm một dòng "Trợ lý AI đang bận…" (`degraded`), không hiện thông điệp thô.
   Câu trả lời của mô hình vẽ bằng phần tử thường (`assistant-text.ts`: đoạn, gạch đầu dòng, bước — bỏ dấu Markdown, không bao giờ đưa HTML vào
   trang); liên kết máy chủ gợi ý chỉ giữ đường dẫn trong app mà người xem mở được (`openableLinks` + `canOpenRoute` của `app/route-access.ts`,
@@ -591,7 +607,7 @@ src/
                         chữ và khối hiện một lần `reveal/` (`RevealProvider` — một IntersectionObserver —, `Reveal`, `RevealWords`,
                         `FlowHeading`, `LineRise`, `TextRibbon`, `Odometer`, `LumoSays`, `split-text.ts` thuần, `reveal.css`); trợ lý "Hỏi Lumo"
                         `assistant/` (nút mở `AssistantLauncher`, khung chat lười `AssistantPanel`, bộ câu trả lời `assistant-kb.ts` + khớp
-                        `assistant-match.ts` + tính gói `assistant-advisor.ts` thuần, `assistant-api.ts`, `assistant-session.ts`; nút của Planner
+                        `assistant-match.ts` + định tuyến `assistant-route.ts` + tính gói `assistant-advisor.ts` thuần, `assistant-api.ts`, `assistant-session.ts`; nút của Planner
                         `PlannerAssistant` + cầu nối thuần `viewer-bridge.ts`; nút trên thanh màn cảm ứng kho, tài xế `TouchAssistant`)
     contacts/           yêu cầu liên hệ của khách `/lien-he-khach` (quản trị hệ thống, hỗ trợ khách hàng): bảng, khung xử lý `ContactPanel`
   lib/                  format, helper, mock dùng chung, api client

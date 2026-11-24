@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, test } from 'vitest'
 import { createTranslator, loadLocale } from '@/lib/i18n'
-import { TOPIC_IDS } from './assistant-kb'
+import { TOPIC_IDS, TOPICS } from './assistant-kb'
+import { chatText } from './assistant-chat-text'
 import { matchText, matchTopic } from './assistant-match'
 
 beforeAll(() => loadLocale('en'))
@@ -42,5 +43,24 @@ describe('matchTopic', () => {
   test.each(['vi', 'en'] as const)('every suggested question (%s), typed by hand, reaches its own topic', (locale) => {
     const t = createTranslator(locale)
     for (const id of TOPIC_IDS) expect([id, matchTopic(t(`assistant.topics.${id}.chip`))]).toStrictEqual([id, id])
+  })
+})
+
+describe('chatText', () => {
+  test('chat shorthand opens into full words, by locale where it is ambiguous', () => {
+    expect(chatText('gia goi bn')).toBe('gia goi bao nhieu')
+    expect(chatText('cảm ơn bn nhé')).toBe('cam on ban nhe')
+    expect(chatText('ko dc dk thử à')).toBe('khong duoc dang ky thu a')
+    expect(chatText('r sao', 'vi')).toBe('roi sao')
+    expect(chatText('r u free', 'en')).toBe('are you free')
+    expect(matchTopic('gia goi bn')).toBe('plans')
+  })
+
+  test('every topic keyword and hint is already in normalized form, so shorthand never breaks a match', () => {
+    for (const topic of TOPICS) {
+      for (const phrase of [...topic.keywords, ...(topic.hints ?? [])]) {
+        expect([topic.id, chatText(phrase, 'vi'), chatText(phrase, 'en')]).toStrictEqual([topic.id, phrase, phrase])
+      }
+    }
   })
 })

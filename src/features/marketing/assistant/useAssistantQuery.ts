@@ -15,7 +15,7 @@ const current = (ask: Ask) => ask.generation === assistantSession.generation()
  */
 export function useAskAssistantMutation() {
   return useMutation({
-    mutationFn: ({ question, topicId, context }: Ask) => askAssistant({ question, topicId }, context),
+    mutationFn: ({ question, topicId, escalate, context }: Ask) => askAssistant({ question, topicId, ...(escalate ? { escalate } : {}) }, context),
     onSuccess: (reply, ask) => {
       if (!current(ask)) return
       if (reply.kind === 'text') {
@@ -26,8 +26,17 @@ export function useAskAssistantMutation() {
         if (ask.context.viewer) dispatchUiActions(uiActions, ask.context.viewer.loadPlanId)
         return
       }
+      if (reply.kind === 'smallTalk') {
+        assistantSession.append({ kind: 'smallTalk', smallTalk: reply.smallTalk })
+        return
+      }
       const degraded = reply.degraded ? ({ degraded: true } as const) : {}
-      assistantSession.append(reply.kind === 'topic' ? { kind: 'answer', topicId: reply.topicId, ...degraded } : { kind: 'fallback', ...degraded })
+      if (reply.kind === 'fallback') {
+        assistantSession.append({ kind: 'fallback', ...degraded })
+        return
+      }
+      const question = reply.escalatable ? { question: ask.question } : {}
+      assistantSession.append({ kind: 'answer', topicId: reply.topicId, ...degraded, ...question })
     },
     onError: (_error, ask) => {
       if (current(ask)) assistantSession.append({ kind: 'error' })

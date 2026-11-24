@@ -64,6 +64,13 @@ export function useAssistantChat(onLeave: () => void) {
     mutate({ question: text, topicId, generation: assistantSession.generation(), context: askContext() })
   }
 
+  /** "Hỏi Lumo chi tiết": cùng câu khách đã hỏi, gửi thẳng cho mô hình (không thêm lượt hỏi mới vào cuộc trò chuyện). */
+  function escalate(question: string, topicId: TopicId) {
+    if (assistantSession.get().pending) return
+    assistantSession.setPending(true)
+    mutate({ question, topicId, escalate: true, generation: assistantSession.generation(), context: askContext() })
+  }
+
   function sendRuns(label: string, runs: number) {
     if (assistantSession.get().pending) return
     assistantSession.append({ kind: 'user', text: label }, { kind: 'advisor', runs })
@@ -75,5 +82,5 @@ export function useAssistantChat(onLeave: () => void) {
     void navigate(contactPath({ type: 'INQUIRY' }), { state: handoffState(questions) })
   }
 
-  return { send, sendRuns, handoff, briefing }
+  return { send, escalate, sendRuns, handoff, briefing }
 }

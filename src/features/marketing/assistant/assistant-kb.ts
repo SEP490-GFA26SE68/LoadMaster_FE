@@ -56,7 +56,7 @@ const none = () => []
 export const TOPICS: readonly Topic[] = [
   {
     id: 'plans',
-    keywords: ['gia', 'bang gia', 'gia goi', 'bao nhieu tien', 'chi phi', 'goi cuoc', 'phi', 'price', 'prices', 'pricing', 'cost', 'how much', 'plans', 'subscription'],
+    keywords: ['gia', 'bang gia', 'gia goi', 'nhung goi', 'cac goi', 'bao nhieu tien', 'chi phi', 'goi cuoc', 'phi', 'price', 'prices', 'pricing', 'cost', 'how much', 'plans', 'subscription'],
     hints: ['goi', 'plan', 'tien', 'thang'],
     parts: () => ['answer', 'planList'],
     actions: () => [section('plans'), PRICING_ACTION],
@@ -72,7 +72,7 @@ export const TOPICS: readonly Topic[] = [
   },
   {
     id: 'advisor',
-    keywords: ['goi nao', 'goi nao hop', 'chon goi', 'nen chon', 'phu hop', 'hop voi', 'tu van goi', 'which plan', 'plan fits', 'right plan', 'best plan', 'recommend', 'suggest a plan'],
+    keywords: ['goi nao hop', 'chon goi', 'nen chon', 'phu hop', 'hop voi', 'tu van goi', 'which plan', 'plan fits', 'right plan', 'best plan', 'recommend', 'suggest a plan'],
     hints: ['cong ty toi', 'my company'],
     parts: answerOnly,
     actions: none,

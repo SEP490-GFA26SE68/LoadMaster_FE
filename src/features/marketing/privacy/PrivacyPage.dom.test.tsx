@@ -48,7 +48,7 @@ afterEach(() => sessionStorage.clear())
 test('the policy has a title, the last update date, a short summary and twelve numbered sections', () => {
   renderPrivacy()
   expect(screen.getByRole('heading', { level: 1, name: 'Chính sách bảo mật' })).toBeInTheDocument()
-  expect(screen.getByText('Cập nhật lần cuối: 21/11/2026')).toBeInTheDocument()
+  expect(screen.getByText('Cập nhật lần cuối: 24/11/2026')).toBeInTheDocument()
   expect(within(screen.getByRole('region', { name: 'Tóm tắt nhanh' })).getAllByRole('listitem')).toHaveLength(5)
   for (const [id, title] of SECTIONS) {
     const section = screen.getByRole('region', { name: title })
@@ -140,7 +140,7 @@ test('reads in English, with the date in English and the same anchors', () => {
   sessionStorage.setItem('loadmaster.ngon-ngu', 'en')
   renderPrivacy()
   expect(screen.getByRole('heading', { level: 1, name: 'Privacy policy' })).toBeInTheDocument()
-  expect(screen.getByText('Last updated: Nov 21, 2026')).toBeInTheDocument()
+  expect(screen.getByText('Last updated: Nov 24, 2026')).toBeInTheDocument()
   const [toc] = screen.getAllByRole('navigation', { name: 'Contents' })
   expect(toc).toBeDefined()
   expect(within(toc as HTMLElement).getAllByRole('link').map((link) => link.getAttribute('href'))).toStrictEqual(

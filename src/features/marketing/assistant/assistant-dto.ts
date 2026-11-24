@@ -47,3 +47,13 @@ export type AssistantReplyDto = {
   readonly links?: readonly AssistantLinkDto[] | null
   readonly handoff?: HandoffDto | null
 }
+
+/**
+ * Một lượt trả lời ở trang công khai không gọi mô hình (`SMALL_TALK`, `PREPARED`) hay một lần bấm "Hỏi Lumo chi tiết" (`ESCALATED`): chỉ
+ * mức, chủ đề và ngôn ngữ — không có chữ khách gõ, mã khách hay mã hội thoại.
+ */
+export type AssistantRouteEventDto = {
+  readonly route: 'SMALL_TALK' | 'PREPARED' | 'ESCALATED'
+  readonly topicId: string | null
+  readonly locale: string
+}

@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react'
 import type { AssistantHandoff, AssistantLink, AssistantSurface, UiAction } from './assistant-api'
 import type { TopicId } from './assistant-kb'
+import type { SmallTalkKind } from './assistant-route'
 
 /**
  * Cuộc trò chuyện với trợ lý, chỉ trong bộ nhớ của trang (không `localStorage`): đóng rồi mở lại, hay chuyển giữa các trang công khai,
@@ -9,8 +10,13 @@ import type { TopicId } from './assistant-kb'
  */
 export type AssistantEntry =
   | { readonly id: number; readonly kind: 'user'; readonly text: string }
-  /** `degraded`: câu soạn sẵn thay cho câu của mô hình (máy chủ bận, hết ngân sách, không tới được). */
-  | { readonly id: number; readonly kind: 'answer'; readonly topicId: TopicId; readonly degraded?: true }
+  /**
+   * `degraded`: câu soạn sẵn thay cho câu của mô hình (máy chủ bận, hết ngân sách, không tới được). `question`: câu khách đã hỏi, khi
+   * hỏi lại được mô hình bằng "Hỏi Lumo chi tiết" (nối máy chủ, trang công khai).
+   */
+  | { readonly id: number; readonly kind: 'answer'; readonly topicId: TopicId; readonly degraded?: true; readonly question?: string }
+  /** Câu xã giao của từ điển (chào, cảm ơn, tạm biệt, "ok"). */
+  | { readonly id: number; readonly kind: 'smallTalk'; readonly smallTalk: SmallTalkKind }
   | { readonly id: number; readonly kind: 'fallback'; readonly degraded?: true }
   | { readonly id: number; readonly kind: 'advisor'; readonly runs: number }
   /** `cause`: lỗi của lượt gọi không có câu soạn sẵn thay thế (bản tin) — màn nói đúng lý do; vắng là câu "chưa trả lời được" chung. */
