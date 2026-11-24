@@ -56,4 +56,5 @@ export const titles = {
   trialRegistration: 'Try for free',
   guestRegistration: 'Get started',
   registrationSuccess: 'Registration completed',
+  assistantStats: 'Lumo assistant — trend counts',
 } satisfies Dictionary<typeof source>

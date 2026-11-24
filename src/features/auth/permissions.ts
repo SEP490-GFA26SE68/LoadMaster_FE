@@ -28,6 +28,7 @@ export const PERMISSIONS = [
   'support.handle',
   'contacts.handle',
   'trialRequests.manage',
+  'assistantStats.view',
   'dashboard.view',
   'reports.export',
   'requirements.view',
@@ -78,11 +79,14 @@ export type Permission = (typeof PERMISSIONS)[number]
  * `contacts.handle` mở `/lien-he-khach` — yêu cầu liên hệ của khách chưa có tài khoản, gửi từ trang giới thiệu công khai — cho Hỗ trợ
  * khách hàng và Quản trị hệ thống; gửi yêu cầu không cần quyền. `trialRequests.manage` mở Đơn dùng thử `/nen-tang/yeu-cau-dung-thu` cho
  * Quản lý nền tảng và Quản trị hệ thống, như `TrialAccountRequestController` của backend; Hỗ trợ khách hàng chỉ chuyển đơn sang đó.
+ *
+ * `assistantStats.view` mở số đếm xu hướng của trợ lý Lumo ở trang công khai `/nen-tang/tro-ly-lumo` cho Quản trị hệ thống và Quản lý
+ * nền tảng, như `GET /api/assistant/route-stats` của backend; màn chỉ có khi nhóm `assistant` nối máy chủ.
  */
 
 export const ROLE_PERMISSIONS: Readonly<Record<Role, readonly Permission[]>> = {
-  systemAdmin: ['companies.manage', 'users.manage', 'audit.view', 'contacts.handle', 'trialRequests.manage'],
-  systemManager: ['companies.manage', 'subscriptionPlans.manage', 'trialRequests.manage'],
+  systemAdmin: ['companies.manage', 'users.manage', 'audit.view', 'contacts.handle', 'trialRequests.manage', 'assistantStats.view'],
+  systemManager: ['companies.manage', 'subscriptionPlans.manage', 'trialRequests.manage', 'assistantStats.view'],
   systemSupporter: ['support.handle', 'contacts.handle'],
   companyAdmin: ['companyProfile.manage', 'users.manage', 'audit.view', 'billing.manage', 'support.create'],
 

@@ -62,4 +62,5 @@ export const titles = {
   trialRegistration: 'Đăng ký trải nghiệm',
   guestRegistration: 'Đăng ký dùng ngay',
   registrationSuccess: 'Đăng ký thành công',
+  assistantStats: 'Trợ lý Lumo — số đếm xu hướng',
 } as const

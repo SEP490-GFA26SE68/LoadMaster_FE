@@ -20,6 +20,7 @@ export const nav = {
   plans: 'Plans',
   subscriptionHistory: 'Subscription History',
   trialRequests: 'Trial requests',
+  assistantStats: 'Lumo assistant',
   billing: 'Plan and credits',
   payroll: 'Payroll',
   payrollOwn: 'Payslip',

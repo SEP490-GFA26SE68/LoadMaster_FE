@@ -1,4 +1,5 @@
 import {
+  Bot,
   Check,
   ClipboardList,
   Info,
@@ -28,6 +29,7 @@ const GROUP_ICON: Readonly<Record<PermissionGroupId, LucideIcon>> = {
   administration: UserCog,
   billing: Wallet,
   support: LifeBuoy,
+  assistant: Bot,
   dashboard: LayoutDashboard,
   requirements: ClipboardList,
   packages: QrCode,
