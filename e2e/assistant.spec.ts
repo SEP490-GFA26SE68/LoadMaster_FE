@@ -8,6 +8,12 @@ import { attachScreenshot, expect, test } from './fixtures'
  */
 type Box = { x: number; y: number; width: number; height: number }
 
+/**
+ * Chờ câu trả lời của Lumo: nhịp thật 2–6 giây từ lúc gửi (`assistant-pace.ts`), máy CI chậm cộng thêm — chờ hẳn 20 giây ở đúng các bước
+ * này, không tắt nhịp.
+ */
+const ANSWER = { timeout: 20_000 }
+
 const overlaps = (a: Box, b: Box) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height
 
 async function boxOf(locator: Locator): Promise<Box> {
@@ -45,7 +51,9 @@ async function askAdvisor(page: Page, runs: string, plan: string) {
   const panel = page.getByRole('dialog', { name: 'Lumo' })
   await panel.getByRole('textbox', { name: 'Câu hỏi của bạn' }).fill('Gói nào hợp với công ty tôi?')
   await panel.getByRole('textbox', { name: 'Câu hỏi của bạn' }).press('Enter')
-  await panel.getByRole('group', { name: 'Chọn nhanh số lần chạy mỗi tháng' }).getByRole('button', { name: runs }).click()
+  const quick = panel.getByRole('group', { name: 'Chọn nhanh số lần chạy mỗi tháng' })
+  await expect(quick).toBeVisible(ANSWER)
+  await quick.getByRole('button', { name: runs }).click()
   await expect(panel.getByText(new RegExp(`^Gói rẻ nhất đủ dùng: ${plan} — `))).toBeVisible()
 }
 
@@ -73,7 +81,7 @@ test.describe('desktop', () => {
     }).toStrictEqual([true, true, true])
 
     await panel.getByRole('button', { name: 'Giá các gói?' }).click()
-    await expect(panel.getByText(/^Basic: .+ mỗi tháng/)).toBeVisible()
+    await expect(panel.getByText(/^Basic: .+ mỗi tháng/)).toBeVisible(ANSWER)
     await expect(panel.getByRole('link', { name: 'Mở bảng giá' })).toBeVisible()
     await attachScreenshot(page, testInfo, 'assistant-1440-plans')
 

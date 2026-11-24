@@ -22,12 +22,11 @@ import type { ViewerContext } from './viewer-bridge'
  *
  * Câu xã giao (chào, cảm ơn, tạm biệt, "ok" — `routeQuestion` của `assistant-route.ts`) luôn trả câu ngắn của từ điển, ở mọi bề mặt, kể
  * cả khi đang nói tiếp với mô hình. Nhóm `assistant` chưa nối máy chủ (kho mẫu): câu còn lại khớp với bộ câu trả lời soạn sẵn ở trình
- * duyệt (`assistant-match.ts`) sau một khoảng trễ ngắn — đủ cho dòng "đang trả lời", không lâu tới mức làm khách chờ. Nối máy chủ, trang
+ * duyệt (`assistant-match.ts`). Lớp này trả câu ngay; nhịp "đang trả lời" (2–6 giây từ lúc gửi) nằm ở `useAskAssistantMutation`. Nối máy chủ, trang
  * công khai: câu gợi ý (kèm `topicId`) và câu gõ mà bộ định tuyến chọn mức soạn sẵn trả câu soạn sẵn (khách bấm "Hỏi Lumo chi tiết" thì
  * cùng câu đó đi tới mô hình, `escalate`), câu còn lại đi tới mô hình; trong ứng dụng câu gõ luôn đi tới mô hình. Máy chủ bận, hết ngân
  * sách (`ASSISTANT_*`) hay không tới được thì trả câu soạn sẵn kèm `degraded` để màn nói rõ; lỗi khác ném ra như mọi lượt gọi.
  */
-export const ASSISTANT_DELAY_MS = 500
 /** Một lượt trả lời có thể gọi công cụ vài vòng: chờ lâu hơn giới hạn mặc định của client. */
 export const ASSISTANT_TIMEOUT_MS = 45_000
 
@@ -80,8 +79,6 @@ export type AssistantReply =
       readonly links: readonly AssistantLink[]
       readonly handoff: AssistantHandoff
     }
-
-const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 
 function prepared(input: AssistantQuestion, degraded: boolean): AssistantReply {
   const topicId = input.topicId ?? matchTopic(input.question)
@@ -167,17 +164,14 @@ export async function askAssistant(input: AssistantQuestion, context: AssistantA
     input.topicId === undefined ? routeQuestion(input.question, { inConversation: context.conversationId !== null, locale: context.locale }) : null
   if (decision?.route === 'SMALL_TALK') {
     if (guest) recordRoute('SMALL_TALK', null, context.locale)
-    await wait(ASSISTANT_DELAY_MS)
     return { kind: 'smallTalk', smallTalk: decision.smallTalk }
   }
   const topicId = input.topicId ?? (decision?.route === 'PREPARED' ? decision.topicId : undefined)
   if (guest && topicId !== undefined) {
     recordRoute('PREPARED', topicId, context.locale)
-    await wait(ASSISTANT_DELAY_MS)
     return { kind: 'topic', topicId, degraded: false, escalatable: true }
   }
   if (!ON_BACKEND || input.topicId !== undefined) {
-    await wait(ASSISTANT_DELAY_MS)
     return prepared(input, false)
   }
   return askModel(input, context)

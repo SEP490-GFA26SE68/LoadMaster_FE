@@ -272,7 +272,7 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   lời mời bật lên. **Hai chế độ theo nhóm `assistant`** (`ASSISTANT_USES_AI` ở `assistant-api.ts`). Kho mẫu: trả lời từ **bộ câu trả lời soạn
   sẵn** (`assistant-kb.ts`, 16 chủ đề; câu ở nhánh `assistant` của từ điển), **không phải AI** và không bao giờ nói mình là AI; dòng nhỏ dưới ô
   gõ — cũng là mô tả của hộp thoại — nói Lumo trả lời từ tài liệu của LoadMaster, không phải nhân viên tư vấn. Khớp câu hỏi bằng từ khoá vi +
-  en không dấu (`assistant-match.ts`, dưới ngưỡng thì nói thẳng là chưa có câu trả lời) sau 500 ms. **Nối máy chủ**: Lumo là **trợ lý AI** và
+  en không dấu (`assistant-match.ts`, dưới ngưỡng thì nói thẳng là chưa có câu trả lời). **Nối máy chủ**: Lumo là **trợ lý AI** và
   dòng dưới ô gõ nói vậy, kèm "có thể nhầm" (`panel.disclaimerAi`, trong ứng dụng `disclaimerAiApp`). Câu cần mô hình đi tới mô hình qua
   `askAssistant` (`assistant-api.ts`, giới hạn 45 giây): khách `POST /api/assistant/public/messages` kèm `guestKey` — mã ngẫu nhiên 32 ký tự giữ
   ở `sessionStorage` `loadmaster.tro-ly-lumo` —, người đã đăng nhập `POST /api/assistant/messages` kèm đường dẫn và tiêu đề của màn đang mở;
@@ -329,7 +329,10 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   gradient 2 px chạy ngang dưới đầu khung chỉ trong lúc đang trả lời (`assistant-thinking-bar`). Khung chat: chưa hỏi gì thì là màn chào
   (`AssistantWelcome`: Lumo `idea` chào một câu, bốn câu hỏi gợi ý thành lưới 2 × 2 có icon); câu trả lời có ảnh Lumo nhỏ bên trái; ảnh ở
   đầu khung có vòng gradient 2 px, quay khi đang trả lời (`assistant-avatar-ring`); chữ "Lumo đang trả lời…" có dải gradient chạy ngang
-  (`assistant-shimmer`, phần lớn chữ vẫn `--ink-3`; giảm chuyển động thì chữ xám đứng yên). Ô gõ là một khung bo góc chứa ô gõ tự cao tới
+  (`assistant-shimmer`, phần lớn chữ vẫn `--ink-3`; giảm chuyển động thì chữ xám đứng yên). **Nhịp trả lời**: câu trả lời — soạn sẵn, xã giao
+  hay của mô hình — hiện sau 2–6 giây tính từ lúc gửi, theo độ dài câu hỏi và câu sẽ hiện (`thinkingDelayMs` ở `assistant-pace.ts`, đặt một
+  chỗ ở `useAskAssistantMutation`; câu về muộn hơn đích thì hiện ngay, lỗi báo ngay), hiệu ứng đang trả lời chạy trong lúc đó; giảm chuyển
+  động thì hiệu ứng đứng yên nhưng nhịp chờ vẫn vậy; phép tính gói trả lời ngay; test DOM đặt nhịp 0 ở `src/test/setup-dom.ts`. Ô gõ là một khung bo góc chứa ô gõ tự cao tới
   bốn dòng (Enter gửi, Shift + Enter xuống dòng, xuống dòng gửi đi thành dấu cách) và nút gửi — nút chính của khung chat, mờ khi ô trống;
   focus là viền khung đổi cyan và dày thêm 1 px. Bấm một nút gợi ý (nút biến mất cùng lượt cũ) thì focus vào vùng trò chuyện, không về ô
   gõ (khỏi bật bàn phím ảo). Khung đang mở thì nút mở thành nút thu gọn (mũi tên xuống); tên truy cập vẫn là "Hỏi Lumo", trạng thái nằm ở

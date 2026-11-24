@@ -30,7 +30,7 @@ export function useAssistantContext(): AssistantContext {
  * `onLeave` đóng khung chat trước khi điều hướng (không trả focus về nút mở: trang đích đặt focus vào tiêu đề phần).
  */
 export function useAssistantChat(onLeave: () => void) {
-  const { mutate } = useAskAssistantMutation()
+  const { mutate } = useAskAssistantMutation(useAssistantContext())
   const { request: briefing } = useBriefingQuery()
   const navigate = useNavigate()
   const { pathname, search } = useLocation()
