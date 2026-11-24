@@ -10,7 +10,7 @@ import { assistantSession } from './assistant-session'
 
 /**
  * Trợ lý "Hỏi Lumo" trên trang giới thiệu: mở / đóng và focus, câu hỏi gợi ý → câu trả lời, tính gói, câu không có trong tài liệu → chuyển
- * câu hỏi sang form liên hệ. jsdom không có `matchMedia` nên khung chat ở dạng máy tính (thẻ không modal). Câu trả lời tới sau 500 ms.
+ * câu hỏi sang form liên hệ. jsdom không có `matchMedia` nên khung chat ở dạng máy tính (thẻ không modal). Nhịp "đang trả lời" là 0 trong test DOM (`src/test/setup-dom.ts`).
  */
 const ANSWER = { timeout: 4000 }
 
