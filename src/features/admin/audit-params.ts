@@ -46,8 +46,8 @@ const PARAM_KEYS = [
   'deadlineStatus', 'eta', 'deadline',
   // Sự cố cấp chuyến, tuyến thay thế, gia hạn (FE-6-11, FE-6-12)
   'exceptionId', 'exceptionType', 'delayMinutes', 'escalation', 'route', 'requirementId',
-  // Nhận hàng dọc đường (FE-7-03 → FE-7-05); tài xế của chuyến và tài xế vừa bị thay — người chuông của tài xế báo
-  'pickupId', 'failedRules', 'driverId', 'previousDriverId',
+  // Tài xế của chuyến và tài xế vừa bị thay — người chuông của tài xế báo
+  'driverId', 'previousDriverId',
   // Kho soạn lại hàng sau khi chuyến quay về Đã lập kế hoạch (FE-6-02, FE-6-05): lý do lần quay về
   'replanReason',
   // Gói cước và credit (FE-8-01, FE-8-05)

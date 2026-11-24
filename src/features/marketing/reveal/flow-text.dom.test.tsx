@@ -17,7 +17,7 @@ const NBSP = String.fromCharCode(0xa0)
 const LINES = 'Hàng giao sau lên xe trước. Hàng giao trước nằm sát cửa. Tới điểm nào, lấy hàng điểm đó.'
 const ROWS = [
   ['Xếp 3D theo thứ tự dỡ', 'Đối chiếu từng kiện bằng mã QR'],
-  ['Nhận hàng dọc đường', 'Báo cáo sau mỗi chuyến'],
+  ['Theo dõi xe trên đường', 'Báo cáo sau mỗi chuyến'],
 ] as const
 
 let io: FakeIntersectionObserverControl | null = null

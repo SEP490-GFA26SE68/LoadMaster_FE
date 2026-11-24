@@ -34,14 +34,13 @@ test('tám cột vai trò theo thứ tự nền tảng → công ty, 39 dòng qu
   expect(within(matrix).getAllByRole('row')).toHaveLength(2 + PERMISSION_GROUPS.length + PERMISSIONS.length)
   // Dòng quyền có chín ô (tên + tám vai trò); dòng khu vực chỉ một ô, dòng tổng tám ô
   const permissionRows = within(matrix).getAllByRole('row').filter((row) => within(row).queryAllByRole('cell').length === 9)
-  expect(permissionRows).toHaveLength(39)
+  expect(permissionRows).toHaveLength(37)
   // Dòng đầu và dòng cuối của ma trận; mã quyền nằm ngay dưới tên
   const labels = permissionRows.map((row) => within(row).getAllByRole('cell')[0]?.textContent)
   expect([labels[0], labels.at(-1)]).toStrictEqual(['Tạo và quản lý công ty khách hàngcompanies.manage', 'Giao hàngdriver.operate'])
   expect(labels.filter((label) => /packages\.register|shipments\.|receiving\.|orders\./.test(label ?? ''))).toStrictEqual([])
   // Quyền của màn chưa làm vẫn có dòng và nhãn
   expect(labels).toContain('Xem giám sát chuyến đang chạymonitoring.view')
-  expect(labels).toContain('Duyệt yêu cầu nhận hàng dọc đườngpickups.approve')
   expect(screen.getByText(/^Chỉ đọc, dựng từ cấu hình quyền của hệ thống\./)).toHaveTextContent('Một số quyền thuộc những màn bản này chưa có.')
 })
 

@@ -56,7 +56,7 @@ test('the server report reads by trip code and maps times, deadline levels and s
   const report = await fetchServerTripReport('TRIP-2026-0042')
   expect(calls.map((call) => `${call.method} ${call.path}`)).toStrictEqual(['GET /api/trips/TRIP-2026-0042/report'])
   expect(report.stops.map((stop) => [stop.number, stop.plannedStatus, stop.arrivedOnTime])).toStrictEqual([[1, 'OK', null], [2, 'AT_RISK', false]])
-  expect(report.stops[1]).toMatchObject({ arrivedAt: '2026-11-10T03:55:00.000Z', deadline: '2026-11-10T03:45:00.000Z', completed: true, pickup: false })
+  expect(report.stops[1]).toMatchObject({ arrivedAt: '2026-11-10T03:55:00.000Z', deadline: '2026-11-10T03:45:00.000Z', completed: true })
   expect(report.loading).toStrictEqual({ startedAt: '2026-11-09T22:30:00.000Z', completedAt: '2026-11-09T23:45:00.000Z' })
   expect(report.verifications.map((row) => row.step)).toStrictEqual(['STAGING', 'LOADING', 'UNLOADING'])
   expect(report.manualConfirms[0]).toMatchObject({ step: 'LOADING', status: 'MANUAL_APPROVED', reason: 'QR_UNREADABLE', stopNumber: 2, note: '' })
@@ -88,10 +88,8 @@ test('round 4 of the server: delivery minutes, the time each stop was completed,
   expect(cancelled.cancellation).toStrictEqual({ reason: 'Xe hỏng giữa đường', inTransit: true, returned: 4 })
   expect(cancelled.deliveryMinutes).toBeNull()
   expect(cancelled.stops.map((stop) => stop.completedAt)).toStrictEqual(['2026-11-10T01:20:00.000Z', null])
-  expect(cancelled.verifications).toStrictEqual([
-    { step: 'LOADING', label: 9, qr: 7, code: 2, manual: 1 },
-    { step: 'PICKUP', label: 1, qr: 1, code: 0, manual: 0 },
-  ])
+  // Bước nhận hàng dọc đường của chuyến cũ không còn trong app
+  expect(cancelled.verifications).toStrictEqual([{ step: 'LOADING', label: 9, qr: 7, code: 2, manual: 1 }])
   expect((await fetchServerTripReport('TRIP-2026-0046')).deliveryMinutes).toBe(280)
 })
 

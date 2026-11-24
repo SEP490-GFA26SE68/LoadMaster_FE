@@ -102,7 +102,7 @@ export function TripSummary({ trip, plan }: { trip: Trip; plan: Revision }) {
                       {stop.name}
                     </span>
                     <span className="text-ink-2">
-                      {stop.kind === 'PICKUP' ? t('driver.stopKinds.PICKUP') : stop.completedAt ? t('driver.tripSummary.stopLine', { time: format.time(stop.completedAt), count: stop.delivered }) : t('driver.stopList.state.waiting')}
+                      {stop.completedAt ? t('driver.tripSummary.stopLine', { time: format.time(stop.completedAt), count: stop.delivered }) : t('driver.stopList.state.waiting')}
                       {stop.issues > 0 ? <span className="font-semibold text-badge-warning-fg"> · {t('driver.list.issues', { count: stop.issues })}</span> : null}
                     </span>
                   </div>

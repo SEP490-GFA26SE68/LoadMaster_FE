@@ -141,7 +141,6 @@ export const driver = {
     delivered: { one: '{count} kiện đã dỡ được ghi Đã giao.', other: '{count} kiện đã dỡ được ghi Đã giao.' },
     returned: { one: '{count} kiện chưa dỡ ở lại xe, được ghi Hoàn trả:', other: '{count} kiện chưa dỡ ở lại xe, được ghi Hoàn trả:' },
     issues: { one: 'Đã báo sự cố cho {count} kiện ở điểm này.', other: 'Đã báo sự cố cho {count} kiện ở điểm này.' },
-    picked: { one: '{count} kiện đã nhận lên xe, được ghi Đang vận chuyển.', other: '{count} kiện đã nhận lên xe, được ghi Đang vận chuyển.' },
     next: 'Tiếp theo: điểm {number} · {name}.',
     /** Backend chỉ trả tên của điểm đang giao. */
     nextNumber: 'Tiếp theo: điểm {number}.',
@@ -218,44 +217,9 @@ export const driver = {
       noteTooLong: 'Ghi chú tối đa {max} ký tự.',
     },
   },
-  /** Loại điểm và danh sách điểm của chuyến (FE-7-05): điểm nhận dọc đường có biểu tượng riêng và chữ riêng. */
-  stopKinds: { PICKUP: 'Điểm nhận hàng', DELIVERY: 'Điểm giao hàng' },
+  /** Trạng thái của một điểm trong danh sách điểm (thẻ "Chuyến của tôi", tổng kết chuyến). */
   stopList: {
-    summary: 'Các điểm của chuyến ({count})',
-    label: 'Các điểm của chuyến',
     state: { done: 'Đã xong', current: 'Đang ở điểm này', waiting: 'Chưa tới' },
-  },
-  /** Kiện nhận dọc đường (FE-7-05, D-88): nhận ở điểm nhận, giao ở điểm giao như kiện thường; có chỗ trong khung 3D khi vừa vùng trống (FE-BL-01). */
-  pickup: {
-    banner: 'Điểm nhận hàng dọc đường: nhận {count} kiện từ {name}. Đối chiếu từng kiện lên xe rồi mới hoàn tất điểm nhận.',
-    listTitle: 'Kiện nhận dọc đường',
-    listHint: 'Kiện nhận không nằm trong phương án xếp hàng; chỗ xếp của chúng hiện trong khung 3D "Xem vị trí hàng". Đối chiếu bằng nhãn QR như kiện thường.',
-    request: 'Yêu cầu {id}',
-    pick: { waiting: 'Chưa nhận', done: 'Đã nhận' },
-    deliver: { waiting: 'Chưa dỡ', done: 'Đã dỡ' },
-    via: {
-      QR: 'quét QR',
-      CODE: 'gõ mã',
-      MANUAL_PENDING: 'xác nhận tay, chờ duyệt',
-      MANUAL_APPROVED: 'xác nhận tay đã duyệt',
-    },
-    summary: 'Cần nhận {total} kiện · Đã nhận {done}',
-    progress: 'Tiến độ nhận hàng',
-    remaining: { one: 'Còn {count} kiện chưa đối chiếu', other: 'Còn {count} kiện chưa đối chiếu' },
-    allHandled: 'Mọi kiện của điểm nhận này đã đối chiếu.',
-    scanOpen: 'Đối chiếu kiện nhận',
-    scanTitle: 'Đối chiếu kiện nhận tại điểm {number}',
-    scanDescription: 'Quét nhãn QR của từng kiện khi đưa lên xe, hoặc gõ mã in trên nhãn. Điểm {number}: đã nhận {done} / {total} kiện.',
-    lastPicked: 'Vừa nhận {id} · {name}.',
-    candidate: 'Kiện nhận · yêu cầu {request}',
-    complete: 'Hoàn tất điểm nhận',
-    blocked: {
-      one: 'Còn {count} xác nhận tay của điểm này chờ điều phối viên duyệt — chưa hoàn tất điểm nhận được.',
-      other: 'Còn {count} xác nhận tay của điểm này chờ điều phối viên duyệt — chưa hoàn tất điểm nhận được.',
-    },
-    cargoTitle: 'Kiện nhận dọc đường — chưa có chỗ trên xe',
-    cargoNote: 'Các kiện này không vừa vùng đã trống nên chưa có vị trí trong khung 3D; xếp theo hướng dẫn của điều phối viên và đối chiếu bằng nhãn QR ở màn điểm giao.',
-    cargoRow: '{id} · {name} · {weight} · {reason}',
   },
   /** Nút "Thêm" ở chân màn điểm giao: tờ trượt từ đáy chứa hai việc ít dùng khi chuyến đang chạy (V2.3 đợt 6). */
   more: { open: 'Thêm', title: 'Thêm thao tác', description: 'Những việc ít dùng khi xe đang trên đường.' },

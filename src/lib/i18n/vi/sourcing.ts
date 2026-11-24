@@ -152,7 +152,7 @@ export const sourcing = {
     packageType: 'Loại kiện',
     packageTypeNone: 'Không gắn loại kiện',
     source: 'Nguồn',
-    sources: { IMPORT: 'Nhập file', MANUAL: 'Thêm lẻ', TRIP: 'Thêm trong chuyến', PICKUP: 'Nhận dọc đường' },
+    sources: { IMPORT: 'Nhập file', MANUAL: 'Thêm lẻ', TRIP: 'Thêm trong chuyến' },
     requirement: 'Yêu cầu giao',
     trip: 'Chuyến',
     notLinked: 'Chưa vào yêu cầu giao hay chuyến',

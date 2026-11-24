@@ -2,7 +2,6 @@ import { queryOptions, useMutation, useQuery, useQueryClient, type QueryClient }
 import { useState } from 'react'
 import { pollInterval } from '@/lib/polling'
 import { useAuth } from '@/features/auth/AuthProvider'
-import type { StopRef } from '@/features/pickups/pickup-stops'
 import type { DeliveryIssueInput, ManualConfirmInput } from '@/lib/mock-db'
 import {
   arriveAtStop,
@@ -155,14 +154,6 @@ export function useDriverStopTimesQuery(tripId: string) {
   return useQuery(stopTimesOptions(tripId))
 }
 
-/**
- * Chỉ mã và tên các điểm của cùng truy vấn giờ đến: màn điểm giao đọc nó ở gốc màn, và `select` giữ nguyên mảng khi mã, tên không đổi
- * nên mỗi nhịp đọc lại giờ đến không vẽ lại cả màn.
- */
-export function useDriverStopRefsQuery(tripId: string) {
-  return useQuery({ ...stopTimesOptions(tripId), select: stopRefsOf })
-}
-
 function stopTimesOptions(tripId: string) {
   return queryOptions({
     queryKey: [...tripKey(tripId), 'stop-times'],
@@ -171,8 +162,4 @@ function stopTimesOptions(tripId: string) {
     staleTime: 0,
     refetchInterval: (query) => pollInterval(query, query.state.data?.refreshMs),
   })
-}
-
-function stopRefsOf(data: Awaited<ReturnType<typeof fetchDriverStopTimes>>): StopRef[] {
-  return data.stops.map((stop) => ({ id: stop.id ?? '', name: stop.name }))
 }

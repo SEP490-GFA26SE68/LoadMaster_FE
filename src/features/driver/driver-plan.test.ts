@@ -48,19 +48,18 @@ test('lớp: trên sàn, lớp dưới khi tâm thấp hơn nửa chiều cao th
   expect(stops[0]!.items[0]!.layer).toBe('upper')
 })
 
-test('chuyến đã chèn điểm nhận dọc đường: kiện của phương án nằm ở đúng điểm theo số điểm hiện tại, điểm chèn không có kiện nào của phương án', () => {
+test('chuyến đã đổi thứ tự điểm lúc xe đang chạy: kiện của phương án nằm ở đúng điểm theo số điểm hiện tại', () => {
   const source = twoCartonTrip()
   const [first, second, third] = source.stops as [DeliveryStop, DeliveryStop, DeliveryStop]
-  // Điểm nhận chèn giữa điểm 1 và điểm 2: điểm 2 và 3 của phương án thành điểm 3 và 4
+  // Điểm 3 của phương án lên đầu: điểm 1 và 2 của phương án thành điểm 2 và 3
   const stops: DeliveryStop[] = [
-    { ...first, planNumber: 1 },
-    { id: 'STOP-NHAN', name: 'Xưởng may', address: 'KCN VSIP 1', kind: 'PICKUP', planNumber: null },
-    { ...second, planNumber: 2 },
     { ...third, planNumber: 3 },
+    { ...first, planNumber: 1 },
+    { ...second, planNumber: 2 },
   ]
   const model = adaptResult({ trip: { id: 'TRIP-001', stops }, revision: { request: twoCartonRequest(), result: twoCartonResult(), ordersRecomputed: true } })
   const byStop = stopDeliveries(stops, model).map((stop) => stop.items.map((item) => item.id))
   const before = stopDeliveries(source.stops, adaptResult({ trip: { id: 'TRIP-001', stops: source.stops }, revision: { request: twoCartonRequest(), result: twoCartonResult(), ordersRecomputed: true } })).map((stop) => stop.items.map((item) => item.id))
-  expect(byStop).toStrictEqual([before[0], [], before[1], before[2]])
-  expect(model.stops.map((stop) => stop.number)).toStrictEqual([1, 2, 3, 4])
+  expect(byStop).toStrictEqual([before[2], before[0], before[1]])
+  expect(model.stops.map((stop) => stop.number)).toStrictEqual([1, 2, 3])
 })

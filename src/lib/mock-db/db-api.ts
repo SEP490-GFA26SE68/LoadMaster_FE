@@ -6,7 +6,6 @@ import type { BillingDb } from './db-api-billing'
 import type { CompaniesDb } from './db-api-companies'
 import type { ExceptionsDb } from './db-api-exceptions'
 import type { Review1Db } from './db-api-review1'
-import type { PickupsDb } from './db-api-pickups'
 import type { ReorderDb } from './db-api-reorder'
 import type { SupportDb } from './db-api-support'
 import type { ContactsDb } from './db-api-contacts'
@@ -47,7 +46,7 @@ export type ApproveOptions = { force?: boolean; pinned?: readonly string[] }
  * là `FORBIDDEN_COMPANY`; phiên nền tảng bị mọi hàm dữ liệu vận hành từ chối `COMPANY_REQUIRED` (người dùng, nhật ký, công ty thì
  * đọc hết); kho không có phiên thì không lọc. Thêm hàm công khai thì khai nó ở `tenancy.test.ts`.
  */
-export type MockDb = CoreMockDb & Review1Db & TrackingDb & ExceptionsDb & PickupsDb & ReorderDb & BillingDb & CompaniesDb & SupportDb & ContactsDb
+export type MockDb = CoreMockDb & Review1Db & TrackingDb & ExceptionsDb & ReorderDb & BillingDb & CompaniesDb & SupportDb & ContactsDb
 
 type CoreMockDb = {
   /** Theo thứ tự tạo: xe seed trước. */

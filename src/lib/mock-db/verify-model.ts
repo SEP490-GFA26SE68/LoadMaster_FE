@@ -2,7 +2,7 @@ import { normalizeQrToken } from './qr-token'
 import type { TripLabel } from './source-types'
 
 /**
- * Đối chiếu kiện ba mức (FE-6-03, D-83), dùng chung cho kho (soạn, xếp) và tài xế (dỡ, nhận dọc đường): quét QR → gõ mã → xác nhận tay
+ * Đối chiếu kiện ba mức (FE-6-03, D-83), dùng chung cho kho (soạn, xếp) và tài xế (dỡ): quét QR → gõ mã → xác nhận tay
  * có điều phối viên duyệt (FE-6-04). Kiểu và luật thuần; kho ghi qua `db-scans.ts`, `db-manual-confirm.ts`.
  */
 
@@ -14,10 +14,9 @@ export type VerifyMethod = (typeof VERIFY_METHODS)[number]
 export type LabelVerifyMethod = Exclude<VerifyMethod, 'MANUAL'>
 
 /**
- * Bước của chuyến mà kiện được đối chiếu: soạn hàng (FE-6-02), xếp, dỡ, và nhận dọc đường (`PICKUP`, FE-7-05 — tài xế đối chiếu kiện nhận
- * ở điểm nhận; `packageInstanceId` là mã kiện kho kiện vì kiện nhận không có dòng kiện trong chuyến).
+ * Bước của chuyến mà kiện được đối chiếu: soạn hàng (FE-6-02), xếp và dỡ.
  */
-export const VERIFY_CONTEXTS = ['STAGING', 'LOADING', 'UNLOADING', 'PICKUP'] as const
+export const VERIFY_CONTEXTS = ['STAGING', 'LOADING', 'UNLOADING'] as const
 export type VerifyContext = (typeof VERIFY_CONTEXTS)[number]
 
 /** Lý do xác nhận tay; `OTHER` bắt buộc ghi chú. */
@@ -50,7 +49,7 @@ export type PackageVerification = {
   /** `VF-NNN`, duy nhất trong chuyến. */
   id: string
   context: VerifyContext
-  /** Số điểm giao, chỉ khi dỡ hoặc nhận dọc đường. */
+  /** Số điểm giao, chỉ khi dỡ. */
   stopNumber?: number
   packageInstanceId: string
   method: VerifyMethod

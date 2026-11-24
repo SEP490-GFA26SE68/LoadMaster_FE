@@ -17,12 +17,11 @@ import type { Trip } from './types'
 type OnboardCargo = { placement: PackagePlacement; stopId: string; label: string }
 
 /**
- * Kiện còn trên xe (hoặc sắp lên xe, với yêu cầu nhận chưa tới điểm nhận) mà việc đổi thứ tự điểm ảnh hưởng: kiện của phương án đã xếp
- * chưa dỡ và không bị bỏ lại kho, cộng kiện nhận dọc đường đã có chỗ (`PickupRequest.layout`) chưa giao. Kiện thuộc điểm đã hoàn tất
- * (khách từ chối, ở lại xe) không có mặt: chúng không còn được dỡ ở điểm nào, và điểm của chúng đứng trước mọi điểm còn lại.
+ * Kiện còn trên xe mà việc đổi thứ tự điểm ảnh hưởng: kiện của phương án đã xếp chưa dỡ và không bị bỏ lại kho. Kiện thuộc điểm đã hoàn
+ * tất (khách từ chối, ở lại xe) không có mặt: chúng không còn được dỡ ở điểm nào, và điểm của chúng đứng trước mọi điểm còn lại.
  */
 function onboardCargo(ctx: DbContext, trip: Trip): OnboardCargo[] {
-  const { revisions, pickups, packages } = ctx.state
+  const { revisions } = ctx.state
   const done = new Set(trip.delivery?.stops.filter((stop) => stop.completedAt !== undefined).map((stop) => trip.stops[stop.number - 1]?.id))
   const gone = new Set([...(trip.delivery?.stops.flatMap((stop) => stop.unloadedIds) ?? []), ...leftOutIds(trip)])
   const cargo: OnboardCargo[] = []
@@ -35,30 +34,14 @@ function onboardCargo(ctx: DbContext, trip: Trip): OnboardCargo[] {
       if (stopId !== undefined && !gone.has(placement.packageInstanceId) && !done.has(stopId)) cargo.push({ placement, stopId, label: placement.packageInstanceId })
     }
   }
-
-  for (const request of pickups.values()) {
-    if (request.tripId !== trip.id || (request.status !== 'APPROVED' && request.status !== 'LOADED') || request.deliveryStopId === undefined || done.has(request.deliveryStopId)) continue
-    for (const spot of request.layout?.placements ?? []) {
-      const pkg = packages.get(request.packageIds?.[spot.packageIndex] ?? '')
-      if (pkg === undefined || pkg.status === 'DELIVERED' || pkg.status === 'RETURNED') continue
-      cargo.push({
-        stopId: request.deliveryStopId, label: pkg.packageCode,
-        placement: {
-          packageInstanceId: `${pkg.id}-01`, orientation: spot.orientation, xCm: spot.xCm, yCm: spot.yCm, zCm: spot.zCm,
-          placedLengthCm: spot.placedLengthCm, placedWidthCm: spot.placedWidthCm, placedHeightCm: spot.placedHeightCm,
-          loadingOrder: 1, unloadingOrder: 1, supportRatio: 1, constraintWarnings: [],
-        },
-      })
-    }
-  }
   return cargo
 }
 
 /**
- * Đổi thứ tự các điểm chưa giao của chuyến **đang vận chuyển** (FE-BL-03, D-87). Đây là **ngoại lệ thứ hai** của `TRIP_LOCKED` khi chuyến
- * đã rời kho, hẹp như ngoại lệ nhận hàng dọc đường (`db-pickup-stops.ts`): một hàm, điều phối viên, chuyến Đang vận chuyển — `updateTrip`,
- * `changeTripVehicle`, tối ưu tuyến… vẫn từ chối. Luật thứ tự ở `checkProposedOrder`, khả năng dỡ ở `checkStopReorder` (domain); số điểm
- * đổi theo `renumberTripStops` và `DeliveryStop.planNumber` như khi chèn điểm nhận, nên phương án đã duyệt không đổi và **không** lỗi
+ * Đổi thứ tự các điểm chưa giao của chuyến **đang vận chuyển** (FE-BL-03, D-87). Đây là **ngoại lệ duy nhất** của `TRIP_LOCKED` khi chuyến
+ * đã rời kho, và hẹp: một hàm, điều phối viên, chuyến Đang vận chuyển — `updateTrip`, `changeTripVehicle`, tối ưu tuyến… vẫn từ chối.
+ * Luật thứ tự ở `checkProposedOrder`, khả năng dỡ ở `checkStopReorder` (domain); số điểm đổi theo `renumberTripStops` và
+ * `DeliveryStop.planNumber`, nên phương án đã duyệt không đổi và **không** lỗi
  * thời (`inputVersion` giữ nguyên); `routePlan` giữ lại và tính lại giờ đến, mức hạn. Xe mô phỏng đi tiếp từ điểm vị trí gần nhất tới điểm
  * kế tiếp mới (`DeliveryProgress.redirect`): các điểm vị trí đã ghi theo thứ tự cũ được ghi bù trước khi đổi.
  */
@@ -75,14 +58,9 @@ export function reorderMethods(ctx: DbContext): ReorderDb {
 
         const current = trip.stops.map((stop) => stop.id)
         const fixedCount = Math.max(0, ...delivery.stops.filter((stop) => stop.completedAt !== undefined || stop.arrivedAt !== undefined).map((stop) => stop.number))
-        const pickups = [...ctx.state.pickups.values()].flatMap((request) => (
-          request.tripId === tripId && request.status === 'APPROVED' && request.pickupStopId !== undefined && request.deliveryStopId !== undefined
-            ? [{ pickupStopId: request.pickupStopId, deliveryStopId: request.deliveryStopId }] : []
-        ))
-        const violation = checkProposedOrder({ current, proposed: orderedStopIds, fixedCount, pickups })
+        const violation = checkProposedOrder({ current, proposed: orderedStopIds, fixedCount })
         if (violation?.code === 'STOP_ORDER_INVALID') throw new MockDbError('STOP_ORDER_INVALID', { tripId })
         if (violation?.code === 'STOP_NOT_MOVABLE') throw new MockDbError('STOP_NOT_MOVABLE', { tripId, stopIds: [...violation.stopIds] })
-        if (violation?.code === 'PICKUP_AFTER_DELIVERY') throw new MockDbError('PICKUP_AFTER_DELIVERY', { tripId, pickupStopId: violation.pickupStopId, deliveryStopId: violation.deliveryStopId })
 
         // Điểm vị trí tới giờ hiện tại ghi theo thứ tự cũ, trước khi thứ tự đổi
         const last = advanceTracking(ctx, trip)?.points.at(-1)

@@ -226,18 +226,15 @@ test('the driver of a loading trip sent back to planned is told it is on hold �
   expect(ids(selectNotifications(events, { id: 'US-0011', role: 'warehouse' }, NOW))).toStrictEqual(['EV-2'])
 })
 
-test('the driver reads a pickup decision and a new stop order of their trip in their own words, with only what they act on', () => {
+test('the driver reads a new stop order of their trip in their own words, with only what they act on', () => {
   const events = [
-    onTrip('EV-4', '10:40', 'US-0001', 'trip.stopsReordered', { count: 2, lateStops: 1, driverId: 'US-0006' }, 'TRIP-009'),
-    onTrip('EV-3', '10:30', 'US-0001', 'pickup.rejected', { pickupId: 'PKR-003', reason: 'Xe không còn chỗ', driverId: 'US-0006' }, 'TRIP-009'),
-    onTrip('EV-2', '10:20', 'US-0001', 'pickup.approved', { pickupId: 'PKR-002', count: 2, failedRules: 1, reason: 'Khách quen', driverId: 'US-0006' }, 'TRIP-009'),
+    onTrip('EV-2', '10:40', 'US-0001', 'trip.stopsReordered', { count: 2, lateStops: 1, driverId: 'US-0006' }, 'TRIP-009'),
     onTrip('EV-1', '10:10', 'US-0001', 'trip.stopsReordered', { count: 3, lateStops: 0, driverId: 'US-0006' }, 'TRIP-009'),
   ]
-  expect(ids(selectNotifications(events, asDriver('US-0006'), NOW))).toStrictEqual(['EV-4', 'EV-3', 'EV-2', 'EV-1'])
-  expect(events.map((item) => driverNotice(item, 'US-0006'))).toStrictEqual(['stopsReordered', 'pickupRejected', 'pickupApproved', 'stopsReordered'])
-  // Số điểm trễ hạn dự kiến, lý do từ chối, số kiện phải nhận — không mã yêu cầu, số luật không đạt, lý do vượt luật của điều phối viên
-  // hay số điểm đổi chỗ
-  expect(events.map((item) => keptFor(item, 'US-0006'))).toStrictEqual([{ lateStops: 1 }, { reason: 'Xe không còn chỗ' }, { count: 2 }, { lateStops: 0 }])
+  expect(ids(selectNotifications(events, asDriver('US-0006'), NOW))).toStrictEqual(['EV-2', 'EV-1'])
+  expect(events.map((item) => driverNotice(item, 'US-0006'))).toStrictEqual(['stopsReordered', 'stopsReordered'])
+  // Số điểm trễ hạn dự kiến — không số điểm đổi chỗ
+  expect(events.map((item) => keptFor(item, 'US-0006'))).toStrictEqual([{ lateStops: 1 }, { lateStops: 0 }])
   expect(selectNotifications(events, asDriver('US-0004'), NOW)).toStrictEqual([])
 })
 
@@ -247,17 +244,6 @@ test('the warehouse is told about a trip cancelled while it was loading — to u
   expect(ids(selectNotifications(events, { id: 'US-0003', role: 'warehouse' }, NOW))).toStrictEqual(['EV-3', 'EV-2'])
   expect(ids(selectNotifications(events, { id: 'US-0004', role: 'driver' }, NOW))).toStrictEqual([])
   expect(ids(selectNotifications(events, { id: 'US-0002', role: 'companyManager' }, NOW))).toStrictEqual(['EV-3', 'EV-2', 'EV-1'])
-})
-
-test('a pickup request reaches the dispatcher, and the decision on it reaches only the driver of that trip', () => {
-  const requested = { ...event('EV-3', '2026-09-14T10:30:00.000Z', 'US-0006', 'pickup.requested', 'TRIP-009'), params: { pickupId: 'PKR-002', count: 1, failedRules: 0 } }
-  const approved = { ...event('EV-2', '2026-09-14T10:20:00.000Z', 'US-0001', 'pickup.approved', 'TRIP-009'), params: { pickupId: 'PKR-002', driverId: 'US-0006' } }
-  const rejected = { ...event('EV-1', '2026-09-14T10:10:00.000Z', 'US-0001', 'pickup.rejected', 'TRIP-009'), params: { pickupId: 'PKR-003', driverId: 'US-0004' } }
-  const events = [requested, approved, rejected]
-  expect(ids(selectNotifications(events, DISPATCHER, NOW))).toStrictEqual(['EV-3'])
-  expect(ids(selectNotifications(events, { id: 'US-0006', role: 'driver' }, NOW))).toStrictEqual(['EV-2'])
-  expect(ids(selectNotifications(events, { id: 'US-0004', role: 'driver' }, NOW))).toStrictEqual(['EV-1'])
-  expect(ids(selectNotifications(events, { id: 'US-0003', role: 'warehouse' }, NOW))).toStrictEqual([])
 })
 
 test('a reply from customer support reaches only the person who sent the ticket, whichever company role they have (FE-8-07)', () => {

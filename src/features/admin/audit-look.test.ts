@@ -23,8 +23,6 @@ test('việc cần người xem lại là hổ phách: sự cố, thiếu kiện
     'delivery.etaRisk',
     // FE-6-11: sự cố cấp chuyến vừa báo, và sự cố chuyển lên quản lý công ty
     'exception.reported', 'exception.escalated',
-    // FE-7-03: yêu cầu nhận hàng dọc đường chờ điều phối viên duyệt, và yêu cầu bị từ chối
-    'pickup.requested', 'pickup.rejected',
     // FE-8-01, FE-8-05: gói huỷ hoặc hết hạn, và credit sắp hết — quản trị công ty cần xem
     'subscription.cancelled', 'subscription.expired', 'credit.lowBalance',
     // Khách gửi yêu cầu liên hệ: chờ người của nền tảng nhận việc

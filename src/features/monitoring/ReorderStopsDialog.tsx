@@ -1,9 +1,8 @@
-import { ArrowDown, ArrowUp, ListOrdered, Lock, PackagePlus } from 'lucide-react'
+import { ArrowDown, ArrowUp, ListOrdered, Lock } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Banner } from '@/components/Banner'
 import { StopMarker } from '@/components/map'
-import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader } from '@/components/ui/Dialog'
 import { isApiError } from '@/lib/api-client'
@@ -76,12 +75,6 @@ function ReorderBody({ trip, onDone }: { trip: MonitoringTrip; onDone: () => voi
                 <span aria-hidden className="flex-none"><StopMarker number={index + 1} /></span>
                 <span className="min-w-0 flex-1 text-body text-ink-1">
                   <span className="sr-only">{t('common.stop', { number: index + 1 })} · </span>{stop.name}
-                  {stop.kind === 'PICKUP' ? (
-                    <Badge shape="tag" tone="azure" className="ml-2 align-middle">
-                      <PackagePlus aria-hidden className="size-3" strokeWidth={2} />
-                      {t('trips.route.pickupTag')}
-                    </Badge>
-                  ) : null}
                 </span>
                 {locked ? (
                   <span className="flex flex-none items-center gap-1.5 text-small text-ink-3">

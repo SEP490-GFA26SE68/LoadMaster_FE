@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { SPEC_CARTON_A } from '@/domain/fixtures/spec-samples'
 import { haversineKm } from '@/domain/routing'
-import { createMockDb, isStale, stopItemIds, type PickupRequestInput } from '@/lib/mock-db'
+import { createMockDb, isStale, stopItemIds } from '@/lib/mock-db'
 import { runMockOptimization } from '@/services/optimization'
 import { loadTrip } from '@/test/trip-flow'
 
@@ -131,27 +131,6 @@ describe('what cannot move, and who can ask', () => {
     await expect(db.reorderRunningStops('TRIP-009', ['STOP-01', 'STOP-02', 'STOP-03'])).rejects.toMatchObject({ code: 'STOP_ORDER_INVALID' })
     await expect(db.reorderRunningStops('TRIP-009', ['STOP-01', 'STOP-02', 'STOP-09'])).rejects.toMatchObject({ code: 'STOP_ORDER_INVALID' })
     await expect(db.reorderRunningStops('TRIP-009', ['STOP-01', 'STOP-02'])).rejects.toMatchObject({ code: 'STOP_ORDER_INVALID' })
-  })
-
-  const INPUT: PickupRequestInput = {
-    pickup: { name: 'Xưởng may Hoàng Gia', address: 'Đường số 4, KCN VSIP 1, Thuận An, Bình Dương', lat: 10.928, lng: 106.712 },
-    delivery: { name: 'Kho Dĩ An', address: '1 Quốc lộ 1K, Dĩ An', lat: 10.9, lng: 106.73 },
-    deadline: '2026-09-14T10:30:00.000Z',
-    packages: [{ packageCode: 'HG-0501', lengthCm: 60, widthCm: 40, heightCm: 40, weightKg: 12, handlingClass: 'STANDARD' }],
-  }
-
-  test('a pickup stop that has not been reached stays before its own delivery stop, and its package is part of the load', async () => {
-    const db = seedDb()
-    const request = await db.createPickupRequest('TRIP-009', INPUT)
-    await db.approvePickupRequest('TRIP-009', request.id, { overrideReason: 'Khách quen' })
-    expect((await db.getTrip('TRIP-009')).stops.map((stop) => stop.id)).toStrictEqual(['STOP-01', 'STOP-02', 'STOP-04', 'STOP-05', 'STOP-03'])
-    await expect(db.reorderRunningStops('TRIP-009', ['STOP-01', 'STOP-02', 'STOP-05', 'STOP-04', 'STOP-03'])).rejects.toMatchObject({
-      code: 'PICKUP_AFTER_DELIVERY', params: { pickupStopId: 'STOP-04', deliveryStopId: 'STOP-05' },
-    })
-    // Điểm giao cũ lên sau điểm giao của kiện nhận: được, kiện nhận vẫn còn trong tập kiểm (có kiện của điểm 3 bị che một phần)
-    const { trip } = await db.reorderRunningStops('TRIP-009', ['STOP-01', 'STOP-02', 'STOP-04', 'STOP-03', 'STOP-05'])
-    expect(trip.stops.map((stop) => [stop.id, stop.kind ?? 'DELIVERY'])).toStrictEqual([['STOP-01', 'DELIVERY'], ['STOP-02', 'DELIVERY'], ['STOP-04', 'PICKUP'], ['STOP-03', 'DELIVERY'], ['STOP-05', 'DELIVERY']])
-    expect(await db.getPickupRequest('TRIP-009', request.id)).toMatchObject({ pickupStopId: 'STOP-04', deliveryStopId: 'STOP-05' })
   })
 
   test.each([

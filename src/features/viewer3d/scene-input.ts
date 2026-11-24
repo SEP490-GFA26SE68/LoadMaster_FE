@@ -30,7 +30,7 @@ function indexById<T extends { readonly id: string }>(items: readonly T[]): Map<
 
 /**
  * Revision của mock repository (LM-026) → scene cm. Kích thước, luật xoay, tên và điểm giao lấy từ kiện gốc của request. Phương án đánh số
- * điểm giao theo lúc duyệt; chuyến đã chèn điểm nhận dọc đường (FE-7-04) thì số điểm trong scene là số **hiện tại** của điểm
+ * điểm giao theo lúc duyệt; chuyến đã đổi thứ tự điểm khi xe đang chạy (FE-BL-03) thì số điểm trong scene là số **hiện tại** của điểm
  * (`DeliveryStop.planNumber`), nên màn của tài xế và Planner đọc đúng kiện của từng điểm.
  */
 export type ResultSceneSource = {

@@ -14,7 +14,6 @@ const mono = 'font-mono text-caption text-ink-1 tabular-nums'
 const DEADLINE_TONE: Readonly<Record<DeadlineStatus, BadgeTone>> = { OK: 'success', AT_RISK: 'warning', MISSED: 'danger' }
 
 function StopCell({ stop }: { stop: ServerReportStop }) {
-  const t = useT()
   return (
     <span className="flex min-w-0 items-center gap-2.5">
       {/* Màu điểm giao luôn kèm số (mục 10) */}
@@ -28,7 +27,6 @@ function StopCell({ stop }: { stop: ServerReportStop }) {
       <span className="flex min-w-0 flex-col whitespace-normal">
         <span className="flex flex-wrap items-center gap-1.5">
           <span className="line-clamp-2 font-medium text-ink-strong print:line-clamp-none">{stop.name}</span>
-          {stop.pickup ? <Badge shape="tag">{t('trips.route.pickupTag')}</Badge> : null}
         </span>
         <span className="line-clamp-1 text-caption text-ink-3 print:line-clamp-none">{stop.address}</span>
       </span>

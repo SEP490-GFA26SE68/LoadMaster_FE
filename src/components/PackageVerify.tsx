@@ -231,7 +231,7 @@ function VerifyBody({
 }
 
 /**
- * Đối chiếu kiện ba mức (FE-6-03, D-83) — một hộp dùng chung cho kho (soạn, xếp) và tài xế (dỡ, nhận dọc đường):
+ * Đối chiếu kiện ba mức (FE-6-03, D-83) — một hộp dùng chung cho kho (soạn, xếp) và tài xế (dỡ):
  *
  * 1. **Quét QR** bằng camera (`QrCamera` của `QrScanDialog`);
  * 2. **Gõ mã**: mã QR in dưới hình, hoặc mã của bên gửi — kho chỉ nhận mã của bên gửi khi nó duy nhất trong chuyến;

@@ -188,7 +188,6 @@ test('"Thêm" chỉ còn "Sự cố trên đường": báo sự cố gửi lên 
   renderDriver('/tai-xe/diem-giao?chuyen=1')
   await user.click(await screen.findByRole('button', { name: 'Thêm' }))
   const sheet = within(await screen.findByRole('dialog', { name: 'Thêm thao tác' }))
-  expect(sheet.queryByRole('button', { name: 'Nhận hàng dọc đường' })).toBeNull()
   await user.click(sheet.getByRole('button', { name: 'Sự cố trên đường' }))
 
   const dialog = within(await screen.findByRole('dialog', { name: 'Báo sự cố chuyến TRIP-20261017-94EE14F0' }))

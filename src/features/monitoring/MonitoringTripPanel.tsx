@@ -1,4 +1,4 @@
-import { ExternalLink, ListOrdered, PackagePlus, TriangleAlert } from 'lucide-react'
+import { ExternalLink, ListOrdered, TriangleAlert } from 'lucide-react'
 import { memo, useState } from 'react'
 import { Link } from 'react-router'
 import { VehicleName } from '@/components/VehicleName'
@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card, CardActions, CardBody, CardHeader, CardMeta, CardTitle } from '@/components/ui/Card'
 import { useCan } from '@/features/auth/useCan'
-import { PickupRequestsCard } from '@/features/pickups/PickupRequestsCard'
 import { ManualConfirmCard } from '@/features/trips/ManualConfirmCard'
 import { SERVER_MANUAL_CONFIRMS } from '@/features/trips/manual-confirm-backend-api'
 import { useFormat, useT } from '@/lib/i18n'
@@ -28,7 +27,7 @@ import { useMoment } from './useMoment'
  * trí và các xác nhận tay chờ duyệt (thẻ của Chi tiết chuyến, dùng lại). Người có `exceptions.report` (điều phối viên) có nút chính của
  * màn — "Báo sự cố". Thành phần nghe kênh cập nhật của chuyến (`useTripChannel`) để lịch sử vị trí theo kịp xe. `memo`: lần đọc giám sát
  * mới chỉ vẽ lại phần này khi chính chuyến đang chọn có điều gì đổi. Dữ liệu từ backend: không liên kết tới Chi tiết chuyến, không đổi
- * thứ tự điểm, không xác nhận tay, không nhận hàng dọc đường (`useMonitoringCapabilities`).
+ * thứ tự điểm, không xác nhận tay (`useMonitoringCapabilities`).
  */
 export const MonitoringTripPanel = memo(function MonitoringTripPanel({ trip, live, userNames }: { trip: MonitoringTrip; live: LiveMonitoring | undefined; userNames: Readonly<Record<string, string>> }) {
   const t = useT()
@@ -107,12 +106,6 @@ export const MonitoringTripPanel = memo(function MonitoringTripPanel({ trip, liv
                           <span aria-hidden className="flex-none"><StopMarker number={stop.number} /></span>
                           <span>
                             <span className="sr-only">{t('common.stop', { number: stop.number })} · </span>{stop.name}
-                            {stop.kind === 'PICKUP' ? (
-                              <Badge shape="tag" tone="azure" className="ml-2 align-middle">
-                                <PackagePlus aria-hidden className="size-3" strokeWidth={2} />
-                                {t('trips.route.pickupTag')}
-                              </Badge>
-                            ) : null}
                           </span>
                         </span>
                       </th>
@@ -163,7 +156,6 @@ export const MonitoringTripPanel = memo(function MonitoringTripPanel({ trip, liv
 
       {/* Luồng tài xế nối backend: xác nhận tay khi dỡ nằm ở máy chủ (máy chủ nhận cả mã chuyến) */}
       {caps.manualConfirm ? <ManualConfirmCard tripId={trip.tripId} /> : caps.backend && SERVER_MANUAL_CONFIRMS ? <ManualConfirmCard tripId={trip.tripId} server /> : null}
-      {caps.pickups ? <PickupRequestsCard tripId={trip.tripId} phase="delivering" stops={trip.stops} /> : null}
       <ReportExceptionDialog tripId={trip.tripId} open={reporting} onOpenChange={setReporting} />
       {caps.reorderStops ? <ReorderStopsDialog trip={trip} open={reordering} onOpenChange={setReordering} /> : null}
       <RerouteDialog tripId={trip.tripId} stopName={stopName} open={rerouting} onOpenChange={setRerouting} />

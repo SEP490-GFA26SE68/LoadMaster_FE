@@ -38,7 +38,7 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
 
 **Phân quyền**
 
-- Ma trận `features/auth/permissions.ts`: **một bảng** `ROLE_PERMISSIONS` theo PRD v2 mục 5.2 cộng `contacts.handle`, `companyProfile.manage`, `trialRequests.manage`, `companyWarehouses.manage`, `payroll.manage`, `payroll.viewOwn`, đúng 39 quyền; đọc quyền qua
+- Ma trận `features/auth/permissions.ts`: **một bảng** `ROLE_PERMISSIONS` theo PRD v2 mục 5.2 cộng `contacts.handle`, `companyProfile.manage`, `trialRequests.manage`, `companyWarehouses.manage`, `payroll.manage`, `payroll.viewOwn`, đúng 37 quyền; đọc quyền qua
   `can`/`permissionsOf`; thứ tự `PERMISSIONS` là thứ tự dòng của Ma trận quyền. Ba vai trò nền tảng **không có quyền vận hành**: quản trị hệ
   thống có `companies.manage`, `users.manage`, `audit.view`, `contacts.handle`, `trialRequests.manage`; quản lý nền tảng `subscriptionPlans.manage`,
   `companies.manage`, `trialRequests.manage`; hỗ trợ khách hàng `support.handle`, `contacts.handle`. Quản trị công ty có `companyProfile.manage`,
@@ -56,8 +56,7 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   `labels.print` mở In nhãn `/kien-hang/nhan`, `packages.lookup` mở Tra cứu kiện `/tra-cuu-kien` — điều phối viên và nhân viên kho.
   `trialRequests.manage`: `/nen-tang/yeu-cau-dung-thu`; `subscriptionPlans.manage` còn mở `/nen-tang/lich-su-goi`.
   `routes.optimize`: nút "Tối ưu tuyến" ở Chi tiết chuyến (điều phối viên, FE-4b-09). `manualConfirm.approve`: Duyệt / Từ chối ở thẻ "Xác nhận
-  tay chờ duyệt" (điều phối viên, FE-6-04). `pickups.create`: nút "Nhận hàng dọc đường" ở Chi tiết chuyến và `/giam-sat` (điều phối viên) và ở
-  màn điểm giao (tài xế, FE-7-03); `pickups.approve`: Từ chối / Duyệt (điều phối viên, FE-7-04). `subscriptionPlans.manage`: `/nen-tang/goi`
+  tay chờ duyệt" (điều phối viên, FE-6-04). `subscriptionPlans.manage`: `/nen-tang/goi`
   (FE-8-02). `payroll.manage`: `/bang-luong` (quản lý công ty: tab Tài xế, Điều phối và Kho). `payroll.viewOwn`: `/phieu-luong` (điều phối viên và nhân viên kho xem phiếu lương của mình — `PayslipPage` chọn phiếu theo `warehouse.operate`; nhân viên kho mở từ thanh điều hướng hoặc menu tài khoản 56 px của `/kho`, màn cảm ứng có nút "Về màn kho"). `billing.manage`: `/goi-cuoc`, `/thanh-toan/gia-lap` và `/thanh-toan/ket-qua` (FE-8-03, FE-8-04). `companies.manage`: `/nen-tang/cong-ty`
   (FE-8-06). `companyProfile.manage`: `/cong-ty` (quản trị công ty).
   `support.create`: mục "Yêu cầu hỗ trợ" của menu tài khoản (năm vai trò công ty); `support.handle`: `/ho-tro` (FE-8-07). `contacts.handle`:
@@ -148,8 +147,7 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   là `TopicAnswer` với cùng `useAssistantContext`, không chữ riêng; mỗi câu một `<details>` gốc, dòng câu hỏi 44 px, 56 px trên máy cảm
   ứng, mũi tên xoay bằng CSS và không quay khi giảm chuyển động) · dải liên hệ tối `.landing-closing` `#lien-he` · chân trang. Menu đầu
   trang bốn mục (`PUBLIC_LINKS`: Cách hoạt động, Thử ngay — tới `#thu-ngay`, neo ở module thuần `try/try-anchor.ts` —, Bảng giá, Liên hệ) —
-  Hỏi đáp mở từ chân trang. **Nhận hàng dọc đường không được giới
-  thiệu** ở hai trang công khai, kể cả trợ lý Lumo (quyết định của chủ sản phẩm 19/11/2026); tính năng vẫn có trong ứng dụng. Cả trang nằm trong
+  Hỏi đáp mở từ chân trang. Cả trang nằm trong
   `RevealProvider`: chữ và thẻ hiện ra **một lần** khi cuộn tới (`features/marketing/reveal`, mục 8). Trên điện thoại cảm ứng 390 px cả trang
   không quá 14 màn hình (đo 20/11/2026: 13,7 tiếng Việt, 14 tiếng Anh): dưới 640 px các phần sáng và dải liên hệ có lề trên dưới 32 px, câu mô
   tả dưới tiêu đề phần 16 px (`SectionHeading`), thẻ gói lề 16 px, hai nút mở đầu cách nhau 8 px để cùng một hàng.
@@ -429,7 +427,7 @@ luồng mới thêm ở issue của luồng đó. Các ý dưới đây là chu�
 cùng ý đó, trừ sự kiện máy chủ chưa ghi (mục 9 "Nối backend").
 
 - Điều phối viên: đồng nghiệp duyệt phương án, kho báo thiếu kiện lúc soạn / kiện hỏng lúc xếp / xếp xong, sự cố giao, chuyến hoàn thành,
-  chuyến bị huỷ, xác nhận tay mới gửi (`manualConfirm.requested`), `pickup.requested`, tài xế báo sự cố (`exception.reported`), kho tự chuyển sự cố
+  chuyến bị huỷ, xác nhận tay mới gửi (`manualConfirm.requested`), tài xế báo sự cố (`exception.reported`), kho tự chuyển sự cố
   cho quản lý sau 30 phút (`exception.escalated`, sự kiện của hệ thống), quản lý đã nhập hạn mới (`exception.deadlineRenegotiated`, để xử lý tiếp).
   Còn nhận **nguy cơ trễ hạn giao** (`delivery.etaRisk`, sự kiện của hệ thống, không có người làm) ở chuông **và toast**: `EtaRiskWatcher`
   (`features/monitoring`, đứng cạnh chuông, không vẽ gì) đọc giám sát của các chuyến Đang vận chuyển theo nhịp điểm vị trí; cảnh báo kho phát sau
@@ -449,9 +447,9 @@ cùng ý đó, trừ sự kiện máy chủ chưa ghi (mục 9 "Nối backend").
   lập lại phương án — báo tài xế của chuyến, không theo người báo thiếu; kiện hỏng bị bỏ lại kho mà kho xếp tiếp không nêu tài xế),
   `trip.cancelled` (huỷ lúc còn lập kế hoạch lần đầu không báo tài xế nào), đổi tài xế (`trip.updated` mang `driverId` của người mới — chuyến mới
   — và `previousDriverId` của người bị thay — không còn chạy chuyến này; thông báo của chuyến đó thôi mở chuyến với người bị thay),
-  `pickup.approved` / `pickup.rejected`, `trip.stopsReordered` khi điều phối viên đổi thứ tự điểm (FE-BL-03). Mỗi sự kiện về chuyến của tài xế
+  `trip.stopsReordered` khi điều phối viên đổi thứ tự điểm (FE-BL-03). Mỗi sự kiện về chuyến của tài xế
   nói bằng câu của tài xế (`driverNotice` → `notifications.driver.*`) và chỉ giữ chi tiết họ làm theo (`DRIVER_NOTICE_PARAMS`, theo từng câu): số
-  kiện đã lên xe (xếp xong, huỷ), lý do huỷ, số kiện hoàn trả, số kiện phải nhận dọc đường, lý do yêu cầu nhận bị từ chối, số điểm trễ hạn dự
+  kiện đã lên xe (xếp xong, huỷ), lý do huỷ, số kiện hoàn trả, số điểm trễ hạn dự
   kiến theo thứ tự mới. Vai trò khác vẫn nhận đúng những gì đã nhận; nhật ký đọc thêm dòng "Tài xế" / "Tài xế trước" / "Lý do soạn lại".
 - Quản trị hệ thống, quản trị công ty: việc trên tài khoản và đăng nhập sai. Quản trị công ty còn nhận **"Sắp hết credit"** (`credit.lowBalance`,
   sự kiện hệ thống khi số dư sau một lần chạy tối ưu 3D xuống tới ngưỡng `lowCreditThreshold` — 25 % credit tháng của gói, làm tròn lên; gói không giới hạn không báo): bấm
@@ -566,9 +564,6 @@ src/
     package-pool/       kho kiện `/kien-hang` (danh sách, thêm kiện, nhập file, chi tiết kiện), loại kiện, nhãn QR `/kien-hang/nhan`,
                         tra cứu kiện `/tra-cuu-kien`
     requirements/       yêu cầu giao `/yeu-cau-giao`: danh sách, form tạo / sửa, chi tiết, đưa vào chuyến
-    pickups/            nhận hàng dọc đường: `PickupRequestDialog`, mười luật `PickupRulesList` (câu dựng từ mã + tham số ở `pickup-rule-text.ts`),
-                        thẻ yêu cầu của chuyến `PickupRequestsCard` (Chi tiết chuyến, Giám sát); nút của tài xế là hàng "Nhận hàng dọc đường"
-                        trong tờ "Thêm" của `driver/StopMoreActions`
     vehicle-types/      danh mục loại xe
     billing/            gói cước và credit của công ty `/goi-cuoc`, trang thanh toán giả lập `/thanh-toan/gia-lap`
     platform/           màn của nền tảng: danh mục gói cước `/nen-tang/goi`, Công ty `/nen-tang/cong-ty`
@@ -617,12 +612,9 @@ src/
                         `simulate.ts` (`simulateVehicle`, nhịp 30 giây ở `SIMULATION_CONSTANTS`) và ETA từ vị trí xe `liveEta`; mock tuyến thay
                         thế `reroute.ts` (`REROUTE_CONSTANTS`); luật thứ tự khi đổi điểm lúc xe đang chạy `reorder.ts` (`checkProposedOrder`)
     zones/              vùng theo điểm giao: `stopZones`, vùng của một kiện và số lần dỡ-xếp lại (`locateInZones`, `zonePlacements`)
-    pickup/             nhận hàng dọc đường: mười luật `evaluatePickup`, chèn điểm `insertPickupStops`, vùng trống sau các điểm đã giao
-                        `freedZones` (`freed-zones.ts`)
   services/
     optimization/       interface OptimizationService, MockOptimizationService, worker; mock xếp kệ theo vùng điểm giao (`shelf-packer.ts`,
-                        `shelf-walls.ts`); ba phương án ứng viên một job (`mock-candidates.ts`, `candidate-layouts.ts`, `mock-plan.ts`); xếp kiện
-                        nhận dọc đường vào vùng trống `reoptimize-freed-zone.ts`
+                        `shelf-walls.ts`); ba phương án ứng viên một job (`mock-candidates.ts`, `candidate-layouts.ts`, `mock-plan.ts`)
   test/                 setup và dữ liệu test dùng chung (setup-dom.ts, spec-13.ts, placements.ts, engine-plans.ts; `intersection-observer.ts`,
                         `match-media.ts` giả hai API trình duyệt cho test chuyển động)
 tests/                  unit test của viewer3d (Vitest)
@@ -869,8 +861,8 @@ Mẫu: `design/v2.3/screens/web/ThanhPhan.jpg`, `TrangThaiChung.jpg`, `MenuToanC
   **Tờ trượt từ đáy** (V2.3 đợt 6): `DialogContent sheet` là biến thể trình bày của chính hộp thoại Radix — dưới 768 px hộp thoại trượt
   lên từ đáy (bo góc trên `--r-xl`, thanh nắm chỉ để trang trí, nội dung cuộn bên trong, cao tối đa `100dvh − 5rem`, dùng `dvh` để bàn phím ảo không che ô đang nhập,
   chân hộp thoại `sticky bottom-0`), từ 768 px vẫn ở giữa màn; focus trap, Esc, tiêu đề có nhãn không đổi, reduced-motion theo luật chung. Dùng ở màn tài xế:
-  "Báo sự cố" của kiện (`ReportIssueDialog`), "Sự cố trên đường" (`ReportExceptionDialog touch`), tờ "Thêm" (`StopMoreActions`), hộp đối chiếu ba mức (`PackageVerify`, cũng dùng ở kho: máy tính bảng từ 768 px vẫn là hộp giữa màn) và hộp nhận hàng dọc đường
-  (`PickupRequestDialog`, điều phối viên trên desktop vẫn là hộp giữa màn). **Toast ở màn cảm ứng của kho và tài xế**: không có toast thành công khi chính
+  "Báo sự cố" của kiện (`ReportIssueDialog`), "Sự cố trên đường" (`ReportExceptionDialog touch`), tờ "Thêm" (`StopMoreActions`), và hộp đối chiếu ba mức (`PackageVerify`, cũng dùng ở kho: máy tính bảng từ 768 px vẫn là hộp giữa màn).
+  **Toast ở màn cảm ứng của kho và tài xế**: không có toast thành công khi chính
   màn đã cho thấy kết quả (banner giờ đến, dòng kiện đổi trạng thái, số liệu tiến độ, sang điểm giao kế tiếp, vùng kết quả trong hộp đối chiếu);
   nơi thay toast là vùng đọc được bằng trình đọc màn hình (`role="status"` / `aria-live`). Lỗi và cảnh báo (khách từ chối, xác nhận tay chờ duyệt, báo thiếu,
   kiện hỏng) luôn có toast. Toast thành công chỉ giữ khi màn không cho thấy gì khác.
@@ -1259,8 +1251,8 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
   mô phỏng; xuất phát, đã đến, dỡ, sự cố, hoàn tất điểm ghi vào kho (FE-6-06). Thẻ liên hệ của điểm có giờ đến và hạn giao (`StopEta`, hàm
   thuần `stop-timing.ts`): chưa đến là giờ đến dự kiến kèm nguồn, mức hạn bằng chữ và MOCK RESULT — Đang vận chuyển thì tính từ vị trí xe
   (`fetchDriverTripMonitoring` → `useDriverTripMonitoringQuery`, đọc lại theo `refreshMs`), không thì theo `Trip.routePlan`; đã đến là giờ đến
-  thật và "Đến kịp hạn" / "Đến trễ hạn" (cùng phép so của báo cáo chuyến); chuyến chưa tối ưu tuyến không có dòng giờ đến. Hai danh sách điểm —
-  thẻ "Chuyến của tôi" (`MyTripStops`) và danh sách điểm của màn điểm giao (`DriverStopList`) — theo cùng luật (`stopListTimings` gọi `stopTiming`
+  thật và "Đến kịp hạn" / "Đến trễ hạn" (cùng phép so của báo cáo chuyến); chuyến chưa tối ưu tuyến không có dòng giờ đến. Danh sách điểm của
+  thẻ "Chuyến của tôi" (`MyTripStops`) theo cùng luật (`stopListTimings` gọi `stopTiming`
   cho từng điểm; chữ, chip và dòng nguồn dùng chung ở `StopTimingParts`): điểm chưa hoàn tất có dòng "Dự kiến HH:mm" hoặc "Đã đến HH:mm" dưới tên,
   mức hạn bằng chữ chỉ khi điểm có hạn; điểm đã hoàn tất giữ dấu xong, không giờ; cả danh sách một dòng nguồn kèm MOCK RESULT; chuyến chưa tối ưu
   tuyến thì không điểm nào có giờ. Chỉ chuyến Đang vận chuyển đã có tuyến bật nhịp đọc lại vị trí xe, qua cùng hook đó.
@@ -1298,7 +1290,7 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
 
 ### Operations và scene dùng chung
 
-- `operations/scene-semantics.ts` tách loaded/current/next/future/removed khỏi renderer. Planner, `PositionViewer` (kho) và `DriverCargoViewer` cùng dùng `SceneCanvas`; panel và workflow nằm ở wrapper. Không thêm engine cho từng vai trò. Scene của tài xế còn nhận kiện nhận dọc đường đã có chỗ (`withPickupPlacements`, `viewer3d/scene-pickups.ts`): cùng InstancedMesh với kiện thường, không mesh hay draw call mới (FE-BL-01).
+- `operations/scene-semantics.ts` tách loaded/current/next/future/removed khỏi renderer. Planner, `PositionViewer` (kho) và `DriverCargoViewer` cùng dùng `SceneCanvas`; panel và workflow nằm ở wrapper. Không thêm engine cho từng vai trò.
 - Loading (LM-036) lấy `placement.step` (= `loadingOrder`); unloading lấy `unloadingOrder` của kết quả qua `unloadSequence` (`operations/unloading.ts`), nhãn "Thứ tự dỡ" không kèm "gợi ý"; revision `ordersRecomputed` hiện thêm câu "tính lại ở FE". Màn tài xế (LM-061) dùng `unloadingOrder` của revision đã duyệt cho cả danh sách kiện của điểm giao lẫn mô phỏng, không có chữ "gợi ý". Thứ tự suy ra (stop tăng, cao trước, gần cửa trước, nhãn "gợi ý") chỉ là dự phòng khi kết quả thiếu `unloadingOrder`. Stop-order consistency không chứng minh unload accessibility.
 - Blocker là `lifoIssues` của domain qua `createLifoIndex`: chỉ kiện giao **muộn hơn** nằm hẳn sau mặt sau; kiện đã dỡ/đang ẩn gỡ khỏi lưới (`grid.remove`), tua lùi thì thêm lại; kiện chắn sắp theo x trước khi callout. `LIFO_BLOCKED` (che kín 100% mặt sau là vi phạm) dừng mô phỏng và giữ target; `LIFO_PARTIAL` (che một phần, cảnh báo) chỉ đánh dấu (D-26). Duyệt đếm hai mã này, không khẳng định dỡ được thực tế. Không tính người, xe nâng, clearance hay xoay lúc dỡ. Riêng hình ảnh dỡ (`UnloadMotion`) dùng `corridor` — mọi kiện còn lại trên hành lang thẳng, bất kể điểm giao — để không trượt xuyên kiện. Fixture benchmark có đúng một cặp kiện đổi điểm giao tạo ca `LIFO_BLOCKED` cho browser suite; seed đã duyệt không có ca LIFO.
 - CoM là **tâm khối lượng hàng** đã xếp/còn lại, không phải toàn xe. **Tải trục** (FE-5b-03, D-78): `AxleLoadPanel` (DOM trong tab Vận hành, không thêm draw call) hiện tải nhóm trục trước / sau của **toàn bộ kiện đang xếp, kể cả bản đang chỉnh tay**, so với giới hạn, kèm MOCK RESULT; vượt giới hạn có chữ "Vượt … kg", không chỉ màu; xe không đủ dữ liệu trục thì chỉ có một câu lý do. Mô hình (`axleLoadsOf`): nhóm trước là trục có `positionXCm` nhỏ nhất, nhóm sau là các trục còn lại đặt tại trung bình vị trí; hàng nặng W có trọng tâm x dồn W × (x − x_trước) / (x_sau − x_trước) lên nhóm sau, phần còn lại lên nhóm trước, cộng tải rỗng. Giới hạn lấy `frontAxleLimitKg` / `rearAxleLimitKg` của xe (kho điền từ loại xe, mục 9), vắng thì tổng `axles[].maxLoadKg` của nhóm — tải tối đa 0 kg là chưa khai. Vượt giới hạn là issue `AXLE_OVERLOAD` mức `error` của constraint engine: chặn Duyệt qua `approvalBlockers` (lý do ở tooltip + `aria-describedby` như mọi lỗi), không chặn thao tác kéo thả. `positionXCm` cùng hệ toạ độ với thùng: `truckLayout` đặt `toScene(positionXCm)` thẳng lên trục x của placement (vách trước = 0, âm là dưới cabin), không độ dời. Cabin, bánh và khung gầm vẫn là mô hình minh hoạ: trục vẽ mặc định khi xe không khai `axles` không tham gia phép tính. Xe mẫu của seed khai hai trục (số đã xác nhận, mục 9): trục trước ở −100 cm — đúng chỗ `truckLayout` vẽ cầu dẫn hướng (`CAB_X`) — và trục sau giữa hốc bánh của thùng, nên khung gầm 3D vẽ đúng các trục đang được tính; phương án đã duyệt của seed không vượt trục nào (`seed.test.ts` kiểm mọi revision seed).
@@ -1579,13 +1571,10 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   `POST /api/driver/trips/{id}/exceptions` theo mã số chuyến (tiêu đề ghi mã chuyến; 400 là chuyến không còn đang vận chuyển). Điều phối viên
   duyệt / từ chối xác nhận tay ở thẻ `ManualConfirmCard server` của Chi tiết chuyến máy chủ và của Giám sát (`manual-confirm-backend-api.ts`:
   `GET /api/trips/{id}/manual-confirmations`, `POST …/{cid}/approve`, `POST …/{cid}/reject` — `{id}` là mã số hoặc mã chuyến; quản lý công ty chỉ
-  xem). **Điểm nhận dọc đường** (máy chủ chèn lúc duyệt yêu cầu nhận): `current-stop` mang `stopType` (`DELIVERY` | `PICKUP`) và
-  `pickupPackages` (kiện của các yêu cầu đã duyệt ở điểm, `picked`); màn đối chiếu từng kiện lên xe bằng quét QR hoặc gõ mã (không có xác nhận
-  tay ở điểm nhận — máy chủ chưa có) → `POST /api/driver/pickup-packages/{id}/pick` (`{ method }` như khi dỡ; 409 `PICKUP_PACKAGE_ALREADY_PICKED`), hoàn tất điểm nhận khi
-  mọi kiện đã lên xe (`PICKUP_STOP_INCOMPLETE`); kiện nhận giao ở điểm sau nằm trong `packages` của điểm đó và dỡ như kiện thường. Hộp "Nhận hàng
-  dọc đường" của tờ "Thêm" gọi tên điểm theo mã điểm của `GET /api/driver/trips/{id}/stops` (`stopId`). `DRIVER_CAPABILITIES`
-  (`useDriverCapabilities`) ẩn xuất phát ở màn điểm giao, chuông (trừ khi `notifications` nối), vị trí xe mô phỏng; nhận dọc đường (`pickups`) chỉ khi
-  nhóm `trips` cùng nguồn; `qrVerify`, `manualConfirm`, `deliveryIssues` và `tripExceptions` bật ở cả hai nguồn.
+  xem). App không có nhận hàng dọc đường (chủ sản phẩm đã bỏ tính năng): `current-stop` của chuyến cũ còn mang `stopType: PICKUP` và
+  `pickupPackages` thì app không đọc hai trường đó — điểm như vậy là một điểm không có kiện phải dỡ, tài xế bấm "Đã đến" rồi hoàn tất như
+  điểm giao (`driver-dto.ts`). `DRIVER_CAPABILITIES`
+  (`useDriverCapabilities`) ẩn xuất phát ở màn điểm giao, chuông (trừ khi `notifications` nối), vị trí xe mô phỏng; `qrVerify`, `manualConfirm`, `deliveryIssues` và `tripExceptions` bật ở cả hai nguồn.
 - **Giám sát** (`monitoring`; `monitoring-backend-api.ts`, DTO ở `monitoring-dto.ts` + `monitoring-exception-dto.ts`): `/giam-sat` đọc
   `GET /api/dispatcher/dashboard` (bảng) và `GET /api/trips/monitoring` (vị trí, giờ đến, cảnh báo, sự cố); vị trí `GET …/location/latest|history`;
   sự cố `POST|GET /api/trips/{id}/exceptions`, `POST …/exceptions/{eid}/resolve`, chuyển quản lý `POST …/exceptions/{eid}/escalate`
@@ -1600,17 +1589,10 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   máy chủ kiểm cùng luật với kho mẫu, kiện bị che kín là 409 `STOP_ORDER_BLOCKS_CARGO` kèm `packages` / `stopIds` cùng dạng, che một phần trả
   ở `partial`; thiếu toạ độ là 400 `MISSING_STOP_COORDINATES` kèm `errors.stopIds` (mã số điểm; chỉ xét điểm chưa hoàn tất và xe chưa
   tới). `MONITORING_CAPABILITIES` ẩn
-  mở chuyến và thẻ yêu cầu nhận dọc đường (trừ khi `trips` cùng nguồn); hàm của chúng từ chối `NOT_SUPPORTED`. Thẻ xác nhận tay của chuyến
+  mở chuyến (trừ khi `trips` cùng nguồn). Thẻ xác nhận tay của chuyến
   đang chọn là bản máy chủ khi nhóm `driver` cũng nối (mục Tài xế), không thì không có. `EtaRiskWatcher` im lặng (chuông vẫn kho mẫu, mỗi lần
   đọc giám sát backend gọi dịch vụ chỉ đường); màn Giám sát tự hiện toast nguy cơ trễ (`EtaRiskToasts`). Hộp "Sự cố trên đường" của tài xế theo nguồn
   của nhóm `driver` (mục Tài xế); `getTripMonitoring` (Chi tiết chuyến, khi `trips` còn là kho mẫu), `setDriverGps` vẫn là kho mẫu.
-- **Nhận hàng dọc đường** (theo nhóm `trips`, `PICKUPS_ON_BACKEND`; `pickups-api.ts`, DTO ở `pickups-dto.ts`): `GET|POST
-  /api/trips/{id}/pickup-requests`, `GET …/{pid}`, `POST …/{pid}/validate`, `POST …/{pid}/approve` (`overrideReason`), `POST …/{pid}/reject`
-  (`reason`) — `{id}` là mã số hoặc mã chuyến, màn dùng mã chuyến. Mười luật tính **ở máy chủ** lúc tạo, kiểm lại và duyệt (luật 4–7 và 10 xếp
-  thật kiện nhận vào chỗ trống của thùng, không dời kiện đang chở); mã luật dùng chung bảng `PICKUP_RULE_CODES` (mã lạ bị bỏ), tham số giờ đổi
-  sang ISO, tham số điểm là mã số điểm của máy chủ. Duyệt tạo kiện kho kiện kèm mã QR (mã số của máy chủ — trang in nhãn của máy chủ đọc mã
-  số), chèn điểm nhận và điểm giao sau điểm hiện tại, lưu chỗ xếp (`layout`). Thẻ `PickupRequestsCard` ở Chi tiết chuyến máy chủ (pha theo
-  `serverTripPhase`) và ở Giám sát khi `monitoring` cùng nguồn; tài xế ở mục Tài xế.
 - **Chuyến** (`trips`; `trips-backend-api.ts`, DTO ở `trips-dto.ts`): mã chuyến (`tripCode`) là mã trên URL như Giám sát; Chi tiết chuyến tìm
   `GET /api/trips?search=` rồi `GET /api/trips/{id}/detail` theo mã số. Ghi (`trip-edit-backend-api.ts`, theo `trips.edit`): form sửa
   `/chuyen/:mã/sua` (`BackendTripEditPage`, `PATCH /api/trips/{id}`: tên, ngày giờ xuất phát, xe, tài xế, kho xuất phát — chỉ gửi trường
@@ -1736,8 +1718,7 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   khi `tripLinkable` và `trips.view`, kho `/kho?chuyen=<mã số>`, tài xế `/tai-xe/diem-giao?chuyen=<mã số>` (trừ chuyến đã đổi tài xế khỏi mình),
   `CREDIT_LOW_BALANCE` tới `/goi-cuoc` khi có `billing.manage`. Máy chủ có nguồn cho: tài khoản (`USER_*`), duyệt phương án, xếp xong, sự cố
   giao, nguy cơ trễ hạn, hoàn thành / huỷ / đổi trạng thái / đổi tài xế của chuyến, xác nhận tay gửi / bị từ chối, sự cố cấp chuyến báo / chuyển
-  quản lý / gia hạn, trả lời yêu cầu hỗ trợ, sắp hết credit, nhận hàng dọc đường (điều phối viên: yêu cầu mới gửi `PICKUP_REQUESTED`; tài xế
-  của chuyến: duyệt / từ chối `PICKUP_APPROVED` / `PICKUP_REJECTED`, theo `driverId` ghi lúc quyết định), việc của kho (điều phối viên: kho báo
+  quản lý / gia hạn, trả lời yêu cầu hỗ trợ, sắp hết credit, việc của kho (điều phối viên: kho báo
   thiếu `STAGING_SHORTAGE_REPORTED`, kiện hỏng `LOADING_DAMAGE_REPORTED`, tìm thấy kiện `PACKAGE_FOUND`; quản lý công ty: kiện hỏng và quyết định
   bỏ kiện báo thiếu `STAGING_SHORTAGE_RESOLVED`; nhân viên kho: quyết định với kiện chính mình báo thiếu; tài xế của
   chuyến: chỉ khi chuyến quay về lập kế hoạch — kiện hỏng có kiện tựa lên, kiện thiếu bị bỏ —, câu `notifications.driver.replanDamaged` /
@@ -1817,7 +1798,7 @@ Thêm hàm công khai vào kho thì khai nó ở bảng `PROBES` của `tenancy.
 
 **Kho kiện theo mô hình backend** (FE-3b-01). Kiện là `Package` (`PK-NNNN`, Phương Nam `PK-PN-NNNN`): `companyId`, `packageCode` (mã của bên
 gửi; nơi tạo không đưa thì bằng mã của kho), `qrToken`, kích thước và khối lượng **của chính kiện**, `handlingClass`, `destination`,
-`packageTypeId?`, `status`, `flags`, `source` (`IMPORT | MANUAL | TRIP | PICKUP`), `requirementId?` (yêu cầu giao đang giữ kiện), `tripId?`,
+`packageTypeId?`, `status`, `flags`, `source` (`IMPORT | MANUAL | TRIP`), `requirementId?` (yêu cầu giao đang giữ kiện), `tripId?`,
 `stopId?`, người và thời điểm tạo. Trạng thái **ghi thật**, không suy lúc đọc — chỉ `movePackage` (`db-packages.ts`) đổi `status`, theo bảng
 `PACKAGE_TRANSITIONS`: `IMPORTED → ASSIGNED → STAGED → LOADED → IN_TRANSIT → DELIVERED | RETURNED`; `ASSIGNED`, `STAGED`, `LOADED` được về
 `IMPORTED` (rời chuyến); sai bảng là `INVALID_PACKAGE_STATUS_TRANSITION`. Kiện của chuyến đổi trạng thái ở **mốc chốt** của chuyến
@@ -1954,7 +1935,7 @@ cảnh báo `PACKAGE_CODE_EXISTS` không chặn. Còn một dòng lỗi thì nú
 4 mm), mỗi nhãn 93 × 134 mm — khổ PDF của backend chưa chốt. Nhãn có mã QR kèm mã chữ, mã của bên gửi, loại hàng, kích thước (cm), khối lượng
 (kg), điểm đến, mã của kho kiện, logo `mono`, tên loại kiện (nếu có) và công ty; kiện `FRAGILE` thêm khung "Hàng dễ vỡ". Không nền màu (in đen
 trắng), chữ dài xuống dòng chứ không cắt. Mọi cỡ trong nhãn là `em` của cỡ chữ gốc — bản in gốc 4 mm, bản xem trên màn gốc 16 px — nên hai bản
-một bố cục. Trang nhãn đọc kiện từ URL: `?kien=<mã,…>` hoặc `?chuyen=<mã chuyến>` (nhãn theo chuyến bỏ kiện nhận dọc đường, như PDF của máy chủ — nhãn của chúng in ở hộp duyệt yêu cầu nhận; quét khi dỡ vẫn nhận ra chúng); không chọn gì thì không có nhãn nào. In lại giữ nguyên mã QR.
+một bố cục. Trang nhãn đọc kiện từ URL: `?kien=<mã,…>` hoặc `?chuyen=<mã chuyến>`; không chọn gì thì không có nhãn nào. In lại giữ nguyên mã QR.
 Nút quay lại về nơi bấm in (`labelsBackTarget`): chuyến, Tra cứu kiện (`&tu=tra-cuu`), không thì Kho kiện; người không mở được đích đó về Tra cứu
 kiện.
 
@@ -1970,13 +1951,13 @@ chủ chỉ cho điều phối viên gỡ cờ. "Quét mã QR" là nút chính c
 
 **Đối chiếu kiện, soạn → xếp → giao, huỷ chuyến**
 
-**Đối chiếu kiện ba mức** (FE-6-03, FE-6-04, D-83) — một hộp `components/PackageVerify` dùng chung cho kho và tài xế (soạn hàng, xếp, dỡ, nhận
-dọc đường): (1) quét QR (`QrCamera` của `QrScanDialog`); (2) gõ mã — mã QR in dưới hình, hoặc **mã của bên gửi khi nó duy nhất trong chuyến**
+**Đối chiếu kiện ba mức** (FE-6-03, FE-6-04, D-83) — một hộp `components/PackageVerify` dùng chung cho kho và tài xế (soạn hàng, xếp,
+dỡ): (1) quét QR (`QrCamera` của `QrScanDialog`); (2) gõ mã — mã QR in dưới hình, hoặc **mã của bên gửi khi nó duy nhất trong chuyến**
 (trùng: `PACKAGE_CODE_AMBIGUOUS`; luật thuần `resolveVerifyCode`); (3) xác nhận tay — chọn kiện + lý do (`MANUAL_CONFIRM_REASONS`: nhãn rách /
 mất, QR không đọc được, khác kèm ghi chú bắt buộc), kho in lại được nhãn của kiện (`loadingLabelPath`, mã QR giữ nguyên, nút quay lại về đúng
 phiên xếp). Hộp không biết kiện nào đúng: nơi gọi gửi mã / kiện cho kho và trả kết quả về (`result` là vùng `status` / `alert`); nút 56 px,
 chữ 16 px; `methods` chọn mức được dùng (mặc định đủ ba mức; một mức thì không có hàng tab). `QrScanDialog` chỉ quét + gõ mã, cho Tra cứu kiện. Kho ghi **mỗi lần đối chiếu** vào `Trip.verifications` (`PackageVerification`:
-bước `STAGING` / `LOADING` / `UNLOADING` / `PICKUP`, cách `QR` / `CODE` / `MANUAL`, người, thời điểm; mã `VF-NNN` trong chuyến); `steps[].via: 'qr'`
+bước `STAGING` / `LOADING` / `UNLOADING`, cách `QR` / `CODE` / `MANUAL`, người, thời điểm; mã `VF-NNN` trong chuyến); `steps[].via: 'qr'`
 và `qrConfirmedIds` nghĩa là "đã đối chiếu bằng nhãn" (quét hoặc gõ). Hàm của kho: `confirmLoadingByQr` / `confirmUnloadByQr` nhận thêm
 `method`; `confirmLoadingManually` / `confirmUnloadManually` ghi kiện như đã xếp / đã dỡ để làm tiếp, kèm xác nhận tay `MANUAL_PENDING`. Không
 có lối ghi không đối chiếu. **Kho tự chặn** (giao diện bị bỏ qua cũng không qua): `completeLoading` và `completeStop` từ chối
@@ -2008,25 +1989,22 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
 - **Tài xế**: "Xuất phát" (`startDelivery`, chỉ khi xếp xong) → mỗi điểm "Đã đến" (`arriveAtStop` ghi `StopProgress.arrivedAt`) rồi mới
   dỡ, báo sự cố theo kiện và hoàn tất điểm (`STOP_NOT_ARRIVED`); dỡ chỉ qua hộp đối chiếu; "Khách từ chối" bỏ dấu đã dỡ của kiện — kiện
   ở lại xe, thành `RETURNED` khi hoàn tất điểm. Một nút chính theo bước: Xuất phát → Đã đến điểm n → Hoàn tất điểm giao. Hoàn tất điểm
-  (giao hoặc nhận) hỏi lại trước khi ghi (`CompleteStopDialog`, tờ trượt từ đáy; số đọc từ tiến độ trên màn qua `stop-completion.ts`): kiện đã
-  dỡ thành Đã giao, kiện chưa dỡ thành Hoàn trả kèm mã từng kiện, kiện nhận lên xe, số sự cố, điểm kế tiếp hay điểm cuối; kho từ chối thì hộp
+  hỏi lại trước khi ghi (`CompleteStopDialog`, tờ trượt từ đáy; số đọc từ tiến độ trên màn qua `stop-completion.ts`): kiện đã
+  dỡ thành Đã giao, kiện chưa dỡ thành Hoàn trả kèm mã từng kiện, số sự cố, điểm kế tiếp hay điểm cuối; kho từ chối thì hộp
   giữ nguyên kèm toast lỗi, ghi xong hộp đóng, không toast thành công.
 - **Huỷ chuyến** (`cancelTrip`): từ Nháp, Đã lập kế hoạch, Đang xếp hàng — kiện về `IMPORTED`, yêu cầu giao về `PENDING`; huỷ lúc đang xếp
   thì sự kiện mang `loaded` (số kiện đã lên xe) và kho được báo dỡ ra. Chuyến **Đang vận chuyển** huỷ được **chỉ khi có sự cố cấp chuyến
   chưa xử lý** (`OPEN` hoặc `ESCALATED`; `canCancelTrip` — kho và hộp thoại dùng cùng hàm): kiện chưa giao (còn `IN_TRANSIT`, kể cả kiện đã
-  dỡ ở điểm chưa hoàn tất; cộng kiện nhận dọc đường tài xế đã nhận lên xe ở điểm nhận chưa hoàn tất — `pickedIds`, đi qua `IN_TRANSIT`) thành
+  dỡ ở điểm chưa hoàn tất) thành
   `RETURNED` và **ở lại chuyến**, yêu cầu giao giữ `IN_TRIP` và đọc là "Giao thiếu" (D-92), vị trí xe ghi bù
   tới lúc huỷ rồi dừng, sự kiện `trip.cancelled` mang `returned` (số kiện hoàn trả) — quản lý công ty thấy ở chuông; sự cố chưa xử lý ở lại
-  như đã ghi. Yêu cầu nhận dọc đường đã duyệt mà **chưa kiện nào lên xe** (không kiện nào ở `pickedIds`, mọi kiện còn `ASSIGNED`) thành
-  `REJECTED` với `rejectCause: 'TRIP_CANCELLED'` (`rejectUnpickedPickups`; thẻ yêu cầu nói "Tự từ chối vì chuyến đã huỷ…") và kiện kho kiện
-  của nó bị xoá — hàng còn ở chỗ bên gửi, không tính vào `returned`; máy chủ làm như vậy với lý do "Chuyến đã huỷ". Trạng thái khác: `INVALID_TRIP_STATUS_TRANSITION`. Menu thao tác của Chi tiết chuyến có mục "Huỷ chuyến" cho chuyến Đang vận
+  như đã ghi. Trạng thái khác: `INVALID_TRIP_STATUS_TRANSITION`. Menu thao tác của Chi tiết chuyến có mục "Huỷ chuyến" cho chuyến Đang vận
   chuyển; hộp thoại đọc sự cố của chuyến và hoặc nói bao nhiêu kiện thành Hoàn trả, hoặc để nút huỷ mờ kèm lý do.
-- **Báo cáo chuyến** (FE-6-14; `tripReport(trip, plan, { exceptions, reroutes, pickups })`, thuần): mỗi điểm giao có giờ đến dự kiến của tuyến
+- **Báo cáo chuyến** (FE-6-14; `tripReport(trip, plan, { exceptions, reroutes })`, thuần): mỗi điểm giao có giờ đến dự kiến của tuyến
   (`routePlan`), giờ đến thật (`arrivedAt`), hạn giao kèm mức hạn — đã đến thì "Đến kịp hạn" / "Đến trễ hạn" theo giờ đến thật, chưa đến thì
   mức hạn của tuyến — và số kiện hoàn trả; thêm số kiện đã soạn, bảng cách đối chiếu theo bước (lần đối chiếu mới nhất của từng kiện), xác
   nhận tay kèm người gửi và người duyệt, sự cố cấp chuyến, tuyến đã đổi (`listTripReroutes`, MOCK RESULT), lý do chở chung khác loại hàng.
-  Chuyến bị huỷ lúc đang vận chuyển: kiện của điểm chưa hoàn tất tính là hoàn trả, "đã giao" chỉ tính điểm đã hoàn tất. Kiện nhận dọc
-  đường đã lên xe (`pickups` — yêu cầu đã duyệt) tính vào số đã giao, hoàn trả (ở điểm giao của nó) và khối lượng đã giao như kiện của phương án. Menu thao tác hiện
+  Chuyến bị huỷ lúc đang vận chuyển: kiện của điểm chưa hoàn tất tính là hoàn trả, "đã giao" chỉ tính điểm đã hoàn tất. Menu thao tác hiện
   mục "Báo cáo chuyến" cho **mọi người xem được chuyến** (quản lý công ty mở từ đây) khi chuyến đã giao hoặc bị huỷ lúc đang vận chuyển; sửa,
   đổi xe, huỷ vẫn theo `trips.edit`. Bản in: chữ dài xuống dòng (`print:line-clamp-none`), không cắt.
 - Test và E2E đưa chuyến qua các bước bằng `src/test/trip-flow.ts` (`stageAll`, `loadAll`, `loadTrip`, `unloadStop`) — E2E gọi qua
@@ -2232,16 +2210,17 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   mô phỏng đứng nghỉ đúng giờ ETA đã cộng (không phải sự cố, không cộng vào `delays`, không cảnh báo) và trả `drivenMs` + `restEndsAt`; `liveEta`
   nhận hai giá trị đó nên ETA từ vị trí khớp ETA kế hoạch (GPS thật không có: coi như vừa nghỉ). Thứ tự điểm của `sequenceStops` vẫn tính theo
   thời gian chạy thuần (heuristic). Có BE thì ETA lấy từ Goong theo giao thông và thay công thức mock.
-- **Đổi thứ tự điểm giao khi xe đang chạy** (FE-BL-03, D-87). `reorderRunningStops(tripId, orderedStopIds)` (`db-trip-reorder.ts`) là **ngoại lệ thứ
-  hai của `TRIP_LOCKED`** cho chuyến đã rời kho (thứ nhất: nhận hàng dọc đường), hẹp: một hàm, chỉ điều phối viên (`ROLE_NOT_ALLOWED`), chuyến
+- **Đổi thứ tự điểm giao khi xe đang chạy** (FE-BL-03, D-87). `reorderRunningStops(tripId, orderedStopIds)` (`db-trip-reorder.ts`) là **ngoại lệ duy
+  nhất của `TRIP_LOCKED`** cho chuyến đã rời kho, hẹp: một hàm, chỉ điều phối viên (`ROLE_NOT_ALLOWED`), chuyến
   phải Đang vận chuyển (`TRIP_NOT_IN_TRANSIT`, cùng mã với máy chủ), mọi điểm có toạ độ (`MISSING_STOP_COORDINATES`); `updateTrip`, `changeTripVehicle`… vẫn từ chối.
   Luật thứ tự thuần ở `checkProposedOrder`: phải là hoán vị **khác** thứ tự hiện tại (`STOP_ORDER_INVALID`); các điểm đầu danh sách đã hoàn tất,
-  và điểm xe đã tới (`StopProgress.arrivedAt`) đứng nguyên (`STOP_NOT_MOVABLE`); điểm nhận dọc đường của yêu cầu `APPROVED` đứng trước điểm
-  giao của nó (`PICKUP_AFTER_DELIVERY`). **Khả năng dỡ**: kho chạy `checkStopReorder` (`lifoIssues` của domain, thứ hạng giao thay số điểm) trên
-  kiện còn phải dỡ — kiện phương án đã xếp chưa dỡ, không bị bỏ lại kho, không thuộc điểm đã hoàn tất, cộng kiện nhận dọc đường đã có chỗ
-  (`PickupRequest.layout`) chưa giao — ở thứ tự cũ và mới; kiện bị che **kín** theo thứ tự mới mà trước đó chưa bị là `STOP_ORDER_BLOCKS_CARGO
+  và điểm xe đã tới (`StopProgress.arrivedAt`) đứng nguyên (`STOP_NOT_MOVABLE`). **Khả năng dỡ**: kho chạy `checkStopReorder` (`lifoIssues` của domain, thứ hạng giao thay số điểm) trên
+  kiện còn phải dỡ — kiện phương án đã xếp chưa dỡ, không bị bỏ lại kho, không thuộc điểm đã hoàn tất — ở thứ tự cũ và mới; kiện bị che **kín** theo thứ tự mới mà trước đó chưa bị là `STOP_ORDER_BLOCKS_CARGO
   { packages, stopIds }` (song song, kiện thứ i thuộc điểm thứ i) và không đổi gì; che một phần chỉ trả ở `partial` (toast cảnh báo). Đạt thì
-  áp dụng bằng đúng bộ máy đánh số lại của nhận hàng dọc đường (`renumberTripStops`, `DeliveryStop.planNumber`): `inputVersion` giữ nguyên nên
+  áp dụng bằng `renumberTripStops` (`trip-stop-renumber.ts`): số điểm là vị trí + 1 nên kho đánh số lại tiến độ giao, sự cố giao, lần đối chiếu,
+  dòng kiện, sự cố cấp chuyến, tuyến thay thế, cảnh báo trễ hạn, và ghi `DeliveryStop.planNumber` — số của điểm trong phương án đã duyệt
+  (revision bất biến đánh số theo lúc duyệt, nên mọi chỗ đọc "kiện của điểm n" từ phương án đổi số qua `plannedStops(plan, trip.stops)` /
+  `stopItemIds` / `adaptResult`); `inputVersion` giữ nguyên nên
   phương án đã duyệt không lỗi thời, `routePlan` giữ và tính lại giờ đến, mức hạn. Xe mô phỏng đi tiếp **từ điểm vị trí gần nhất** tới điểm kế
   tiếp mới (`DeliveryProgress.redirect` → `SimulatedStop.startFrom`; điểm vị trí đã ghi theo thứ tự cũ được ghi bù trước khi đổi; đang nghỉ bắt
   buộc thì đi tiếp sau khi nghỉ xong). Nhật ký `trip.stopsReordered { count, lateStops, driverId }` — chuông của tài xế **của chuyến đó**; màn
@@ -2276,111 +2255,6 @@ của Chi tiết chuyến (`trips/ManualConfirmCard`); người chỉ xem thấy
   (`refreshLiveEta`), sự cố giữ `ESCALATED` tới khi điều phối viên đánh dấu đã xử lý. Mã lỗi: `EXCEPTION_INVALID`, `EXCEPTION_STATUS_INVALID`,
   `REROUTE_UNAVAILABLE`; nhật ký nhóm `exception` (`reported`, `escalated`, `resolved`, `deadlineRenegotiated`). Lệnh ghi của màn làm mới
   `['trips']`, `['notifications']`, `['requirements']`, `['dashboard']`. E2E `e2e/monitoring.spec.ts` đi cả luồng trên một tab với `?toc-do=60`.
-- **Yêu cầu nhận dọc đường** (FE-7-01, D-88; `pickup-model.ts`, `db-pickups.ts`, `DbState.pickups`): `PickupRequest` (`PKR-NNN`, Phương Nam
-  `PKR-PN-NNN`) mang `companyId` của chuyến, `tripId`, điểm nhận và điểm giao (`PickupPoint`: tên, địa chỉ, toạ độ), `deadline?`, `packages`
-  (`PickupPackage`: mã của bên gửi, cm, kg, loại hàng), `status`, `validationResults` (kết quả `evaluatePickup`, rỗng khi chưa kiểm),
-  `overrideReason?`, người và lúc tạo, `approvedBy` / `approvedAt` từ lúc `APPROVED`. Trạng thái **ghi thật**, chỉ `updatePickupStatus` đổi, theo
-  bảng `PICKUP_TRANSITIONS`: `PENDING → VALIDATED | REJECTED | APPROVED` (duyệt kèm lý do vượt luật), `VALIDATED → APPROVED | REJECTED`, `APPROVED →
-  LOADED → DELIVERED`, `REJECTED` là trạng thái cuối; sai bảng là `INVALID_PICKUP_STATUS_TRANSITION`. Ngoại lệ duy nhất, ngoài bảng: huỷ chuyến
-  Đang vận chuyển đưa `APPROVED` chưa nhận kiện nào về `REJECTED` (`rejectUnpickedPickups`, mục "Huỷ chuyến"). Hàm của kho đều nhận mã chuyến và lọc công
-  ty qua chuyến như endpoint `/api/trips/{id}/pickup-requests` của backend: `listPickupRequests`, `getPickupRequest`, `createPickupRequest`,
-  `updatePickupStatus(tripId, pickupId, status, details?)`, `validatePickupRequest`, `approvePickupRequest`, `rejectPickupRequest`.
-  `DeliveryStop.kind` (`DELIVERY | PICKUP`) vắng nghĩa là `DELIVERY` (`stopKindOf`).
-- **Mười luật nhận hàng dọc đường** (FE-7-02, D-88; `@/domain/pickup`, thuần): `evaluatePickup(context)` trả đúng 10 kết quả `{ rule, passed, code,
-  params }` theo thứ tự luật 1 → 10, luôn đánh giá đủ cả mười (luật trước không đạt không bỏ qua luật sau); mã `PICKUP_*` ở `PICKUP_RULE_CODES`,
-  UI dịch từng mã. `context` là mọi thứ luật cần — yêu cầu (`request`: điểm nhận, điểm giao, hạn, kiện), `vehicle`, vị trí xe `position` và giờ kho
-  `at`, `stops` (mọi điểm của chuyến theo thứ tự tuyến: `completed`, `onboardCount`, `arrivedAt`, `number` khớp `StopZone.stopId`), `zones` của
-  phương án đã duyệt, `onboard` (kiện còn trên xe: hộp đã xếp + khối lượng), `tripCargo` (dòng kiện của chuyến), `overrideReason` và `packing`
-  (kết quả xếp thật, bên dưới) — để kho dựng từ chuyến, phương án đã duyệt, vị trí xe và tiến độ giao. **Điểm hiện tại** là điểm đầu tiên chưa hoàn
-  tất; **điểm được bảo vệ** là điểm đầu tiên sau nó còn `onboardCount` > 0. Luật 1: khoảng cách từ điểm nhận tới đường gấp khúc vị trí xe → các
-  điểm chưa hoàn tất ≤ 10 km (đúng 10 km vẫn đạt) và không nằm sau vị trí xe. Luật 2: tiến độ của điểm giao dọc đường từ điểm hiện tại phải > 0 và
-  không quá tiến độ của điểm được bảo vệ (trùng vẫn đạt); không có điểm được bảo vệ thì chỉ cần sau điểm hiện tại; điểm hiện tại là điểm cuối
-  của tuyến thì luật 2 đạt với mọi điểm giao. Luật 3 đạt khi tổng kiện còn trên xe + kiện nhận ≤ tải trọng (đúng bằng vẫn đạt). Luật 8 dùng
-  `addedConflicts` của `domain/constraints/segregation`: kiện nhận khác loại đang khoá thì không đạt, trừ khi chuyến đã có lý do vượt luật. Luật 9:
-  ETA tới điểm giao từ `liveEta` trên tuyến **sau khi chèn**, đạt khi không `MISSED` (đúng hạn vẫn đạt); yêu cầu không có hạn thì
-  `PICKUP_NO_DEADLINE`. **Luật 4–7 và 10 đọc kết quả xếp thật** (`context.packing`, FE-BL-01): 4 = mọi kiện nhận có chỗ trong vùng đã trống (kiện
-  chỉ ở lại vì phải đè lên kiện không chịu tải thuộc luật 7), 5 = tải trục `checkAxleLoads` của khối hàng sau khi nhận, 6 = trọng tâm
-  `checkCenterOfGravity` của khối đó, 7 = không issue xếp chồng của constraint engine trên kiện nhận và không kiện nào ở lại vì
-  `STACKING_VIOLATION`, 10 = số kiện còn chở bị kiện nhận che kín mặt sau (`LIFO_BLOCKED`) bằng không; xe không khai trục thì luật 5 đạt với
-  `PICKUP_AXLE_UNAVAILABLE`. Luật 6 chỉ tính **kiểu lệch trọng tâm mới xuất hiện sau khi nhận**: giữa chuyến hàng còn lại thường đã dồn về đầu
-  thùng, kiểu lệch có từ trước là đạt với `PICKUP_COG_NOT_WORSE`. Hằng số (10 km, 50 m coi là cùng một điểm) ở `PICKUP_CONSTANTS`.
-  `insertPickupStops(stops, { pickupStopId, deliveryStopId }, deliveryLocation)` đặt điểm nhận rồi điểm giao **ngay sau điểm hiện tại**, không đổi
-  chỗ điểm cũ nào; điểm giao trùng một điểm có sẵn sau điểm hiện tại và không quá điểm được bảo vệ thì dùng lại (`deliveryReused`), không còn điểm
-  chưa hoàn tất thì `null`.
-- **Tạo yêu cầu nhận và kiểm luật** (FE-7-03, D-88). `createPickupRequest` xét vai trò như hàm sự cố cấp chuyến (kho không có phiên thì không xét):
-  điều phối viên, hoặc tài xế **của chính chuyến**; khác là `ROLE_NOT_ALLOWED`, xét sau công ty; chuyến phải Đang vận chuyển (khác là
-  `INVALID_TRIP_STATUS_TRANSITION`), không kiện nào là `PACKAGES_REQUIRED`, trường sai là `PICKUP_INVALID` kèm tên trường. Kho dựng ngữ cảnh
-  mười luật từ chuyến (`pickup-context.ts`, chỉ đọc): xe kèm giới hạn của loại xe, vị trí xe lúc này (ghi bù `advanceTracking`), điểm của tuyến
-  kèm `completed` / `onboardCount` / `arrivedAt` theo tiến độ giao, vùng và kiện còn trên xe của **phương án kho đã xếp** (`Trip.loading.revisionId`),
-  dòng kiện và lý do vượt luật phân tách hàng; rồi chạy `evaluatePickup` **trước khi ghi**: đạt cả mười thì yêu cầu `VALIDATED`, không thì
-  `PENDING` kèm `validationResults`; chuyến còn điểm chưa có toạ độ là `PICKUP_ROUTE_UNAVAILABLE`, không ghi gì. `validatePickupRequest` kiểm lại
-  theo trạng thái chuyến lúc này (chỉ yêu cầu `PENDING` / `VALIDATED`). Nhật ký nhóm `pickup` (`requested`, `approved`, `rejected`, `loaded`,
-  `delivered`, `reoptimized`), đối tượng là chuyến, tham số `pickupId`. Điểm của tuyến mang số điểm trong phương án (`planNumberOf`): điểm chèn
-  lúc đang chạy không có số đó (`number` là 0, không khớp vùng nào). Màn: `PickupRequestDialog` (nhiều dòng kiện, `react-hook-form` + zod — lỗi là
-  mã, luật thuần ở `pickup-form.ts`) lưu xong chuyển sang kết quả mười luật thay vì đóng; mỗi luật là một dòng Đạt / Không đạt bằng chữ
-  (`PickupRulesList`, câu dịch ở `pickup-rule-text.ts` — mỗi mã một nhánh nên thêm mã mà quên câu là lỗi kiểu). Khoá Query `['trips', tripId,
-  'pickups']`; ghi làm mới `['trips']`, `['notifications']`.
-- **Duyệt và từ chối nhận hàng** (FE-7-04, D-88). `approvePickupRequest(tripId, pickupId, { overrideReason? })` — chỉ điều phối viên
-  (`ROLE_NOT_ALLOWED`), chuyến phải Đang vận chuyển, yêu cầu `PENDING` / `VALIDATED`. Kho **kiểm lại mười luật** trên chuyến lúc này: còn luật
-  không đạt mà không có lý do là `REASON_REQUIRED` (lý do lưu trên yêu cầu và vào nhật ký; đạt cả mười thì lý do bị bỏ). Rồi, trong một lần ghi: (1)
-  `createPickupPackages` tạo kiện kho kiện nguồn `PICKUP`, `ASSIGNED`, kèm chuyến, điểm giao và mã QR thật (kiện thứ i ứng `packages[i]`,
-  `PickupRequest.packageIds`); (2) `insertPickupIntoTrip` (`db-pickup-stops.ts`) chèn điểm nhận (`kind: 'PICKUP'`) và điểm giao ngay sau điểm hiện
-  tại bằng `insertPickupStops` của domain — điểm giao trùng điểm có sẵn thì dùng lại, hạn của điểm là hạn sớm nhất. Đây là **ngoại lệ thứ nhất của
-  `TRIP_LOCKED`** khi chuyến đã rời kho và nằm ở đúng một hàm: `updateTrip`, `changeTripVehicle`, tối ưu tuyến… vẫn từ chối. Số điểm là vị trí + 1
-  nên các điểm sau lệch số: kho đánh số lại tiến độ giao, sự cố giao, lần đối chiếu, dòng kiện của chuyến, sự cố cấp chuyến, tuyến thay thế,
-  cảnh báo trễ hạn, và ghi `DeliveryStop.planNumber` — số của điểm trong phương án đã duyệt (`null` cho điểm chèn lúc chạy; `plan-stops.ts`).
-  Phương án là revision bất biến đánh số theo lúc duyệt, nên mọi chỗ đọc "kiện của điểm n" từ phương án đổi số qua `plannedStops(plan,
-  trip.stops)` / `stopItemIds` / `adaptResult` (scene của tài xế, Planner, báo cáo chuyến). Chèn điểm **không** tăng `inputVersion` (phương án
-  không lỗi thời) và **không** đi qua `withFreshRoute` — thêm điểm ở pha lập kế hoạch bỏ `routePlan` và đưa chuyến về Nháp, còn ở đây `routePlan`
-  giữ lại và tính lại giờ đến, mức hạn theo thứ tự mới (`routePlanOf`), ETA trực tiếp tính lại từ vị trí xe. `rejectPickupRequest(tripId,
-  pickupId, reason)` cũng chỉ điều phối viên, lý do bắt buộc, không tạo kiện hay điểm nào. Nhật ký `pickup.approved` / `pickup.rejected` mang
-  `driverId` của chuyến — tài xế của chuyến nhận chuông. Màn: thẻ `PickupRequestsCard` có cặp nút phụ Từ chối / Duyệt ở yêu cầu còn chờ
-  (`pickups.approve`); `PickupApproveDialog` kiểm lại luật khi mở, ô lý do vượt luật hiện khi còn luật không đạt, duyệt xong chuyển sang bước
-  liệt kê kiện kèm mã QR và nút "In nhãn gửi bên gửi" (`labelsPath`, cần `labels.print`) — yêu cầu đã duyệt giữ nút này trong thẻ. Duyệt làm mới
-  `['trips']`, `['notifications']`, `['package-pool']`, `['driver']`, `['warehouse-labels']`.
-- **Tài xế nhận hàng và giao kiện nhận** (FE-7-05, D-88). Kiện nhận không có dòng kiện trong chuyến nên **mã kiện kho kiện** (`PK-NNNN`) đóng vai
-  mã instance ở mọi chỗ kho ghi tiến độ: nhãn của chuyến (`labelsOf` thêm `pickupLabels`), lần đối chiếu, `StopProgress.pickedIds` (kiện đã đối
-  chiếu ở điểm nhận) và `unloadedIds` (kiện đã dỡ ở điểm giao, như kiện thường). Vai trò của kiện tại một điểm suy từ yêu cầu của nó
-  (`db-pickup-progress.ts`): `pick` — điểm là điểm nhận và yêu cầu còn `APPROVED`; `deliver` — điểm là điểm giao và yêu cầu đã `LOADED`; kiện
-  không phải việc của điểm là `QR_WRONG_STOP` kèm số điểm đúng. Không thêm hàm kho cho tài xế: `confirmUnloadByQr` / `confirmUnloadManually` /
-  `completeStop` chọn lối theo vai trò của kiện (`recordPickupItem`, `db-pickup-scans.ts`). Điểm nhận: đối chiếu bằng nhãn đưa kiện `ASSIGNED →
-  LOADED` ngay (bảng chuyển kiện có `ASSIGNED → LOADED`, PRD v2 mục 7.2); xác nhận tay (bước đối chiếu `PICKUP`) chỉ lên xe khi điều phối viên
-  duyệt, bị từ chối thì kiện rời `pickedIds`; còn xác nhận tay chờ thì `completeStop` từ chối `MANUAL_CONFIRM_PENDING`. Hoàn tất điểm nhận: kiện
-  `IN_TRANSIT`, yêu cầu `LOADED` (`pickup.loaded`); hoàn tất điểm giao: kiện đã dỡ `DELIVERED`, còn lại `RETURNED`, mọi kiện đã giao thì yêu cầu
-  `DELIVERED` (`pickup.delivered`). `completeStop` tính cả kiện nhận vào số kiện còn thiếu (`STOP_INCOMPLETE`). Kiện nhận không có trong phương
-  án (chỗ xếp của chúng nằm cùng yêu cầu), không có thứ tự dỡ của phương án, không báo sự cố theo kiện (`reportDeliveryIssue` chỉ nhận kiện của
-  phương án). `listPickupPackages(tripId)` trả kiện kho kiện của các yêu cầu đã duyệt; `fetchDriverTrip` đọc thêm chúng và yêu cầu
-  (`DriverTrip.pickups`, `pickupPackages`). Màn tài xế (`/tai-xe/diem-giao`): `stopDeliveries` có `kind` và `pickupItems` (`driver-pickups.ts`)
-  cho từng điểm; **danh sách điểm của chuyến** (`DriverStopList`, thu gọn một dòng 56 px, chỉ vẽ khi chuyến có điểm nhận) ghi mỗi điểm bằng biểu
-  tượng **và** chữ — gói hàng "Điểm nhận hàng", ghim "Điểm giao hàng"; điểm nhận có dải thông báo, nút "Đối chiếu kiện nhận" (`PackageVerify`,
-  ba mức) và "Hoàn tất điểm nhận"; kiện nhận nằm ở danh sách riêng "Kiện nhận dọc đường" (`PickupItemRow`, không thứ tự dỡ / vùng / lớp), cả ở
-  điểm nhận lẫn điểm giao. Khung 3D "Xem vị trí hàng" vẽ kiện nhận **ở chỗ của chúng** (FE-BL-01): `pickupSceneItems` (`driver-pickups.ts`) đọc
-  `PickupRequest.layout` của yêu cầu `APPROVED` / `LOADED`, `withPickupPlacements` (`viewer3d/scene-pickups.ts`) ghép chúng vào scene của phương án
-  (số điểm giao hiện tại, màu điểm giao, thứ tự dỡ nối sau kiện của phương án ở cùng điểm) và vẽ bằng chính các InstancedMesh của kiện thường —
-  không mesh hay draw call mới; dòng kiện của điểm (`stopDeliveries`) vẫn chỉ đọc scene của phương án. Kiện nhận **chưa có chỗ**
-  (`layout.unplaced`) chỉ liệt kê bằng DOM cạnh khung (`pickupCargo` của `DriverCargoViewer`) kèm lý do (`viewer.unplacedReasons`) — tài xế xếp
-  theo hướng dẫn của điều phối viên. Số điểm của scene tài xế là số **hiện tại** (`adaptResult` đổi số của phương án qua `DeliveryStop.planNumber`),
-  nên điểm giao dùng lại vẫn mang đủ hàng của phương án. Chi tiết chuyến và Giám sát gắn nhãn "Nhận hàng" cho điểm nhận (`StopCard`, bảng điểm
-  của `MonitoringTripPanel`); thẻ "Xác nhận tay chờ duyệt" đọc cả bước `PICKUP`. Hộp huỷ chuyến (`undeliveredCount`) và báo cáo chuyến đếm cả
-  kiện nhận đã lên xe.
-- **Tái tối ưu vùng trống — kiện nhận có chỗ thật** (FE-BL-01, D-88). `freedZones({ vehicle, zones, stops, onboardKg })` (`@/domain/pickup`, thuần)
-  trả vùng của các điểm đã hoàn tất (`zones`: hộp suốt chiều rộng và cao lòng thùng, thể tích), `spans` (đoạn liền theo X — hai vùng kề nhau cùng
-  trống thì gộp, kể cả khoảng đệm 10 cm), tổng thể tích và tải trọng còn nhận được. `reoptimizeFreedZone`
-  (`@/services/optimization/reoptimize-freed-zone.ts`, thuần, tất định) xếp kiện nhận vào đó **không dời kiện nào đang chở**: kiện xếp theo diện
-  tích đáy rồi thể tích giảm dần; mỗi kiện thử các điểm ứng viên (sàn trước, rồi X tăng — sâu trước —, rồi Y) với từng hướng đặt qua được cửa
-  (`doorOrientations`) và nhận chỗ hợp lệ đầu tiên: trọn trong một đoạn trống và lòng thùng, không chồng kiện / vật cản (lưới không gian của
-  domain), còn tải trọng; ở trên cao thì chỉ tựa lên kiện nhận khác cho xếp chồng (tải đè, số tầng, diện tích tựa tối thiểu của dòng kiện) —
-  **kiện nhận không bao giờ tựa lên kiện đang chở**. Không xếp được thì mã lý do của hợp đồng (`OVER_PAYLOAD`, `DOOR_TOO_SMALL`,
-  `NO_ALLOWED_ORIENTATION`, `NO_SPACE`, `STACKING_VIOLATION`). Cuối cùng cả hàng (đang chở + kiện nhận) qua constraint engine: issue xếp chồng của
-  kiện nhận và số kiện còn chở bị che kín mặt sau (`LIFO_BLOCKED`). Điểm giao của mọi kiện trong lần xếp này là **thứ tự tuyến sau khi chèn**
-  (`pickup-context.ts`), không phải số điểm của phương án; kiện của điểm hiện tại (và trước đó) rời xe trước khi kiện nhận lên nên không tính là
-  bị chắn. Kết quả `FreedZonePacking` (chỗ từng kiện theo chỉ số trong yêu cầu, kiện không xếp được, `before` / `after` khối lượng + trọng tâm +
-  tải trục, `stackingIssues`, `blockedCount`) vào `PickupContext.packing` — nguồn của luật 4–7 và 10. **Duyệt** lưu `PickupRequest.layout`
-  (`placements`, `unplaced`, `plannedAt`) — phương án đã duyệt (revision bất biến) không đổi — và ghi `pickup.reoptimized` (`placed`, `unplaced`);
-  việc này **không tốn credit** — đã quyết định (Q-09), như máy chủ; nằm ở một chỗ có chú thích, `db-pickups.ts`. Kiện không xếp được vẫn
-  lên xe theo lý do vượt luật nhưng chưa có chỗ. Yêu cầu nhận sau coi kiện của yêu cầu `APPROVED` / `LOADED` trước là hàng đang chở: có chỗ thì là
-  hộp trong `onboard` (tải trọng, trục, trọng tâm, vật cản, chắn lối), chưa có chỗ thì chỉ cộng khối lượng vào luật 3 (`PickupContext.looseKg`).
-  Phương thức backend: `GET /api/trips/{id}/freed-zones`, `POST /api/v1/optimize/reoptimize-freed-zone`.
 - **Gói cước, credit, thanh toán** (FE-8-01, FE-8-05, D-89, D-90, D-94; `billing-model.ts`, `billing-core.ts`, `db-billing.ts`; `DbState.plans`,
   `subscriptions`, `creditAccounts`, `creditTransactions`, `payments`). Danh mục gói (`SubscriptionPlan`: hạng `BASIC | PRO | ULTIMATE`, giá VND,
   credit tháng — `null` là không giới hạn, hạng thuật toán `EP_DBLF | EP_DBLF_GA | EP_DBLF_GA_AI`) là dữ liệu nền tảng, mọi phiên đọc được; gói
@@ -2613,13 +2487,13 @@ cuối mục này. Chữ trong mockup không phải chuẩn — chuẩn là `lib
 | Bước Soạn hàng và hộp đối chiếu ba mức không có trong mockup kho | Áp ngôn ngữ V2.3 cho màn hiện có, giữ danh sách phẳng kèm "Báo thiếu" từng dòng | Luồng kho đã đổi sau khi mockup được vẽ |
 | Màn Xếp xong có tên tài xế và số điện thoại | Bỏ hai dòng đó; có tuyến, xe (khi chuyến còn ở danh sách kho) và ngày chạy | Màn không có nguồn số điện thoại / tài xế (không bịa số) |
 | Màn tài xế: nút "VI" kính, tab đáy, nút tròn "Đã dỡ" từng dòng kiện, "Bắt đầu giao" (V2.3 đợt 6) | Hai nút `LanguageSwitch` 56 px đặc; không tab đáy; dòng kiện chỉ hiện trạng thái, dỡ qua hộp đối chiếu; nút chính "Xuất phát" → "Đã đến điểm n" → "Hoàn tất điểm giao" | Luật mục 1; luồng đã đổi sau khi mockup được vẽ (FE-6-03, FE-6-06) |
-| Màn điểm giao tài xế: "Báo sự cố" là nút vuông 48 px cạnh nút chính ở chân màn; "Sự cố trên đường", "Nhận hàng dọc đường" không có trong mockup | "Báo sự cố" là nút phụ 56 px trong vùng cuộn, chân màn chỉ có nút chính; hai việc kia gom sau nút phụ "Thêm" mở tờ trượt từ đáy (mỗi hàng 56 px, giữ quyền và hộp thoại cũ) | Mục 10 (vùng chạm 56 px); mỗi màn một nút chính; không bốn nút phụ xếp chồng giữa màn |
+| Màn điểm giao tài xế: "Báo sự cố" là nút vuông 48 px cạnh nút chính ở chân màn; "Sự cố trên đường" không có trong mockup | "Báo sự cố" là nút phụ 56 px trong vùng cuộn, chân màn chỉ có nút chính; "Sự cố trên đường" nằm sau nút phụ "Thêm" mở tờ trượt từ đáy (hàng 56 px, giữ quyền và hộp thoại cũ) | Mục 10 (vùng chạm 56 px); mỗi màn một nút chính; không bốn nút phụ xếp chồng giữa màn |
 | Chip "đang xếp" / "đang chạy" màu tím (mockup kho, tài xế); chữ 13 px, hộp "Báo sự cố" có dấu sao bắt buộc ở nhãn (màn tài xế) | Thang azure; chữ 16 px; nhãn không kèm dấu sao | Không dùng tím; mục 10; tên truy cập của nhãn giữ nguyên |
-| Thẻ chuyến liệt kê điểm cho mọi nhóm | Chỉ nhóm Đang vận chuyển và Xếp xong — chờ xuất phát; số kiện của điểm lấy từ phương án (điểm nhận dọc đường ghi loại điểm thay cho số kiện); giờ đến của điểm ở dòng thứ hai dưới tên (dự kiến từ tuyến hoặc vị trí xe, hay giờ đã đến), một dòng nguồn + MOCK RESULT cho cả danh sách | Nhóm khác chưa có việc ở từng điểm; không bịa số; ở 360 px giờ và chip mức hạn không còn chỗ trên dòng tên |
+| Thẻ chuyến liệt kê điểm cho mọi nhóm | Chỉ nhóm Đang vận chuyển và Xếp xong — chờ xuất phát; số kiện của điểm lấy từ phương án; giờ đến của điểm ở dòng thứ hai dưới tên (dự kiến từ tuyến hoặc vị trí xe, hay giờ đã đến), một dòng nguồn + MOCK RESULT cho cả danh sách | Nhóm khác chưa có việc ở từng điểm; không bịa số; ở 360 px giờ và chip mức hạn không còn chỗ trên dòng tên |
 | Tổng kết chuyến: Lumo thay dấu kiểm | Giữ Lumo nhỏ ở đầu thẻ, dấu kiểm ở từng điểm | Mục "Thương hiệu": tư thế xong việc |
 | Card đè lên dải trời (mọi màn có `PageHero`, màn Xếp xong, chờ duyệt lại) | Card nằm dưới dải, không đè | Quyết định của chủ sản phẩm: card che tiến trình và tab khi cuộn |
 | Đội xe: tab trạng thái trên dải trời; bảng vật cản một dòng 10 cột; nhãn "Chưa dùng trong tính toán" ở Trục xe | Giữ ô số làm công tắc lọc; bảng vật cản hai dòng; bỏ nhãn | Quyết định của chủ sản phẩm; trục xe đã dùng để tính tải trục |
-| Ma trận quyền 13 quyền × 5 vai trò | 39 quyền × 8 vai trò | Ma trận thật của sản phẩm |
+| Ma trận quyền 13 quyền × 5 vai trò | 37 quyền × 8 vai trò | Ma trận thật của sản phẩm |
 | Nhật ký nhóm theo ngày, có đường thời gian | Giữ bảng có sắp xếp, phân trang | Quyết định của chủ sản phẩm |
 | Đăng nhập có ảnh xe tải 3D; màn lỗi dùng ô icon và khối "Chi tiết kỹ thuật" | Hình đẳng cự từ `lib/isometric.ts`; Lumo; không hiện chi tiết kỹ thuật | Không mượn ảnh ngoài; mục "Thương hiệu"; không lộ stack cho người dùng cuối |
 | Ảnh đại diện tròn ở thẻ Hồ sơ | Ô vuông bo góc | Luật ảnh đại diện trong nội dung |

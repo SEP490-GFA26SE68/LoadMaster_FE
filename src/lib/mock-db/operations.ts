@@ -19,9 +19,8 @@ export function isFinishedPhase(phase: TripPhase): boolean {
 }
 
 /**
- * Từ khi kho bắt đầu xếp, xe, điểm giao và kiện của chuyến bị khoá (D-45). Ngoại lệ duy nhất, ở **một** chỗ: duyệt yêu cầu nhận hàng dọc
- * đường chèn điểm nhận và điểm giao vào chuyến đang vận chuyển (`insertPickupIntoTrip`, FE-7-04, PRD v2 mục 7.1); mọi hàm sửa chuyến
- * khác vẫn chặn `TRIP_LOCKED`.
+ * Từ khi kho bắt đầu xếp, xe, điểm giao và kiện của chuyến bị khoá (D-45). Ngoại lệ duy nhất, ở **một** chỗ: điều phối viên đổi thứ tự
+ * các điểm chưa giao của chuyến đang vận chuyển (`reorderRunningStops`, FE-BL-03); mọi hàm sửa chuyến khác vẫn chặn `TRIP_LOCKED`.
  */
 export function isLockedPhase(phase: TripPhase): boolean {
   return phase !== 'planning'
@@ -68,15 +67,11 @@ export function canCancelTrip(phase: TripPhase, exceptions: readonly Pick<TripEx
   return isCancellablePhase(phase) || (phase === 'delivering' && exceptions.some(isActiveException))
 }
 
-/**
- * Kiện đã lên xe mà chưa giao: huỷ chuyến Đang vận chuyển thì chúng thành Hoàn trả. Kiện đã dỡ ở điểm chưa hoàn tất vẫn là chưa giao.
- * Kiện nhận dọc đường tài xế đã nhận lên xe (`pickedIds`) tính như kiện kho đã xếp.
- */
+/** Kiện đã lên xe mà chưa giao: huỷ chuyến Đang vận chuyển thì chúng thành Hoàn trả. Kiện đã dỡ ở điểm chưa hoàn tất vẫn là chưa giao. */
 export function undeliveredCount(trip: Pick<Trip, 'loading' | 'delivery'>): number {
   const loaded = trip.loading?.steps.filter((step) => step.outcome === 'loaded').length ?? 0
-  const picked = trip.delivery?.stops.reduce((sum, stop) => sum + (stop.pickedIds?.length ?? 0), 0) ?? 0
   const delivered = trip.delivery?.stops.reduce((sum, stop) => sum + (stop.completedAt === undefined ? 0 : stop.unloadedIds.length), 0) ?? 0
-  return loaded + picked - delivered
+  return loaded - delivered
 }
 
 /** Bản đã duyệt mới nhất; `revisions` theo thứ tự kho trả (cũ trước). */
@@ -149,13 +144,13 @@ export function tripRouteSubStatus(trip: Pick<Trip, 'phase' | 'routePlan'>): Tri
 export function tripManualSubStatus(trip: Pick<Trip, 'phase' | 'verifications'>): TripSubStatus | null {
   const count = trip.phase === 'loading'
     ? pendingManualConfirms(trip, 'STAGING').length + pendingManualConfirms(trip, 'LOADING').length
-    : trip.phase === 'delivering' ? pendingManualConfirms(trip, 'UNLOADING').length + pendingManualConfirms(trip, 'PICKUP').length : 0
+    : trip.phase === 'delivering' ? pendingManualConfirms(trip, 'UNLOADING').length : 0
   return count > 0 ? { kind: 'manualPending', count } : null
 }
 
 /**
- * Kiện đã xếp trong phương án: mã instance → số điểm giao. Phương án đánh số điểm theo lúc duyệt; chuyến đã chèn điểm nhận dọc đường
- * (FE-7-04) thì truyền `stops` để đổi sang số điểm **hiện tại** (`plan-stops.ts`) — không truyền thì giữ số của phương án.
+ * Kiện đã xếp trong phương án: mã instance → số điểm giao. Phương án đánh số điểm theo lúc duyệt; chuyến đã đổi thứ tự điểm lúc
+ * xe đang chạy (FE-BL-03) thì truyền `stops` để đổi sang số điểm **hiện tại** (`plan-stops.ts`) — không truyền thì giữ số của phương án.
  */
 export function plannedStops(revision: Pick<Revision, 'request' | 'result'>, stops?: readonly Pick<DeliveryStop, 'planNumber'>[]): Map<string, number> {
   const stopById = new Map(expandPackages(revision.request.packages).instances.map((i) => [i.packageInstanceId, i.deliveryStop]))

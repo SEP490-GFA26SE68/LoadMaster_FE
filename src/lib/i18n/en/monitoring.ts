@@ -120,7 +120,7 @@ export const monitoring = {
     down: 'Move {name} down',
     completed: 'Delivered',
     arrived: 'Vehicle arrived',
-    note: 'Delivered stops and the stop the vehicle has reached stay where they are. A pickup stop must come before the delivery stop of the same request. Arrival times and deadline levels are recalculated; the load plan does not change.',
+    note: 'Delivered stops and the stop the vehicle has reached stay where they are. Arrival times and deadline levels are recalculated; the load plan does not change.',
     apply: 'Apply new order',
     close: 'Close',
     done: 'Stop order of trip {id} changed.',

@@ -4,7 +4,6 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { useCan } from '@/features/auth/useCan'
-import { PickupRequestsCard } from '@/features/pickups/PickupRequestsCard'
 import { RequirementAssignDialog } from '@/features/requirements/RequirementAssignDialog'
 import { tripLabelsPath } from '@/features/package-pool/packages-list'
 import type { CargoPackage } from '@/domain/models'
@@ -170,7 +169,6 @@ function StoreTripDetailPage() {
               {/* Việc chờ điều phối viên đứng trước bảng kiện: còn dòng ở đây thì kho / tài xế chưa đi tiếp được (FE-6-04) */}
               <MissingPackagesCard tripId={tripId} live={live} />
               <ManualConfirmCard tripId={tripId} live={live} />
-              <PickupRequestsCard tripId={tripId} phase={trip.phase} stops={trip.stops} />
               <PackagesTable
                 packages={trip.packages}
                 vehicle={vehicle}

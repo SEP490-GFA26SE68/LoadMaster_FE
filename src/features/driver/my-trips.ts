@@ -7,7 +7,6 @@ import {
   tripStatus,
   tripSubStatus,
   type Revision,
-  type StopKind,
   type Trip,
 } from '@/lib/mock-db'
 import type { TripStatus, TripSubStatus } from '@/types/trip'
@@ -20,8 +19,7 @@ export type TripRevisions = { readonly trip: Trip; readonly revisions: readonly 
 export type MyTripStop = {
   readonly number: number
   readonly name: string
-  readonly kind: StopKind
-  /** Kiện của phương án ở điểm (trừ kiện hỏng bị bỏ lại kho); điểm nhận dọc đường chèn lúc chạy không có kiện nào của phương án. */
+  /** Kiện của phương án ở điểm (trừ kiện hỏng bị bỏ lại kho). */
   readonly packageCount: number
   readonly done: boolean
 }
@@ -101,7 +99,7 @@ export function myTripGroup(row: Pick<MyTripRow, 'status' | 'sub'>): MyTripGroup
 
 /**
  * Điểm của chuyến kèm số kiện của phương án và dấu "đã hoàn tất" (`StopProgress.completedAt`). Số điểm của phương án đổi sang số hiện
- * tại (`plannedStops(plan, trip.stops)`) nên chuyến đã chèn điểm nhận dọc đường vẫn đếm đúng.
+ * tại (`plannedStops(plan, trip.stops)`) nên chuyến đã đổi thứ tự điểm khi xe đang chạy vẫn đếm đúng.
  */
 export function tripStopLines(trip: Pick<Trip, 'stops' | 'loading' | 'delivery'>, plan: Revision): MyTripStop[] {
   const left = leftOutIds(trip)
@@ -113,7 +111,6 @@ export function tripStopLines(trip: Pick<Trip, 'stops' | 'loading' | 'delivery'>
   return trip.stops.map((stop, index) => ({
     number: index + 1,
     name: stop.name,
-    kind: stop.kind ?? 'DELIVERY',
     packageCount: perStop.get(index + 1) ?? 0,
     done: finished.has(index + 1),
   }))

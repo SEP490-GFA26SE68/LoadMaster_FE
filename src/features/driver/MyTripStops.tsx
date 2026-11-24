@@ -10,7 +10,7 @@ import { useDriverStopTimesQuery, useDriverTripMonitoringQuery } from './useDriv
 /**
  * Các điểm của chuyến trong thẻ "Chuyến của tôi" (V2.3 đợt 6; chỉ nhóm Đang vận chuyển và Xếp xong — chờ xuất phát): mỗi điểm một dòng
  * — số điểm trên màu điểm giao, tên, số kiện của phương án — và điểm đã hoàn tất có dấu kiểm kèm chữ cho trình đọc màn hình (trạng thái
- * không chỉ nằm ở màu hay hình). Điểm nhận dọc đường không có kiện của phương án nên ghi loại điểm thay cho số kiện.
+ * không chỉ nằm ở màu hay hình).
  *
  * Điểm chưa hoàn tất có thêm dòng giờ dưới tên (`stopListTimings`, cùng luật với thẻ liên hệ của màn điểm giao): "Dự kiến HH:mm" — chuyến Đang
  * vận chuyển tính từ vị trí xe, đọc lại theo nhịp kho trả; chuyến xếp xong theo tuyến đã tối ưu — hoặc "Đã đến HH:mm", kèm mức hạn bằng chữ khi
@@ -29,7 +29,7 @@ export function MyTripStops({ row }: { row: Pick<MyTripRow, 'id' | 'status' | 's
 export function ServerMyTripStops({ tripId, tripCode }: { tripId: string; tripCode: string }) {
   const query = useDriverStopTimesQuery(tripId)
   if (!query.data || query.data.stops.length === 0) return null
-  const stops = query.data.stops.map((stop): MyTripStop => ({ number: stop.number, name: stop.name, kind: 'DELIVERY', packageCount: stop.packageCount, done: stop.done }))
+  const stops = query.data.stops.map((stop): MyTripStop => ({ number: stop.number, name: stop.name, packageCount: stop.packageCount, done: stop.done }))
   return <MyTripStopList tripId={tripCode} stops={stops} timings={serverStopListTimings(query.data)} mock={false} />
 }
 
@@ -57,7 +57,7 @@ function MyTripStopList({ tripId, stops, timings, mock = true }: {
                 {stop.name}
               </span>
               <span className="flex items-center gap-3 font-medium text-ink-2">
-                {stop.kind === 'PICKUP' ? t('driver.stopKinds.PICKUP') : t('common.packageCount', { count: stop.packageCount })}
+                {t('common.packageCount', { count: stop.packageCount })}
                 {stop.done ? (
                   <span className="text-badge-success-fg">
                     <CircleCheck className="size-5" strokeWidth={2} aria-hidden />
