@@ -58,9 +58,10 @@ test('quản trị hệ thống và quản trị công ty quản lý người d�
   expect(cellsOf(matrix, 'Xem chuyến hàng')).toStrictEqual([NO, NO, NO, NO, YES, YES, NO, NO])
   expect(cellsOf(matrix, 'Xếp hàng tại kho')).toStrictEqual([NO, NO, NO, NO, NO, NO, YES, NO])
   expect(cellsOf(matrix, 'Giao hàng')).toStrictEqual([NO, NO, NO, NO, NO, NO, NO, YES])
-  // Lương tài xế do quản lý công ty quản lý, như CompanyPayrollController (hasRole MANAGER) của backend
-  expect(cellsOf(matrix, 'Quản lý cấu hình và tính bảng lương tài xế')).toStrictEqual([NO, NO, NO, NO, YES, NO, NO, NO])
-  expect(cellsOf(matrix, 'Xem phiếu lương của mình')).toStrictEqual([NO, NO, NO, NO, NO, YES, NO, NO])
+  // Bảng lương (tài xế, điều phối, kho) do quản lý công ty quản lý, như các controller lương của công ty (hasRole MANAGER) ở backend
+  expect(cellsOf(matrix, 'Quản lý cấu hình và tính bảng lương tài xế, điều phối, kho')).toStrictEqual([NO, NO, NO, NO, YES, NO, NO, NO])
+  // Điều phối viên và nhân viên kho đọc phiếu lương của chính mình (/api/dispatcher/payroll, /api/warehouse/payroll)
+  expect(cellsOf(matrix, 'Xem phiếu lương của mình')).toStrictEqual([NO, NO, NO, NO, NO, YES, YES, NO])
 })
 
 test('chỉ quản lý công ty xuất báo cáo; điều phối chạy tối ưu, chỉnh sửa và duyệt phương án (FE-0-07)', () => {

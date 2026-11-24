@@ -1,4 +1,4 @@
-import { LifeBuoy, LogOut, UserRound } from 'lucide-react'
+import { Banknote, LifeBuoy, LogOut, UserRound } from 'lucide-react'
 import { lazy, Suspense, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import {
@@ -23,7 +23,7 @@ const TOUCH_ITEM = 'h-14 px-3 text-body-lg [&_svg]:size-5'
 
 /**
  * Nút tài khoản 56px ở header màn chính của kho (`/kho`) và tài xế (`/tai-xe`) — hai màn không có nav rail (LM-096): mở hồ sơ cá
- * nhân, yêu cầu hỗ trợ (FE-8-07) hoặc đăng xuất. Cùng nhãn "Tài khoản {tên}" với menu tài khoản của nav rail.
+ * nhân, phiếu lương (nhân viên kho, `payroll.viewOwn`), yêu cầu hỗ trợ (FE-8-07) hoặc đăng xuất. Cùng nhãn "Tài khoản {tên}" với menu tài khoản của nav rail.
  */
 export function AccountMenu({ className, tone = 'light' }: {
   className?: string
@@ -76,6 +76,14 @@ export function AccountMenu({ className, tone = 'light' }: {
               {t('nav.profile')}
             </Link>
           </DropdownMenuItem>
+          {can(user.role, 'payroll.viewOwn') ? (
+            <DropdownMenuItem asChild className={TOUCH_ITEM}>
+              <Link to="/phieu-luong">
+                <Banknote strokeWidth={1.5} aria-hidden />
+                {t('nav.payrollOwn')}
+              </Link>
+            </DropdownMenuItem>
+          ) : null}
           {can(user.role, 'support.create') ? (
             <DropdownMenuItem className={TOUCH_ITEM} onSelect={() => setSupportOpen(true)}>
               <LifeBuoy strokeWidth={1.5} aria-hidden />

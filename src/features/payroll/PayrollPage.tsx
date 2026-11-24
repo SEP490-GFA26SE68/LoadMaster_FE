@@ -18,6 +18,7 @@ import { payrollRateFormSchema, type PayrollRateFormInput, type PayrollRateFormV
 import { PayrollRateSettings } from './PayrollRateSettings'
 import { PayrollResults } from './PayrollResults'
 import { lockedPayrollMonth } from './payroll-version-row'
+import { WarehousePayrollPanel } from './WarehousePayrollPanel'
 import {
   useCalculatePayrollPeriodMutation,
   useCreatePayrollRateMutation,
@@ -125,6 +126,7 @@ export function PayrollPage() {
             <TabsList aria-label={t('payroll.title')}>
               <TabsTrigger value="drivers">{t('payroll.tabs.drivers')}</TabsTrigger>
               <TabsTrigger value="dispatchers">{t('payroll.tabs.dispatchers')}</TabsTrigger>
+              <TabsTrigger value="warehouse">{t('payroll.tabs.warehouse')}</TabsTrigger>
             </TabsList>
             <TabsContent value="drivers" className="flex min-w-0 flex-col gap-5">
           <div className="grid items-start gap-5 xl:grid-cols-[minmax(320px,0.8fr)_minmax(0,1.2fr)]">
@@ -309,6 +311,9 @@ export function PayrollPage() {
             </TabsContent>
             <TabsContent value="dispatchers">
               <DispatcherPayrollPanel />
+            </TabsContent>
+            <TabsContent value="warehouse">
+              <WarehousePayrollPanel />
             </TabsContent>
           </Tabs>
         </main>

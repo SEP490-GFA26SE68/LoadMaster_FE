@@ -60,7 +60,7 @@ const SubscriptionHistoryPage = lazy(() => import('@/features/platform/Subscript
 const TrialRequestsPage = lazy(() => import('@/features/platform/TrialRequestsPage').then((m) => ({ default: m.TrialRequestsPage })))
 const BillingPage = lazy(() => import('@/features/billing/BillingPage').then((m) => ({ default: m.BillingPage })))
 const PayrollPage = lazy(() => import('@/features/payroll/PayrollPage').then((m) => ({ default: m.PayrollPage })))
-const DispatcherPayslipPage = lazy(() => import('@/features/payroll/DispatcherPayslipPage').then((m) => ({ default: m.DispatcherPayslipPage })))
+const PayslipPage = lazy(() => import('@/features/payroll/PayslipPage').then((m) => ({ default: m.PayslipPage })))
 const PaymentSimulationPage = lazy(() => import('@/features/billing/PaymentSimulationPage').then((m) => ({ default: m.PaymentSimulationPage })))
 const PaymentResultPage = lazy(() => import('@/features/billing/PaymentResultPage').then((m) => ({ default: m.PaymentResultPage })))
 // Trang công khai (giới thiệu, bảng giá, chính sách bảo mật, điều khoản sử dụng) và màn liên hệ của khách gửi từ trang giới thiệu
@@ -246,13 +246,13 @@ export const routes: RouteObject[] = [
                     { path: '/thanh-toan/gia-lap', element: <PaymentSimulationPage />, handle: titled((t) => t('titles.payment')) },
                     { path: '/thanh-toan/ket-qua', element: <PaymentResultPage />, handle: titled((t) => t('titles.paymentResult')) },
                   ]),
-                  // Bảng lương tài xế và điều phối: quản lý công ty
+                  // Bảng lương tài xế, điều phối và kho: quản lý công ty
                   guarded('payroll.manage', [
                     { path: '/bang-luong', element: <PayrollPage />, handle: titled((t) => t('titles.payroll')) },
                   ]),
-                  // Phiếu lương điều phối: điều phối viên xem của mình
+                  // Phiếu lương: điều phối viên và nhân viên kho xem của mình
                   guarded('payroll.viewOwn', [
-                    { path: '/phieu-luong', element: <DispatcherPayslipPage />, handle: titled((t) => t('titles.dispatcherPayroll')) },
+                    { path: '/phieu-luong', element: <PayslipPage />, handle: titled((t) => t('titles.dispatcherPayroll')) },
                   ]),
                   // Hồ sơ cá nhân (LM-096): mọi người đã đăng nhập, không cần quyền riêng.
                   { path: '/ho-so', element: <ProfilePage />, handle: titled((t) => t('titles.profile')) },

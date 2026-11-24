@@ -82,7 +82,7 @@ export const NAV_ITEMS: Readonly<Record<Role, readonly NavScreenId[]>> = {
   companyAdmin: ['users', 'audit', 'billing', 'companyProfile'],
   companyManager: ['dashboard', 'requirements', 'packages', 'trips', 'tripClaims', 'monitoring', 'fleet', 'companyWarehouses', 'payroll'],
   dispatcher: ['trips', 'tripClaims', 'monitoring', 'packages', 'requirements', 'fleet', 'dashboard', 'payrollOwn'],
-  warehouse: ['warehouse', 'warehouseVehicles', 'packages', 'warehouseCustomers'],
+  warehouse: ['warehouse', 'warehouseVehicles', 'packages', 'warehouseCustomers', 'payrollOwn'],
   driver: ['driver'],
 }
 

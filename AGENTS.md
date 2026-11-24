@@ -20,7 +20,7 @@ tảng, năm vai trò của công ty logistics (khách hàng của app); `ROLES`
 | Quản lý nền tảng (`systemManager` · `SYSTEM_MANAGER`) | Desktop | Nền tảng: danh mục gói cước `/nen-tang/goi` (FE-8-02), lịch sử gói `/nen-tang/lich-su-goi`, công ty, yêu cầu dùng thử |
 | Hỗ trợ khách hàng (`systemSupporter` · `SYSTEM_SUPPORTER`) | Desktop | Nền tảng: yêu cầu hỗ trợ của mọi công ty `/ho-tro` (FE-8-07), liên hệ của khách `/lien-he-khach` |
 | Quản trị công ty (`companyAdmin` · `COMPANY_ADMIN`) | Desktop | Người dùng, nhật ký, gói cước và credit `/goi-cuoc` (FE-8-03), thông tin công ty `/cong-ty` |
-| Quản lý công ty (`companyManager` · `MANAGER`) | Desktop / tablet | Dashboard `/tong-quan`, biểu đồ, xuất báo cáo; kho của công ty `/quan-ly-kho`; bảng lương tài xế `/bang-luong`; xem yêu cầu giao, chuyến và phương án chỉ đọc |
+| Quản lý công ty (`companyManager` · `MANAGER`) | Desktop / tablet | Dashboard `/tong-quan`, biểu đồ, xuất báo cáo; kho của công ty `/quan-ly-kho`; bảng lương tài xế, điều phối và kho `/bang-luong`; xem yêu cầu giao, chuyến và phương án chỉ đọc |
 | Điều phối viên (`dispatcher` · `DISPATCHER`) | Desktop | Dữ liệu dày, phiên làm việc dài, bảng nhiều cột; lập yêu cầu giao, lập chuyến, tối ưu, duyệt phương án, in nhãn QR |
 | Nhân viên kho (`warehouse` · `WAREHOUSE_WORKER`) | Tablet tại kho | Sáng, đeo găng, nhìn xa, một thao tác mỗi màn; quản lý kho kiện (thêm kiện, nhập file), loại kiện, khách gửi hàng |
 | Tài xế (`driver` · `DRIVER`) | Điện thoại ngoài trời | Nắng, một tay, mạng yếu |
@@ -42,7 +42,7 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   `can`/`permissionsOf`; thứ tự `PERMISSIONS` là thứ tự dòng của Ma trận quyền. Ba vai trò nền tảng **không có quyền vận hành**: quản trị hệ
   thống có `companies.manage`, `users.manage`, `audit.view`, `contacts.handle`, `trialRequests.manage`; quản lý nền tảng `subscriptionPlans.manage`,
   `companies.manage`, `trialRequests.manage`; hỗ trợ khách hàng `support.handle`, `contacts.handle`. Quản trị công ty có `companyProfile.manage`,
-  `users.manage`, `audit.view`, `billing.manage`, `support.create`. Quản lý công ty thêm `companyWarehouses.manage` (`/quan-ly-kho`) và `payroll.manage` (`/bang-luong`). Điều phối viên thêm `payroll.viewOwn` (`/phieu-luong`).
+  `users.manage`, `audit.view`, `billing.manage`, `support.create`. Quản lý công ty thêm `companyWarehouses.manage` (`/quan-ly-kho`) và `payroll.manage` (`/bang-luong`). Điều phối viên và nhân viên kho thêm `payroll.viewOwn` (`/phieu-luong`).
 - Mỗi nhóm route bọc `RequirePermission` trong `app/App.tsx`, thiếu quyền là màn 403 (`app/ForbiddenPage.tsx`) có nút về màn chính; thanh
   điều hướng chỉ hiện mục có quyền; nút ghi ẩn qua `useCan()`. Backend thật phải kiểm lại ở server. Màn mới thêm route vào đúng nhóm quyền.
 - **Quyền theo màn:** `requirements.view` mở `/yeu-cau-giao` (quản lý công ty, điều phối viên; `/don-hang` chuyển hướng sang đó), tạo, sửa, xoá theo
@@ -58,7 +58,7 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   `routes.optimize`: nút "Tối ưu tuyến" ở Chi tiết chuyến (điều phối viên, FE-4b-09). `manualConfirm.approve`: Duyệt / Từ chối ở thẻ "Xác nhận
   tay chờ duyệt" (điều phối viên, FE-6-04). `pickups.create`: nút "Nhận hàng dọc đường" ở Chi tiết chuyến và `/giam-sat` (điều phối viên) và ở
   màn điểm giao (tài xế, FE-7-03); `pickups.approve`: Từ chối / Duyệt (điều phối viên, FE-7-04). `subscriptionPlans.manage`: `/nen-tang/goi`
-  (FE-8-02). `payroll.manage`: `/bang-luong` (quản lý công ty: tab tài xế và điều phối). `payroll.viewOwn`: `/phieu-luong` (điều phối viên xem phiếu lương của mình). `billing.manage`: `/goi-cuoc`, `/thanh-toan/gia-lap` và `/thanh-toan/ket-qua` (FE-8-03, FE-8-04). `companies.manage`: `/nen-tang/cong-ty`
+  (FE-8-02). `payroll.manage`: `/bang-luong` (quản lý công ty: tab Tài xế, Điều phối và Kho). `payroll.viewOwn`: `/phieu-luong` (điều phối viên và nhân viên kho xem phiếu lương của mình — `PayslipPage` chọn phiếu theo `warehouse.operate`; nhân viên kho mở từ thanh điều hướng hoặc menu tài khoản 56 px của `/kho`, màn cảm ứng có nút "Về màn kho"). `billing.manage`: `/goi-cuoc`, `/thanh-toan/gia-lap` và `/thanh-toan/ket-qua` (FE-8-03, FE-8-04). `companies.manage`: `/nen-tang/cong-ty`
   (FE-8-06). `companyProfile.manage`: `/cong-ty` (quản trị công ty).
   `support.create`: mục "Yêu cầu hỗ trợ" của menu tài khoản (năm vai trò công ty); `support.handle`: `/ho-tro` (FE-8-07). `contacts.handle`:
   `/lien-he-khach` (quản trị hệ thống, hỗ trợ khách hàng; gửi yêu cầu liên hệ không cần quyền). Giám sát (FE-6-10 → FE-6-12):
@@ -375,7 +375,7 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   `NAV_ITEMS` là danh sách của từng vai trò theo thứ tự của vai trò đó, màn chính đứng đầu; quyền vẫn là cổng (`navItemsFor` bỏ mục thiếu quyền).
   Quản trị hệ thống: Công ty · Người dùng · Nhật ký · Liên hệ của khách · Đơn dùng thử. Quản trị công ty: Người dùng · Nhật ký · Gói và credit ·
   Thông tin công ty. Quản lý công ty: Bảng điều khiển · Yêu cầu giao · Kho kiện (chỉ đọc) · Chuyến hàng · Giám sát · Đội xe · Kho bãi (`/quan-ly-kho`; nhãn ngắn `nav.companyWarehouses` để thanh vừa 1.366 px ở cả hai ngôn ngữ) · Bảng lương (`/bang-luong`). Tám mục chỉ vừa 1.366 px khi lề mục là 8 px tới dưới 1.536 px (`2xl:px-3.5` từ 1.536 px). Điều phối
-  viên: Chuyến hàng · Giám sát · Kho kiện (chỉ đọc) · Yêu cầu giao · Đội xe · Bảng điều khiển · Phiếu lương (`/phieu-luong`). Nhân viên kho: Kho · Kho kiện · Khách hàng. Tài xế: một
+  viên: Chuyến hàng · Giám sát · Kho kiện (chỉ đọc) · Yêu cầu giao · Đội xe · Bảng điều khiển · Phiếu lương (`/phieu-luong`). Nhân viên kho: Kho · Xe trong kho · Kho kiện · Khách hàng · Phiếu lương (`/phieu-luong`). Tài xế: một
   mục về màn của mình (thanh chỉ hiện ở màn hồ sơ). Quản lý nền tảng: Gói cước · Lịch sử gói cước · Công ty (chỉ xem danh sách; tạo, sửa công ty là của quản trị hệ thống) · Đơn dùng thử. Hỗ trợ khách hàng: Hỗ trợ ·
   Liên hệ của khách (không có nút đổi gói của khách trên thanh). Màn chính của ba vai trò nền tảng vẫn là màn riêng của từng vai trò. Màn mới
   thêm một dòng vào `NAV_SCREENS` và mã của nó vào `NAV_ITEMS`, trong issue của màn đó.
@@ -404,7 +404,7 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   (`--primary` không đủ tương phản trên nền tối). Thanh còn có nút Tìm nhanh (Ctrl+K / ⌘K, LM-099 — chỉ nhóm có quyền xem, `searchGroupsFor`; màn
   toàn màn hình không có), chuông thông báo (LM-098 — sự kiện nhật ký liên quan vai trò, không gồm việc chính mình làm; "đã đọc" là state giao
   diện trong tab, `read-state.ts`) và mục "Hồ sơ cá nhân" trong menu tài khoản (`/ho-so`, LM-096 — mọi người đã đăng nhập; mục "Yêu cầu hỗ trợ" kế
-  bên là của năm vai trò công ty, FE-8-07; kho/tài xế mở từ nút tài khoản 56 px ở màn chính). Nút hành động trên thanh dùng
+  bên là của năm vai trò công ty, FE-8-07; kho/tài xế mở từ nút tài khoản 56 px ở màn chính — menu đó còn có "Phiếu lương" cho vai trò có `payroll.viewOwn`). Nút hành động trên thanh dùng
   `components/NavRailButton.tsx`. Nhóm `assistant` nối máy chủ thì sau Tìm nhanh có nút "Trợ lý AI" 36 px (mục 1 "Trợ lý"); để tám mục của
   quản lý công ty vẫn vừa, chữ "LoadMaster" cạnh logo ẩn ở 1.340–1.439 px và ô tìm nhanh chỉ rộng (176 px kèm "Ctrl K") từ 1.680 px thay vì
   1.536 px (`QuickSearch wideFrom`). Thêm mục vào thanh phải đo lại ở 1.366 px (`e2e/layout-1366.spec.ts` đo thanh của điều phối viên và quản lý
@@ -1434,7 +1434,7 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   như kho mẫu, nên CI, E2E và test cũ không đổi. Đã nối: `users`, `companies`, `billing`, `contacts`, `support`, `packages`, `driver`,
   `monitoring`, `trips`, `fleet`, `warehouse`, `notifications`, `registration`, `payroll`, `assistant` (trợ lý AI Lumo — mục 1 "Trợ lý
   Hỏi Lumo"; tắt thì Lumo trả lời bằng câu soạn sẵn và app không có nút trợ lý). Nhóm `payroll` cấu hình phiên bản đơn giá công ty,
-  tính và chốt bảng lương theo tháng, đọc phiếu lương tài xế và gán tài xế cho chuyến. `platformOps` chưa có thân hàm nào — cờ bật vẫn là kho mẫu — nên không dựa vào `usesBackend`
+  tính và chốt bảng lương theo tháng, đọc phiếu lương tài xế và gán tài xế cho chuyến; lương điều phối (`/api/company/dispatcher-payroll/*`, `/api/dispatcher/payroll`) và lương kho (`/api/company/warehouse-payroll/*`: lương cứng, tiền mỗi kg đã xếp, KPI tuỳ chọn, lương cứng riêng từng người từ tháng sau; phiếu của chính nhân viên kho `/api/warehouse/payroll` — kỳ chưa chốt chỉ có lương cứng, kỳ đã chốt có đủ số và từng chuyến đã xếp). Kho mẫu không có bảng lương: màn hiện trạng thái chưa bật. `platformOps` chưa có thân hàm nào — cờ bật vẫn là kho mẫu — nên không dựa vào `usesBackend`
   của nhóm đó cho tới khi nối. Nhóm `notifications` tắt thì chuông đọc nhật ký kho mẫu nên chỉ hiện khi mọi nhóm mà thông báo của vai trò
   nói về còn là kho mẫu (`notificationsReachable`, `notifications-api.ts`; bật thì mục "Chuông thông báo" dưới). Mã chuyến chỉ là liên kết khi màn đọc chuyến cùng nguồn với màn chuyến (`tripLinkable` ở
   `trips-capabilities.ts`): chuyến nối backend thì bảng điều khiển (khi còn kho mẫu), yêu cầu giao, đội xe, kho kiện, nhật ký, chuông và tab sự cố của Giám sát
