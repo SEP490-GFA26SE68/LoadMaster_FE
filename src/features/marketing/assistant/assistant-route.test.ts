@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { TOPIC_IDS, type TopicId } from './assistant-kb'
 import { matchTopic } from './assistant-match'
+import { routeQuestion } from './assistant-route'
 import { ROUTE_CORPUS, type RouteCase } from './assistant-route-corpus'
 
 /** Mức một bộ định tuyến chọn cho một câu: `MODEL`, `SMALL_TALK` hay mã chủ đề của câu soạn sẵn. */
@@ -63,5 +64,64 @@ describe('route corpus', () => {
     const result = score(legacyRoute)
     console.info(report('bộ khớp cũ', result))
     expect(result.total).toBe(ROUTE_CORPUS.length)
+  })
+})
+
+const router = (item: RouteCase): Routed => {
+  const decision = routeQuestion(item.text, { inConversation: item.inConversation === true, locale: item.locale ?? 'vi' })
+  return decision.route === 'PREPARED' ? decision.topicId : decision.route
+}
+
+describe('routeQuestion on the corpus (gate)', () => {
+  test('no deep question is answered from prepared text, and no prepared answer is off-topic', () => {
+    const result = score(router)
+    console.info(report('bộ định tuyến', result))
+    expect(result.deepServed).toStrictEqual([])
+    expect(result.wrongTopic).toStrictEqual([])
+  })
+})
+
+describe('routeQuestion', () => {
+  const vi = { inConversation: false, locale: 'vi' } as const
+
+  test('the gate also keeps most basic questions off the model', () => {
+    const result = score(router)
+    // 89/97 lúc chốt bộ định tuyến; sửa luật mà rớt dưới mức này là đã đẩy câu cơ bản sang mô hình
+    expect(result.served).toBeGreaterThanOrEqual(85)
+  })
+
+  test('small talk is answered from the dictionary, even inside a model conversation', () => {
+    expect(routeQuestion('Chào bạn', vi)).toStrictEqual({ route: 'SMALL_TALK', smallTalk: 'GREETING', reason: 'GREETING' })
+    expect(routeQuestion('cảm ơn nhiều nhé', { ...vi, inConversation: true })).toMatchObject({ smallTalk: 'THANKS' })
+    expect(routeQuestion('thx a lot', { inConversation: true, locale: 'en' })).toMatchObject({ smallTalk: 'THANKS' })
+    expect(routeQuestion('bye', vi)).toMatchObject({ smallTalk: 'BYE' })
+    expect(routeQuestion('oke', vi)).toMatchObject({ smallTalk: 'ACK' })
+    expect(routeQuestion('👍', vi)).toMatchObject({ smallTalk: 'ACK' })
+  })
+
+  test('a greeting with a question is not small talk', () => {
+    expect(routeQuestion('chào bạn, giá gói Pro bao nhiêu?', vi)).toMatchObject({ route: 'PREPARED', topicId: 'plans' })
+  })
+
+  test('a model conversation keeps going to the model', () => {
+    expect(routeQuestion('Gói Pro giá bao nhiêu?', vi)).toMatchObject({ route: 'PREPARED', topicId: 'plans' })
+    expect(routeQuestion('Gói Pro giá bao nhiêu?', { ...vi, inConversation: true })).toStrictEqual({ route: 'MODEL', reason: 'IN_CONVERSATION' })
+  })
+
+  test('deep signals send the question to the model, each with its reason code', () => {
+    expect(routeQuestion('web lỗi không đăng nhập được', vi)).toMatchObject({ reason: 'FRUSTRATION' })
+    expect(routeQuestion('bên mình có 20 xe thì nên chọn gói nào', vi)).toMatchObject({ route: 'MODEL' })
+    expect(routeQuestion('gói Pro hơn gói Basic ở đâu', vi)).toMatchObject({ reason: 'COMPARISON' })
+    expect(routeQuestion('không quét được mã thì sao', vi)).toMatchObject({ reason: 'CONDITION' })
+    expect(routeQuestion('tải trục tính thế nào', vi)).toMatchObject({ reason: 'MECHANISM' })
+    expect(routeQuestion('Tại sao cần quét mã?', vi)).toMatchObject({ reason: 'WHY' })
+    expect(routeQuestion('còn gói kia?', vi)).toMatchObject({ reason: 'FOLLOW_UP' })
+    expect(routeQuestion('Có xuất hoá đơn VAT không?', vi)).toMatchObject({ route: 'MODEL' })
+    expect(routeQuestion('???', vi)).toStrictEqual({ route: 'MODEL', reason: 'EMPTY' })
+  })
+
+  test('"dữ liệu" is not the conditional "liệu"', () => {
+    expect(routeQuestion('liệu có dùng thử được không', vi)).toMatchObject({ reason: 'CONDITION' })
+    expect(routeQuestion('dữ liệu có tách riêng không', vi)).toMatchObject({ route: 'PREPARED', topicId: 'tenancy' })
   })
 })

@@ -190,6 +190,15 @@ export const assistant = {
     generatedAt: 'Số liệu lúc {time}.',
   },
   fallback: 'Mình chưa có câu trả lời cho câu này trong tài liệu của LoadMaster. Bạn chọn một câu hỏi bên dưới, hoặc gửi câu hỏi cho đội LoadMaster.',
+  /** Câu xã giao (bộ định tuyến `assistant-route.ts`): chào, cảm ơn, tạm biệt, "ok" — trả ngay, không gọi mô hình. */
+  smallTalk: {
+    GREETING: 'Chào bạn! Mình là {name}. Bạn cần hỏi gì về LoadMaster cứ nhắn nhé.',
+    THANKS: 'Không có gì! Bạn còn thắc mắc gì cứ hỏi mình nhé.',
+    BYE: 'Chào bạn, hẹn gặp lại! Khi cần, bạn cứ mở {name} để hỏi tiếp.',
+    ACK: 'Vâng! Bạn muốn tìm hiểu thêm điều gì nữa không?',
+  },
+  /** Dưới câu soạn sẵn khi trợ lý nối máy chủ: gửi lại đúng câu đó cho {name} trả lời chi tiết. */
+  escalate: 'Chưa đúng ý? Hỏi {name} chi tiết',
   handoff: {
     ask: 'Gửi câu hỏi cho đội LoadMaster',
     notRight: 'Chưa đúng ý? Hỏi đội LoadMaster',

@@ -171,6 +171,13 @@ export const assistant = {
     generatedAt: 'Figures as of {time}.',
   },
   fallback: 'I have no answer for that in the LoadMaster documentation yet. Pick a question below, or send your question to the LoadMaster team.',
+  smallTalk: {
+    GREETING: 'Hi! I’m {name}. Ask me anything about LoadMaster.',
+    THANKS: 'You’re welcome! Ask me any time you have another question.',
+    BYE: 'Bye for now! Open {name} again whenever you need.',
+    ACK: 'Great! Is there anything else you’d like to know?',
+  },
+  escalate: 'Not quite it? Ask {name} for details',
   handoff: {
     ask: 'Send my question to the LoadMaster team',
     notRight: 'Not what you needed? Ask the LoadMaster team',

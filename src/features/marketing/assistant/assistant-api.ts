@@ -1,9 +1,15 @@
-import { api, isApiError, isTransientApiError } from '@/lib/api-client'
-import { usesBackend } from '@/lib/backend-config'
+import { api, createApiClient, isApiError, isTransientApiError, type ApiClient } from '@/lib/api-client'
+import { backendConfig, usesBackend } from '@/lib/backend-config'
 import type { Locale } from '@/lib/i18n'
-import type { AssistantMessageRequestDto, AssistantPublicMessageRequestDto, AssistantReplyDto } from './assistant-dto'
+import type {
+  AssistantMessageRequestDto,
+  AssistantPublicMessageRequestDto,
+  AssistantReplyDto,
+  AssistantRouteEventDto,
+} from './assistant-dto'
 import type { TopicId } from './assistant-kb'
 import { matchTopic } from './assistant-match'
+import { routeQuestion, type SmallTalkKind } from './assistant-route'
 import type { ViewerContext } from './viewer-bridge'
 
 /**
@@ -12,11 +18,14 @@ import type { ViewerContext } from './viewer-bridge'
  * | Hàm            | Endpoint                                                                    |
  * |----------------|-----------------------------------------------------------------------------|
  * | `askAssistant` | `POST /api/assistant/public/messages` · `POST /api/assistant/messages`      |
+ * | `recordRoute`  | `POST /api/assistant/public/route-events`                                   |
  *
- * Nhóm `assistant` chưa nối máy chủ (kho mẫu): khớp câu hỏi với bộ câu trả lời soạn sẵn ở trình duyệt (`assistant-match.ts`) sau một
- * khoảng trễ ngắn — đủ cho dòng "đang trả lời", không lâu tới mức làm khách chờ. Nối máy chủ: câu gõ đi tới mô hình; câu gợi ý (gửi kèm
- * `topicId`) vẫn trả câu soạn sẵn của chủ đề đó. Máy chủ bận, hết ngân sách (`ASSISTANT_*`) hay không tới được thì trả câu soạn sẵn kèm
- * `degraded` để màn nói rõ; lỗi khác ném ra như mọi lượt gọi.
+ * Câu xã giao (chào, cảm ơn, tạm biệt, "ok" — `routeQuestion` của `assistant-route.ts`) luôn trả câu ngắn của từ điển, ở mọi bề mặt, kể
+ * cả khi đang nói tiếp với mô hình. Nhóm `assistant` chưa nối máy chủ (kho mẫu): câu còn lại khớp với bộ câu trả lời soạn sẵn ở trình
+ * duyệt (`assistant-match.ts`) sau một khoảng trễ ngắn — đủ cho dòng "đang trả lời", không lâu tới mức làm khách chờ. Nối máy chủ, trang
+ * công khai: câu gợi ý (kèm `topicId`) và câu gõ mà bộ định tuyến chọn mức soạn sẵn trả câu soạn sẵn (khách bấm "Hỏi Lumo chi tiết" thì
+ * cùng câu đó đi tới mô hình, `escalate`), câu còn lại đi tới mô hình; trong ứng dụng câu gõ luôn đi tới mô hình. Máy chủ bận, hết ngân
+ * sách (`ASSISTANT_*`) hay không tới được thì trả câu soạn sẵn kèm `degraded` để màn nói rõ; lỗi khác ném ra như mọi lượt gọi.
  */
 export const ASSISTANT_DELAY_MS = 500
 /** Một lượt trả lời có thể gọi công cụ vài vòng: chờ lâu hơn giới hạn mặc định của client. */
@@ -30,7 +39,8 @@ export const ASSISTANT_USES_AI = ON_BACKEND
 /** Trang công khai (khách, mã khách) hay trong ứng dụng (người đã đăng nhập). */
 export type AssistantSurface = 'public' | 'app'
 
-export type AssistantQuestion = { readonly question: string; readonly topicId?: TopicId }
+/** `escalate`: "Hỏi Lumo chi tiết" dưới một câu soạn sẵn — gửi thẳng câu đó cho mô hình, bỏ qua bộ định tuyến. */
+export type AssistantQuestion = { readonly question: string; readonly topicId?: TopicId; readonly escalate?: true }
 
 export type AssistantAskContext = {
   readonly surface: AssistantSurface
@@ -58,7 +68,9 @@ export type AssistantLink = { readonly label: string; readonly to: string }
 export type AssistantHandoff = { readonly offered: boolean; readonly ticketCode: string | null }
 
 export type AssistantReply =
-  | { readonly kind: 'topic'; readonly topicId: TopicId; readonly degraded: boolean }
+  /** `escalatable`: câu soạn sẵn thay cho mô hình đang dùng được — màn mời "Hỏi Lumo chi tiết". */
+  | { readonly kind: 'topic'; readonly topicId: TopicId; readonly degraded: boolean; readonly escalatable: boolean }
+  | { readonly kind: 'smallTalk'; readonly smallTalk: SmallTalkKind }
   | { readonly kind: 'fallback'; readonly degraded: boolean }
   | {
       readonly kind: 'text'
@@ -73,7 +85,7 @@ const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, 
 
 function prepared(input: AssistantQuestion, degraded: boolean): AssistantReply {
   const topicId = input.topicId ?? matchTopic(input.question)
-  return topicId === null ? { kind: 'fallback', degraded } : { kind: 'topic', topicId, degraded }
+  return topicId === null ? { kind: 'fallback', degraded } : { kind: 'topic', topicId, degraded, escalatable: false }
 }
 
 /** Trường `null` của máy chủ thành trường vắng. */
@@ -120,16 +132,53 @@ async function askServer(question: string, context: AssistantAskContext): Promis
   }
 }
 
-// POST /api/assistant/public/messages (trang công khai) · POST /api/assistant/messages (trong ứng dụng)
-export async function askAssistant(input: AssistantQuestion, context: AssistantAskContext): Promise<AssistantReply> {
-  if (!ON_BACKEND || input.topicId !== undefined) {
-    await wait(ASSISTANT_DELAY_MS)
-    return prepared(input, false)
-  }
+/** Client không gắn token: lượt đếm của trang công khai không mang gì nhận ra người xem, kể cả khi đang đăng nhập. */
+let publicClient: ApiClient | undefined
+const publicApi = () => (publicClient ??= createApiClient({ baseUrl: backendConfig.apiUrl, accessToken: () => Promise.resolve(null) }))
+
+/**
+ * Đếm một lượt trả lời ở trang công khai không gọi mô hình, hay một lần "Hỏi Lumo chi tiết": gửi rồi quên — không chờ, lỗi thì bỏ, không
+ * báo gì. Chỉ mức, chủ đề và ngôn ngữ; không bao giờ có chữ khách gõ hay mã khách. Kho mẫu không gửi gì.
+ */
+// POST /api/assistant/public/route-events
+export function recordRoute(route: AssistantRouteEventDto['route'], topicId: TopicId | null, locale: Locale): void {
+  if (!ON_BACKEND) return
+  const body: AssistantRouteEventDto = { route, topicId, locale }
+  publicApi().post('/api/assistant/public/route-events', { body }).catch(() => undefined)
+}
+
+async function askModel(input: AssistantQuestion, context: AssistantAskContext): Promise<AssistantReply> {
   try {
     return await askServer(input.question, context)
   } catch (error) {
     if (isApiError(error) && (error.code.startsWith('ASSISTANT_') || isTransientApiError(error))) return prepared(input, true)
     throw error
   }
+}
+
+// POST /api/assistant/public/messages (trang công khai) · POST /api/assistant/messages (trong ứng dụng)
+export async function askAssistant(input: AssistantQuestion, context: AssistantAskContext): Promise<AssistantReply> {
+  const guest = ON_BACKEND && context.surface === 'public'
+  if (input.escalate) {
+    if (guest) recordRoute('ESCALATED', input.topicId ?? null, context.locale)
+    return askModel(input, context)
+  }
+  const decision =
+    input.topicId === undefined ? routeQuestion(input.question, { inConversation: context.conversationId !== null, locale: context.locale }) : null
+  if (decision?.route === 'SMALL_TALK') {
+    if (guest) recordRoute('SMALL_TALK', null, context.locale)
+    await wait(ASSISTANT_DELAY_MS)
+    return { kind: 'smallTalk', smallTalk: decision.smallTalk }
+  }
+  const topicId = input.topicId ?? (decision?.route === 'PREPARED' ? decision.topicId : undefined)
+  if (guest && topicId !== undefined) {
+    recordRoute('PREPARED', topicId, context.locale)
+    await wait(ASSISTANT_DELAY_MS)
+    return { kind: 'topic', topicId, degraded: false, escalatable: true }
+  }
+  if (!ON_BACKEND || input.topicId !== undefined) {
+    await wait(ASSISTANT_DELAY_MS)
+    return prepared(input, false)
+  }
+  return askModel(input, context)
 }

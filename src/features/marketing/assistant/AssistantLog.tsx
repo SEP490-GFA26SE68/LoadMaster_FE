@@ -2,7 +2,7 @@ import { useEffect, useRef, type ReactNode } from 'react'
 import { LUMO_NAME } from '@/components/brand/Lumo'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import { FALLBACK_TOPICS, topicOf, type AssistantContext, type TopicId } from './assistant-kb'
+import { FALLBACK_TOPICS, STARTER_TOPICS, topicOf, type AssistantContext, type TopicId } from './assistant-kb'
 import type { AssistantEntry } from './assistant-session'
 import { useAssistantSurface } from './assistant-surface'
 import { AdvisorAsk, AdvisorResult } from './AssistantAdvisor'
@@ -10,11 +10,14 @@ import { AiAnswer, DegradedNote } from './AssistantAiAnswer'
 import { TopicAnswer } from './AssistantAnswer'
 import { AssistantAvatar } from './AssistantAvatar'
 import { BriefingAnswer } from './AssistantBriefing'
-import { CHAT_TOUCH, HandoffButton, TopicChips } from './AssistantChips'
+import { CHAT_TOUCH, EscalateButton, HandoffButton, TopicChips } from './AssistantChips'
 import { AssistantWelcome } from './AssistantWelcome'
 
 /** Sau phép tính gói: tính lại, xem gói, dùng thử. */
 const ADVISOR_FOLLOW_UPS: readonly TopicId[] = ['advisor', 'plans', 'start']
+
+/** Câu soạn sẵn hỏi lại được mô hình: câu khách đã hỏi và chủ đề của câu trả lời. */
+type Detail = { readonly question: string; readonly topicId: TopicId }
 
 type LogProps = {
   entries: readonly AssistantEntry[]
@@ -23,6 +26,8 @@ type LogProps = {
   onAsk: (question: string, topicId?: TopicId) => void
   onRuns: (label: string, runs: number) => void
   onHandoff: () => void
+  /** "Hỏi Lumo chi tiết" dưới câu soạn sẵn: cùng câu hỏi, gửi cho mô hình. */
+  onEscalate?: (question: string, topicId: TopicId) => void
   /** Bản tin "Tóm tắt hôm nay" (trong ứng dụng): nút ở màn chào. */
   onBriefing?: (label: string) => void
   onNavigate?: () => void
@@ -68,7 +73,7 @@ function Typing() {
  * cuộn sao cho câu hỏi mới nhất nằm đầu vùng nhìn — câu trả lời dài vẫn đọc được từ đầu. Bấm một nút gợi ý thì nút đó biến mất cùng lượt
  * cũ: focus chuyển vào vùng trò chuyện (không mở bàn phím ảo như khi về ô gõ) để Esc vẫn đóng khung và trình đọc màn hình không lạc.
  */
-export function AssistantLog({ entries, pending, context, onAsk, onRuns, onHandoff, onBriefing, onNavigate }: LogProps) {
+export function AssistantLog({ entries, pending, context, onAsk, onRuns, onHandoff, onEscalate, onBriefing, onNavigate }: LogProps) {
   const t = useT()
   const scroller = useRef<HTMLDivElement>(null)
   const log = useRef<HTMLDivElement>(null)
@@ -100,10 +105,16 @@ export function AssistantLog({ entries, pending, context, onAsk, onRuns, onHando
     log.current?.focus({ preventScroll: true })
   }
 
-  function followUps(topics: readonly TopicId[]) {
+  function escalate(question: string, topicId: TopicId) {
+    onEscalate?.(question, topicId)
+    log.current?.focus({ preventScroll: true })
+  }
+
+  function followUps(topics: readonly TopicId[], detail?: Detail) {
     return (
       <div className="flex flex-col gap-2 self-stretch pl-9">
-        {guest ? <HandoffButton onHandoff={onHandoff} /> : null}
+        {detail ? <EscalateButton {...detail} onEscalate={escalate} disabled={pending} /> : null}
+        {guest ? <HandoffButton onHandoff={onHandoff} plain={detail !== undefined} /> : null}
         <TopicChips label={t('assistant.panel.followUps')} topics={topics} onAsk={ask} disabled={pending} />
       </div>
     )
@@ -116,6 +127,7 @@ export function AssistantLog({ entries, pending, context, onAsk, onRuns, onHando
         return <UserBubble key={entry.id} who={t('assistant.panel.you')} text={entry.text} />
       case 'answer': {
         const advisorAsk = entry.topicId === 'advisor' && isLast
+        const detail = entry.question !== undefined && onEscalate ? { question: entry.question, topicId: entry.topicId } : undefined
         return (
           <div key={entry.id} className="contents">
             <LumoBubble who={says}>
@@ -123,10 +135,20 @@ export function AssistantLog({ entries, pending, context, onAsk, onRuns, onHando
               <TopicAnswer topicId={entry.topicId} context={context} onNavigate={onNavigate} />
               {advisorAsk ? <AdvisorAsk onRuns={runs} disabled={pending} /> : null}
             </LumoBubble>
-            {isLast && !pending && !advisorAsk ? followUps(topicOf(entry.topicId).followUps) : null}
+            {isLast && !pending && !advisorAsk ? followUps(topicOf(entry.topicId).followUps, detail) : null}
+            {isLast && !pending && advisorAsk && detail ? <div className="pl-9"><EscalateButton {...detail} onEscalate={escalate} /></div> : null}
           </div>
         )
       }
+      case 'smallTalk':
+        return (
+          <div key={entry.id} className="contents">
+            <LumoBubble who={says}><p className="m-0">{t(`assistant.smallTalk.${entry.smallTalk}`, { name })}</p></LumoBubble>
+            {isLast && !pending && guest ? (
+              <div className="pl-9"><TopicChips label={t('assistant.panel.followUps')} topics={STARTER_TOPICS} onAsk={ask} /></div>
+            ) : null}
+          </div>
+        )
       case 'advisor':
         return (
           <div key={entry.id} className="contents">

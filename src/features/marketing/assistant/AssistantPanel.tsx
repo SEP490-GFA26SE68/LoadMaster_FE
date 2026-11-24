@@ -149,6 +149,7 @@ export default function AssistantPanel({ launcherRef, skipInitialFocus = false, 
             onAsk={chat.send}
             onRuns={chat.sendRuns}
             onHandoff={chat.handoff}
+            onEscalate={chat.escalate}
             onBriefing={chat.briefing}
             onNavigate={phone ? leave : undefined}
           />

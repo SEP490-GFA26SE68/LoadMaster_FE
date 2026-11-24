@@ -1,4 +1,5 @@
-import { MessageSquareText } from 'lucide-react'
+import { MessageSquareText, Sparkles } from 'lucide-react'
+import { LUMO_NAME } from '@/components/brand/Lumo'
 import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/Button'
 import { useT } from '@/lib/i18n'
@@ -50,8 +51,11 @@ export function TopicChips({ label, topics, onAsk, disabled }: {
   )
 }
 
-/** "Chưa đúng ý? Hỏi đội LoadMaster" (sau câu trả lời) hay "Gửi câu hỏi cho đội LoadMaster" (khi không có câu trả lời). */
-export function HandoffButton({ onHandoff, strong = false }: { onHandoff: () => void; strong?: boolean }) {
+/**
+ * "Chưa đúng ý? Hỏi đội LoadMaster" (sau câu trả lời) hay "Gửi câu hỏi cho đội LoadMaster" (`strong`, khi không có câu trả lời; `plain`
+ * khi cạnh nó đã có "Chưa đúng ý? Hỏi Lumo chi tiết" — hai nút cùng mở đầu "Chưa đúng ý?" thì khó phân biệt).
+ */
+export function HandoffButton({ onHandoff, strong = false, plain = false }: { onHandoff: () => void; strong?: boolean; plain?: boolean }) {
   const t = useT()
   return (
     <Button
@@ -62,7 +66,30 @@ export function HandoffButton({ onHandoff, strong = false }: { onHandoff: () => 
       className={cn('self-start', !strong && 'px-2 text-primary hover:text-primary-hover', 'pointer-coarse:h-12 in-[.assistant-touch]:h-14', CHAT_TOUCH)}
     >
       <MessageSquareText aria-hidden />
-      {t(strong ? 'assistant.handoff.ask' : 'assistant.handoff.notRight')}
+      {t(strong || plain ? 'assistant.handoff.ask' : 'assistant.handoff.notRight')}
+    </Button>
+  )
+}
+
+/** "Chưa đúng ý? Hỏi Lumo chi tiết" dưới câu soạn sẵn: nút phụ, gửi lại đúng câu khách đã hỏi cho mô hình. */
+export function EscalateButton({ question, topicId, onEscalate, disabled }: {
+  question: string
+  topicId: TopicId
+  onEscalate: (question: string, topicId: TopicId) => void
+  disabled?: boolean
+}) {
+  const t = useT()
+  return (
+    <Button
+      type="button"
+      variant="secondary"
+      size="sm"
+      onClick={() => onEscalate(question, topicId)}
+      disabled={disabled}
+      className={cn('self-start', 'pointer-coarse:h-12 in-[.assistant-touch]:h-14', CHAT_TOUCH)}
+    >
+      <Sparkles aria-hidden />
+      {t('assistant.escalate', { name: LUMO_NAME })}
     </Button>
   )
 }

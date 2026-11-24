@@ -103,7 +103,7 @@ test('signing in as someone else closes the panel and drops the previous convers
   await user.click(screen.getByRole('button', { name: 'Trợ lý AI' }))
   const next = within(await screen.findByRole('dialog', { name: 'Lumo' }, ANSWER))
   expect(next.queryByText('Chuyến TRIP-2026-0914 đang xếp hàng.')).not.toBeInTheDocument()
-  await user.type(next.getByRole('textbox', { name: 'Câu hỏi của bạn' }), 'Chào{Enter}')
+  await user.type(next.getByRole('textbox', { name: 'Câu hỏi của bạn' }), 'Còn chuyến nào chưa duyệt?{Enter}')
   await next.findByText('Chuyến TRIP-2026-0914 đang xếp hàng.', {}, ANSWER)
   expect((calls[1] as FakeCall).body).not.toHaveProperty('conversationId')
 })
