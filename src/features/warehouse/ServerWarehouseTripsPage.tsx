@@ -11,6 +11,7 @@ import { Card } from '@/components/ui/Card'
 import { Spinner } from '@/components/ui/Spinner'
 import { AccountMenu } from '@/features/auth/AccountMenu'
 import { ExitIconButton } from '@/features/auth/ExitControl'
+import { TouchAssistant } from '@/features/marketing/assistant/TouchAssistant'
 import { useCan } from '@/features/auth/useCan'
 import { packagePoolReachable } from '@/features/package-pool/usePackagePoolQuery'
 import { NotificationBell } from '@/features/notifications/NotificationBell'
@@ -39,6 +40,7 @@ export function ServerWarehouseTripsPage() {
     <div className="flex h-dvh flex-col bg-app text-body-lg">
       <TouchTopBar wrap below={<WarehouseWorkspaceTabs />}
         leading={<ExitIconButton tone="sky" screenHome="/kho" label={t('warehouse.exit')} iconClassName="size-7" />}
+        assistant={<TouchAssistant />}
         trailing={
           <>
             {can('packages.lookup') && packagePoolReachable(can) ? (

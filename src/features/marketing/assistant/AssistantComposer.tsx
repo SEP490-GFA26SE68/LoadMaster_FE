@@ -94,7 +94,7 @@ export function AssistantComposer({ onSend, pending, children }: { onSend: (ques
           size="icon"
           disabled={empty || pending}
           aria-label={t('assistant.panel.send')}
-          className="pointer-coarse:size-12"
+          className="pointer-coarse:size-12 in-[.assistant-touch]:size-14"
         >
           <ArrowUp aria-hidden />
         </Button>

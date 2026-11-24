@@ -20,6 +20,9 @@ export const assistant = {
     appStarters: {
       page: 'What is this screen for?',
       trips: 'Which trips are in transit?',
+      myTrips: 'Which trip am I driving today, and where is my next stop?',
+      warehouseTasks: 'Which trips are waiting to be staged or loaded today?',
+      packageLookup: 'Look up a package by its code for me',
       credit: 'How many credits does the company have left?',
       payroll: 'What does my pay slip look like this month?',
       tickets: 'Where are my support requests at?',

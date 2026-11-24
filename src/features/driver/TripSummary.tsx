@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { expandPackages } from '@/domain/cargo'
 import { ExitIconButton } from '@/features/auth/ExitControl'
+import { TouchAssistant } from '@/features/marketing/assistant/TouchAssistant'
 import { useFormat, useT } from '@/lib/i18n'
 import type { Revision, Trip } from '@/lib/mock-db'
 import { cn } from '@/lib/utils'
@@ -37,6 +38,8 @@ export function TripSummary({ trip, plan }: { trip: Trip; plan: Revision }) {
   return (
     <div className="flex h-dvh flex-col bg-app text-body-lg">
       <TouchTopBar
+        wrap
+        assistant={<TouchAssistant />}
         leading={<ExitIconButton tone="sky" screenHome={DRIVER_TRIP_SCREEN} contextual="/tai-xe" label={t('driver.toTrips')} iconClassName="size-7" />}
         trailing={<LanguageSwitch size="touch" tone="sky" className="flex-none [&>svg]:hidden min-[400px]:[&>svg]:block" />}
       >

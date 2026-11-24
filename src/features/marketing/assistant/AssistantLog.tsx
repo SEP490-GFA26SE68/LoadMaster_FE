@@ -55,7 +55,7 @@ function LumoBubble({ who, children }: { who: string; children: ReactNode }) {
 function Typing() {
   const t = useT()
   return (
-    <p className="m-0 flex items-center gap-2 self-start text-small">
+    <p className="m-0 flex items-center gap-2 self-start text-small in-[.assistant-touch]:text-body-lg">
       <AssistantAvatar pose="explain" size="xs" />
       <span className="assistant-shimmer font-medium">{t('assistant.panel.typing', { name: LUMO_NAME })}</span>
     </p>

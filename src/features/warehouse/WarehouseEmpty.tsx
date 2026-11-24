@@ -8,6 +8,7 @@ import { VehicleName } from '@/components/VehicleName'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ExitIconButton } from '@/features/auth/ExitControl'
+import { TouchAssistant } from '@/features/marketing/assistant/TouchAssistant'
 import { calendarDate } from '@/lib/calendar-date'
 import { useFormat, useT } from '@/lib/i18n'
 import { useWarehouseTripsQuery } from './useWarehouseQueries'
@@ -34,7 +35,10 @@ export function WarehouseEmpty({ tripId, label, mascot = 'warehouseWaiting', tit
   const t = useT()
   return (
     <div className="flex h-dvh flex-col bg-app text-body-lg">
-      <TouchTopBar leading={<ExitIconButton tone="sky" screenHome={loadingSessionPath(tripId)} contextual={`/chuyen/${tripId}`} label={t('warehouse.header.exit')} iconClassName="size-7" />}>
+      <TouchTopBar
+        leading={<ExitIconButton tone="sky" screenHome={loadingSessionPath(tripId)} contextual={`/chuyen/${tripId}`} label={t('warehouse.header.exit')} iconClassName="size-7" />}
+        assistant={<TouchAssistant />}
+      >
         <span className="min-w-0 truncate font-mono text-[18px] leading-6 font-semibold text-sky-text">{label ?? tripId}</span>
         {showTrip ? <TripBarTag tripId={tripId} /> : null}
       </TouchTopBar>

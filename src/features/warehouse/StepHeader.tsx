@@ -1,6 +1,7 @@
 import { LanguageSwitch } from '@/components/LanguageSwitch'
 import { TouchTopBar } from '@/components/TouchTopBar'
 import { ExitIconButton } from '@/features/auth/ExitControl'
+import { TouchAssistant } from '@/features/marketing/assistant/TouchAssistant'
 import { useFormat, useT } from '@/lib/i18n'
 import { loadingSessionPath } from './warehouse-trips'
 
@@ -33,6 +34,7 @@ export function StepHeader({ step, totalSteps, recorded, tripId, code, label, pr
   return (
     <TouchTopBar
       leading={<ExitIconButton tone="sky" screenHome={loadingSessionPath(tripId)} contextual={`/chuyen/${tripId}`} label={t('warehouse.header.exit')} iconClassName="size-7" />}
+      assistant={<TouchAssistant />}
       trailing={
         <>
           <LanguageSwitch size="touch" tone="sky" />

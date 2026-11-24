@@ -4,10 +4,12 @@ import {
   Coins,
   LifeBuoy,
   MessageCircleQuestion,
+  PackageSearch,
   PanelsTopLeft,
   Rocket,
   Tags,
   Truck,
+  Warehouse,
   Wallet,
   type LucideIcon,
 } from 'lucide-react'
@@ -35,6 +37,9 @@ const STARTER_ICONS: Partial<Record<TopicId, LucideIcon>> = {
 const APP_STARTER_ICONS: Record<AppStarterId, LucideIcon> = {
   page: PanelsTopLeft,
   trips: Truck,
+  myTrips: Truck,
+  warehouseTasks: Warehouse,
+  packageLookup: PackageSearch,
   credit: Coins,
   payroll: Wallet,
   tickets: LifeBuoy,
@@ -76,7 +81,7 @@ export function AssistantWelcome({ onAsk, onBriefing, disabled }: {
           <h3 id={headingId} className="m-0 font-display text-h2 font-[650] font-stretch-108% text-ink-strong">
             {t('assistant.panel.greeting', { name: LUMO_NAME })}
           </h3>
-          <p className="m-0 text-small text-ink-2 pointer-coarse:text-body-lg">{t(inApp ? 'assistant.panel.introHintApp' : 'assistant.panel.introHint')}</p>
+          <p className="m-0 text-small text-ink-2 pointer-coarse:text-body-lg in-[.assistant-touch]:text-body-lg">{t(inApp ? 'assistant.panel.introHintApp' : 'assistant.panel.introHint')}</p>
         </div>
       </div>
       {briefing !== null ? (
@@ -84,7 +89,7 @@ export function AssistantWelcome({ onAsk, onBriefing, disabled }: {
           type="button"
           variant="secondary"
           disabled={disabled}
-          className={cn('self-start pointer-coarse:h-12', CHAT_TOUCH)}
+          className={cn('self-start pointer-coarse:h-12 in-[.assistant-touch]:h-14', CHAT_TOUCH)}
           onClick={() => briefing(t('assistant.briefing.button'))}
         >
           <ClipboardList aria-hidden />

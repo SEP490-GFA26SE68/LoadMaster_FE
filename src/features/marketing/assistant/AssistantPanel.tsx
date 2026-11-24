@@ -37,7 +37,10 @@ const isPhone = () => hasMatchMedia() && window.matchMedia(PHONE_QUERY).matches
 export default function AssistantPanel({ launcherRef, skipInitialFocus = false, dock }: {
   launcherRef: RefObject<HTMLButtonElement | null>
   skipInitialFocus?: boolean
-  /** `planner`: khung neo góc dưới phải, trên hàng nút của khung 3D (Planner không có thanh điều hướng). */
+  /**
+   * `planner`: khung neo góc dưới phải, trên hàng nút của khung 3D (Planner không có thanh điều hướng). `touch`: màn cảm ứng kho, tài xế —
+   * từ 768 px neo góc phải ngay dưới thanh dải trời; chữ 16 px, nút 56 px (lớp `assistant-touch`, biến thể `in-[.assistant-touch]:`).
+   */
   dock?: AssistantDock
 }) {
   const t = useT()
@@ -92,6 +95,7 @@ export default function AssistantPanel({ launcherRef, skipInitialFocus = false, 
           }}
           className={cn(
             'assistant-panel flex flex-col overflow-hidden bg-bg text-text outline-none',
+            dock === 'touch' && 'assistant-touch',
             'data-[state=open]:animate-[lm-sheet-in_260ms_var(--ease-decelerate)]',
             'md:rounded-xl md:border md:border-border md:shadow-e2 md:data-[state=open]:animate-[lm-dialog-in_220ms_var(--ease-standard)]',
           )}
@@ -103,7 +107,7 @@ export default function AssistantPanel({ launcherRef, skipInitialFocus = false, 
             </span>
             <div className="flex min-w-0 flex-1 flex-col">
               <DialogPrimitive.Title className="m-0 font-display text-h3 font-[650] font-stretch-108% text-sky-text">{LUMO_NAME}</DialogPrimitive.Title>
-              <p className="m-0 text-small text-sky-text-2 pointer-coarse:text-body-lg">{t('assistant.panel.subtitle')}</p>
+              <p className="m-0 text-small text-sky-text-2 pointer-coarse:text-body-lg in-[.assistant-touch]:text-body-lg">{t('assistant.panel.subtitle')}</p>
             </div>
             {entries.length > 0 ? (
               <Button
@@ -113,7 +117,7 @@ export default function AssistantPanel({ launcherRef, skipInitialFocus = false, 
                 onClick={handleRestart}
                 aria-label={t('assistant.panel.restart')}
                 title={t('assistant.panel.restart')}
-                className={cn(SKY_FOCUS, 'pointer-coarse:size-12')}
+                className={cn(SKY_FOCUS, 'pointer-coarse:size-12 in-[.assistant-touch]:size-14')}
               >
                 <RotateCcw aria-hidden />
               </Button>
@@ -126,12 +130,12 @@ export default function AssistantPanel({ launcherRef, skipInitialFocus = false, 
               onClick={() => assistantSession.setExpanded(!expanded)}
               aria-label={t(expanded ? 'assistant.panel.shrink' : 'assistant.panel.expand')}
               title={t(expanded ? 'assistant.panel.shrink' : 'assistant.panel.expand')}
-              className={cn(SKY_FOCUS, 'hidden md:inline-flex')}
+              className={cn(SKY_FOCUS, 'hidden md:inline-flex in-[.assistant-touch]:size-14')}
             >
               {expanded ? <Minimize2 aria-hidden /> : <Maximize2 aria-hidden />}
             </Button>
             <DialogPrimitive.Close asChild>
-              <Button type="button" variant="skyGhost" size="icon" aria-label={t('assistant.panel.close')} className={cn(SKY_FOCUS, 'pointer-coarse:size-12')}>
+              <Button type="button" variant="skyGhost" size="icon" aria-label={t('assistant.panel.close')} className={cn(SKY_FOCUS, 'pointer-coarse:size-12 in-[.assistant-touch]:size-14')}>
                 <X aria-hidden />
               </Button>
             </DialogPrimitive.Close>
@@ -150,7 +154,7 @@ export default function AssistantPanel({ launcherRef, skipInitialFocus = false, 
           />
           <AssistantComposer onSend={chat.send} pending={pending}>
             {/* Mô tả của hộp thoại: trình đọc màn hình đọc câu này cùng tên "Lumo" khi khung mở */}
-            <DialogPrimitive.Description className="m-0 text-center text-fine text-ink-3 pointer-coarse:text-body-lg">
+            <DialogPrimitive.Description className="m-0 text-center text-fine text-ink-3 pointer-coarse:text-body-lg in-[.assistant-touch]:text-body-lg">
               {t(disclaimer, { name: LUMO_NAME })}
             </DialogPrimitive.Description>
           </AssistantComposer>
