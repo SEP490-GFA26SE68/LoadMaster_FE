@@ -3,8 +3,6 @@ import { found, put, type DbContext } from './db-context'
 import type { Review1Db } from './db-api-review1'
 import { MockDbError } from './errors'
 import { leftOutIds, plannedStops, stagingRemaining } from './operations'
-import { pickupEntryOf, pickupLabels } from './db-pickup-progress'
-import { recordPickupItem } from './db-pickup-scans'
 import { tripLinks } from './db-trip-lines'
 import { normalizeQrToken } from './qr-token'
 import { tripLabels } from './review1-status'
@@ -18,12 +16,9 @@ export function assertPhase(trip: Trip, phase: Trip['phase']) {
   if (trip.phase !== phase) throw new MockDbError('TRIP_PHASE_INVALID', { tripId: trip.id, phase: trip.phase })
 }
 
-/**
- * Nhãn QR của mọi kiện trong chuyến: mã QR và mã của bên gửi của kiện kho kiện ứng với từng instance; kiện nhận dọc đường đã duyệt
- * (FE-7-05) lấy mã kiện kho kiện làm mã instance.
- */
+/** Nhãn QR của mọi kiện trong chuyến: mã QR và mã của bên gửi của kiện kho kiện ứng với từng instance. */
 export function labelsOf(ctx: DbContext, trip: Trip): TripLabel[] {
-  return [...tripLabels(trip, tripLinks(ctx, trip.id), ctx.state.packages), ...pickupLabels(ctx, trip)]
+  return tripLabels(trip, tripLinks(ctx, trip.id), ctx.state.packages)
 }
 
 /** Phương án kho đang xếp theo (bản duyệt chốt lúc bắt đầu xếp). */
@@ -128,9 +123,6 @@ export function scanMethods(ctx: DbContext): ScanMethods {
         if (!delivery) throw new Error(`Chuyến ${tripId} đang giao nhưng không có tiến độ giao`)
         const label = scannedLabel(ctx, trip, code, method)
         const id = label.packageInstanceId
-        // Kiện nhận dọc đường: điểm nhận ghi kiện lên xe, điểm giao dỡ như kiện thường (FE-7-05)
-        const pickup = pickupEntryOf(ctx, trip, id)
-        if (pickup) return { trip: recordPickupItem(ctx, trip, stopNumber, pickup, method).trip, packageInstanceId: id }
         assertUnloadable(trip, loadingPlan(ctx, trip), stopNumber, id, label.qrToken)
         const stops = delivery.stops.map((stop) => stop.number !== stopNumber ? stop : {
           ...stop,

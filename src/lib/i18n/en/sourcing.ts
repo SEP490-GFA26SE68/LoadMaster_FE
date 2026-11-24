@@ -144,7 +144,7 @@ export const sourcing = {
     packageType: 'Package type',
     packageTypeNone: 'No package type',
     source: 'Source',
-    sources: { IMPORT: 'File import', MANUAL: 'Added one by one', TRIP: 'Added inside a trip', PICKUP: 'Picked up en route' },
+    sources: { IMPORT: 'File import', MANUAL: 'Added one by one', TRIP: 'Added inside a trip' },
     requirement: 'Delivery requirement',
     trip: 'Trip',
     notLinked: 'Not in a requirement or a trip yet',

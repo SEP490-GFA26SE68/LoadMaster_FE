@@ -4,7 +4,6 @@ import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle, Dia
 import { Spinner } from '@/components/ui/Spinner'
 import type { ViewerSceneModel } from '@/features/viewer3d/scene-input'
 import { useT } from '@/lib/i18n'
-import type { UnplacedPickup } from './driver-pickups'
 
 const DriverCargoViewer = lazy(() => import('@/features/viewer3d/DriverCargoViewer').then((m) => ({ default: m.DriverCargoViewer })))
 
@@ -13,12 +12,11 @@ const DriverCargoViewer = lazy(() => import('@/features/viewer3d/DriverCargoView
  * giao hàng. Thanh tiêu đề và mọi bảng điều khiển quanh khung 3D là bề mặt tối đặc (`--panel-dark`), nút đóng là nút đặc trên nền tối.
  * Three.js chỉ tải khi mở (mục 7).
  */
-export function CargoPositionDialog({ model, stopNumber, doneIds, pickupCargo }: {
+export function CargoPositionDialog({ model, stopNumber, doneIds }: {
   model: ViewerSceneModel
   stopNumber: number
   /** Kiện không còn trên xe: đã dỡ ở mọi điểm và kiện hỏng bị bỏ lại kho. */
   doneIds: ReadonlySet<string>
-  pickupCargo: readonly UnplacedPickup[]
 }) {
   const t = useT()
   const [open, setOpen] = useState(false)
@@ -33,7 +31,7 @@ export function CargoPositionDialog({ model, stopNumber, doneIds, pickupCargo }:
           </div>
           <DialogDescription className="sr-only">{t('driver.cargo.description')}</DialogDescription>
           <Suspense fallback={<div className="grid flex-1 place-items-center bg-canvas-1"><Spinner tone="light" /></div>}>
-            <DriverCargoViewer model={model} stopNumber={stopNumber} doneIds={doneIds} pickupCargo={pickupCargo} />
+            <DriverCargoViewer model={model} stopNumber={stopNumber} doneIds={doneIds} />
           </Suspense>
         </DialogContent>
       ) : null}

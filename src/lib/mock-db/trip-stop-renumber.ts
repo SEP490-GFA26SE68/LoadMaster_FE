@@ -2,12 +2,12 @@ import type { DbContext } from './db-context'
 import type { DeliveryStop, StopProgress, Trip } from './types'
 
 /**
- * Đổi danh sách điểm giao của chuyến **đang vận chuyển** (FE-7-04 chèn điểm nhận dọc đường, FE-BL-03 đổi thứ tự): số điểm là vị trí + 1
- * nên mọi thứ khoá theo số điểm phải theo điểm sang số mới — tiến độ giao (điểm mới chưa có tiến độ), sự cố giao, dòng kiện của chuyến
+ * Đổi thứ tự điểm giao của chuyến **đang vận chuyển** (FE-BL-03): số điểm là vị trí + 1
+ * nên mọi thứ khoá theo số điểm phải theo điểm sang số mới — tiến độ giao, sự cố giao, dòng kiện của chuyến
  * (`deliveryStop`), lần đối chiếu, sự cố cấp chuyến, tuyến thay thế, đề xuất của sự cố và cảnh báo trễ hạn. Một chỗ duy nhất làm việc
- * đó; hai nơi gọi chỉ khác nhau ở danh sách `stops` mới.
+ * đó.
  *
- * `stops` gồm mọi điểm cũ (cùng mã) theo thứ tự mới, cộng điểm mới nếu có. Trả chuyến với `stops` mới và các trường trên đã đánh số lại,
+ * `stops` gồm mọi điểm cũ (cùng mã) theo thứ tự mới. Trả chuyến với `stops` mới và các trường trên đã đánh số lại,
  * **không** có `routePlan` — nơi gọi tính lại tuyến (`routePlanOf`) và ghi (`put`). Dữ liệu giữ ngoài `Trip` được sửa tại chỗ.
  * `DeliveryStop.planNumber` (số trong phương án đã duyệt) là việc của nơi gọi: nó quyết định điểm nào còn khớp phương án.
  */

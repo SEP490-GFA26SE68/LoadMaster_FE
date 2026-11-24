@@ -28,7 +28,6 @@ export function StopFooter({ view, stops, actions, scanPending }: StopFooterProp
   const blockedId = useId()
   const [asking, setAsking] = useState<number | null>(null)
   if (view.mode === 'preview') return null
-  const pickupStop = view.stop.kind === 'PICKUP'
   const arrived = view.arrivedAt !== undefined
   const completable = arrived && view.remaining === 0 && view.pendingConfirms === 0 && !scanPending
   const asked = completable && asking === view.stop.number
@@ -54,7 +53,7 @@ export function StopFooter({ view, stops, actions, scanPending }: StopFooterProp
         <div className="flex flex-col gap-2">
           {view.pendingConfirms > 0 ? (
             <Banner tone="warning" className="text-body-lg font-medium">
-              <span id={blockedId}>{t(pickupStop ? 'driver.pickup.blocked' : 'driver.confirms.blocked', { count: view.pendingConfirms })}</span>
+              <span id={blockedId}>{t('driver.confirms.blocked', { count: view.pendingConfirms })}</span>
             </Banner>
           ) : null}
           <Button
@@ -66,7 +65,7 @@ export function StopFooter({ view, stops, actions, scanPending }: StopFooterProp
             aria-haspopup="dialog"
             onClick={() => setAsking(view.stop.number)}
           >
-            {t(pickupStop ? 'driver.pickup.complete' : 'driver.complete')}
+            {t('driver.complete')}
             <ArrowRight strokeWidth={2.5} />
           </Button>
         </div>

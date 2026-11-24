@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/Button'
 import { useFormat, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import type { CameraPreset, PlaybackSpeed } from '@/features/viewer3d/viewer-types'
-import type { UnplacedPickup } from '@/features/driver/driver-pickups'
 import { adaptResult, type ScenePlacement, type ViewerSceneModel } from '@/features/viewer3d/scene-input'
 import { SceneCanvas } from './scene/SceneCanvas'
 import { usePerformanceFlags } from './usePerformanceFlags'
@@ -24,15 +23,9 @@ const PRESETS = [['cua-sau', 'rear'], ['tren', 'top'], ['goc-cheo', 'diagonal'],
  * Khung 3D "Xem vị trí hàng" của tài xế (LM-061): scene cm của revision đã duyệt (LM-030), mô phỏng dỡ theo `unloadingOrder` của
  * kết quả, LIFO từ domain — `LIFO_BLOCKED` dừng mô phỏng và tô kiện chắn. Không có editor, không đánh dấu đã giao.
  * `?debug&packages=N` thay scene bằng fixture benchmark cm.
- *
- * Kiện nhận dọc đường (FE-BL-01, D-88) đã có chỗ nằm ngay trong `model` (`withPickupPlacements`) và được vẽ bằng chính các InstancedMesh của
- * kiện thường — không mesh hay draw call mới. `pickupCargo` chỉ là kiện **chưa có chỗ** (không vừa vùng trống): một danh sách DOM cạnh
- * khung, kèm lý do, để tài xế vẫn thấy chúng.
  */
-export function DriverCargoViewer({ model: source, stopNumber, doneIds, pickupCargo = [] }: {
+export function DriverCargoViewer({ model: source, stopNumber, doneIds }: {
   model: ViewerSceneModel; stopNumber: number; doneIds: ReadonlySet<string>
-  /** Kiện nhận dọc đường còn đi cùng xe hoặc sắp lên xe mà chưa có chỗ: mã kiện kho kiện, mã của bên gửi, khối lượng, lý do. */
-  pickupCargo?: readonly UnplacedPickup[]
 }) {
   const t = useT()
   const format = useFormat()
@@ -81,15 +74,6 @@ export function DriverCargoViewer({ model: source, stopNumber, doneIds, pickupCa
       {search.has('debug') ? <DebugOverlay store={perf} className="top-2 bottom-auto left-2 translate-x-0" /> : null}
     </div>
     <div className="max-h-[30dvh] shrink-0 overflow-y-auto border-t border-border-dark bg-panel-dark p-3">
-      {pickupCargo.length > 0 ? (
-        <section aria-label={t('driver.pickup.cargoTitle')} className="mb-2 rounded-lg border border-cyan-300/40 bg-canvas-2/45 p-3 text-cyan-200">
-          <h3 className="m-0 font-semibold">{t('driver.pickup.cargoTitle')}</h3>
-          <p className="m-0 mt-0.5">{t('driver.pickup.cargoNote')}</p>
-          <ul className="m-0 mt-1 flex list-none flex-col gap-0.5 p-0 font-mono">
-            {pickupCargo.map((item) => <li key={item.id}>{t('driver.pickup.cargoRow', { id: item.id, name: item.name, weight: format.weight(item.weightKg), reason: t(`viewer.unplacedReasons.${item.reasonCode}`) })}</li>)}
-          </ul>
-        </section>
-      ) : null}
       <p className="font-medium">{t(unload.fromResult ? 'viewer.operations.unloadingOrder' : 'viewer.operations.suggestedUnloadingOrder')} · {t('driver.cargo.noDelivery')}</p>
       <p className="mt-1">{unload.current ? t('driver.cargo.current', { id: unload.current.id }) : t('driver.cargo.allViewed')}{unload.next ? ` · ${t('driver.cargo.next', { id: unload.next.id })}` : ''}</p>
       {selected && measurements ? <>

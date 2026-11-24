@@ -26,7 +26,6 @@ export const audit = {
     vehicleType: { created: 'Thêm loại xe', updated: 'Sửa loại xe', deleted: 'Xoá loại xe', assigned: 'Gắn loại xe cho xe' },
     manualConfirm: { requested: 'Gửi xác nhận tay chờ duyệt', approved: 'Duyệt xác nhận tay', rejected: 'Từ chối xác nhận tay' },
     exception: { reported: 'Báo sự cố chuyến', escalated: 'Chuyển sự cố cho quản lý', resolved: 'Đánh dấu sự cố đã xử lý', deadlineRenegotiated: 'Liên hệ khách, nhập hạn mới' },
-    pickup: { requested: 'Gửi yêu cầu nhận hàng dọc đường', approved: 'Duyệt yêu cầu nhận hàng dọc đường', rejected: 'Từ chối yêu cầu nhận hàng dọc đường', reoptimized: 'Xếp kiện nhận vào vùng trống của thùng xe', loaded: 'Nhận hàng dọc đường lên xe', delivered: 'Giao hàng nhận dọc đường' },
     subscription: { subscribed: 'Đăng ký gói cước', renewed: 'Gia hạn gói cước', cancelled: 'Huỷ gói cước', expired: 'Gói cước hết hạn' },
     credit: { purchased: 'Nạp credit', lowBalance: 'Sắp hết credit' },
     company: { created: 'Tạo công ty', updated: 'Sửa thông tin công ty' },
@@ -48,7 +47,6 @@ export const audit = {
     vehicleType: 'Loại xe',
     manualConfirm: 'Xác nhận tay',
     exception: 'Sự cố chuyến',
-    pickup: 'Nhận hàng dọc đường',
     subscription: 'Gói cước',
     credit: 'Credit',
     company: 'Công ty',
@@ -179,9 +177,7 @@ export const audit = {
       delayMinutes: 'Dự kiến chậm (phút)',
       escalation: 'Lý do chuyển',
       route: 'Tuyến',
-      // Nhận hàng dọc đường (FE-7-03 → FE-7-05); tài xế của chuyến và tài xế vừa bị thay khi kho đã bắt đầu xếp
-      pickupId: 'Yêu cầu nhận',
-      failedRules: 'Luật không đạt',
+      // Tài xế của chuyến và tài xế vừa bị thay khi kho đã bắt đầu xếp
       driverId: 'Tài xế',
       previousDriverId: 'Tài xế trước',
       // Kho soạn lại hàng sau khi chuyến quay về Đã lập kế hoạch (FE-6-02, FE-6-05)

@@ -15,8 +15,8 @@ import { NotificationBell } from './NotificationBell'
 
 /**
  * Chuông của tài xế ở thanh màn "Chuyến của tôi" (`variant="touch"`): việc của chuyến chính họ chạy — kho bắt đầu soạn hàng (chuyến mới),
- * xếp xong, chuyến tạm dừng vì quay về Đã lập kế hoạch rồi kho soạn lại, chuyến bị huỷ, đổi tài xế, quyết định với yêu cầu nhận hàng dọc
- * đường — nói bằng câu của tài xế và mở màn điểm giao của chuyến. Kho dùng chung (seed neo 14/09/2026), đồng hồ chỉ giả `Date`: 18:00 ngày
+ * xếp xong, chuyến tạm dừng vì quay về Đã lập kế hoạch rồi kho soạn lại, chuyến bị huỷ, đổi tài xế —
+ * nói bằng câu của tài xế và mở màn điểm giao của chuyến. Kho dùng chung (seed neo 14/09/2026), đồng hồ chỉ giả `Date`: 18:00 ngày
  * neo. Tài xế demo Phạm Quốc Dũng (US-0004) có sẵn hai thông báo của TRIP-010 (kho soạn rồi xếp xong sáng 14/09). Việc của người khác giả
  * lập bằng cách đổi phiên của kho như một người dùng khác đang thao tác.
  */
@@ -193,31 +193,3 @@ test('a loading trip sent back to planned tells its driver it is on hold; stagin
     { text: ['Chuyến mới: kho đang soạn hàng', trip], meta: 'Lê Văn Hải', href },
   ])
 }, 30_000)
-
-test('the driver reads the decision on a pickup request of their trip: approved with the packages to pick up, rejected with the reason', async () => {
-  const user = userEvent.setup()
-  // Ngô Văn Bảo (US-0006) đang chạy TRIP-009; điều phối viên gửi hai yêu cầu nhận hàng, duyệt một (vượt luật kèm lý do), từ chối một
-  const driver = renderTouchBell('US-0006')
-  const db = getMockDb()
-  const request = (packageCode: string) => db.createPickupRequest('TRIP-009', {
-    pickup: { name: 'Xưởng may Hoàng Gia', address: 'Đường số 4, KCN VSIP 1, Thuận An, Bình Dương', lat: 10.928, lng: 106.712 },
-    delivery: { name: 'Kho Dĩ An', address: '1 Quốc lộ 1K, Dĩ An', lat: 10.9, lng: 106.73 },
-    packages: [{ packageCode, lengthCm: 60, widthCm: 40, heightCm: 40, weightKg: 12, handlingClass: 'STANDARD' }],
-  })
-  await actAs('US-0001', driver.id, async () => {
-    const approved = await request('HG-0501')
-    await db.approvePickupRequest('TRIP-009', approved.id, { overrideReason: 'Khách quen' })
-    const rejected = await request('HG-0502')
-    await db.rejectPickupRequest('TRIP-009', rejected.id, 'Xe không còn chỗ')
-  })
-
-  await user.click(await screen.findByRole('button', { name: /^Thông báo/ }, SLOW))
-  await waitFor(() => expect(notificationRows()[0]?.text[0]).toBe('Yêu cầu nhận hàng dọc đường bị từ chối'), SLOW)
-  // Số kiện phải nhận, lý do từ chối — không mã yêu cầu, số luật không đạt hay lý do vượt luật của điều phối viên
-  const trip = 'Tuyến Thủ Dầu Một – Sóng Thần · TRIP-009'
-  const href = '/tai-xe/diem-giao?chuyen=TRIP-009'
-  expect(notificationRows().slice(0, 2)).toStrictEqual([
-    { text: ['Yêu cầu nhận hàng dọc đường bị từ chối', trip], meta: 'Nguyễn Thanh Tùng · Lý do: Xe không còn chỗ', href },
-    { text: ['Điều phối đã duyệt nhận hàng dọc đường — tuyến có thêm điểm nhận', trip], meta: 'Nguyễn Thanh Tùng · Số kiện: 1', href },
-  ])
-}, 20_000)

@@ -1,32 +1,28 @@
-import { Ellipsis, PackagePlus, TrafficCone, type LucideIcon } from 'lucide-react'
+import { Ellipsis, TrafficCone, type LucideIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/Dialog'
 import { useCan } from '@/features/auth/useCan'
 import { ReportExceptionDialog } from '@/features/monitoring/ReportExceptionDialog'
-import { PickupRequestDialog } from '@/features/pickups/PickupRequestDialog'
-import type { StopRef } from '@/features/pickups/pickup-stops'
 import { useT } from '@/lib/i18n'
 import { useDriverCapabilities } from './useDriverQueries'
 
-type Panel = 'menu' | 'exception' | 'pickup' | null
+type Panel = 'menu' | 'exception' | null
 
 /**
- * Nút phụ "Thêm" ở màn điểm giao của tài xế khi chuyến đang vận chuyển (V2.3 đợt 6): gom hai việc ít dùng trên đường vào **một** tờ trượt
- * từ đáy — "Sự cố trên đường" (`exceptions.report`, FE-6-11: sự cố của cả xe, kèm số phút chậm; khác "Báo sự cố" của từng kiện) và "Nhận
- * hàng dọc đường" (`pickups.create`, FE-7-03). Mỗi hàng giữ nguyên quyền của nó và mở đúng hộp thoại cũ (cỡ cảm ứng); không có quyền nào
- * thì không vẽ nút. Chỉ còn một việc thì vẫn qua tờ này (một hàng). Trạng thái "đang mở gì" nằm ở đây để tờ đóng lại rồi hộp thoại mới mở.
- * Mỗi hàng còn theo nguồn dữ liệu (`DRIVER_CAPABILITIES`): nối backend thì chỉ còn "Sự cố trên đường"; `tripLabel` là mã chuyến hiện trên
- * tiêu đề hộp thoại khi `tripId` là mã số của máy chủ.
+ * Nút phụ "Thêm" ở màn điểm giao của tài xế khi chuyến đang vận chuyển (V2.3 đợt 6): việc ít dùng trên đường nằm trong **một** tờ trượt
+ * từ đáy — "Sự cố trên đường" (`exceptions.report`, FE-6-11: sự cố của cả xe, kèm số phút chậm; khác "Báo sự cố" của từng kiện). Hàng giữ
+ * nguyên quyền của nó và mở đúng hộp thoại cũ (cỡ cảm ứng); không có quyền thì không vẽ nút. Trạng thái "đang mở gì" nằm ở đây để tờ
+ * đóng lại rồi hộp thoại mới mở. Hàng còn theo nguồn dữ liệu (`DRIVER_CAPABILITIES`); `tripLabel` là mã chuyến hiện trên tiêu đề hộp
+ * thoại khi `tripId` là mã số của máy chủ.
  */
-export function StopMoreActions({ tripId, tripLabel, stops }: { tripId: string; tripLabel?: string; stops: readonly StopRef[] }) {
+export function StopMoreActions({ tripId, tripLabel }: { tripId: string; tripLabel?: string }) {
   const t = useT()
   const can = useCan()
   const caps = useDriverCapabilities()
   const [panel, setPanel] = useState<Panel>(null)
   const canException = can('exceptions.report') && caps.tripExceptions
-  const canPickup = can('pickups.create') && caps.pickups
-  if (!canException && !canPickup) return null
+  if (!canException) return null
   const close = (open: boolean) => { if (!open) setPanel(null) }
   return (
     <>
@@ -41,15 +37,11 @@ export function StopMoreActions({ tripId, tripLabel, stops }: { tripId: string; 
             <DialogDescription className="text-body-lg text-pretty text-ink-2">{t('driver.more.description')}</DialogDescription>
           </div>
           <ul className="m-0 flex list-none flex-col gap-2 p-5">
-            {canException ? <li><Row icon={TrafficCone} label={t('monitoring.reportDialog.driverOpen')} onClick={() => setPanel('exception')} /></li> : null}
-            {canPickup ? <li><Row icon={PackagePlus} label={t('pickups.open')} onClick={() => setPanel('pickup')} /></li> : null}
+            <li><Row icon={TrafficCone} label={t('monitoring.reportDialog.driverOpen')} onClick={() => setPanel('exception')} /></li>
           </ul>
         </DialogContent>
       </Dialog>
-      {canException ? (
-        <ReportExceptionDialog tripId={tripId} tripLabel={tripLabel} open={panel === 'exception'} onOpenChange={close} touch serverRecorded={caps.backend} />
-      ) : null}
-      {canPickup ? <PickupRequestDialog tripId={tripId} stops={stops} open={panel === 'pickup'} onOpenChange={close} touch /> : null}
+      <ReportExceptionDialog tripId={tripId} tripLabel={tripLabel} open={panel === 'exception'} onOpenChange={close} touch serverRecorded={caps.backend} />
     </>
   )
 }

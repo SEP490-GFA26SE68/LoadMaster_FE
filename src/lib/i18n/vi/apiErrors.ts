@@ -223,17 +223,6 @@ VEHICLE_PRESENCE_CONFLICT: "Trạng thái xe hoặc mã xác nhận xung đột.
   MANUAL_CONFIRM_NOT_FOUND: 'Không tìm thấy xác nhận tay này.',
   MANUAL_CONFIRM_NOT_PENDING: 'Xác nhận tay này đã được xử lý, hoặc chuyến không còn đang vận chuyển.',
   NO_LOADED_PLAN: 'Chuyến chưa có phương án kho đã xếp.',
-  // Nhận hàng dọc đường (yêu cầu nhận, điểm nhận của tài xế)
-  PICKUP_REQUEST_NOT_FOUND: 'Không tìm thấy yêu cầu nhận hàng này.',
-  PICKUP_INVALID: 'Thông tin yêu cầu nhận hàng chưa hợp lệ — kiểm lại điểm nhận, điểm giao, hạn và các kiện.',
-  PICKUP_PACKAGES_REQUIRED: 'Yêu cầu nhận hàng cần ít nhất một kiện.',
-  PICKUP_TRIP_NOT_IN_TRANSIT: 'Chuyến không còn đang vận chuyển nên không nhận hàng dọc đường được.',
-  INVALID_PICKUP_STATUS_TRANSITION: 'Yêu cầu nhận hàng đã được xử lý. Tải lại để xem trạng thái mới.',
-  PICKUP_ROUTE_UNAVAILABLE: 'Chưa kiểm được luật nhận hàng: chuyến còn điểm chưa có toạ độ, hoặc chưa có vị trí xe.',
-  PICKUP_REASON_REQUIRED: 'Còn luật chưa đạt — cần ghi lý do để duyệt vượt luật.',
-  PICKUP_PACKAGE_NOT_AT_STOP: 'Kiện này không phải kiện nhận ở điểm hiện tại.',
-  PICKUP_PACKAGE_ALREADY_PICKED: 'Kiện này đã được nhận lên xe.',
-  PICKUP_STOP_INCOMPLETE: 'Còn kiện nhận chưa đối chiếu lên xe — chưa hoàn tất điểm nhận được.',
   // Đội xe, loại xe: sửa, xoá, bảo dưỡng
   VEHICLE_IN_USE: 'Xe còn gắn với chuyến chưa kết thúc nên không xoá được.',
   VEHICLE_BUSY: 'Xe đang phục vụ chuyến (đang xếp hàng hoặc đang vận chuyển) nên chưa đổi được.',
@@ -245,7 +234,6 @@ VEHICLE_PRESENCE_CONFLICT: "Trạng thái xe hoặc mã xác nhận xung đột.
   TRIP_NOT_IN_TRANSIT: 'Chuyến không còn đang vận chuyển.',
   STOP_ORDER_INVALID: 'Thứ tự điểm giao chưa hợp lệ: phải gồm đúng các điểm của chuyến và khác thứ tự hiện tại.',
   STOP_NOT_MOVABLE: 'Điểm đã hoàn tất hoặc xe đã tới nên không đổi chỗ được.',
-  PICKUP_AFTER_DELIVERY: 'Điểm nhận hàng phải đứng trước điểm giao của cùng yêu cầu.',
   STOP_ORDER_BLOCKS_CARGO: 'Theo thứ tự này có kiện bị kiện giao sau che kín lối dỡ nên không dỡ được. Thứ tự điểm giữ nguyên.',
   VEHICLE_TRANSFER_CONFLICT: "Xe hoặc yêu cầu điều chuyển đã thay đổi. Tải lại và kiểm tra trước khi thử lại cùng thao tác.",
   // Trợ lý AI: lượt gọi không có câu soạn sẵn thay thế (bản tin "Tóm tắt hôm nay")

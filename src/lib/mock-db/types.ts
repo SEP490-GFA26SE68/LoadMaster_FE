@@ -6,13 +6,6 @@ import type { CompanyDepot, OptimizationAlgorithm, OptimizationRun, RunSettings,
 import type { PackageVerification } from './verify-model'
 
 /**
- * Loại điểm của chuyến (FE-7-01, D-88): điểm giao, hoặc điểm nhận hàng dọc đường chèn vào tuyến khi duyệt yêu cầu nhận.
- * Điểm vắng `kind` là `DELIVERY` (`stopKindOf`).
- */
-export const STOP_KINDS = ['DELIVERY', 'PICKUP'] as const
-export type StopKind = (typeof STOP_KINDS)[number]
-
-/**
  * Điểm giao của chuyến. Vị trí trong `Trip.stops` là số điểm giao: phần tử đầu là điểm 1, khớp `CargoPackage.deliveryStop`.
  *
  * Từ FE-4b-04 (D-73) điểm giao **tự sinh** khi đưa yêu cầu giao vào chuyến (`generated`), hoặc do điều phối viên **thêm tay** cho kiện
@@ -23,11 +16,9 @@ export type DeliveryStop = {
   id: string
   name: string
   address: string
-  /** Loại điểm; vắng là `DELIVERY`. */
-  kind?: StopKind
   /**
-   * Số của điểm trong phương án đã duyệt (FE-7-04) — chỉ ghi khi chèn điểm nhận dọc đường làm số điểm lệch vị trí; `null` là điểm chèn
-   * lúc đang chạy, không có trong phương án. Vắng: số trong phương án bằng vị trí + 1 (`plan-stops.ts`).
+   * Số của điểm trong phương án đã duyệt — chỉ ghi khi đổi thứ tự điểm lúc xe đang chạy (FE-BL-03) làm số điểm lệch vị trí; `null` là
+   * điểm không có trong phương án. Vắng: số trong phương án bằng vị trí + 1 (`plan-stops.ts`).
    */
   planNumber?: number | null
   /** Số điện thoại người nhận, dạng hiển thị (`0901 234 567`); tài xế gọi qua `tel:` (D-46). */
@@ -103,11 +94,6 @@ export type StopProgress = {
   /** Số điểm giao, khớp vị trí trong `Trip.stops` + 1. */
   number: number
   unloadedIds: string[]
-  /**
-   * Điểm **nhận** dọc đường (FE-7-05): kiện đã đối chiếu để lên xe, theo mã kiện kho kiện. Điểm giao không có trường này; kiện nhận
-   * không tính vào `unloadedIds` — chúng chưa phải kiện đã giao.
-   */
-  pickedIds?: string[]
   /** Kiện dỡ đã đối chiếu bằng nhãn — quét hoặc gõ mã (tập con của `unloadedIds`, LM-104); cách đối chiếu ở `Trip.verifications`. */
   qrConfirmedIds?: string[]
   /** Tài xế bấm "Đã đến" (`arriveAtStop`, FE-6-06), ISO 8601: từ lúc đó dỡ được hàng, và xe mô phỏng đứng ở điểm này (FE-6-08). */

@@ -39,9 +39,9 @@ async function codeOf(promise: Promise<unknown>): Promise<string> {
   return isApiError(error) ? error.code : 'NO_ERROR'
 }
 
-test('nguồn backend: màn ẩn liên kết chuyến, đổi thứ tự điểm, gia hạn, nhận dọc đường, xác nhận tay; chuyển quản lý có', () => {
+test('nguồn backend: màn ẩn liên kết chuyến, đổi thứ tự điểm, gia hạn, xác nhận tay; chuyển quản lý có', () => {
   expect(MONITORING_CAPABILITIES).toEqual({
-    backend: true, openTrip: false, reorderStops: true, escalation: true, pickups: false, manualConfirm: false,
+    backend: true, openTrip: false, reorderStops: true, escalation: true, manualConfirm: false,
   })
 })
 
@@ -242,7 +242,7 @@ test('đổi thứ tự điểm gửi mã số điểm của máy chủ; kiện 
   stubBackend({ [`POST /api/trips/${TRIP}/stops/reorder`]: { status: 400, body: { success: false, code: 'MISSING_STOP_COORDINATES', message: 'x', errors: { stopIds: ['9'] } } } })
   const missing: unknown = await reorderRunningStops(TRIP, ['9', '8']).then(() => null, (reason: unknown) => reason)
   expect(isApiError(missing) && { code: missing.code, params: missing.params }).toEqual({ code: 'MISSING_STOP_COORDINATES', params: { stopIds: ['9'] } })
-  for (const code of ['TRIP_NOT_IN_TRANSIT', 'STOP_NOT_MOVABLE', 'PICKUP_AFTER_DELIVERY']) {
+  for (const code of ['TRIP_NOT_IN_TRANSIT', 'STOP_NOT_MOVABLE', 'STOP_ORDER_INVALID']) {
     stubBackend({ [`POST /api/trips/${TRIP}/stops/reorder`]: { status: 409, body: { success: false, code, message: 'x' } } })
     expect(await codeOf(reorderRunningStops(TRIP, ['9', '8']))).toBe(code)
   }

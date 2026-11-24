@@ -46,8 +46,6 @@ export const notifications = {
     cancelled: 'Chuyến đã huỷ',
     assigned: 'Chuyến mới: bạn được giao chuyến này',
     unassigned: 'Bạn không còn chạy chuyến này',
-    pickupApproved: 'Điều phối đã duyệt nhận hàng dọc đường — tuyến có thêm điểm nhận',
-    pickupRejected: 'Yêu cầu nhận hàng dọc đường bị từ chối',
     stopsReordered: 'Điều phối đã đổi thứ tự điểm giao — xem lại tuyến',
   },
 } as const

@@ -8,7 +8,7 @@ import { usesBackend } from '@/lib/backend-config'
  * chỉnh", ghim, chạy lại giữ ghim, đổi xe, phương án lỗi thời) — các màn đó tự chọn bản theo
  * `backend`. Backend chưa trả — màn ẩn phần đó, không gọi kho mẫu bằng mã chuyến của máy chủ: kiện và kiện kho kiện của chuyến,
  * phương án trên danh sách chuyến (lấp đầy, dòng phụ chờ duyệt / đã duyệt / lỗi thời); tiến độ kho (xác nhận tay, kiện báo thiếu có thẻ của
- * máy chủ khi nhóm `driver` / `warehouse` nối), phân nhóm hàng, nhận hàng dọc đường, tiến trình, báo cáo chuyến. Nằm riêng
+ * máy chủ khi nhóm `driver` / `warehouse` nối), phân nhóm hàng, tiến trình, báo cáo chuyến. Nằm riêng
  * khỏi `trips-api.ts` để thành phần đọc nó không kéo theo lớp gọi API.
  */
 export type TripsCapabilities = {

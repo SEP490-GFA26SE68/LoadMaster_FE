@@ -12,8 +12,8 @@ export type PackageStatus = (typeof PACKAGE_STATUSES)[number]
 export const PACKAGE_FLAGS = ['NOT_FOUND', 'DAMAGED'] as const
 export type PackageFlag = (typeof PACKAGE_FLAGS)[number]
 
-/** Đường kiện vào kho kiện: nhập file, thêm lẻ, thêm trong chuyến, nhận dọc đường. */
-export const PACKAGE_SOURCES = ['IMPORT', 'MANUAL', 'TRIP', 'PICKUP'] as const
+/** Đường kiện vào kho kiện: nhập file, thêm lẻ, thêm trong chuyến. */
+export const PACKAGE_SOURCES = ['IMPORT', 'MANUAL', 'TRIP'] as const
 export type PackageSource = (typeof PACKAGE_SOURCES)[number]
 
 /**
@@ -70,12 +70,11 @@ export type PackageChanges = Partial<Omit<PackageInput, 'packageTypeId'>> & { pa
 
 /**
  * Bảng chuyển trạng thái (D-70). Về `IMPORTED`: kiện bị bỏ khỏi chuyến, hoặc chuyến huỷ trước khi xe chạy; `IN_TRANSIT` → `RETURNED`:
- * khách không nhận. `DELIVERED` và `RETURNED` là trạng thái cuối. `ASSIGNED` → `LOADED` (FE-7-05, PRD v2 mục 7.2) là đường của kiện nhận
- * dọc đường: tài xế đối chiếu kiện ở điểm nhận thì kiện lên xe, không qua bước soạn của kho.
+ * khách không nhận. `DELIVERED` và `RETURNED` là trạng thái cuối.
  */
 export const PACKAGE_TRANSITIONS: Readonly<Record<PackageStatus, readonly PackageStatus[]>> = {
   IMPORTED: ['ASSIGNED'],
-  ASSIGNED: ['STAGED', 'LOADED', 'IMPORTED'],
+  ASSIGNED: ['STAGED', 'IMPORTED'],
   STAGED: ['LOADED', 'IMPORTED'],
   LOADED: ['IN_TRANSIT', 'IMPORTED'],
   IN_TRANSIT: ['DELIVERED', 'RETURNED'],

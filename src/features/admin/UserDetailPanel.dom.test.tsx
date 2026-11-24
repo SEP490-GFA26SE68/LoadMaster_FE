@@ -93,7 +93,7 @@ test('panel chi tiết: bấm dòng mở đúng người, quyền của vai trò
   await waitFor(() => expect(info.getAllByRole('definition').map((value) => value.textContent)).toStrictEqual([
     'US-0001', '0901 234 567', 'Công ty TNHH Vận tải Long Bình', 'Kho Long Bình', expect.stringMatching(/^07:50 \d{2}\/\d{2}\/\d{4}$/),
   ]), SLOW)
-  // 23 quyền của điều phối viên theo thứ tự dòng của ma trận (payroll.viewOwn + PRD v2, FE-0-01, FE-0-07)
+  // 21 quyền của điều phối viên theo thứ tự dòng của ma trận (payroll.viewOwn + PRD v2, FE-0-01, FE-0-07)
   const chips = within(within(panel).getByRole('region', { name: 'Công việc được phép' })).getAllByRole('listitem')
   expect(chips.map((chip) => chip.textContent)).toStrictEqual([
     'Xem phiếu lương của mình',
@@ -101,7 +101,6 @@ test('panel chi tiết: bấm dòng mở đúng người, quyền của vai trò
     'Tra cứu kiện bằng mã QR', 'In nhãn QR', 'Xem chuyến hàng', 'Tạo, sửa, huỷ chuyến', 'Tối ưu tuyến', 'Chạy tối ưu',
     'Chỉnh sửa và duyệt phương án', 'Duyệt kiện xác nhận tay', 'Xem phương án 3D và so sánh', 'Xem giám sát chuyến đang chạy', 'Xem đội xe',
     'Thêm, sửa, xoá xe và bảo dưỡng', 'Thêm, sửa, xoá loại xe', 'Báo sự cố chuyến', 'Xử lý sự cố chuyến',
-    'Tạo yêu cầu nhận hàng dọc đường', 'Duyệt yêu cầu nhận hàng dọc đường',
   ])
   // Panel mở: cột Điện thoại và cột Công ty nhường chỗ — cả hai đã nằm trong panel
   expect(columnHeaders()).toStrictEqual(['Người dùng', 'Vai trò', 'Kho / chi nhánh', 'Hoạt động gần nhất', 'Trạng thái', 'Thao tác'])

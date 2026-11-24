@@ -298,7 +298,7 @@ test('GPS: gửi thẳng lên backend kèm mã chuyến; 400 là chuyến không
 test('việc backend chưa có: màn ẩn (capabilities), lỡ gọi thì từ chối NOT_SUPPORTED, không gọi mạng', async () => {
   expect(DRIVER_CAPABILITIES).toStrictEqual({
     backend: true, qrVerify: true, manualConfirm: true, deliveryIssues: true, notifications: false, upcomingTrips: false,
-    departFromList: true, simulatedPosition: false, tripExceptions: true, pickups: false,
+    departFromList: true, simulatedPosition: false, tripExceptions: true,
   })
   for (const call of [
     () => fetchDriverTrip('1'),
@@ -336,32 +336,22 @@ const PICKUP_STOP = {
   ],
 }
 
-test('điểm nhận dọc đường: kiện nhận là việc của điểm, quét mã gọi endpoint nhận lên xe, kiện đã lên xe không gọi lại', async () => {
+test('điểm nhận dọc đường cũ của máy chủ: là một điểm không có kiện phải dỡ — không đối chiếu kiện nhận, hoàn tất như điểm giao', async () => {
   routes['GET /api/driver/trips'] = ok([TRIP])
   routes['GET /api/driver/trips/1/current-stop'] = ok(PICKUP_STOP)
   const driver = createDriverBackend()
   const screen = await driver.fetchStopScreen('1')
   if (screen.kind !== 'stop') throw new Error('phải là điểm đang giao')
-  expect(screen.view.stop.kind).toBe('PICKUP')
+  expect(screen.view.stop.name).toBe('Kho Linh Trung')
   expect(screen.view.items).toStrictEqual([])
-  expect(screen.view.pickupItems.map(({ item, done }) => [item.id, item.name, item.requestId, item.role, done])).toStrictEqual([
-    ['500', 'SHIP-9', '7', 'pick', false],
-    ['501', 'SHIP-10', '7', 'pick', true],
-  ])
-  expect(screen.view).toMatchObject({ total: 2, unloadedCount: 1, remaining: 1, verifiable: 1 })
+  expect(screen.view).toMatchObject({ total: 0, unloadedCount: 0, remaining: 0, verifiable: 0, pendingConfirms: 0 })
 
-  routes['POST /api/driver/pickup-packages/500/pick'] = ok({ id: 7, status: 'APPROVED' })
-  expect(await driver.unload('1', { stopNumber: 2, code: 'QR-500', method: 'CODE' })).toStrictEqual({ packageInstanceId: '500' })
-  expect(paths().at(-1)).toBe('POST /api/driver/pickup-packages/500/pick')
-  expect(calls.at(-1)?.body).toStrictEqual({ method: 'CODE' })
+  // Kiện nhận không phải kiện của điểm: gõ mã của nó không gọi máy chủ
   const count = calls.length
-  expect((await rejection(driver.unload('1', { stopNumber: 2, code: 'qr-500' }))).code).toBe('PICKUP_PACKAGE_ALREADY_PICKED')
-  expect((await rejection(driver.unload('1', { stopNumber: 2, code: 'SHIP-10' }))).code).toBe('PICKUP_PACKAGE_ALREADY_PICKED')
-  expect(calls).toHaveLength(count)
-})
+  expect((await rejection(driver.unload('1', { stopNumber: 2, code: 'qr-500' }))).code).toBe('UNLOAD_CODE_UNMATCHED')
+  expect(calls.slice(count).some((call) => call.method === 'POST')).toBe(false)
 
-test('điểm giao thường: máy chủ cũ không trả loại điểm thì là điểm giao, không có kiện nhận', async () => {
-  onStop()
-  const screen = await createDriverBackend().fetchStopScreen('1')
-  expect(screen.kind === 'stop' && [screen.view.stop.kind, screen.view.pickupItems.length]).toStrictEqual(['DELIVERY', 0])
+  routes['POST /api/driver/stops/40/complete'] = ok({ stopId: 40, tripCompleted: false, nextStopId: 41 })
+  await driver.completeStop('1', 2)
+  expect(paths().at(-1)).toBe('POST /api/driver/stops/40/complete?driverId=9')
 })

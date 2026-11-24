@@ -12,7 +12,6 @@ import { operationMethods } from './db-operations'
 import { trackingMethods } from './db-tracking'
 import { packageTypeMethods } from './db-package-types'
 import { packageMethods } from './db-packages'
-import { pickupMethods } from './db-pickups'
 import { reorderMethods } from './db-trip-reorder'
 import { requirementMethods } from './db-requirements'
 import { revisionMethods } from './db-revisions'
@@ -79,7 +78,6 @@ export function createMockDbParts({ latencyMs = 0, today = SEED_ANCHOR_DATE, now
     vehicleTypeOf: new Map(seed.vehicleTypeOf),
     tracking: new Map(),
     exceptions: new Map(),
-    pickups: new Map(seed.pickups.map((pickup) => [pickup.id, pickup])),
     plans: new Map(billing.plans.map((plan) => [plan.id, plan])),
     subscriptions: new Map(billing.subscriptions.map((subscription) => [subscription.id, subscription])),
     creditAccounts: new Map(billing.creditAccounts.map((account) => [account.id, account])),
@@ -110,7 +108,6 @@ export function createMockDbParts({ latencyMs = 0, today = SEED_ANCHOR_DATE, now
     ...stagingMethods(ctx),
     ...trackingMethods(ctx),
     ...exceptionMethods(ctx),
-    ...pickupMethods(ctx),
     ...reorderMethods(ctx),
     ...billingMethods(ctx),
     ...companyMethods(ctx),

@@ -1,5 +1,5 @@
 import {
-  Boxes, ClipboardList, Coins, KeyRound, LifeBuoy, Lock, LockOpen, MapPin, Package, PackageCheck, PackagePlus, PackageX, Pin, PinOff, QrCode, Route,
+  Boxes, ClipboardList, Coins, KeyRound, LifeBuoy, Lock, LockOpen, MapPin, Package, PackageCheck, PackageX, Pin, PinOff, QrCode, Route,
   ScrollText, Timer,
   TriangleAlert, UserCog, UserMinus, UserPen, UserPlus, type LucideIcon,
 } from 'lucide-react'
@@ -13,7 +13,7 @@ import type { Role } from '@/types/user'
 import type { ServerAuditEntry } from './audit-backend-api'
 import type { AuditChange } from './audit-change'
 import { actorInitials } from './audit-look'
-import { notificationParts, pickupParts, positive, reasonPart } from './server-audit-parts'
+import { notificationParts, positive, reasonPart } from './server-audit-parts'
 
 /** Mã hành động máy chủ đang ghi (`actionType`), theo thứ tự của ô lọc "Hành động". */
 export const SERVER_AUDIT_ACTIONS = [
@@ -22,8 +22,7 @@ export const SERVER_AUDIT_ACTIONS = [
   'TRIP_COMPLETED', 'PACKAGE_IMPORT_CONFIRMED', 'DELIVERY_DEADLINE_EXTENDED', 'STOP_ARRIVED', 'USER_CREATED', 'USER_UPDATED', 'USER_LOCKED',
   'USER_UNLOCKED', 'USER_STATUS_CHANGED', 'USER_PASSWORD_RESET', 'USER_DELETED', 'DELIVERY_ISSUE_REPORTED', 'MANUAL_CONFIRM_REQUESTED',
   'MANUAL_CONFIRM_APPROVED', 'MANUAL_CONFIRM_REJECTED', 'TRIP_EXCEPTION_REPORTED', 'TRIP_EXCEPTION_ESCALATED', 'DEADLINE_RENEGOTIATED',
-  'DELIVERY_ETA_RISK', 'CREDIT_LOW_BALANCE', 'SUPPORT_TICKET_UPDATED', 'PICKUP_REQUESTED', 'PICKUP_APPROVED', 'PICKUP_REJECTED',
-  'PICKUP_LOADED', 'PICKUP_DELIVERED', 'PICKUP_PACKAGES_DROPPED', 'TRIP_STOPS_REORDERED',
+  'DELIVERY_ETA_RISK', 'CREDIT_LOW_BALANCE', 'SUPPORT_TICKET_UPDATED', 'TRIP_STOPS_REORDERED',
   'STAGING_SHORTAGE_REPORTED', 'STAGING_SHORTAGE_RESOLVED', 'LOADING_DAMAGE_REPORTED', 'PACKAGE_FOUND',
 ] as const
 export type ServerAuditAction = (typeof SERVER_AUDIT_ACTIONS)[number]
@@ -31,7 +30,7 @@ export type ServerAuditAction = (typeof SERVER_AUDIT_ACTIONS)[number]
 const ENTITIES = [
   'Trip', 'DeliveryStop', 'UnloadConfirmation', 'PACKAGE', 'LoadPlan', 'PackagePlacement', 'DeliveryRequirement', 'PlacementConfirmation',
   'Deviation', 'LoadingExecution', 'LOAD_PLAN', 'User', 'DeliveryIssue', 'ManualUnloadConfirmation', 'TripException', 'Company', 'SupportTicket',
-  'PickupRequest', 'StagingShortage', 'LoadingDamage', 'CargoPackage',
+  'StagingShortage', 'LoadingDamage', 'CargoPackage',
 ] as const
 type ServerAuditEntity = (typeof ENTITIES)[number]
 
@@ -81,12 +80,6 @@ const LOOK: Readonly<Record<ServerAuditAction, { icon: LucideIcon; tone: KpiTone
   DELIVERY_ETA_RISK: { icon: Timer, tone: 'amber' },
   CREDIT_LOW_BALANCE: { icon: Coins, tone: 'amber' },
   SUPPORT_TICKET_UPDATED: { icon: LifeBuoy, tone: 'blue' },
-  PICKUP_REQUESTED: { icon: PackagePlus, tone: 'amber' },
-  PICKUP_APPROVED: { icon: PackagePlus, tone: 'green' },
-  PICKUP_REJECTED: { icon: PackagePlus, tone: 'amber' },
-  PICKUP_LOADED: { icon: PackagePlus, tone: 'blue' },
-  PICKUP_DELIVERED: { icon: PackagePlus, tone: 'green' },
-  PICKUP_PACKAGES_DROPPED: { icon: PackageX, tone: 'amber' },
   TRIP_STOPS_REORDERED: { icon: Route, tone: 'blue' },
   STAGING_SHORTAGE_REPORTED: { icon: PackageX, tone: 'amber' },
   STAGING_SHORTAGE_RESOLVED: { icon: PackageX, tone: 'blue' },
@@ -145,10 +138,10 @@ function deadlineLabel(value: string | number | boolean | undefined, format: For
 }
 
 /**
- * Tài khoản mới: trạng thái ban đầu không phải một lần đổi; yêu cầu hỗ trợ và yêu cầu nhận dọc đường nêu trạng thái bằng chữ
- * (`notificationParts`, `pickupParts`).
+ * Tài khoản mới: trạng thái ban đầu không phải một lần đổi; yêu cầu hỗ trợ nêu trạng thái bằng chữ
+ * (`notificationParts`).
  */
-const NO_STATUS_CHIP: ReadonlySet<string> = new Set(['USER_CREATED', 'SUPPORT_TICKET_UPDATED', 'PICKUP_REQUESTED'])
+const NO_STATUS_CHIP: ReadonlySet<string> = new Set(['USER_CREATED', 'SUPPORT_TICKET_UPDATED'])
 
 /**
  * Cột Chi tiết: tóm tắt ngắn từ giá trị trước / sau — trạng thái và hạn giao thành chip "trước → sau", sửa chuyến chỉ nêu tên trường
@@ -190,7 +183,7 @@ function summarize(entry: ServerAuditEntry, t: TFunction, format: Formatter): { 
   if (typeof after.loadedPackages === 'number' && after.loadedPackages > 0) {
     parts.push(t('serverAudit.details.loaded', { count: after.loadedPackages }))
   }
-  parts.push(...notificationParts(entry, t, format), ...pickupParts(entry, t))
+  parts.push(...notificationParts(entry, t, format))
   const reason = reasonPart(entry, t)
   if (reason !== null) parts.push(reason)
   const rest = parts.join(' · ')

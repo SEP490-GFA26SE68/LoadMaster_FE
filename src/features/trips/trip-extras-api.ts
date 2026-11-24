@@ -65,19 +65,18 @@ export type TripReportData = {
 export async function fetchTripReport(tripId: string): Promise<TripReportData> {
   const db = getMockDb()
   const trip = await db.getTrip(tripId)
-  const [plan, vehicles, users, exceptions, reroutes, pickups] = await Promise.all([
+  const [plan, vehicles, users, exceptions, reroutes] = await Promise.all([
     trip.loading ? db.getRevision(trip.loading.revisionId).catch(notFoundAsUndefined) : undefined,
     db.listVehicles(),
     db.listUsers(),
     db.listTripExceptions(tripId),
     db.listTripReroutes(tripId),
-    db.listPickupRequests(tripId),
   ])
   return {
     trip,
     vehicle: vehicles.find((vehicle) => vehicle.id === trip.vehicleId),
     driver: trip.driverId === null ? undefined : users.find((user) => user.id === trip.driverId),
-    report: tripReport(trip, plan, { exceptions, reroutes, pickups }),
+    report: tripReport(trip, plan, { exceptions, reroutes }),
     userNames: Object.fromEntries(users.map((user) => [user.id, user.fullName])),
   }
 }

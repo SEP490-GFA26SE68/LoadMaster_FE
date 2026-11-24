@@ -38,7 +38,6 @@ import { runs } from './en/runs'
 import { lookup } from './en/lookup'
 import { map } from './en/map'
 import { monitoring } from './en/monitoring'
-import { pickups } from './en/pickups'
 import { platform } from './en/platform'
 import { billing } from './en/billing'
 import { payroll } from './en/payroll'
@@ -115,7 +114,6 @@ export const en = {
   lookup,
   map,
   monitoring,
-  pickups,
   platform,
   billing,
   payroll,

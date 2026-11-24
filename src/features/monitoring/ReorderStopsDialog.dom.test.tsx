@@ -11,10 +11,10 @@ import { signedInAs } from '@/test/signed-in'
 import { MonitoringPage } from './MonitoringPage'
 
 /**
- * Hộp "Đổi thứ tự điểm" của màn Giám sát (FE-BL-03) trên kho mock thật. `TRIP-009` có điểm 1 đã giao xong và xe đang đứng ở điểm 2; điều
- * phối viên duyệt một yêu cầu nhận hàng dọc đường có điểm giao riêng nên còn ba điểm chưa giao: STOP-04 (nhận), STOP-05 (giao), STOP-03.
- * Luật của kho (khả năng dỡ, điểm cố định, điểm nhận trước điểm giao) kiểm ở `reorder-stops.test.ts`; ở đây kiểm hộp nối đúng kho và nói
- * đúng lời từ chối. Đồng hồ chỉ giả `Date`, đứng yên ở 12:00 ngày neo.
+ * Hộp "Đổi thứ tự điểm" của màn Giám sát (FE-BL-03) trên kho mock thật. `TRIP-010` (xếp xong, ba điểm) được tài xế `US-0004` cho xuất
+ * phát và đã tới điểm 1, nên còn hai điểm tự do: STOP-02, STOP-03. `TRIP-009` có điểm 1 đã giao xong và xe đang đứng ở điểm 2 nên chỉ
+ * còn một điểm tự do. Luật của kho (khả năng dỡ, điểm cố định) kiểm ở `reorder-stops.test.ts`; ở đây kiểm hộp nối đúng kho và nói đúng
+ * lời từ chối. Đồng hồ chỉ giả `Date`, đứng yên ở 12:00 ngày neo.
  */
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] })
@@ -27,28 +27,26 @@ afterEach(() => {
 })
 
 const SLOW = { timeout: 8000 }
-const TRIP = 'TRIP-009'
+const TRIP = 'TRIP-010'
 
-let approved: Promise<void> | undefined
-/** Duyệt yêu cầu nhận hàng một lần cho cả file: kho là một thể duy nhất của tab. */
-function approvePickupOnce() {
-  approved ??= (async () => {
+let departed: Promise<void> | undefined
+/** Cho `TRIP-010` xuất phát và tới điểm 1 một lần cho cả file: kho là một thể duy nhất của tab. */
+function departOnce() {
+  departed ??= (async () => {
     const db = getMockDb()
-    db.restoreSession('US-0001')
-    const request = await db.createPickupRequest(TRIP, {
-      pickup: { name: 'Xưởng may Hoàng Gia', address: 'Đường số 4, KCN VSIP 1, Thuận An, Bình Dương', lat: 10.928, lng: 106.712 },
-      delivery: { name: 'Kho Dĩ An', address: '1 Quốc lộ 1K, Dĩ An', lat: 10.9, lng: 106.73 },
-      packages: [{ packageCode: 'HG-0501', lengthCm: 60, widthCm: 40, heightCm: 40, weightKg: 12, handlingClass: 'STANDARD' }],
-    })
-    await db.approvePickupRequest(TRIP, request.id, { overrideReason: 'Khách quen' })
+    db.restoreSession('US-0004')
+    await db.startDelivery(TRIP)
+    await db.arriveAtStop(TRIP, 1)
   })()
-  return approved
+  return departed
 }
 
-async function openDialog() {
-  await approvePickupOnce()
+function renderBoard(tripId: string) {
   signedInAs('dispatcher')
-  const router = createMemoryRouter([{ path: '/giam-sat', element: <MonitoringPage /> }, { path: '/chuyen/:tripId', element: null }], { initialEntries: ['/giam-sat'] })
+  const router = createMemoryRouter(
+    [{ path: '/giam-sat', element: <MonitoringPage /> }, { path: '/chuyen/:tripId', element: null }],
+    { initialEntries: [`/giam-sat?chuyen=${tripId}`] },
+  )
   render(
     <I18nProvider>
       <AuthProvider>
@@ -59,6 +57,11 @@ async function openDialog() {
       </AuthProvider>
     </I18nProvider>,
   )
+}
+
+async function openDialog() {
+  await departOnce()
+  renderBoard(TRIP)
   await userEvent.click(await screen.findByRole('button', { name: 'Đổi thứ tự điểm' }, SLOW))
   const dialog = await screen.findByRole('dialog')
   return within(dialog)
@@ -66,54 +69,54 @@ async function openDialog() {
 
 const orderInStore = async () => (await getMockDb().getTrip(TRIP)).stops.map((stop) => stop.id)
 
-test('a stop already done or reached cannot be moved; moving a free stop and applying changes the order of the trip', async () => {
+test('a trip with only one stop left to choose cannot be reordered', async () => {
+  await departOnce()
+  renderBoard('TRIP-009')
+  expect(await screen.findByRole('button', { name: 'Đổi thứ tự điểm' }, SLOW)).toBeDisabled()
+})
+
+test('a stop already reached cannot be moved; moving a free stop and applying sends the new order', async () => {
+  const reorder = vi.spyOn(getMockDb(), 'reorderRunningStops').mockImplementationOnce(async (tripId) => ({ trip: await getMockDb().getTrip(tripId), partial: [] }))
   const dialog = await openDialog()
   const stops = within(dialog.getByRole('list', { name: 'Thứ tự các điểm' })).getAllByRole('listitem')
-  expect(stops).toHaveLength(5)
-  expect(stops[0]).toHaveTextContent('Đã giao xong')
-  expect(stops[1]).toHaveTextContent('Xe đã tới')
-  // Hai điểm đầu khoá: không có nút dời; điểm nhận đứng ngay dưới điểm xe đã tới nên chưa lên được
+  expect(stops).toHaveLength(3)
+  expect(stops[0]).toHaveTextContent('Xe đã tới')
+  // Điểm xe đã tới khoá: không có nút dời; điểm đứng ngay dưới nó chưa lên được
   expect(within(stops[0]!).queryByRole('button')).not.toBeInTheDocument()
-  expect(within(stops[1]!).queryByRole('button')).not.toBeInTheDocument()
-  expect(within(stops[2]!).getByRole('button', { name: /^Dời .+ lên$/ })).toBeDisabled()
+  expect(within(stops[1]!).getByRole('button', { name: /^Dời .+ lên$/ })).toBeDisabled()
   expect(dialog.getByRole('button', { name: 'Áp dụng thứ tự mới' })).toBeDisabled()
 
-  // Điểm 3 cũ (cuối danh sách) lên trước điểm giao của kiện nhận
-  await userEvent.click(within(stops[4]!).getByRole('button', { name: /^Dời .+ lên$/ }))
+  await userEvent.click(within(stops[2]!).getByRole('button', { name: /^Dời .+ lên$/ }))
   await userEvent.click(dialog.getByRole('button', { name: 'Áp dụng thứ tự mới' }))
-  expect(await screen.findByText('Đã đổi thứ tự điểm giao của chuyến TRIP-009.', undefined, SLOW)).toBeInTheDocument()
-  expect(await orderInStore()).toStrictEqual(['STOP-01', 'STOP-02', 'STOP-04', 'STOP-03', 'STOP-05'])
+  expect(await screen.findByText('Đã đổi thứ tự điểm giao của chuyến TRIP-010.', undefined, SLOW)).toBeInTheDocument()
+  expect(reorder).toHaveBeenCalledWith(TRIP, ['STOP-01', 'STOP-03', 'STOP-02'])
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 })
 
-test('a refusal names every blocked package with its stop, in words, and leaves the order as it was', async () => {
+test('the store refuses an order that buries cargo: the dialog names every blocked package with its stop, in words, and leaves the order as it was', async () => {
   const before = await orderInStore()
-  vi.spyOn(getMockDb(), 'reorderRunningStops').mockRejectedValueOnce(
-    new MockDbError('STOP_ORDER_BLOCKS_CARGO', { tripId: TRIP, packages: ['PKG-003-12', 'HG-0501'], stopIds: ['STOP-03', 'STOP-05'] }),
-  )
   const dialog = await openDialog()
   const stops = within(dialog.getByRole('list', { name: 'Thứ tự các điểm' })).getAllByRole('listitem')
-  await userEvent.click(within(stops[4]!).getByRole('button', { name: /^Dời .+ lên$/ }))
+  await userEvent.click(within(stops[2]!).getByRole('button', { name: /^Dời .+ lên$/ }))
   await userEvent.click(dialog.getByRole('button', { name: 'Áp dụng thứ tự mới' }))
 
   const blocked = within(await dialog.findByRole('list', { name: 'Kiện bị chắn' }, SLOW)).getAllByRole('listitem')
-  expect(blocked).toHaveLength(2)
-  expect(blocked[0]).toHaveTextContent(/^PKG-003-12 — điểm \d · .+/)
-  expect(blocked[1]).toHaveTextContent(/^HG-0501 — điểm \d · Kho Dĩ An/)
+  expect(blocked.length).toBeGreaterThan(0)
+  for (const item of blocked) expect(item).toHaveTextContent(/^PKG-\d{3}-\d+ — điểm \d · .+/)
   expect(dialog.getByText('Thứ tự điểm giữ nguyên.')).toBeInTheDocument()
   expect(await orderInStore()).toStrictEqual(before)
 })
 
 test('a refusal for missing coordinates names every stop that has none, in words', async () => {
   vi.spyOn(getMockDb(), 'reorderRunningStops').mockRejectedValueOnce(
-    new MockDbError('MISSING_STOP_COORDINATES', { tripId: TRIP, stopIds: ['STOP-05'], stopNumbers: [4] }),
+    new MockDbError('MISSING_STOP_COORDINATES', { tripId: TRIP, stopIds: ['STOP-03'], stopNumbers: [3] }),
   )
   const dialog = await openDialog()
   const stops = within(dialog.getByRole('list', { name: 'Thứ tự các điểm' })).getAllByRole('listitem')
-  await userEvent.click(within(stops[4]!).getByRole('button', { name: /^Dời .+ lên$/ }))
+  await userEvent.click(within(stops[2]!).getByRole('button', { name: /^Dời .+ lên$/ }))
   await userEvent.click(dialog.getByRole('button', { name: 'Áp dụng thứ tự mới' }))
 
   const missing = within(await dialog.findByRole('list', { name: 'Điểm chưa có toạ độ' }, SLOW)).getAllByRole('listitem')
-  expect(missing.map((item) => item.textContent)).toStrictEqual([expect.stringMatching(/^điểm \d · Kho Dĩ An$/)])
+  expect(missing.map((item) => item.textContent)).toStrictEqual([expect.stringMatching(/^điểm \d · .+$/)])
   expect(dialog.getByText('Không đổi được: các điểm sau chưa có toạ độ')).toBeInTheDocument()
 })

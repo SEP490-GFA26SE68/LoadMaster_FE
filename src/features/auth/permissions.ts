@@ -4,7 +4,7 @@ import type { Role } from '@/types/user'
  * Quyền của FE giả lập (D-41): chặn route, ẩn mục nav và ẩn nút ghi. Backend thật phải kiểm lại ở server — đây chỉ là lớp giao diện.
  * Một hằng số dùng chung cho route, nav, nút và màn "Ma trận quyền" (LM-092). Thứ tự là thứ tự dòng của ma trận, theo PRD v2 mục 5.2
  * (FE-0-01): nền tảng và công ty trước, rồi các luồng vận hành. Quyền của màn chưa làm (tối ưu tuyến, giám
- * sát, sự cố, nhận hàng dọc đường, gói cước, hỗ trợ) đã có tên ở đây nhưng chưa gắn route hay nút nào — hiện chỉ có ở Ma trận quyền.
+ * sát, sự cố, gói cước, hỗ trợ) đã có tên ở đây nhưng chưa gắn route hay nút nào — hiện chỉ có ở Ma trận quyền.
  */
 
 /**
@@ -50,8 +50,6 @@ export const PERMISSIONS = [
   'exceptions.report',
   'exceptions.resolve',
   'deadlines.renegotiate',
-  'pickups.create',
-  'pickups.approve',
   'companyWarehouses.manage',
   'warehouse.operate',
   'driver.operate',
@@ -125,8 +123,6 @@ export const ROLE_PERMISSIONS: Readonly<Record<Role, readonly Permission[]>> = {
     'vehicleTypes.edit',
     'exceptions.report',
     'exceptions.resolve',
-    'pickups.create',
-    'pickups.approve',
   ],
 
   warehouse: [
@@ -142,7 +138,6 @@ export const ROLE_PERMISSIONS: Readonly<Record<Role, readonly Permission[]>> = {
   driver: [
     'support.create',
     'exceptions.report',
-    'pickups.create',
     'driver.operate',
   ],
 }

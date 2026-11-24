@@ -138,11 +138,6 @@ const newUser = (companyId?: string) => ({ fullName: 'Phan Thị Yến', email: 
 const requirement = (packageIds: string[]) => ({
   destinationName: 'Siêu thị Co.opmart Biên Hoà', address: '121 Phạm Văn Thuận, Biên Hoà', deadline: '2026-09-16T10:00:00.000Z', priority: 'NORMAL' as const, packageIds,
 })
-const PICKUP_INPUT = {
-  pickup: { name: 'Xưởng may Hoàng Gia', address: 'Đường số 4, KCN VSIP 1, Thuận An', lat: 10.928, lng: 106.712 },
-  delivery: { name: 'Bếp ăn KCN Sóng Thần', address: '12 Đường số 6, KCN Sóng Thần 1, Dĩ An', lat: 10.893, lng: 106.75 },
-  packages: [{ packageCode: 'HG-0412', lengthCm: 60, widthCm: 40, heightCm: 40, weightKg: 12, handlingClass: 'STANDARD' as const }],
-}
 const COMPANY_INFO = {
   name: 'Công ty TNHH Vận tải Đổi Tên', address: '1 Đường số 1, KCN Biên Hoà 2, Đồng Nai', phone: '0251 111 2222',
   depot: { name: 'Kho Đổi Tên', address: '1 Đường số 1, KCN Biên Hoà 2', lat: 10.93, lng: 106.87 },
@@ -238,16 +233,6 @@ const PROBES = {
   confirmReroute: onForeignTrip((db, tripId) => db.confirmReroute(tripId, 0)),
   listTripReroutes: { scope: 'operational', hidden: ({ db, other }) => db.listTripReroutes(other.trip) },
   renegotiateDeadline: onForeignTrip((db, tripId) => db.renegotiateDeadline(tripId, 'EXC-001', { requirementId: 'REQ-001', deadline: '2026-09-16T10:00:00.000Z', contactNote: 'Đã gọi khách' })),
-
-  // Yêu cầu nhận dọc đường (FE-7-01): lọc qua chuyến, như mọi hàm ghi tiến độ của chuyến
-  listPickupRequests: { scope: 'operational', hidden: ({ db, other }) => db.listPickupRequests(other.trip) },
-  listPickupPackages: { scope: 'operational', hidden: ({ db, other }) => db.listPickupPackages(other.trip) },
-  getPickupRequest: { scope: 'operational', hidden: ({ db, other }) => db.getPickupRequest(other.trip, 'PKR-001') },
-  createPickupRequest: onForeignTrip((db, tripId) => db.createPickupRequest(tripId, PICKUP_INPUT)),
-  validatePickupRequest: onForeignTrip((db, tripId) => db.validatePickupRequest(tripId, 'PKR-001')),
-  approvePickupRequest: onForeignTrip((db, tripId) => db.approvePickupRequest(tripId, 'PKR-001')),
-  rejectPickupRequest: onForeignTrip((db, tripId) => db.rejectPickupRequest(tripId, 'PKR-001', 'Không nhận được')),
-  updatePickupStatus: onForeignTrip((db, tripId) => db.updatePickupStatus(tripId, 'PKR-001', 'VALIDATED')),
 
   // Đổi thứ tự điểm khi xe đang chạy (FE-BL-03)
   reorderRunningStops: onForeignTrip((db, tripId) => db.reorderRunningStops(tripId, ['STOP-01'])),

@@ -1,4 +1,3 @@
-import { useMemo } from 'react'
 import { Navigate, useSearchParams } from 'react-router'
 import { Spinner } from '@/components/ui/Spinner'
 import { dataErrorMessage, useT } from '@/lib/i18n'
@@ -30,8 +29,6 @@ export function DriverStopPage() {
 function DriverTripScreen({ tripId }: { tripId: string }) {
   const t = useT()
   const query = useDriverTripQuery(tripId)
-  // Kiện nhận dọc đường của chuyến (FE-7-05): giữ một tham chiếu ổn định để màn không dựng lại danh sách điểm mỗi lần vẽ
-  const pickup = useMemo(() => ({ requests: query.data?.pickups ?? [], packages: query.data?.pickupPackages ?? [] }), [query.data])
 
   if (query.isPending) {
     return (
@@ -52,5 +49,5 @@ function DriverTripScreen({ tripId }: { tripId: string }) {
       : <DriverNotice title={t('driver.replan.title')} description={t(`driver.replan.${trip.replan.reason}`, { tripId })} />
   }
   if (trip.phase === 'completed') return <TripSummary trip={trip} plan={plan} />
-  return <DeliveryStopView trip={trip} plan={plan} pickup={pickup} />
+  return <DeliveryStopView trip={trip} plan={plan} />
 }

@@ -42,7 +42,6 @@ type ReportDto = {
 type StopDto = {
   stopId: number
   sequence?: number | null
-  stopType?: string | null
   name?: string | null
   address?: string | null
   packageCount: number
@@ -92,7 +91,6 @@ type RerouteDto = { stopNumber?: number | null; route?: string | null; distanceK
 export type ServerReportStop = {
   id: string
   number: number
-  pickup: boolean
   name: string
   address: string
   planned: number
@@ -169,7 +167,8 @@ const text = (value: string | null | undefined) => value?.trim() ?? ''
 const oneOf = <T extends string>(values: readonly T[], value: string | null | undefined): T | null =>
   values.includes(value as T) ? (value as T) : null
 
-const STEPS: readonly VerifyContext[] = ['STAGING', 'LOADING', 'UNLOADING', 'PICKUP']
+// Máy chủ còn trả bước `PICKUP` (nhận hàng dọc đường) của chuyến cũ: app đã bỏ tính năng đó, nên dòng đó bị bỏ
+const STEPS: readonly VerifyContext[] = ['STAGING', 'LOADING', 'UNLOADING']
 const PLANNED_STATUS: Readonly<Record<string, DeadlineStatus>> = { ON_TIME: 'OK', AT_RISK: 'AT_RISK', MISSED: 'MISSED' }
 const CONFIRM_STATUS = { PENDING: 'MANUAL_PENDING', APPROVED: 'MANUAL_APPROVED', REJECTED: 'MANUAL_REJECTED' } as const
 const EXCEPTION_TYPES: readonly TripExceptionType[] = ['TRAFFIC', 'ACCIDENT', 'ROAD_CONSTRUCTION', 'VEHICLE_BREAKDOWN', 'OTHER']
@@ -179,7 +178,6 @@ function stopOf(stop: StopDto, index: number): ServerReportStop {
   return {
     id: String(stop.stopId),
     number: stop.sequence ?? index + 1,
-    pickup: stop.stopType === 'PICKUP',
     name: text(stop.name),
     address: text(stop.address),
     planned: stop.packageCount,

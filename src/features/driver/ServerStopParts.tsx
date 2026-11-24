@@ -1,6 +1,5 @@
 import { useMemo } from 'react'
 import { CargoPositionDialog } from './CargoPositionDialog'
-import type { UnplacedPickup } from './driver-pickups'
 import { driverServerScene } from './driver-server-scene'
 import { serverStopTiming } from './server-stop-timing'
 import { StopTimingFacts } from './StopEta'
@@ -18,8 +17,6 @@ export function ServerStopEta({ tripId, stopNumber }: { tripId: string; stopNumb
   return <StopTimingFacts timing={serverStopTiming(stop, query.data.location)} mock={false} />
 }
 
-/** Máy chủ chưa có nhận hàng dọc đường: không có kiện nhận nào cạnh khung. */
-const NO_PICKUP_CARGO: readonly UnplacedPickup[] = []
 
 /**
  * "Xem vị trí hàng" theo phương án kho đã xếp của máy chủ (`driverServerScene`): kiện đã dỡ ở các điểm trước và điểm này mờ như đã gỡ.
@@ -29,5 +26,5 @@ export function ServerCargoPosition({ tripId, stopNumber }: { tripId: string; st
   const query = useDriverLoadPlanQuery(tripId)
   const scene = useMemo(() => (query.data ? driverServerScene(query.data) : null), [query.data])
   if (scene === null) return null
-  return <CargoPositionDialog model={scene.model} stopNumber={stopNumber} doneIds={scene.doneIds} pickupCargo={NO_PICKUP_CARGO} />
+  return <CargoPositionDialog model={scene.model} stopNumber={stopNumber} doneIds={scene.doneIds} />
 }

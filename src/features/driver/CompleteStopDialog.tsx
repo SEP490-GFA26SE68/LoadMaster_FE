@@ -1,4 +1,4 @@
-import { ArrowRight, CircleCheck, Flag, PackageCheck, PackageOpen, TriangleAlert, Undo2, type LucideIcon } from 'lucide-react'
+import { ArrowRight, CircleCheck, Flag, PackageOpen, TriangleAlert, Undo2, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogTitle } from '@/components/ui/Dialog'
@@ -19,16 +19,16 @@ type CompleteStopDialogProps = {
 }
 
 /**
- * Hỏi lại trước khi hoàn tất điểm giao hoặc điểm nhận: hoàn tất là ghi thật vào kho và không mở lại được. Hộp nói điều sẽ xảy ra với từng
- * nhóm kiện (`stopCompletion`) — đã dỡ thành Đã giao, chưa dỡ ở lại xe thành Hoàn trả (bằng chữ, kèm mã từng kiện), kiện nhận lên xe thành
- * Đang vận chuyển — số sự cố đã báo, và điểm kế tiếp hay đây là điểm cuối. Điện thoại: tờ trượt từ đáy; từ 768 px là hộp giữa màn. Nút
+ * Hỏi lại trước khi hoàn tất điểm giao: hoàn tất là ghi thật vào kho và không mở lại được. Hộp nói điều sẽ xảy ra với từng
+ * nhóm kiện (`stopCompletion`) — đã dỡ thành Đã giao, chưa dỡ ở lại xe thành Hoàn trả (bằng chữ, kèm mã từng kiện) — số sự cố
+ * đã báo, và điểm kế tiếp hay đây là điểm cuối. Điện thoại: tờ trượt từ đáy; từ 768 px là hộp giữa màn. Nút
  * 56 px, chữ 16 px. Đang ghi thì không đóng được; lỗi thì hộp giữ nguyên (nơi gọi bật toast lỗi); ghi xong hộp đóng, không có toast
  * thành công — màn sang điểm kế tiếp hoặc tổng kết chuyến.
  */
 export function CompleteStopDialog({ open, onOpenChange, view, stops, pending, onConfirm }: CompleteStopDialogProps) {
   const t = useT()
-  const { delivered, returned, picked, issues, next } = stopCompletion(view, stops)
-  const nothing = delivered + returned.length + picked === 0
+  const { delivered, returned, issues, next } = stopCompletion(view, stops)
+  const nothing = delivered + returned.length === 0
   return (
     <Dialog open={open} onOpenChange={(value) => { if (!pending) onOpenChange(value) }}>
       <DialogContent sheet className="w-[min(36rem,calc(100vw-3rem))] text-body-lg">
@@ -43,7 +43,6 @@ export function CompleteStopDialog({ open, onOpenChange, view, stops, pending, o
           <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
             {nothing ? <Line icon={PackageOpen}>{t('driver.noItems')}</Line> : null}
             {delivered > 0 ? <Line icon={CircleCheck} done>{t('driver.completeConfirm.delivered', { count: delivered })}</Line> : null}
-            {picked > 0 ? <Line icon={PackageCheck} done>{t('driver.completeConfirm.picked', { count: picked })}</Line> : null}
             {returned.length > 0 ? (
               // Hoàn trả nói bằng chữ và mã kiện; nền hổ phách chỉ để nhấn
               <li className="flex flex-col gap-1.5 rounded-lg border border-badge-warning-border bg-badge-warning-bg px-3 py-2.5 font-medium text-badge-warning-fg">

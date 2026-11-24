@@ -23,7 +23,6 @@ export const audit = {
     vehicleType: { created: 'Added vehicle type', updated: 'Edited vehicle type', deleted: 'Deleted vehicle type', assigned: 'Set vehicle type' },
     manualConfirm: { requested: 'Sent a manual confirmation for approval', approved: 'Approved manual confirmation', rejected: 'Rejected manual confirmation' },
     exception: { reported: 'Reported a trip incident', escalated: 'Sent the incident to the manager', resolved: 'Marked the incident as handled', deadlineRenegotiated: 'Contacted the customer, entered a new deadline' },
-    pickup: { requested: 'Sent an en-route pickup request', approved: 'Approved an en-route pickup request', rejected: 'Rejected an en-route pickup request', reoptimized: 'Placed pickup packages in the freed cargo zone', loaded: 'Loaded en-route pickup packages', delivered: 'Delivered en-route pickup packages' },
     subscription: { subscribed: 'Subscribed to a plan', renewed: 'Renewed the plan', cancelled: 'Cancelled the plan', expired: 'Plan expired' },
     credit: { purchased: 'Topped up credits', lowBalance: 'Credits running low' },
     company: { created: 'Created a company', updated: 'Edited company information' },
@@ -45,7 +44,6 @@ export const audit = {
     vehicleType: 'Vehicle types',
     manualConfirm: 'Manual confirmations',
     exception: 'Trip incidents',
-    pickup: 'En-route pickup',
     subscription: 'Plan',
     credit: 'Credits',
     company: 'Company',
@@ -153,9 +151,7 @@ export const audit = {
       delayMinutes: 'Expected delay (min)',
       escalation: 'Reason sent up',
       route: 'Route',
-      // En-route pickup (FE-7-03 to FE-7-05); the trip's driver and the driver just replaced once the warehouse started loading
-      pickupId: 'Pickup request',
-      failedRules: 'Failed rules',
+      // The trip's driver and the driver just replaced once the warehouse started loading
       driverId: 'Driver',
       previousDriverId: 'Previous driver',
       // The warehouse stages again after the trip went back to Planned (FE-6-02, FE-6-05)

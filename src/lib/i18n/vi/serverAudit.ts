@@ -44,12 +44,6 @@ export const serverAudit = {
     DELIVERY_ETA_RISK: 'Nguy cơ trễ hạn giao',
     CREDIT_LOW_BALANCE: 'Sắp hết credit',
     SUPPORT_TICKET_UPDATED: 'Hỗ trợ khách hàng cập nhật yêu cầu hỗ trợ',
-    PICKUP_REQUESTED: 'Gửi yêu cầu nhận hàng dọc đường',
-    PICKUP_APPROVED: 'Duyệt yêu cầu nhận hàng dọc đường',
-    PICKUP_REJECTED: 'Từ chối yêu cầu nhận hàng dọc đường',
-    PICKUP_LOADED: 'Nhận hàng dọc đường lên xe',
-    PICKUP_DELIVERED: 'Giao hàng nhận dọc đường',
-    PICKUP_PACKAGES_DROPPED: 'Bỏ kiện nhận dọc đường chưa lên xe khi huỷ chuyến',
     TRIP_STOPS_REORDERED: 'Đổi thứ tự điểm giao khi xe đang chạy',
     STAGING_SHORTAGE_REPORTED: 'Kho báo thiếu kiện khi soạn hàng',
     STAGING_SHORTAGE_RESOLVED: 'Điều phối quyết định kiện kho báo thiếu',
@@ -75,7 +69,6 @@ export const serverAudit = {
     TripException: 'Sự cố trên đường',
     Company: 'Công ty',
     SupportTicket: 'Yêu cầu hỗ trợ',
-    PickupRequest: 'Yêu cầu nhận dọc đường',
     StagingShortage: 'Báo thiếu kiện',
     LoadingDamage: 'Kiện hỏng khi xếp',
     CargoPackage: 'Kiện',
@@ -107,8 +100,6 @@ export const serverAudit = {
   ticketStatuses: { OPEN: 'Mở', IN_PROGRESS: 'Đang xử lý', RESOLVED: 'Đã giải quyết', CLOSED: 'Đã đóng' },
   /** Vì sao sự cố lên quản lý (`TRIP_EXCEPTION_ESCALATED`). */
   escalationReasons: { NO_ROUTE: 'Không tìm được tuyến khác', TIMEOUT: 'Quá 30 phút chưa xử lý' },
-  /** Kết quả mười luật khi gửi yêu cầu nhận dọc đường (`PICKUP_REQUESTED`). */
-  pickupChecks: { VALIDATED: 'Đạt đủ mười luật', PENDING: 'Có luật không đạt' },
   /** Quyết định với kiện kho báo thiếu (`STAGING_SHORTAGE_RESOLVED`). */
   shortageDecisions: { KEEP_SEARCHING: 'Tìm tiếp kiện', DROP: 'Bỏ kiện khỏi chuyến — chuyến chờ lập lại phương án' },
   /** Kiện hỏng khi xếp (`LOADING_DAMAGE_REPORTED`). */
@@ -132,9 +123,6 @@ export const serverAudit = {
     balance: { one: 'Còn {count} credit', other: 'Còn {count} credit' },
     ticket: 'Yêu cầu {code}',
     replied: 'Đã trả lời',
-    pickupPackages: { one: '{count} kiện nhận dọc đường', other: '{count} kiện nhận dọc đường' },
-    pickupUnplaced: { one: '{count} kiện chưa có chỗ trên xe', other: '{count} kiện chưa có chỗ trên xe' },
-    pickupOverridden: 'Duyệt vượt luật',
     package: 'Kiện {code}',
   },
 } as const

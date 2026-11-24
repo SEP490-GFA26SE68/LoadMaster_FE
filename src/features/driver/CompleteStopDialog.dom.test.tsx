@@ -10,8 +10,8 @@ vi.mock('sonner', () => ({ toast: { error: vi.fn(), warning: vi.fn(), success: v
 
 /**
  * Hộp hỏi lại trước khi hoàn tất điểm (`CompleteStopDialog`) trên chuyến hai thùng của tài xế demo: đã xuất phát, đã đến điểm 1 và dỡ kiện
- * của điểm bằng quét, nên nút hoàn tất bấm được ngay khi mở màn. Nội dung của hộp ở từng điểm (đã giao, hoàn trả, sự cố, kiện nhận, điểm
- * cuối) kiểm trong luồng đủ ba điểm của `DriverStopPage.dom.test.tsx` và `PickupStop.dom.test.tsx`.
+ * của điểm bằng quét, nên nút hoàn tất bấm được ngay khi mở màn. Nội dung của hộp ở từng điểm (đã giao, hoàn trả, sự cố, điểm cuối) kiểm
+ * trong luồng đủ ba điểm của `DriverStopPage.dom.test.tsx`.
  */
 const WRITE = { timeout: 5000 }
 const TITLE = 'Hoàn tất điểm 1 — Cửa hàng Bách Hoá Xanh Thủ Đức?'

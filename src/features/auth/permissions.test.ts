@@ -29,11 +29,10 @@ const EXPECTED: Readonly<Record<Role, readonly Permission[]>> = {
     'payroll.viewOwn',
     'support.create', 'dashboard.view', 'requirements.view', 'requirements.edit', 'packages.view', 'packages.lookup', 'labels.print',
     'trips.view', 'trips.edit', 'routes.optimize', 'optimization.run', 'plans.approve', 'manualConfirm.approve', 'plans.view',
-    'monitoring.view', 'fleet.view', 'fleet.edit', 'vehicleTypes.edit', 'exceptions.report', 'exceptions.resolve', 'pickups.create',
-    'pickups.approve',
+    'monitoring.view', 'fleet.view', 'fleet.edit', 'vehicleTypes.edit', 'exceptions.report', 'exceptions.resolve',
   ],
   warehouse: ['payroll.viewOwn', 'support.create', 'packages.view', 'packages.manage', 'packages.lookup', 'labels.print', 'warehouse.operate'],
-  driver: ['support.create', 'exceptions.report', 'pickups.create', 'driver.operate'],
+  driver: ['support.create', 'exceptions.report', 'driver.operate'],
 }
 
 test.each(ROLES)('%s has exactly its permissions from the matrix', (role) => {
@@ -57,9 +56,9 @@ test('exactly the eight roles of the backend, each with its backend code; manufa
 
 test('one table: 37 permissions, each granted to at least one role; a role lists each of its permissions once, in the order of the matrix rows', () => {
   // 33 quyền của ma trận PRD v2 cộng `contacts.handle`, `companyProfile.manage`, `trialRequests.manage`, `companyWarehouses.manage`, `payroll.manage`, `payroll.viewOwn`; ba
-  // quyền của nhà sản xuất và logistics đã bỏ (FE-0-06), hai quyền đơn hàng tạm đã bỏ (FE-4b-01)
-  expect(PERMISSIONS).toHaveLength(39)
-  expect(new Set(PERMISSIONS).size).toBe(39)
+  // quyền của nhà sản xuất và logistics đã bỏ (FE-0-06), hai quyền đơn hàng tạm đã bỏ (FE-4b-01), hai quyền nhận hàng dọc đường đã bỏ
+  expect(PERMISSIONS).toHaveLength(37)
+  expect(new Set(PERMISSIONS).size).toBe(37)
   expect(PERMISSIONS.filter((permission) => /^(packages\.register|shipments\.|receiving\.|orders\.)/.test(permission))).toStrictEqual([])
   expect(PERMISSIONS.slice(-2)).toStrictEqual(['warehouse.operate', 'driver.operate'])
   for (const permission of PERMISSIONS) expect(ROLES.some((role) => can(role, permission)), permission).toBe(true)
@@ -73,8 +72,8 @@ test('one table: 37 permissions, each granted to at least one role; a role lists
 
 test('the three platform roles have no operational permission: no packages, trips, plans, fleet, warehouse or driver work', () => {
   const operational = PERMISSIONS.filter((permission) =>
-    /^(dashboard|reports|requirements|packages|labels|trips|routes|optimization|plans|manualConfirm|monitoring|fleet|vehicleTypes|exceptions|deadlines|pickups|warehouse|driver)\./.test(permission))
-  expect(operational).toHaveLength(26)
+    /^(dashboard|reports|requirements|packages|labels|trips|routes|optimization|plans|manualConfirm|monitoring|fleet|vehicleTypes|exceptions|deadlines|warehouse|driver)\./.test(permission))
+  expect(operational).toHaveLength(24)
   expect(PLATFORM_ROLES).toStrictEqual(['systemAdmin', 'systemManager', 'systemSupporter'])
   for (const role of PLATFORM_ROLES) {
     expect(isPlatformRole(role), role).toBe(true)

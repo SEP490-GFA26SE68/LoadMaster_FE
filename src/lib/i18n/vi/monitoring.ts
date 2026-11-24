@@ -131,7 +131,7 @@ export const monitoring = {
     down: 'Dời {name} xuống',
     completed: 'Đã giao xong',
     arrived: 'Xe đã tới',
-    note: 'Điểm đã giao xong và điểm xe đã tới đứng nguyên. Điểm nhận hàng dọc đường phải đứng trước điểm giao của chính yêu cầu đó. Giờ đến và mức hạn tính lại; phương án xếp hàng không đổi.',
+    note: 'Điểm đã giao xong và điểm xe đã tới đứng nguyên. Giờ đến và mức hạn tính lại; phương án xếp hàng không đổi.',
     apply: 'Áp dụng thứ tự mới',
     close: 'Đóng',
     done: 'Đã đổi thứ tự điểm giao của chuyến {id}.',

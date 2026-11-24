@@ -30,8 +30,6 @@ export const notifications = {
     cancelled: 'Trip cancelled',
     assigned: 'New trip: you now drive this trip',
     unassigned: 'You no longer drive this trip',
-    pickupApproved: 'The dispatcher approved an en-route pickup — the route has a new pickup stop',
-    pickupRejected: 'En-route pickup request rejected',
     stopsReordered: 'The dispatcher changed the stop order — check the route',
   },
 } satisfies Dictionary<typeof source>

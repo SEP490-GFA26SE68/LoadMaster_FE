@@ -86,13 +86,6 @@ export const AUDIT_ACTIONS = [
   'exception.escalated',
   'exception.resolved',
   'exception.deadlineRenegotiated',
-  // Yêu cầu nhận hàng dọc đường (FE-7-03 → FE-7-05)
-  'pickup.requested',
-  'pickup.approved',
-  'pickup.rejected',
-  'pickup.reoptimized',
-  'pickup.loaded',
-  'pickup.delivered',
   // Gói cước và credit của công ty (FE-8-01, FE-8-05); `expired` và `lowBalance` do hệ thống ghi
   'subscription.subscribed',
   'subscription.renewed',

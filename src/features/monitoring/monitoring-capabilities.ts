@@ -6,8 +6,7 @@ import { usesBackend } from '@/lib/backend-config'
  * và xử lý sự cố (máy chủ cũng tự chuyển sự cố mở quá 30 phút), tuyến thay thế, đổi thứ tự điểm khi xe đang chạy, và tab "Sự cố cần xử
  * lý" của quản lý công ty (đọc sự cố `ESCALATED` trong giám sát đội xe) kèm gia hạn — nhập hạn mới cho một yêu cầu giao của chuyến. Liên
  * kết tới Chi tiết chuyến chỉ có khi màn chuyến đọc cùng nguồn (nhóm `trips` cùng bật hoặc cùng tắt) — không thì mã chuyến bên này không
- * có ở bên kia. Backend chưa có — màn ẩn phần đó: xác nhận tay chờ duyệt. Nhận hàng dọc đường đi theo nhóm `trips` (`PICKUPS_ON_BACKEND`):
- * thẻ yêu cầu nhận chỉ hiện khi hai nhóm cùng nguồn. Nằm riêng khỏi `monitoring-api.ts` để thành
+ * có ở bên kia. Backend chưa có — màn ẩn phần đó: xác nhận tay chờ duyệt. Nằm riêng khỏi `monitoring-api.ts` để thành
  * phần đọc nó không kéo theo lớp gọi API.
  */
 export type MonitoringCapabilities = {
@@ -17,7 +16,6 @@ export type MonitoringCapabilities = {
   readonly reorderStops: boolean
   /** Điều phối viên chuyển sự cố còn mở cho quản lý; tab "Sự cố cần xử lý" của quản lý công ty. */
   readonly escalation: boolean
-  readonly pickups: boolean
   readonly manualConfirm: boolean
 }
 
@@ -28,7 +26,6 @@ export const MONITORING_CAPABILITIES: MonitoringCapabilities = {
   openTrip: ON_BACKEND === usesBackend('trips'),
   reorderStops: true,
   escalation: true,
-  pickups: ON_BACKEND === usesBackend('trips'),
   manualConfirm: !ON_BACKEND,
 }
 

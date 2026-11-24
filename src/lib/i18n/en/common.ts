@@ -36,7 +36,7 @@ export const common = {
   },
   packageFlags: { NOT_FOUND: 'Not found', DAMAGED: 'Damaged' },
   verifyMethods: { QR: 'QR scan', CODE: 'Typed code', MANUAL: 'By hand' },
-  verifyContexts: { STAGING: 'Staging', LOADING: 'Loading', UNLOADING: 'Unloading', PICKUP: 'En-route pickup' },
+  verifyContexts: { STAGING: 'Staging', LOADING: 'Loading', UNLOADING: 'Unloading' },
   manualConfirmReasons: { LABEL_DAMAGED: 'Label torn / missing', QR_UNREADABLE: 'QR unreadable', OTHER: 'Other' },
   table: {
     rowsPerPage: 'Rows per page',

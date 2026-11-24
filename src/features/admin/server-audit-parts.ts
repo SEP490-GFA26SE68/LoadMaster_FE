@@ -3,8 +3,7 @@ import type { TFunction } from '@/lib/i18n'
 import type { ServerAuditEntry } from './audit-backend-api'
 
 /**
- * Phần chi tiết của dòng nhật ký máy chủ mà chuông thông báo cũng hiện: sự cố, nguy cơ trễ hạn, credit, yêu cầu hỗ trợ, nhận hàng dọc
- * đường, báo thiếu / kiện hỏng của kho, kiện tìm thấy lại, lý do. Mã dịch qua từ điển; mã không có nhãn thì bỏ, không hiện mã thô. Hàm thuần, chỉ `server-audit-rows.ts` dùng.
+ * Phần chi tiết của dòng nhật ký máy chủ mà chuông thông báo cũng hiện: sự cố, nguy cơ trễ hạn, credit, yêu cầu hỗ trợ, báo thiếu / kiện hỏng của kho, kiện tìm thấy lại, lý do. Mã dịch qua từ điển; mã không có nhãn thì bỏ, không hiện mã thô. Hàm thuần, chỉ `server-audit-rows.ts` dùng.
  */
 
 const TICKET_STATUSES = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'] as const
@@ -14,8 +13,6 @@ const DEADLINE_STATUSES = ['OK', 'AT_RISK', 'MISSED'] as const
 const DELIVERY_ISSUE_KINDS = ['damaged', 'missing', 'refused', 'other'] as const
 /** Lý do xác nhận tay (`MANUAL_CONFIRM_REASONS` của kho mẫu, `ManualConfirmReason` của máy chủ). */
 const MANUAL_CONFIRM_REASONS = ['LABEL_DAMAGED', 'QR_UNREADABLE', 'OTHER'] as const
-/** Kết quả mười luật lúc gửi yêu cầu nhận dọc đường (`PICKUP_REQUESTED`): đạt cả mười, hoặc còn luật không đạt. */
-const PICKUP_CHECKS = ['VALIDATED', 'PENDING'] as const
 /** Quyết định của điều phối viên với kiện kho báo thiếu (`STAGING_SHORTAGE_RESOLVED`). */
 const SHORTAGE_DECISIONS = ['KEEP_SEARCHING', 'DROP'] as const
 /** Kiện hỏng lúc xếp (`LOADING_DAMAGE_REPORTED`): bỏ lại kho rồi xếp tiếp, hoặc chuyến quay về lập kế hoạch. */
@@ -36,28 +33,6 @@ export function reasonPart({ actionType, after }: ServerAuditEntry, t: TFunction
     return t('serverAudit.details.reason', { reason: t(`common.manualConfirmReasons.${reason}`) })
   }
   return CODE_LIKE.test(reason) ? null : t('serverAudit.details.reason', { reason })
-}
-
-/** Yêu cầu nhận hàng dọc đường: số kiện, kết quả mười luật khi gửi, số kiện chưa có chỗ và duyệt vượt luật khi duyệt. */
-export function pickupParts({ actionType, after }: ServerAuditEntry, t: TFunction): string[] {
-  const parts: string[] = []
-  if ((actionType === 'PICKUP_REQUESTED' || actionType === 'PICKUP_LOADED') && positive(after.packages)) {
-    parts.push(t('serverAudit.details.pickupPackages', { count: after.packages }))
-  }
-  if ((actionType === 'PICKUP_PACKAGES_DROPPED' || actionType === 'PICKUP_REJECTED') && positive(after.droppedPackages)) {
-    parts.push(t('serverAudit.details.pickupPackages', { count: after.droppedPackages }))
-  }
-  if (actionType === 'PICKUP_REQUESTED' && typeof after.status === 'string' && isOneOf(PICKUP_CHECKS, after.status)) {
-    parts.push(t(`serverAudit.pickupChecks.${after.status}`))
-  }
-  if (actionType === 'PICKUP_APPROVED') {
-    const placed = typeof after.placed === 'number' ? after.placed : 0
-    const unplaced = typeof after.unplaced === 'number' ? after.unplaced : 0
-    if (placed + unplaced > 0) parts.push(t('serverAudit.details.pickupPackages', { count: placed + unplaced }))
-    if (unplaced > 0) parts.push(t('serverAudit.details.pickupUnplaced', { count: unplaced }))
-    if (after.overridden === true) parts.push(t('serverAudit.details.pickupOverridden'))
-  }
-  return parts
 }
 
 /**

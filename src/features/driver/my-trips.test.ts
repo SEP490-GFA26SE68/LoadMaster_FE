@@ -26,9 +26,9 @@ test('the demo driver sees only their trips, grouped by status (FE-6-01): the lo
     completedAt: undefined, issueCount: 0, recheck: 0,
     // Các điểm của chuyến xếp xong chờ xuất phát: số kiện của phương án ở từng điểm (80 + 40, 45, 45), chưa điểm nào hoàn tất
     stops: [
-      { number: 1, name: 'Cửa hàng Bách Hoá Xanh Thủ Đức', kind: 'DELIVERY', packageCount: 120, done: false },
-      { number: 2, name: 'MM Mega Market An Phú', kind: 'DELIVERY', packageCount: 45, done: false },
-      { number: 3, name: 'Circle K Phan Xích Long', kind: 'DELIVERY', packageCount: 45, done: false },
+      { number: 1, name: 'Cửa hàng Bách Hoá Xanh Thủ Đức', packageCount: 120, done: false },
+      { number: 2, name: 'MM Mega Market An Phú', packageCount: 45, done: false },
+      { number: 3, name: 'Circle K Phan Xích Long', packageCount: 45, done: false },
     ],
     // Nguồn giờ của từng điểm trong thẻ: chính chuyến, đã tối ưu tuyến
     schedule: expect.objectContaining({ id: 'TRIP-010', routePlan: expect.objectContaining({ isMockResult: true }) }),

@@ -5,7 +5,6 @@ import type { AuditAction, AuditEvent, AuditTargetType } from './audit'
 import { MockDbError, type MockDbCollection } from './errors'
 import type { TripIncidents } from './exception-model'
 import type { Package } from './package-model'
-import type { PickupRequest } from './pickup-model'
 import type { DeliveryRequirement } from './requirement-model'
 import { randomQrToken } from './qr-token'
 import type { GuestContact } from './contact-model'
@@ -61,8 +60,6 @@ export type DbState = {
   tracking: Map<string, TripTracking>
   /** Chuyến → sự cố cấp chuyến, các khoảng xe mô phỏng bị giữ lại và tuyến thay thế (FE-6-11); seed để trống. */
   exceptions: Map<string, TripIncidents>
-  /** Yêu cầu nhận hàng dọc đường (FE-7-01). */
-  pickups: Map<string, PickupRequest>
 
   // Gói cước, credit, thanh toán (FE-8-01)
   /** Danh mục gói: dữ liệu nền tảng, mọi phiên đọc được. */

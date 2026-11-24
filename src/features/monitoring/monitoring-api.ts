@@ -12,7 +12,7 @@
  *   chưa có ở BE: setDriverGps (đồng hồ mô phỏng chỉ có ở FE)
  */
 import { usesBackend } from '@/lib/backend-config'
-import { getMockDb, type DriverLocationInput, type LocationPoint, type StopKind, type StopReorderWarning, type TripMonitoring } from '@/lib/mock-db'
+import { getMockDb, type DriverLocationInput, type LocationPoint, type StopReorderWarning, type TripMonitoring } from '@/lib/mock-db'
 import * as backend from './monitoring-backend-api'
 import { publish, publishFleet, subscribe, type TripMonitoringEvent } from './monitoring-events'
 
@@ -102,8 +102,6 @@ export type MonitoringStop = {
   readonly id: string
   readonly number: number
   readonly name: string
-  /** Điểm nhận hàng dọc đường (FE-7-04); vắng là điểm giao. */
-  readonly kind?: StopKind
   readonly lat?: number
   readonly lng?: number
   readonly arrivedAt?: string
@@ -149,7 +147,6 @@ export async function fetchMonitoringBoard(): Promise<MonitoringBoard> {
         const progress = trip.delivery?.stops.find((item) => item.number === index + 1)
         return {
           id: stop.id, number: index + 1, name: stop.name,
-          ...(stop.kind === undefined ? {} : { kind: stop.kind }),
           ...(stop.lat === undefined || stop.lng === undefined ? {} : { lat: stop.lat, lng: stop.lng }),
           ...(progress?.arrivedAt === undefined ? {} : { arrivedAt: progress.arrivedAt }),
           ...(progress?.completedAt === undefined ? {} : { completedAt: progress.completedAt }),

@@ -36,7 +36,6 @@ import { runs } from './vi/runs'
 import { lookup } from './vi/lookup'
 import { map } from './vi/map'
 import { monitoring } from './vi/monitoring'
-import { pickups } from './vi/pickups'
 import { platform } from './vi/platform'
 import { billing } from './vi/billing'
 import { payroll } from './vi/payroll'
@@ -121,7 +120,6 @@ export const vi = {
   lookup,
   map,
   monitoring,
-  pickups,
   platform,
   billing,
   payroll,

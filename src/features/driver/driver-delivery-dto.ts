@@ -113,7 +113,6 @@ export function tripStopsOf(dto: DriverTripStopsDto): ServerTripStops {
     location: source === null ? null : { source },
     refreshMs: dto.refreshMs,
     stops: (dto.stops ?? []).flatMap((stop): ServerTripStop[] => stop.stopSequence === null ? [] : [{
-      ...(stop.stopId === null || stop.stopId === undefined ? {} : { id: String(stop.stopId) }),
       number: stop.stopSequence,
       name: stop.stopName ?? '',
       address: stop.address ?? '',
