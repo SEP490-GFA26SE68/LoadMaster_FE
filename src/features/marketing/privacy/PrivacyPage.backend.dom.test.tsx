@@ -61,8 +61,11 @@ test('signed in through the server, the policy names Keycloak and the trial dead
 test('with the AI assistant on the server, the policy says questions go through the server to Anthropic and lists Anthropic as a recipient', () => {
   renderPrivacy()
   const assistant = screen.getByRole('region', { name: 'Bản thử trên trang giới thiệu và trợ lý' })
-  expect(assistant).toHaveTextContent('máy chủ lưu cuộc trò chuyện và gửi câu đó, cùng các lượt trước của cuộc trò chuyện, tới Anthropic')
-  expect(assistant).not.toHaveTextContent('câu bạn gõ không được gửi đi')
+  expect(assistant).toHaveTextContent('máy chủ lưu câu đó cùng cuộc trò chuyện và gửi nó, cùng các lượt trước của cuộc trò chuyện, tới Anthropic')
+  // Câu cơ bản trả lời ở trình duyệt: máy chủ chỉ đếm mức và chủ đề, không nhận câu hỏi
+  expect(assistant).toHaveTextContent('trang chỉ báo máy chủ đếm một lượt gồm mức trả lời')
+  expect(assistant).toHaveTextContent('không kèm câu hỏi, mã cuộc trò chuyện hay tài khoản')
+  expect(assistant).not.toHaveTextContent('câu bạn gõ không được gửi đi và mất khi tải lại trang')
   // Ô "Mô tả hàng bằng lời" của bản thử cũng gửi mô tả qua máy chủ tới Anthropic
   expect(assistant).toHaveTextContent('mô tả bạn gõ đi tới máy chủ của LoadMaster, và máy chủ gửi nó tới Anthropic để đọc ra số điền vào form')
   const recipients = screen.getByRole('region', { name: 'Bên thứ ba nhận dữ liệu' })
