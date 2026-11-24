@@ -21,6 +21,7 @@ const EXCLUDED = [
 const ALLOWED: Readonly<Record<string, string>> = {
   '/src/lib/i18n/hardcoded-strings.ts': 'bảng ký tự có dấu dùng để phát hiện',
   '/src/lib/i18n/locale.ts': 'tên ngôn ngữ viết bằng chính ngôn ngữ đó (Tiếng Việt / English), không dịch',
+  '/src/features/marketing/assistant/assistant-route-corpus.ts': 'câu khách gõ để kiểm bộ định tuyến của trợ lý, chỉ test đọc',
 }
 
 /** Thư mục đã dịch xong và được cổng giữ. LM-070 thêm luồng Spec, LM-071 mở rộng ra toàn `src/`. */
