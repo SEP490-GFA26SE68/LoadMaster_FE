@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router'
-import { afterEach, expect, test } from 'vitest'
+import { afterEach, beforeAll, expect, test } from 'vitest'
 import { AuthProvider } from '@/features/auth/AuthProvider'
 import { I18nProvider } from '@/lib/i18n'
 import { LandingPage } from '../LandingPage'
@@ -52,6 +52,11 @@ async function openAssistant() {
   const panel = await screen.findByRole('dialog', { name: 'Lumo' }, ANSWER)
   return { user, launcher, panel: within(panel) }
 }
+
+// Khung chat là chunk lười: nạp sẵn module một lần cho cả file, để lần mở đầu không chờ biên dịch chunk khi cả bộ test chạy song song
+beforeAll(async () => {
+  await import('./AssistantPanel')
+}, 30_000)
 
 afterEach(() => {
   cleanup()

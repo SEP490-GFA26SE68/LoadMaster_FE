@@ -303,7 +303,8 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   → `useAskAssistantMutation`. **Trong ứng dụng** (`AppAssistant`): nút "Trợ lý AI" 36 px trên **thanh điều hướng**, ngay sau Tìm
   nhanh (ảnh Lumo `wink` trong vòng gradient, tên ở `aria-label` / `title`) — không nổi đè lên bảng như nút góc dưới phải —, **chỉ khi nhóm
   `assistant` nối máy chủ**, người dùng không bị gắn cờ và công ty còn gói hiệu lực (vai trò nền tảng không bị khoá; `appAssistantShown`, thanh
-  cũng hỏi hàm này để chừa chỗ). Khung chat neo góc trên phải, ngay dưới thanh (`data-surface="app"`). **Màn cảm ứng kho, tài xế**
+  cũng hỏi hàm này để chừa chỗ). Khung chat neo **góc dưới phải khung nhìn**, cách mép 24 px, cao 560 px (màn thấp hơn thì tới dưới thanh 60 px
+  cộng khe 8 px) — không theo chỗ nút, không theo cột `--shell-max` (`data-surface="app"`; trước đây neo theo cột nên màn 2K đẩy khung vào giữa trang). **Màn cảm ứng kho, tài xế**
   (không có thanh điều hướng) có nút "Trợ lý AI" 56 px trên thanh dải trời `TouchTopBar` (`TouchAssistant`, prop `assistant`; điều khiển đặc
   `--sky-solid` như các nút của thanh, cùng điều kiện `appAssistantShown` — kho mẫu không có nút): `/kho`, `/kho/xe`, soạn, xếp, xếp xong,
   phương án đã duyệt của kho; `/tai-xe`, điểm giao, tổng kết, màn thông báo (gồm "đã giao xong" của bản máy chủ). Khung chat bản cảm ứng (`data-dock="touch"`, lớp
@@ -343,7 +344,16 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   `useLauncherLift`; nâng lên chạm phần tử khác thì nâng tiếp qua nó); khung chat là chunk lười: từ 768 px thẻ trắng không modal cạnh nút, hẹp hơn tờ phủ
   cả màn modal. Từ 768 px đầu khung có nút "Phóng to khung chat" / "Thu nhỏ khung chat" (nhãn đổi theo trạng thái): khung rộng 720 px, cao
   tới dưới đầu trang (đỉnh khung cách mép trên 5 rem, không che nút nào của đầu trang); trạng thái `expanded` nằm trong phiên trò chuyện —
-  giữ khi đóng mở lại và qua "Bắt đầu lại". Mỗi câu trả lời tối đa ba câu kèm liên kết tới phần của trang hay Bảng giá; lối đăng ký chỉ khi khách tự đăng ký được. Tính
+  giữ khi đóng mở lại và qua "Bắt đầu lại". **Kéo thả khung chat** (từ 768 px, mọi khung không modal — trang công khai, ứng dụng, Planner,
+  màn cảm ứng; `usePanelPlacement`, hàm thuần `panel-position.ts` có test): kéo bằng **đầu khung** (dải trời; nút trong đầu khung vẫn là nút),
+  con trỏ `grab` / `grabbing`, `touch-action: none`, pointer capture, vị trí ghi thẳng vào `style` trong lúc kéo (không state React mỗi lần
+  di chuột); lúc đang kéo bóng `--e3`. Khung luôn trọn trong khung nhìn — cách mép trái, phải, dưới ít nhất 8 px, đỉnh không lên trên thanh điều
+  hướng / đầu trang / thanh dải trời —, kẹp lại khi thả, khi đổi cỡ cửa sổ và khi phóng to / thu nhỏ; thả cách một mép không quá 24 px thì hút
+  vào lề 24 px của mép đó (không có chuyển động). **Bàn phím** (WCAG 2.5.7): tay nắm `GripVertical` đầu khung là nút "Di chuyển khung chat"
+  (`aria-keyshortcuts`) — mũi tên dời 16 px, Shift + mũi tên 64 px, Home về chỗ mặc định; vùng `sr-only` `aria-live="polite"` nói vị trí mới.
+  Nút "Về chỗ mặc định" (`LocateFixed`) chỉ hiện khi khung đã bị dời. Chỗ đã chọn (`placement`, lưu theo mép gần nhất nên đổi cỡ cửa sổ vẫn
+  bám góc đã chọn) nằm trong phiên trò chuyện như `expanded`: giữ khi đóng mở lại và qua "Bắt đầu lại", tải lại trang là về mặc định, không
+  `localStorage`. Dưới 768 px (tờ phủ cả màn) không có tay nắm, không kéo. `e2e/assistant-drag.spec.ts` đo ở 1.366 × 768. Mỗi câu trả lời tối đa ba câu kèm liên kết tới phần của trang hay Bảng giá; lối đăng ký chỉ khi khách tự đăng ký được. Tính
   gói: số lần chạy × `BILLING_CONSTANTS.optimizationCost` → gói đang bán rẻ nhất đủ credit (`assistant-advisor.ts`), không nói tiết kiệm.
   Phần Gói cước của trang giới thiệu dùng cùng phép tính cho thanh kéo "số lần chạy mỗi tháng" (`PlanAdvisorSlider`: thanh kéo gốc của
   trình duyệt, 15 mức từ 50 tới 10.000, đứng sẵn ở 300); thẻ gói rẻ nhất đủ dùng có viền `--primary` kèm nhãn chữ "Rẻ nhất đủ dùng".
