@@ -1,5 +1,6 @@
 import { expect, test } from './fixtures'
 import { navigateInApp, SEED_TRIP, signInWith, signOutInApp } from './spec-flow-helpers'
+import { navLabels, openNavItem } from './nav-helpers'
 
 /**
  * Phân quyền giả lập ở FE (LM-084, D-41): mỗi vai trò mở đúng màn chính, nav chỉ có mục được phép, route không có quyền là 403
@@ -111,15 +112,15 @@ test('the company manager lands on the dashboard and sees its own nav items: req
   const nav = page.getByRole('navigation', { name: 'Điều hướng chính' })
   await login('/', 'companyManager')
   await page.waitForURL((url) => url.pathname === '/tong-quan')
-  await expect(nav.getByRole('link')).toHaveText(['Bảng điều khiển', 'Yêu cầu giao', 'Kho kiện', 'Chuyến hàng', 'Giám sát', 'Đội xe', 'Kho bãi', 'Bảng lương'])
+  await expect.poll(() => navLabels(nav, page)).toStrictEqual(['Bảng điều khiển', 'Yêu cầu giao', 'Kho kiện', 'Chuyến hàng', 'Giám sát', 'Đội xe', 'Kho bãi', 'Bảng lương'])
   // Yêu cầu giao: điều phối viên lập (như backend), quản lý công ty chỉ xem
-  await nav.getByRole('link', { name: 'Yêu cầu giao', exact: true }).click()
+  await openNavItem(nav, page, 'Yêu cầu giao')
   await page.waitForURL((url) => url.pathname === '/yeu-cau-giao')
   await expect(page.getByRole('heading', { level: 1, name: 'Yêu cầu giao', exact: true })).toBeVisible()
   await expect(page.getByRole('row', { name: /REQ-/ }).first()).toBeVisible()
   await expect(page.getByRole('button', { name: 'Tạo yêu cầu giao', exact: true })).toHaveCount(0)
   // Kho kiện với quản lý công ty là màn chỉ đọc (FE-3b-03): không thêm kiện, không nhập file, không chọn kiện in nhãn, không gỡ cờ
-  await nav.getByRole('link', { name: 'Kho kiện', exact: true }).click()
+  await openNavItem(nav, page, 'Kho kiện')
   await page.waitForURL((url) => url.pathname === '/kien-hang')
   await expect(page.getByText('2.951 kiện trong kho kiện', { exact: true })).toBeVisible()
   for (const name of ['Thêm kiện', 'Nhập file']) await expect(page.getByRole('button', { name, exact: true })).toHaveCount(0)
@@ -133,7 +134,7 @@ test('the company manager lands on the dashboard and sees its own nav items: req
   await expect(packagePanel.getByRole('button', { name: /Gỡ cờ/ })).toHaveCount(0)
   await expect(packagePanel.getByRole('link', { name: 'In nhãn QR', exact: true })).toHaveCount(0)
   // Danh sách chuyến: quản lý không duyệt phương án nên không có "cần bạn xử lý"
-  await nav.getByRole('link', { name: 'Chuyến hàng', exact: true }).click()
+  await openNavItem(nav, page, 'Chuyến hàng')
   await page.waitForURL((url) => url.pathname === '/chuyen')
   const hero = page.getByRole('heading', { level: 1, name: 'Chuyến hàng', exact: true }).locator('xpath=ancestor::header[1]')
   await expect(hero).toContainText('đang vận chuyển')
