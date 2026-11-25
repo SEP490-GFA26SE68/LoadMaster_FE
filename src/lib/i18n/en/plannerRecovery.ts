@@ -16,4 +16,5 @@ export const plannerRecovery = {
       other: '{count} packages in the plan do not belong to any stop of the trip ({codes}). Optimize again to get a new plan.',
     },
   },
+  otherVehicle: 'The plan was computed for the vehicle used before the change: its packages no longer fit the current vehicle, so they are not drawn in it. Optimize again to get a plan for this vehicle.',
 } satisfies Dictionary<typeof source>

@@ -17,4 +17,6 @@ export const plannerRecovery = {
       other: '{count} kiện của phương án không thuộc điểm giao nào của chuyến ({codes}). Tối ưu lại để có phương án mới.',
     },
   },
+  /** Câu thứ hai của thanh lỗi thời khi kiện của phương án không còn vừa lòng thùng xe hiện tại của chuyến (xe đã đổi). */
+  otherVehicle: 'Phương án được tính cho xe trước khi đổi xe: kiện không còn vừa lòng thùng xe hiện tại nên không vẽ vào xe này. Tối ưu lại để có phương án cho xe này.',
 } as const

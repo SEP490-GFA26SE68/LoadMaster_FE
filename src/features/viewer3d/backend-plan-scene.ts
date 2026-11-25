@@ -1,4 +1,4 @@
-import { roundKg, type OrientationCode, type PackageDimensions } from '@/domain/geometry'
+import { gt, lt, roundKg, type OrientationCode, type PackageDimensions } from '@/domain/geometry'
 import type { PackageInstance } from '@/domain/cargo'
 import { deadlineStatus } from '@/domain/routing'
 import { locateInZones, zoneSharePercent, type StopZone } from '@/domain/zones'
@@ -89,6 +89,24 @@ function stopNumberOf(placement: LoadPlacement, sequenceById: ReadonlyMap<string
 export function unknownStopCodes(plan: LoadPlan, stops: readonly BackendSceneStop[]): string[] {
   const sequenceById = new Map(stops.map((stop) => [stop.id, stop.sequence]))
   return plan.placements.filter((item) => stopNumberOf(item, sequenceById) === undefined).map((item) => item.code || item.id)
+}
+
+/** Mọi kiện đã xếp của phương án nằm trọn trong lòng thùng của xe (cm, so qua `EPSILON`). */
+export function planFitsVehicle(plan: LoadPlan, vehicle: VehicleConfig): boolean {
+  const within = (start: number, size: number, limit: number) => !lt(start, 0) && !gt(start + size, limit)
+  return plan.placements.every((item) => within(item.x, item.lengthCm, vehicle.innerLengthCm)
+    && within(item.y, item.widthCm, vehicle.innerWidthCm) && within(item.z, item.heightCm, vehicle.innerHeightCm))
+}
+
+/**
+ * Phương án đem vẽ trên xe hiện tại của chuyến. Máy chủ không trả xe của phương án (`LoadPlanDetailResponse` không có mã hay kích thước
+ * xe), chỉ cờ `stale`; Planner đọc xe **hiện tại** (`/vehicle-config`). Phương án lỗi thời mà kiện không còn vừa lòng thùng xe này là
+ * phương án tính cho xe trước khi đổi xe: không đặt kiện nào vào xe mới (kiện sẽ trồi khỏi thùng) — `otherVehicle` để màn nói lý do.
+ * Kiện chưa xếp vẫn giữ.
+ */
+export function planShownOn(plan: LoadPlan, vehicle: VehicleConfig): { plan: LoadPlan; otherVehicle: boolean } {
+  if (!plan.stale || planFitsVehicle(plan, vehicle)) return { plan, otherVehicle: false }
+  return { plan: { ...plan, placements: [], stopZones: null }, otherVehicle: true }
 }
 
 /**
