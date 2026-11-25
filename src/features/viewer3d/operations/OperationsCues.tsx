@@ -10,6 +10,11 @@ import { SCENE_SCALE } from '../scene/units'
 import { SceneCallout } from '../scene/SceneCallout'
 import { SceneTag } from '../scene/SceneTag'
 
+/** Điểm neo (đơn vị cảnh) của nhãn "Cửa sau": nhãn căn giữa theo chiều ngang, mép trên ở điểm neo. `ZoneStrips` chiếu điểm này thay vì đo DOM. */
+export function rearDoorCueAnchor(vehicle: Pick<VehicleConfig, 'innerLengthCm' | 'innerWidthCm'>): [number, number, number] {
+  return [vehicle.innerLengthCm * SCENE_SCALE + 0.7, 0.05, vehicle.innerWidthCm * SCENE_SCALE / 2]
+}
+
 export function RearDoorCue({ vehicle }: { vehicle: VehicleConfig }) {
   const t = useT()
   const x = vehicle.innerLengthCm * SCENE_SCALE, z = vehicle.innerWidthCm * SCENE_SCALE / 2
@@ -23,7 +28,7 @@ export function RearDoorCue({ vehicle }: { vehicle: VehicleConfig }) {
       <bufferGeometry><bufferAttribute attach="attributes-position" args={[points, 3]} /></bufferGeometry>
       <lineBasicMaterial color={readToken('--bg')} />
     </lineSegments>
-    <Html position={[x + 0.7, 0.05, z]} zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
+    <Html position={rearDoorCueAnchor(vehicle)} zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
       <span data-rear-door-cue className="block w-max -translate-x-1/2"><SceneTag title={t('viewer.cues.rearDoor')} className="max-w-44 whitespace-normal sm:max-w-none sm:whitespace-nowrap" /></span>
     </Html>
   </group>
