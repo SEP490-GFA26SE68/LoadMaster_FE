@@ -114,7 +114,8 @@ function BackendPlannerSession({ tripCode, source }: { tripCode: string; source:
   const pinMutation = useTogglePinMutation(tripCode, plan.id)
   const editsMutation = useApproveBackendEditsMutation(plan.id)
   const placementIds = useMemo(() => backendPlacementIds(plan), [plan])
-  const baseline = useMemo(() => baselineErrorKeys(model), [model])
+  // Lỗi có sẵn của phương án: tính lười, chỉ khi bản chỉnh đã dời / xoay kiện — chế độ Xem không dựng constraint engine nào
+  const baseline = useMemo(() => { let keys: ReadonlySet<string> | undefined; return () => (keys ??= baselineErrorKeys(model)) }, [model])
   const editApproval = useMemo(() => editable ? backendEditApproval(model, state.placements, state.draft, placementIds, baseline) : null,
     [editable, model, state.placements, state.draft, placementIds, baseline])
   const pin = pinnable || pinBlocked !== undefined ? {

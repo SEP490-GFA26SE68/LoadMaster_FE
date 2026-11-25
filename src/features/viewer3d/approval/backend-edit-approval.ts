@@ -16,11 +16,16 @@ export type BackendEditApproval = {
   readonly errors: readonly ConstraintIssue[]
 }
 
+/** Draft có dời hoặc xoay kiện nào — chỉ khi đó bản chỉnh mới có thể gây lỗi ràng buộc mới. */
+export function hasPoseEdits(draft: ViewerDraft): boolean {
+  return [...draft.patches.values()].some((patch) => patch.position !== undefined || patch.orientation !== undefined)
+}
+
 function issueKey(issue: ConstraintIssue): string {
   return `${issue.code}|${issue.packageInstanceId ?? ''}|${[...(issue.relatedIds ?? [])].sort().join(',')}`
 }
 
-/** Lỗi của phương án máy chủ trước khi chỉnh — tính một lần mỗi snapshot. */
+/** Lỗi của phương án máy chủ trước khi chỉnh — tính một lần mỗi snapshot, chỉ khi draft đã dời / xoay kiện (`backendEditApproval`). */
 export function baselineErrorKeys(model: ViewerSceneModel): ReadonlySet<string> {
   if (!model.engineInput) return new Set()
   const { issues } = createConstraintEngine(model.engineInput).evaluateAll()
@@ -36,10 +41,21 @@ export function backendEditApproval(
   placements: readonly ScenePlacement[],
   draft: ViewerDraft,
   placementIds: ReadonlyMap<string, string>,
-  baseline: ReadonlySet<string>,
+  baseline: ReadonlySet<string> | (() => ReadonlySet<string>),
 ): BackendEditApproval | null {
+  if (!model.engineInput) return null
+  // Chưa dời / xoay kiện nào (chế độ Xem, hoặc chỉ đổi ghim): tư thế đúng như phương án máy chủ nên lỗi ràng buộc trùng hết lỗi có sẵn —
+  // không lỗi mới, không dựng constraint engine (1.000 kiện mất hàng trăm ms)
+  if (!hasPoseEdits(draft)) {
+    const pinsChanged = [...draft.patches.values()].some(({ pinned }) => pinned !== undefined)
+    const pinnedPlacementIds = pinsChanged
+      ? placements.flatMap(({ id, pinned }) => { const placementId = pinned ? placementIds.get(id) : undefined; return placementId === undefined ? [] : [placementId] })
+      : undefined
+    return { edits: [], pinnedPlacementIds, hasEdits: pinsChanged, errors: [] }
+  }
   const approval = planApproval(model, placements, draft)
   if (!approval) return null
+  const baselineKeys = typeof baseline === 'function' ? baseline() : baseline
   const edits = approval.patches.flatMap((patch): BackendPlacementEdit[] => {
     const placementId = placementIds.get(patch.packageInstanceId)
     return placementId === undefined ? [] : [{
@@ -53,6 +69,6 @@ export function backendEditApproval(
     edits,
     pinnedPlacementIds,
     hasEdits: edits.length > 0 || approval.pinsChanged,
-    errors: approval.blockers.issues.filter((issue) => issue.code !== 'MUST_LOAD_UNPLACED' && !baseline.has(issueKey(issue))),
+    errors: approval.blockers.issues.filter((issue) => issue.code !== 'MUST_LOAD_UNPLACED' && !baselineKeys.has(issueKey(issue))),
   }
 }

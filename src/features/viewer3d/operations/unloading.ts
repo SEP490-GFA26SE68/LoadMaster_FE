@@ -51,16 +51,18 @@ const NO_REMOVED: ReadonlySet<string> = new Set()
 const byDistance = (a: ScenePlacement, b: ScenePlacement) => a.position.x - b.position.x || a.id.localeCompare(b.id)
 
 /**
- * Dựng lưới domain một lần cho một snapshot placement (D-29). Kiện đã dỡ được gỡ khỏi lưới bằng `grid.remove` và thêm lại khi
- * tua lùi, nên mỗi lần hỏi chỉ đổi phần chênh lệch của `removedIds`. Mọi `target` phải thuộc `placements`.
+ * Dựng lưới domain một lần cho một snapshot placement (D-29) — **lười**, ở lần hỏi đầu tiên: Planner giữ một index cho mỗi bản
+ * placement nhưng chỉ hỏi khi đang dỡ hoặc xem kiện chắn lối, nên chế độ Xem / Xếp không trả giá dựng lưới. Kiện đã dỡ được gỡ khỏi
+ * lưới bằng `grid.remove` và thêm lại khi tua lùi, nên mỗi lần hỏi chỉ đổi phần chênh lệch của `removedIds`. Mọi `target` phải thuộc
+ * `placements`.
  */
 export function createLifoIndex(placements: readonly ScenePlacement[]): LifoIndex {
-  const packed = placements.map(toPackagePlacement)
-  const layout: PlacementLayout = createPlacementLayout({ obstacles: [] }, packed)
+  let built: PlacementLayout | undefined
   const byId = new Map(placements.map((p) => [p.id, p]))
   const rules = { deliveryStopByInstanceId: new Map(placements.map((p) => [p.id, p.stop])), enforceLifo: true }
   const removed = new Set<string>()
-  const sync = (next: ReadonlySet<string>) => {
+  const sync = (next: ReadonlySet<string>): PlacementLayout => {
+    const layout = built ??= createPlacementLayout({ obstacles: [] }, placements.map(toPackagePlacement))
     for (const id of removed) {
       if (next.has(id)) continue
       removed.delete(id)
@@ -72,18 +74,18 @@ export function createLifoIndex(placements: readonly ScenePlacement[]): LifoInde
       removed.add(id)
       layout.grid.remove(id)
     }
+    return layout
   }
   const placementOf = (id: string) => byId.get(id)!
   return {
     blockage(target, removedIds = NO_REMOVED) {
-      sync(removedIds)
+      const layout = sync(removedIds)
       const [issue] = lifoIssues(toPackagePlacement(target), rules, layout)
       if (!issue) return null
       return { code: issue.code, coverage: issue.params.coverage, blockers: (issue.relatedIds ?? []).map(placementOf).sort(byDistance) }
     },
     corridor(target, removedIds = NO_REMOVED) {
-      sync(removedIds)
-      return layout.grid.queryRearCorridor(placementToBox(toPackagePlacement(target)), { excludeId: target.id }).map(placementOf).sort(byDistance)
+      return sync(removedIds).grid.queryRearCorridor(placementToBox(toPackagePlacement(target)), { excludeId: target.id }).map(placementOf).sort(byDistance)
     },
   }
 }
