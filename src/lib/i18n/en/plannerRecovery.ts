@@ -17,4 +17,9 @@ export const plannerRecovery = {
     },
   },
   otherVehicle: 'The plan was computed for the vehicle used before the change: its packages no longer fit the current vehicle, so they are not drawn in it. Optimize again to get a plan for this vehicle.',
+  contextLost: {
+    title: 'The 3D view lost its graphics connection',
+    description: 'The browser reclaimed the graphics memory of the 3D view. The data on this screen is still here.',
+    reload: 'Reload 3D view',
+  },
 } satisfies Dictionary<typeof source>

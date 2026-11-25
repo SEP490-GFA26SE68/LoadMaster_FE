@@ -19,4 +19,10 @@ export const plannerRecovery = {
   },
   /** Câu thứ hai của thanh lỗi thời khi kiện của phương án không còn vừa lòng thùng xe hiện tại của chuyến (xe đã đổi). */
   otherVehicle: 'Phương án được tính cho xe trước khi đổi xe: kiện không còn vừa lòng thùng xe hiện tại nên không vẽ vào xe này. Tối ưu lại để có phương án cho xe này.',
+  /** Lớp phủ khi khung 3D mất ngữ cảnh WebGL (`SceneCanvas`: Planner, kho, tài xế). */
+  contextLost: {
+    title: 'Khung 3D bị mất kết nối đồ hoạ',
+    description: 'Trình duyệt đã thu hồi bộ nhớ đồ hoạ của khung 3D. Dữ liệu trên màn vẫn còn.',
+    reload: 'Tải lại khung 3D',
+  },
 } as const
