@@ -37,7 +37,8 @@ export function useGlassFollow<T extends HTMLElement>(activeSelector = '[aria-cu
     const current = () => nav.querySelector<HTMLElement>(activeSelector)
     const toActive = () => anchor(current())
 
-    const links = [...nav.querySelectorAll<HTMLElement>('a')]
+    // Nút trong khay (nút "Thêm" của `NavTray`) cũng là một mục chỉ báo bám theo
+    const links = [...nav.querySelectorAll<HTMLElement>('a, button')]
     const enter = (link: HTMLElement) => () => anchor(link)
     const handlers = links.map((link) => {
       const onEnter = enter(link)

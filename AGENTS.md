@@ -398,7 +398,7 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
 - Mục điều hướng khai **theo vai trò** ở `app/nav-items.ts` (FE-0-04): `NAV_SCREENS` là các màn có mục — chỉ màn đang có route (D-20) — và
   `NAV_ITEMS` là danh sách của từng vai trò theo thứ tự của vai trò đó, màn chính đứng đầu; quyền vẫn là cổng (`navItemsFor` bỏ mục thiếu quyền).
   Quản trị hệ thống: Công ty · Người dùng · Nhật ký · Liên hệ của khách · Đơn dùng thử · Trợ lý Lumo. Quản trị công ty: Người dùng · Nhật ký · Gói và credit ·
-  Thông tin công ty. Quản lý công ty: Bảng điều khiển · Yêu cầu giao · Kho kiện (chỉ đọc) · Chuyến hàng · Giám sát · Đội xe · Kho bãi (`/quan-ly-kho`; nhãn ngắn `nav.companyWarehouses` để thanh vừa 1.366 px ở cả hai ngôn ngữ) · Bảng lương (`/bang-luong`). Tám mục chỉ vừa 1.366 px khi lề mục là 8 px tới dưới 1.536 px (`2xl:px-3.5` từ 1.536 px). Điều phối
+  Thông tin công ty. Quản lý công ty: Bảng điều khiển · Yêu cầu giao · Kho kiện (chỉ đọc) · Chuyến hàng · Giám sát · Đội xe · Kho bãi (`/quan-ly-kho`; nhãn ngắn `nav.companyWarehouses` để nhiều mục còn trên khay) · Bảng lương (`/bang-luong`). Mục không vừa thanh dồn vào nút "Thêm" (mục "Thanh ngang 60 px" dưới). Điều phối
   viên: Chuyến hàng · Giám sát · Kho kiện (chỉ đọc) · Yêu cầu giao · Đội xe · Bảng điều khiển · Phiếu lương (`/phieu-luong`). Nhân viên kho: Kho · Xe trong kho · Kho kiện · Khách hàng · Phiếu lương (`/phieu-luong`). Tài xế: một
   mục về màn của mình (thanh chỉ hiện ở màn hồ sơ). Quản lý nền tảng: Gói cước · Lịch sử gói cước · Công ty (chỉ xem danh sách; tạo, sửa công ty là của quản trị hệ thống) · Đơn dùng thử · Trợ lý Lumo. Hỗ trợ khách hàng: Hỗ trợ ·
   Liên hệ của khách (không có nút đổi gói của khách trên thanh). Màn chính của ba vai trò nền tảng vẫn là màn riêng của từng vai trò. Màn mới
@@ -423,7 +423,7 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   chuyến đã mở màn đó (`exitAction` hỏi quyền `trips.view`, không hỏi tên vai trò).
 - **Thanh ngang 60 px trên dải trời** (`app/NavRail.tsx`, V2.3): logo trái, nhóm mục giữa trên kính tối (`.glass-nav`), tìm nhanh · ngôn ngữ ·
   chuông · tài khoản phải. Mục đang mở nằm dưới kính cyan (trong + viền + quầng, `--nav-on`), và kính đó là **chỉ báo trượt theo con trỏ**
-  (`components/useGlassFollow` — dùng chung với đầu trang công khai, `activeSelector` chọn mục nghỉ —, `.glass-follow`): bám mục đang rê / focus, về mục đang mở khi con trỏ rời thanh. Chỉ báo là phản hồi nền duy nhất; mục
+  (`components/useGlassFollow` — dùng chung với đầu trang công khai, `activeSelector` chọn mục nghỉ —, `.glass-follow`): bám mục đang rê / focus (kể cả nút "Thêm"), về mục đang mở khi con trỏ rời thanh. Chỉ báo là phản hồi nền duy nhất; mục
   đang mở chỉ có chữ trắng 600, **không** nền riêng, nếu không sẽ thành hai lớp chồng nhau. Ngôn ngữ trên thanh là một nút quả địa cầu kèm mã
   ngôn ngữ ("VI") mở menu chọn (`components/LanguageMenu.tsx`); màn toàn màn hình kho/tài xế giữ hai nút `LanguageSwitch` 56 px. Mọi chỗ chọn
   ngôn ngữ — `LanguageMenu`, `LanguageSwitch`, và `LanguageSwitch` của app mobile — dùng icon `Globe` của Lucide, không dùng `Languages`. Vòng focus trên dải trời là `--cyan-300`
@@ -431,10 +431,17 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   toàn màn hình không có), chuông thông báo (LM-098 — sự kiện nhật ký liên quan vai trò, không gồm việc chính mình làm; "đã đọc" là state giao
   diện trong tab, `read-state.ts`) và mục "Hồ sơ cá nhân" trong menu tài khoản (`/ho-so`, LM-096 — mọi người đã đăng nhập; mục "Yêu cầu hỗ trợ" kế
   bên là của năm vai trò công ty, FE-8-07; kho/tài xế mở từ nút tài khoản 56 px ở màn chính — menu đó còn có "Phiếu lương" cho vai trò có `payroll.viewOwn`). Nút hành động trên thanh dùng
-  `components/NavRailButton.tsx`. Nhóm `assistant` nối máy chủ thì sau Tìm nhanh có nút "Trợ lý AI" 36 px (mục 1 "Trợ lý"); để tám mục của
-  quản lý công ty vẫn vừa, chữ "LoadMaster" cạnh logo ẩn ở 1.340–1.439 px và ô tìm nhanh chỉ rộng (176 px kèm "Ctrl K") từ 1.680 px thay vì
-  1.536 px (`QuickSearch wideFrom`). Thêm mục vào thanh phải đo lại ở 1.366 px (`e2e/layout-1366.spec.ts` đo thanh của điều phối viên và quản lý
-  công ty ở cả hai ngôn ngữ) — spec chạy ở kho mẫu nên không có nút trợ lý: đo lại bản nối máy chủ ở 1.340–1.920 px khi đổi thanh.
+  `components/NavRailButton.tsx`. Nhóm `assistant` nối máy chủ thì sau Tìm nhanh có nút "Trợ lý AI" 36 px (mục 1 "Trợ lý"); để thanh còn chỗ cho
+  nhiều mục trên khay, chữ "LoadMaster" cạnh logo ẩn ở 1.340–1.439 px và ô tìm nhanh chỉ rộng (176 px kèm "Ctrl K") từ 1.680 px thay vì
+  1.536 px (`QuickSearch wideFrom`). **Khay mục không bao giờ cuộn ngang** — mẫu "priority+" (`app/NavTray.tsx`, hàm thuần
+  `visibleNavCount` ở `app/nav-overflow.ts`): khay hiện những mục vừa chỗ theo thứ tự của `NAV_ITEMS` (màn chính đứng đầu nên luôn hiện),
+  mục còn lại dồn vào nút "Thêm" cuối khay (`MoreHorizontal` + "Thêm" + mũi tên; tên truy cập "Thêm n mục") mở `DropdownMenu` trắng — mục 36 px,
+  icon + tên như trên thanh, mục đang mở có `aria-current="page"` và dấu tích. Mục đang mở nằm trong "Thêm" thì nút mang icon và tên của mục đó
+  (chữ trắng 600, `data-nav-current`, chỉ báo kính nghỉ ở nút). Bề rộng thật của từng mục đọc từ bản đo ẩn cạnh khay (cùng khung với mục thật,
+  tên vẽ bằng `::before` nên không thêm chữ vào DOM), đo trong `useLayoutEffect` và lại khi khung hay bản đo đổi cỡ (`ResizeObserver`: đổi cỡ
+  cửa sổ, ngôn ngữ, font tải xong). Không đặt lại `overflow-x-auto` cho khay. `e2e/layout-1366.spec.ts` đo thanh của điều phối viên và quản lý
+  công ty ở 1.340 / 1.366 / 1.600 / 1.920 px, cả hai ngôn ngữ (mục hiện + mục trong "Thêm" đủ danh sách theo thứ tự, không cuộn, không cắt, không
+  chồng) và một khay bị thu hẹp để buộc có "Thêm" (bàn phím, chọn mục ẩn) — spec chạy ở kho mẫu nên không có nút trợ lý hay "Phiếu xin chuyến".
 - **Màn kho** (`/kho`, soạn, xếp, xếp xong, chờ duyệt lại; V2.3 đợt 6) có thanh trên là dải trời cao 80 px (`components/TouchTopBar`) với điều
   khiển **đặc**, không kính: nền `--sky-solid`, viền `--sky-solid-border` (token ở `index.css`), nút `variant="skySolid"`, và `tone="sky"` của
   `ExitIconButton`, `LanguageSwitch`, `NotificationBell variant="touch"`, `AccountMenu` — mặc định vẫn nền sáng. **Màn tài xế** (`/tai-xe`, điểm

@@ -36,6 +36,11 @@ export const nav = {
   companyWarehouses: 'Kho bãi',
   // Liên hệ của khách: yêu cầu khách chưa có tài khoản gửi từ trang giới thiệu; quản trị hệ thống và hỗ trợ khách hàng
   contacts: 'Liên hệ của khách',
+  /** Nút cuối khay khi thanh không đủ chỗ cho mọi mục (`NavTray`): mở menu các mục còn lại. */
+  more: 'Thêm',
+  moreItems: { one: 'Thêm {count} mục', other: 'Thêm {count} mục' },
+  /** Mục đang mở nằm trong "Thêm": nút mang tên mục đó. */
+  moreCurrent: { one: 'Thêm {count} mục — đang mở: {label}', other: 'Thêm {count} mục — đang mở: {label}' },
   account: 'Tài khoản {name}',
   signOut: 'Đăng xuất',
   /** Mục của menu tài khoản, mở `/ho-so` (LM-096). */

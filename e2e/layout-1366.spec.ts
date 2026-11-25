@@ -200,12 +200,15 @@ test('app-shell screens scroll with the mouse wheel at 1366 × 768 and the page 
   }
 })
 
+
 /**
- * FE-0-04: thanh điều hướng theo vai trò ở 1.366 px — hai vai trò nhiều mục nhất (điều phối viên và quản lý công ty, mỗi vai trò 6 mục từ FE-6-10), cả hai
- * ngôn ngữ. Mục còn đủ chữ (dưới 1.340 px mới rút về icon), khay mục không cuộn ngang, không chạm cụm nút bên phải, trang không cuộn
- * ngang; chỉ báo kính bám mục đang rê và về mục đang mở khi con trỏ rời thanh. Số đo đính kèm báo cáo (`nav-1366`).
+ * FE-0-04: thanh điều hướng theo vai trò — hai vai trò nhiều mục nhất (điều phối viên và quản lý công ty), cả hai ngôn ngữ, từ mốc
+ * mục còn chữ (1.340 px) tới 1.920 px. Mẫu "priority+" (`NavTray`): mục không vừa dồn vào nút "Thêm" cuối khay, nên khay không bao giờ
+ * cuộn ngang; mục hiện trên khay cộng mục trong menu "Thêm" là đúng danh sách của vai trò, theo thứ tự. Không mục nào bị cắt chữ hay
+ * chồng lên mục bên cạnh, khay không chạm cụm nút bên phải, trang không cuộn ngang; chỉ báo kính bám mục đang rê và về mục đang mở
+ * (hoặc nút "Thêm" khi mục đang mở nằm trong đó) khi con trỏ rời thanh. Số đo đính kèm báo cáo (`nav-widths`).
  */
-const NAV_AT_1366: readonly { role: Role; labels: Readonly<Record<'vi' | 'en', readonly string[]>> }[] = [
+const NAV_ROLES: readonly { role: Role; labels: Readonly<Record<'vi' | 'en', readonly string[]>> }[] = [
   {
     role: 'dispatcher',
     labels: { vi: ['Chuyến hàng', 'Giám sát', 'Kho kiện', 'Yêu cầu giao', 'Đội xe', 'Bảng điều khiển', 'Phiếu lương'], en: ['Trips', 'Monitoring', 'Package pool', 'Requirements', 'Fleet', 'Dashboard', 'Payslip'] },
@@ -215,70 +218,147 @@ const NAV_AT_1366: readonly { role: Role; labels: Readonly<Record<'vi' | 'en', r
     labels: { vi: ['Bảng điều khiển', 'Yêu cầu giao', 'Kho kiện', 'Chuyến hàng', 'Giám sát', 'Đội xe', 'Kho bãi', 'Bảng lương'], en: ['Dashboard', 'Requirements', 'Package pool', 'Trips', 'Monitoring', 'Fleet', 'Warehouses', 'Payroll'] },
   },
 ]
+const NAV_WIDTHS = [1340, 1366, 1600, 1920] as const
+/** Khay chật nhất có chữ: thanh của khách ở 1.340 px chỉ còn đúng chỗ cho phần lớn các mục. Dùng để buộc có nút "Thêm". */
+const NARROW_SLOT = 640
 
 function measureNav(page: Page) {
   return page.evaluate(() => {
     const header = document.querySelector('header')!
     const nav = header.querySelector('nav')!
-    const links = [...nav.querySelectorAll<HTMLElement>('a')]
+    const items = [...nav.querySelectorAll<HTMLElement>('a, button')]
+    const rects = items.map((item) => item.getBoundingClientRect())
     const actions = header.lastElementChild!.getBoundingClientRect()
+    const navRect = nav.getBoundingClientRect()
     return {
-      labels: links.map((link) => link.innerText.trim()),
-      cutLabels: links.filter((link) => link.scrollWidth > link.clientWidth + 1).map((link) => link.innerText.trim()),
-      navWidth: Math.round(nav.getBoundingClientRect().width),
-      itemsWidth: Math.round(links.at(-1)!.getBoundingClientRect().right - links[0]!.getBoundingClientRect().left),
+      labels: items.filter((item) => item.tagName === 'A').map((item) => item.innerText.trim()),
+      more: items.find((item) => item.tagName === 'BUTTON')?.innerText.trim() ?? null,
+      cutLabels: items.filter((item) => item.scrollWidth > item.clientWidth + 1).map((item) => item.innerText.trim()),
+      overlaps: rects.slice(1).filter((rect, index) => rect.left < rects[index]!.right - 0.5).length,
+      outsideTray: rects.filter((rect) => rect.left < navRect.left || rect.right > navRect.right + 0.5).length,
+      navWidth: Math.round(navRect.width),
       navOverflow: nav.scrollWidth - nav.clientWidth,
-      gapToActions: Math.round(actions.left - nav.getBoundingClientRect().right),
+      gapToActions: Math.round(actions.left - navRect.right),
       actionsRight: Math.round(actions.right),
       pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
     }
   })
 }
 
-/** Chỉ báo kính đang nằm trên mục nào (theo `left` / `width` hook đặt), `null` khi đang giấu. */
+/** Chỉ báo kính đang nằm trên mục nào (theo `left` / `width` hook đặt): tên của mục, `more` cho nút "Thêm", `null` khi đang giấu. */
 function glassOn(page: Page) {
   return page.evaluate(() => {
     const nav = document.querySelector('header nav')!
     const follow = nav.querySelector<HTMLElement>('.glass-follow')!
     if (follow.hidden) return null
-    const link = [...nav.querySelectorAll<HTMLElement>('a')]
-      .find((item) => `${item.offsetLeft}px` === follow.style.left && `${item.offsetWidth}px` === follow.style.width)
-    return link?.getAttribute('aria-label') ?? 'no item'
+    const item = [...nav.querySelectorAll<HTMLElement>('a, button')]
+      .find((element) => `${element.offsetLeft}px` === follow.style.left && `${element.offsetWidth}px` === follow.style.width)
+    if (!item) return 'no item'
+    return item.tagName === 'BUTTON' ? 'more' : item.getAttribute('aria-label')
   })
 }
 
-test('the nav bar of the roles with the most items fits 1366 px in both languages and the glass indicator follows the pointer (FE-0-04)', async ({ page, login, browserErrors }, testInfo) => {
-  await page.setViewportSize({ width: 1366, height: 768 })
-  const measures: Record<string, Awaited<ReturnType<typeof measureNav>>> = {}
-  for (const [index, { role, labels }] of NAV_AT_1366.entries()) {
+/** Mục trong menu "Thêm" đang mở (mở rồi đóng lại bằng Esc, focus về nút). */
+async function moreMenuLabels(page: Page) {
+  const more = page.locator('header nav button')
+  await more.click()
+  const menu = page.getByRole('menu')
+  await expect(menu).toBeVisible()
+  const labels = (await menu.getByRole('menuitem').allInnerTexts()).map((label) => label.trim())
+  await page.keyboard.press('Escape')
+  await expect(menu).toBeHidden()
+  await expect(more).toBeFocused()
+  return labels
+}
+
+test('the nav bar of the roles with the most items never scrolls: items that do not fit move into the More menu (FE-0-04)', async ({ page, login, browserErrors }, testInfo) => {
+  test.setTimeout(180_000)
+  const measures: Record<string, Awaited<ReturnType<typeof measureNav>> & { menu: readonly string[] }> = {}
+  for (const [index, { role, labels }] of NAV_ROLES.entries()) {
     // Đổi vai trò: bỏ phiên (và ngôn ngữ) của tab rồi đăng nhập lại — màn đăng nhập về tiếng Việt
     if (index > 0) await page.evaluate(() => sessionStorage.clear())
+    await page.setViewportSize({ width: 1366, height: 768 })
     await login('/doi-xe', role)
     for (const lang of ['vi', 'en'] as const) {
-      if (lang === 'en') await page.goto('/doi-xe?lang=en')
-      const nav = page.getByRole('navigation', { name: lang === 'vi' ? 'Điều hướng chính' : 'Main navigation' })
+      await page.goto(`/doi-xe?lang=${lang}`)
       const fleet = lang === 'vi' ? 'Đội xe' : 'Fleet'
-      await expect(nav.getByRole('link', { name: fleet, exact: true })).toHaveAttribute('aria-current', 'page')
-      await page.mouse.move(683, 500)
-      const measure = await measureNav(page)
-      measures[`${role}-${lang}`] = measure
-      const name = `${role} · ${lang}`
-      expect.soft(measure.labels, name).toStrictEqual(labels[lang])
-      expect.soft(measure.cutLabels, `${name}: cut labels`).toStrictEqual([])
-      expect.soft(measure.navOverflow, `${name}: nav tray scrolls sideways`).toBeLessThanOrEqual(0)
-      expect.soft(measure.gapToActions, `${name}: gap between the tray and the actions`).toBeGreaterThanOrEqual(20)
-      expect.soft(measure.actionsRight, `${name}: actions end inside the viewport`).toBeLessThanOrEqual(1366)
-      expect.soft(measure.pageOverflow, `${name}: page scrolls sideways`).toBeLessThanOrEqual(0)
+      for (const width of NAV_WIDTHS) {
+        await page.setViewportSize({ width, height: 768 })
+        const name = `${role} · ${lang} · ${width}`
+        await page.mouse.move(width / 2, 500)
+        await expect(page.getByRole('navigation', { name: lang === 'vi' ? 'Điều hướng chính' : 'Main navigation' })).toBeVisible()
+        // Chờ khay đo xong cho bề rộng mới: mục hiện + mục trong "Thêm" luôn đủ danh sách
+        await expect.poll(async () => (await measureNav(page)).labels.length > 0).toBe(true)
+        const measure = await measureNav(page)
+        const menu = measure.more === null ? [] : await moreMenuLabels(page)
+        measures[name] = { ...measure, menu }
+        expect.soft([...measure.labels, ...menu], `${name}: shown + More = every item, in order`).toStrictEqual(labels[lang])
+        expect.soft(measure.cutLabels, `${name}: cut labels`).toStrictEqual([])
+        expect.soft(measure.overlaps, `${name}: overlapping items`).toBe(0)
+        expect.soft(measure.outsideTray, `${name}: items outside the tray`).toBe(0)
+        expect.soft(measure.navOverflow, `${name}: nav tray scrolls sideways`).toBeLessThanOrEqual(0)
+        expect.soft(measure.gapToActions, `${name}: gap between the tray and the actions`).toBeGreaterThanOrEqual(20)
+        expect.soft(measure.actionsRight, `${name}: actions end inside the viewport`).toBeLessThanOrEqual(width)
+        expect.soft(measure.pageOverflow, `${name}: page scrolls sideways`).toBeLessThanOrEqual(0)
+        // "Thêm" chứa mục đang mở thì nút mang tên mục đó
+        if (menu.includes(fleet)) expect.soft(measure.more, `${name}: More shows the open item`).toBe(fleet)
 
-      // Chỉ báo kính: ở mục đang mở, bám mục đang rê, về mục đang mở khi con trỏ rời thanh
-      await expect.poll(() => glassOn(page), { message: `${name}: indicator on the open item` }).toBe(fleet)
-      const [first] = labels[lang]
-      await nav.getByRole('link', { name: first, exact: true }).hover()
-      await expect.poll(() => glassOn(page), { message: `${name}: indicator follows the pointer` }).toBe(first)
-      await page.mouse.move(683, 500)
-      await expect.poll(() => glassOn(page), { message: `${name}: indicator returns to the open item` }).toBe(fleet)
+        // Chỉ báo kính: ở mục đang mở (hay nút "Thêm" đang chứa nó), bám mục đang rê, về chỗ cũ khi con trỏ rời thanh
+        const home = measure.labels.includes(fleet) ? fleet : 'more'
+        await page.mouse.move(width / 2, 500)
+        await expect.poll(() => glassOn(page), { message: `${name}: indicator on the open item` }).toBe(home)
+        const [first] = labels[lang]
+        await page.locator('header nav a').first().hover()
+        await expect.poll(() => glassOn(page), { message: `${name}: indicator follows the pointer` }).toBe(first)
+        await page.mouse.move(width / 2, 500)
+        await expect.poll(() => glassOn(page), { message: `${name}: indicator returns to the open item` }).toBe(home)
+
+        if (role === 'dispatcher' && (width === 1366 || width === 1600)) {
+          await attachScreenshot(page, testInfo, `nav-${role}-${lang}-${width}`, { clip: { x: 0, y: 0, width, height: 60 } })
+        }
+      }
     }
   }
-  await attachJson(testInfo, 'nav-1366', measures)
+  await attachJson(testInfo, 'nav-widths', measures)
+  expect(browserErrors).toStrictEqual([])
+})
+
+/**
+ * Khay chật (giả bằng cách thu khung của khay, như khi máy chủ thêm mục hay nút trợ lý): có nút "Thêm", bàn phím mở được menu, chọn một
+ * mục trong menu điều hướng tới đúng màn; mục đang mở nằm trong "Thêm" thì nút mang tên mục đó và chỉ báo kính nghỉ ở nút.
+ */
+test('a tight nav tray keeps every item reachable through the More menu (FE-0-04)', async ({ page, login, browserErrors }, testInfo) => {
+  await page.setViewportSize({ width: 1366, height: 768 })
+  await login('/chuyen', 'dispatcher')
+  const narrow = () => page.addStyleTag({ content: `[data-nav-slot] { flex: none !important; width: ${NARROW_SLOT}px !important; }` })
+  await narrow()
+  const more = page.locator('header nav button')
+  await expect(more).toHaveAccessibleName(/^Thêm \d+ mục$/)
+  const shown = (await page.locator('header nav a').allInnerTexts()).map((label) => label.trim())
+  expect(shown[0]).toBe('Chuyến hàng')
+
+  // Bàn phím: Tab tới nút, Enter mở, mũi tên đi trong menu
+  await more.focus()
+  await page.keyboard.press('Enter')
+  const menu = page.getByRole('menu')
+  await expect(menu).toBeVisible()
+  const hidden = (await menu.getByRole('menuitem').allInnerTexts()).map((label) => label.trim())
+  expect([...shown, ...hidden]).toStrictEqual(NAV_ROLES[0]!.labels.vi)
+  await page.keyboard.press('ArrowDown')
+  await expect(menu.getByRole('menuitem').nth(1)).toBeFocused()
+  await attachScreenshot(page, testInfo, 'nav-more-open', { clip: { x: 0, y: 0, width: 1366, height: 360 } })
+
+  // Chọn mục cuối của menu: tới đúng màn, nút mang tên mục đó, chỉ báo kính nghỉ ở nút
+  const last = hidden.at(-1)!
+  await menu.getByRole('menuitem', { name: last, exact: true }).click()
+  await expect(page).toHaveURL(/\/phieu-luong$/)
+  await expect(more).toHaveText(last)
+  await expect(more).toHaveAccessibleName(new RegExp(`đang mở: ${last}$`))
+  await page.mouse.move(683, 500)
+  await expect.poll(() => glassOn(page)).toBe('more')
+  await more.click()
+  await expect(menu.getByRole('menuitem', { name: last, exact: true })).toHaveAttribute('aria-current', 'page')
+  await attachScreenshot(page, testInfo, 'nav-more-current', { clip: { x: 0, y: 0, width: 1366, height: 360 } })
+  await page.keyboard.press('Escape')
   expect(browserErrors).toStrictEqual([])
 })
