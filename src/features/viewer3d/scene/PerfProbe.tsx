@@ -15,9 +15,16 @@ export type PerfSample = {
   qualityTier: QualityTier
   renderedFrames: number
   idle: boolean
+  /** Mẫu có khung hình trong quãng ổn định sau khi cảnh đổi (`SETTLE_MS`): chính sách chất lượng bỏ qua, overlay vẫn hiện số. */
+  settling: boolean
 }
 
 const SAMPLE_INTERVAL_MS = 500
+/**
+ * Quãng bỏ qua sau khi cảnh đổi (mở khung, đổi phương án hay xe, đổi tier): vài khung đầu dựng lại hình học và biên dịch shader nên chậm
+ * hẳn — không được tính là "mẫu chậm" để hạ tier. Luật "3 mẫu chậm" giữ nguyên, chỉ không đếm trong quãng này.
+ */
+export const SETTLE_MS = 2000
 
 type Counters = {
   renderedFrames: number
@@ -27,6 +34,8 @@ type Counters = {
   activeElapsedMs: number
   drawCalls: number
   triangles: number
+  /** Có khung hình trong quãng ổn định kể từ lần gửi mẫu trước. */
+  settling: boolean
 }
 
 /**
@@ -38,10 +47,13 @@ export function PerfProbe({
   onSample,
   placementCount,
   qualityTier,
+  scene,
 }: {
   onSample: (sample: PerfSample) => void
   placementCount: number
   qualityTier: QualityTier
+  /** Cảnh đang vẽ (model của phương án): đổi tham chiếu là bắt đầu lại quãng ổn định. */
+  scene?: object
 }) {
   const get = useThree((state) => state.get)
   const pendingCapture = useRef(false)
@@ -54,7 +66,13 @@ export function PerfProbe({
     activeElapsedMs: 0,
     drawCalls: 0,
     triangles: 0,
+    settling: true,
   })
+  const settleUntil = useRef(0)
+  useEffect(() => {
+    settleUntil.current = performance.now() + SETTLE_MS
+    counters.current.settling = true
+  }, [scene, qualityTier])
 
   useFrame(() => {
     frameStartedAt.current = performance.now()
@@ -74,6 +92,7 @@ export function PerfProbe({
         current.activeIntervals += 1
         current.activeElapsedMs += interval
       }
+      if (timestamp < settleUntil.current) current.settling = true
       current.renderedFrames += 1
       current.lastFrameAt = timestamp
       current.requestedNextFrame = state.frameloop === 'always' || state.internal.frames > 0
@@ -89,7 +108,9 @@ export function PerfProbe({
       // `requestedNextFrame` chốt lúc frame cuối ghi xong; frame được xin sau đó (react-spring, con trỏ, effect) chỉ thấy ở đây
       const state = get()
       const pendingFrames = state.frameloop === 'always' ? 1 : state.internal.frames
-      const idle = isSceneIdle(current.requestedNextFrame, performance.now() - current.lastFrameAt, pendingFrames)
+      const now = performance.now()
+      const idle = isSceneIdle(current.requestedNextFrame, now - current.lastFrameAt, pendingFrames)
+      const settling = current.settling || now < settleUntil.current
       if (publishedFrames === current.renderedFrames && publishedIdle === idle) return
       const frameTimeMs = !idle && current.activeIntervals > 0
         ? current.activeElapsedMs / current.activeIntervals
@@ -105,11 +126,13 @@ export function PerfProbe({
         qualityTier,
         renderedFrames: current.renderedFrames,
         idle,
+        settling,
       })
       publishedFrames = current.renderedFrames
       publishedIdle = idle
       current.activeIntervals = 0
       current.activeElapsedMs = 0
+      current.settling = false
     }, SAMPLE_INTERVAL_MS)
 
     return () => {

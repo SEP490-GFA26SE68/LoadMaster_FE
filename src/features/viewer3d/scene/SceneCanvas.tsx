@@ -178,7 +178,7 @@ export function SceneCanvas({
       {vehicleRef ? <group ref={vehicleRef} name="vehicle-motion">{vehicleParts}</group> : vehicleParts}
       {children}
     </group>
-    <PerfProbe onSample={handleSample} placementCount={placements.length} qualityTier={flags.tier} />
+    <PerfProbe onSample={handleSample} placementCount={placements.length} qualityTier={flags.tier} scene={model} />
   </Canvas>
   <ObstacleDescriptions obstacles={model.vehicle.obstacles} />
   </>

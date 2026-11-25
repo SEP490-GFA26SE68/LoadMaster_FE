@@ -98,6 +98,21 @@ test('quality adaptation has consecutive samples, hysteresis, cooldown and ignor
   expect(QUALITY_COOLDOWN_MS >= 10_000).toBeTruthy()
 })
 
+test('slow samples inside the settle window after a scene change do not count towards a downgrade', () => {
+  let q = createQualityPolicy('balanced')
+  // Mở khung / đổi xe: dựng lại hình và biên dịch shader — mẫu chậm nhưng đang ổn định
+  for (let i = 0; i < 4; i++) q = observeQuality(q, { frameTimeMs: 120, idle: false, settling: true }, i * 500)
+  expect(q).toMatchObject({ tier: 'balanced', slow: 0 })
+  // Hết quãng ổn định: vẫn đủ 3 mẫu chậm liên tiếp mới hạ
+  for (let i = 0; i < 2; i++) q = observeQuality(q, { frameTimeMs: 40, idle: false }, 2000 + i * 500)
+  expect(q.tier).toBe('balanced')
+  q = observeQuality(q, { frameTimeMs: 40, idle: false, settling: true }, 3000)
+  q = observeQuality(q, { frameTimeMs: 40, idle: false }, 3500)
+  expect(q.tier, 'a settling sample breaks the run of slow samples').toBe('balanced')
+  for (let i = 0; i < 2; i++) q = observeQuality(q, { frameTimeMs: 40, idle: false }, 4000 + i * 500)
+  expect(q.tier).toBe('low')
+})
+
 test('measure operations derivation and approval heuristic at 1,000 placements', () => {
   const start = performance.now()
   for (let i = 0; i < 100; i++) deriveSceneSemantics(plan.placements, { kind: 'loading', step: i + 1 })
