@@ -346,22 +346,23 @@
    chấm; tên "Lumo" vẫn còn. Ngưỡng theo chữ dài hơn (tiếng Anh) ở cỡ 13 px, và ở cỡ 16 px của máy cảm ứng / màn kho, tài xế. */
 .assistant-panel-heading {
   container-type: inline-size;
+  overflow: clip;
 }
 
-@container (max-width: 11.5rem) {
+@container (max-width: 10rem) {
   .assistant-panel-subtitle {
     display: none;
   }
 }
 
-@container (max-width: 14rem) {
+@container (max-width: 13rem) {
   .assistant-touch .assistant-panel-subtitle {
     display: none;
   }
 }
 
 @media (pointer: coarse) {
-  @container (max-width: 14rem) {
+  @container (max-width: 13rem) {
     .assistant-panel-subtitle {
       display: none;
     }
