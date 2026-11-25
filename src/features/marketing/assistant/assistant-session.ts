@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react'
 import type { AssistantHandoff, AssistantLink, AssistantSurface, UiAction } from './assistant-api'
 import type { TopicId } from './assistant-kb'
+import type { PanelPlacement } from './panel-position'
 import type { SmallTalkKind } from './assistant-route'
 
 /**
@@ -54,9 +55,14 @@ export type AssistantSession = {
   readonly pending: boolean
   /** Khung chat phóng to (từ 768 px). Giữ qua "Bắt đầu lại" và khi chuyển giữa hai trang công khai. */
   readonly expanded: boolean
+  /**
+   * Chỗ người dùng kéo khung chat tới (từ 768 px); `null` là chỗ mặc định. Như `expanded`: giữ khi đóng mở lại và qua "Bắt đầu lại", tải
+   * lại trang là về mặc định.
+   */
+  readonly placement: PanelPlacement | null
 }
 
-const INITIAL: AssistantSession = { open: false, entries: [], pending: false, expanded: false }
+const INITIAL: AssistantSession = { open: false, entries: [], pending: false, expanded: false, placement: null }
 
 let session = INITIAL
 let nextId = 1
@@ -106,6 +112,7 @@ export const assistantSession = {
   setOpen: (open: boolean) => update({ open }),
   setPending: (pending: boolean) => update({ pending }),
   setExpanded: (expanded: boolean) => update({ expanded }),
+  setPlacement: (placement: PanelPlacement | null) => update({ placement }),
   append(...entries: readonly NewEntry[]) {
     update({ entries: [...session.entries, ...entries.map((entry) => ({ ...entry, id: nextId++ }) as AssistantEntry)] })
   },
