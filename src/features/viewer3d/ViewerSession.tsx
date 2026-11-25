@@ -1,22 +1,20 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router'
 import { useCan } from '@/features/auth/useCan'
-import { ChangeVehicleDialog } from '@/features/trips/ChangeVehicleDialog'
-import { useT } from '@/lib/i18n'
 import { tripStatus, type TripPhase } from '@/lib/mock-db'
-import { ApprovePlanDialog } from './ApprovePlanDialog'
 import { plannerAccess } from './approval/planner-access'
 import { useViewerApproval } from './approval/useViewerApproval'
 import { createColorContext } from './colors'
 import { createPerfStore, DebugOverlay } from './DebugOverlay'
+import { useDialogOpener } from './dialog-opener'
 import { EditorGestureHud } from './editor/EditorGestureHud'
 import { EditorPanel } from './editor/EditorPanel'
 import { EditorToolbar } from './editor/EditorToolbar'
 import { useManualEditor } from './editor/useManualEditor'
-import { operationApprovalChecks } from './operations/approval-checks'
 import { SceneHud } from './operations/SceneHud'
 import { useOperations } from './operations/useOperations'
 import { PlannerActions } from './panels/PlannerActions'
+import { ApprovePlanHost, ChangeVehicleHost } from './PlannerDialogHosts'
 import { PlannerNotices } from './PlannerNotices'
 import { PlannerSimulationControls } from './PlannerSimulationControls'
 import { SceneInspector } from './panels/SceneInspector'
@@ -46,7 +44,6 @@ export function ViewerSession({ model: plan, phase, source }: { model: ViewerSce
   const [searchParams] = useSearchParams()
   const tripId = params.tripId ?? plan.tripId
   const showPerf = searchParams.has('debug')
-  const t = useT()
   const can = useCan()
 
   const flags = usePerformanceFlags(debugQualityTier(searchParams))
@@ -68,11 +65,12 @@ export function ViewerSession({ model: plan, phase, source }: { model: ViewerSce
   const handleEdit = access.lock === null ? () => handleModeChange('edit') : undefined
   const colorContext = useMemo(() => createColorContext(plan), [plan])
   const perfStore = useMemo(() => createPerfStore(), [])
-  const [approveOpen, setApproveOpen] = useState(false)
+  // State mở của hộp Duyệt và hộp Đổi xe nằm ở chính hộp thoại: mở / đóng không vẽ lại phiên và khung 3D
+  const approveDialog = useDialogOpener()
   // Đổi xe (FE-5b-08, D-80): chuyến Đã lập kế hoạch, người sửa được chuyến; nút nằm ở góc khung 3D (thanh trên không còn chỗ), đổi
   // xong phương án đang xem thành lỗi thời
   const canChangeVehicle = source !== undefined && can('trips.edit') && tripStatus(source.trip) === 'PLANNED'
-  const [vehicleOpen, setVehicleOpen] = useState(false)
+  const vehicleDialog = useDialogOpener()
   // Chạy lại giữ kiện đã ghim (FE-BL-02): mở Thiết lập tối ưu với ghim của phương án đang xem; cần quyền chạy tối ưu và chuyến Đã lập kế hoạch
   const navigate = useNavigate()
   const canRerunPinned = source !== undefined && plan.revision !== undefined && can('optimization.run') && tripStatus(source.trip) === 'PLANNED'
@@ -84,9 +82,6 @@ export function ViewerSession({ model: plan, phase, source }: { model: ViewerSce
 
   const totalPackages = plan.placements.length + plan.unplaced.length
   const planIssues = useMemo(() => approval.approval ? [...approval.approval.blockers.issues, ...approval.approval.warnings] : [], [approval.approval])
-  const approvalChecks = useMemo(() => approveOpen
-    ? operationApprovalChecks(state.placements, poseEdits, t) : [],
-  [approveOpen, state.placements, poseEdits, t])
 
   const { togglePlaying, stepForward, stepBackward, goToStart } = operations
   useEffect(() => {
@@ -105,8 +100,8 @@ export function ViewerSession({ model: plan, phase, source }: { model: ViewerSce
   }, [togglePlaying, stepForward, stepBackward, goToStart, editor.mode])
 
   function handleModeChange(mode: 'view' | 'edit') { operations.stop(); operations.setFollow('off'); editor.setMode(mode) }
-  /** Từ hộp thoại Duyệt: đóng hộp thoại, về chế độ Xem và mở mô phỏng dỡ hàng để xem kiện chắn lối (V2.3 Planner3DTatLIFO). */
-  function handleShowUnloading() { setApproveOpen(false); if (editor.mode === 'edit') handleModeChange('view'); operations.setKind('unloading') }
+  /** Từ hộp thoại Duyệt (đã tự đóng): về chế độ Xem và mở mô phỏng dỡ hàng để xem kiện chắn lối (V2.3 Planner3DTatLIFO). */
+  function handleShowUnloading() { if (editor.mode === 'edit') handleModeChange('view'); operations.setKind('unloading') }
 
   const simulation = { operations, stops: plan.stops, preset: state.cameraPreset, onPreset: state.setCameraPreset }
   return (
@@ -126,7 +121,7 @@ export function ViewerSession({ model: plan, phase, source }: { model: ViewerSce
         controls={editor.mode === 'view' ? <PlannerSimulationControls {...simulation} /> : undefined}
       >
         <PlannerActions tripId={tripId} access={access} blockedReason={approval.blockedReason} approvedBy={approvedBy} compareRunId={candidate?.runId}
-          onApprove={() => setApproveOpen(true)} onEdit={editor.mode === 'view' ? handleEdit : undefined} />
+          onApprove={approveDialog.open} onEdit={editor.mode === 'view' ? handleEdit : undefined} />
       </ViewerHeader>
       <PlannerNotices model={plan} source={source} lock={access.lock}
         rerunTo={can('optimization.run') && (phase ?? 'planning') === 'planning' ? `/chuyen/${tripId}/toi-uu` : undefined} />
@@ -139,7 +134,7 @@ export function ViewerSession({ model: plan, phase, source }: { model: ViewerSce
           </Suspense>
 
           {editor.mode === 'view' ? <SceneHud state={state} operations={operations} onInspect={setInspectorTab}
-            onChangeVehicle={canChangeVehicle ? () => setVehicleOpen(true) : undefined} onRerunPinned={handleRerunPinned}
+            onChangeVehicle={canChangeVehicle ? vehicleDialog.open : undefined} onRerunPinned={handleRerunPinned}
             onResetFocus={editor.focus ? () => { operations.setFollow('off'); editor.resetFocus() } : undefined}
             onFocus={(p) => { operations.pauseFollow(); if (p) editor.focusPlacement(p); else editor.focusSelected() }} onEdit={handleEdit} /> : null}
           {showPerf ? <DebugOverlay store={perfStore} /> : null}
@@ -170,23 +165,9 @@ export function ViewerSession({ model: plan, phase, source }: { model: ViewerSce
         onSpeedChange={state.setSpeed}
       /> : null}
 
-      {plan.metrics && approval.approval ? (
-        <ApprovePlanDialog
-          open={approveOpen}
-          onOpenChange={setApproveOpen}
-          metrics={plan.metrics}
-          canSubmit={approval.canSubmit}
-          approval={approval.approval}
-          deadlines={approval.deadlines}
-          checks={approvalChecks}
-          pending={approval.pending}
-          onConfirm={(force) => approval.confirm(() => setApproveOpen(false), { force })}
-          isMockResult={plan.isMockResult}
-          lifoOff={plan.engineInput?.settings.enforceLifo === false}
-          onShowUnloading={handleShowUnloading}
-        />
-      ) : null}
-      {canChangeVehicle ? <ChangeVehicleDialog tripId={tripId} open={vehicleOpen} onOpenChange={setVehicleOpen} /> : null}
+      <ApprovePlanHost opener={approveDialog} plan={plan} approval={approval} placements={state.placements} poseEdits={poseEdits}
+        onShowUnloading={handleShowUnloading} />
+      {canChangeVehicle ? <ChangeVehicleHost opener={vehicleDialog} tripId={tripId} /> : null}
     </div>
   )
 }

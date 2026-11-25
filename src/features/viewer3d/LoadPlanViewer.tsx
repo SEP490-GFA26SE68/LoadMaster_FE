@@ -1,3 +1,5 @@
+import { useCallback } from 'react'
+import type { ScenePlacement } from './scene-input'
 import type { LoadPlanViewerState } from './useLoadPlanViewer'
 import type { PerformanceFlags } from './usePerformanceFlags'
 import type { PerfSample } from './scene/PerfProbe'
@@ -13,9 +15,12 @@ export function LoadPlanViewer({ state, flags, editor, operations, onPerfSample 
   onPerfSample?: (sample: PerfSample) => void
 }) {
   const editing = editor.mode === 'edit'
+  const { pauseFollow } = operations
+  const { focusPlacement } = editor
+  const handleFocus = useCallback((p: ScenePlacement) => { pauseFollow(); focusPlacement(p) }, [pauseFollow, focusPlacement])
   return <SceneCanvas experience="planner" model={state.sceneModel} placements={state.placements} flags={flags}
     preset={state.cameraPreset} focus={editor.focus} selectedId={state.selectedId} onSelect={state.select}
-    onUserControl={operations.pauseFollow} onFocus={(p) => { operations.pauseFollow(); editor.focusPlacement(p) }}
+    onUserControl={pauseFollow} onFocus={handleFocus}
     warningSignal={operations.unload.warning}
     colorMode={state.colorMode} sliceCm={editing ? state.sceneModel.vehicle.innerLengthCm : state.sliceCm}
     step={editing ? state.totalSteps : state.step} semantics={editing ? undefined : operations.semantics}
