@@ -11,7 +11,7 @@ import { dataErrorMessage, useT } from '@/lib/i18n'
 import type { TripStatus } from '@/types/trip'
 import { backendEditApproval, baselineErrorKeys } from './approval/backend-edit-approval'
 import type { PlannerLock } from './approval/planner-access'
-import { backendPlacementIds, backendPlanScene } from './backend-plan-scene'
+import { backendPlacementIds, backendPlanScene, unknownStopCodes } from './backend-plan-scene'
 import { BackendPlannerActions } from './BackendPlannerActions'
 import { createColorContext } from './colors'
 import { createPerfStore, DebugOverlay } from './DebugOverlay'
@@ -60,6 +60,20 @@ export function BackendResultSession() {
           description={query.isError ? t('viewer.plan.loadErrorDescription', { tripId }) : t('serverPlans.planner.emptyDescription')}
           action={<Button variant={query.isError ? 'secondary' : 'primary'} asChild>
             <Link to={query.isError ? '/chuyen' : `/chuyen/${encodeURIComponent(tripId)}/toi-uu`}>{query.isError ? t('common.backToTrips') : t('viewer.plan.toSetup')}</Link>
+          </Button>}
+        />
+      </div>
+    )
+  }
+  // Kiện không gắn được điểm giao của chuyến: lỗi dữ liệu của máy chủ — nói rõ thay vì vẽ (màu, vùng, thứ tự dỡ đều theo điểm giao)
+  const unknownStops = unknownStopCodes(plan, query.data.stops)
+  if (unknownStops.length > 0) {
+    return (
+      <div className="flex h-dvh flex-col bg-bg p-8">
+        <EmptyState mascot="error" title={t('plannerRecovery.unknownStops.title')}
+          description={t('plannerRecovery.unknownStops.description', { count: unknownStops.length, codes: unknownStops.slice(0, 5).join(', ') })}
+          action={<Button variant="primary" asChild>
+            <Link to={`/chuyen/${encodeURIComponent(tripId)}/toi-uu`}>{t('viewer.plan.toSetup')}</Link>
           </Button>}
         />
       </div>

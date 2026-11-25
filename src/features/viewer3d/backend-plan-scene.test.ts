@@ -2,8 +2,7 @@ import { describe, expect, test } from 'vitest'
 import { ORIENTATION_CODES, orientDimensions } from '@/domain/geometry'
 import type { VehicleConfig } from '@/domain/models'
 import { loadPlanOf, type LoadPlan, type LoadPlacement } from '@/features/optimization/load-plan-dto'
-import { isApiError } from '@/lib/api-client'
-import { backendPlacementIds, backendPlanScene, baseDimensionsOf, orientationOf } from './backend-plan-scene'
+import { backendPlacementIds, backendPlanScene, baseDimensionsOf, orientationOf, unknownStopCodes } from './backend-plan-scene'
 
 const VEHICLE: VehicleConfig = {
   id: '7', name: 'Xe tải 1,5 tấn', innerLengthCm: 400, innerWidthCm: 200, innerHeightCm: 200, maxPayloadKg: 1500,
@@ -46,10 +45,12 @@ describe('backendPlanScene', () => {
     expect(scene.engineInput?.instances?.map(({ packageInstanceId }) => packageInstanceId)).toEqual(['PK-301'])
   })
 
-  test('kiện thuộc điểm không có trong chuyến là lỗi dữ liệu của máy chủ', () => {
-    const broken = plan({ placements: [placement({ stopId: '999' })] })
-    expect(() => backendPlanScene({ tripCode: 'TRIP-1', plan: broken, vehicle: VEHICLE, stops: STOPS })).toThrow()
-    try { backendPlanScene({ tripCode: 'TRIP-1', plan: broken, vehicle: VEHICLE, stops: STOPS }) } catch (error) { expect(isApiError(error)).toBe(true) }
+  test('kiện thuộc điểm không có trong chuyến là lỗi dữ liệu của máy chủ: `unknownStopCodes` nêu kiện, scene không ném lỗi lúc vẽ', () => {
+    const broken = plan({ placements: [placement(), placement({ id: '12', code: 'PK-302', stopId: '999' }), placement({ id: '13', code: '', stopId: null, stopSequence: 0 })] })
+    expect(unknownStopCodes(broken, STOPS)).toEqual(['PK-302', '13'])
+    expect(unknownStopCodes(plan(), STOPS)).toEqual([])
+    const scene = backendPlanScene({ tripCode: 'TRIP-1', plan: broken, vehicle: VEHICLE, stops: STOPS })
+    expect(scene.placements.map((item) => item.id)).toEqual(['PK-301'])
   })
 
   test('số máy chủ không trả thì vắng, không vẽ 0', () => {

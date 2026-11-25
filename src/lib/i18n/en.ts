@@ -18,6 +18,7 @@ import { tripClaims } from './en/tripClaims'
 import { assistantStats } from './en/assistantStats'
 import { warehouse } from './en/warehouse'
 import { viewer } from './en/viewer'
+import { plannerRecovery } from './en/plannerRecovery'
 import { fields } from './en/fields'
 import { admin } from './en/admin'
 import { designSystem } from './en/designSystem'
@@ -95,6 +96,7 @@ export const en = {
   assistantStats,
   warehouse,
   viewer,
+  plannerRecovery,
   fields,
   admin,
   designSystem,
