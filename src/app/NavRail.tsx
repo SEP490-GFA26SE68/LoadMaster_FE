@@ -1,6 +1,6 @@
 import { LifeBuoy, LogOut, UserRound } from 'lucide-react'
 import { lazy, Suspense, useState } from 'react'
-import { Link, NavLink, useNavigate } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { LogoMark } from '@/components/brand/LogoMark'
 import { LanguageMenu } from '@/components/LanguageMenu'
 import { Badge } from '@/components/ui/Badge'
@@ -23,7 +23,7 @@ import { cn } from '@/lib/utils'
 import { initialsOf } from '@/types/user'
 import { usesBackend } from '@/lib/backend-config'
 import { logoPath, navItemsFor } from './nav-items'
-import { useGlassFollow } from '@/components/useGlassFollow'
+import { NavTray } from './NavTray'
 
 /** Hộp thoại yêu cầu hỗ trợ (FE-8-07) tải khi mở lần đầu: chỉ người dùng công ty mở. */
 const SupportTicketDialog = lazy(() => import('@/features/support/SupportTicketDialog').then((m) => ({ default: m.SupportTicketDialog })))
@@ -48,13 +48,12 @@ function Avatar({ name, size = 'md' }: { name: string; size?: 'md' | 'lg' }) {
  * (`.glass-nav`), tìm nhanh · ngôn ngữ · chuông · tài khoản phải. Nền cyan kính là **chỉ báo trượt theo con trỏ**
  * (`useGlassFollow`, `.glass-follow`): bám mục đang rê / focus, về mục đang mở khi con trỏ rời thanh. Mục đang mở chỉ có chữ trắng
  * 600 và icon `--cyan-200`, không nền riêng — hai lớp nền sẽ chồng nhau. Dưới 1.340px mục chỉ còn icon, tên nằm ở `aria-label`.
- * Mục và thứ tự theo vai trò khai ở `nav-items.ts` (FE-0-04).
+ * Mục và thứ tự theo vai trò khai ở `nav-items.ts` (FE-0-04); mục không vừa thanh dồn vào nút "Thêm" (`NavTray`, mẫu priority+).
  */
 export function NavRail() {
   const t = useT()
   const { user, signOut } = useAuth()
   const navigate = useNavigate()
-  const { navRef, followRef } = useGlassFollow<HTMLElement>()
   const [supportOpen, setSupportOpen] = useState(false)
   // Mục và thứ tự theo vai trò (`NAV_ITEMS`), chỉ mục vai trò có quyền mở
   let items = user ? navItemsFor(user.role) : []
@@ -97,41 +96,15 @@ export function NavRail() {
         </span>
       </Link>
 
-      {/* Vai trò không có mục nào thì không vẽ khay kính rỗng (hiện cả tám vai trò đều có) */}
+      {/* Vai trò không có mục nào thì không vẽ khay kính rỗng (hiện cả tám vai trò đều có). Mục không vừa thanh dồn vào nút "Thêm" */}
       {items.length > 0 ? (
-        <nav
-          ref={navRef}
-          aria-label={t('nav.label')}
-          className="glass-nav relative flex min-w-0 flex-initial max-w-fit gap-0.5 overflow-x-auto rounded-lg p-1"
-        >
-          <span ref={followRef} aria-hidden className="glass-follow" />
-          {items.map(({ to, labelKey, icon: Icon }) => {
-            const actualLabelKey = to === '/nguoi-dung' && user?.role === 'companyAdmin' ? 'nav.employees' : labelKey
-            return (
-              <NavLink
-                key={to}
-                to={to}
-                end={to === '/' || to === '/kho'}
-                aria-label={t(actualLabelKey)}
-                className={({ isActive }) =>
-                  cn(
-                    'relative z-1 flex h-9 items-center gap-1.5 rounded-md px-2 text-body whitespace-nowrap 2xl:gap-2 2xl:px-3.5',
-                    'transition-colors duration-(--dur-fast) ease-standard',
-                    'outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-cyan-300',
-                    isActive ? 'font-semibold text-sky-text' : 'font-medium text-sky-text-2 hover:text-sky-text',
-                  )
-                }
-              >
-                {({ isActive }) => (
-                  <>
-                    <Icon className={cn('size-4.5 flex-none', isActive ? 'text-cyan-200' : 'opacity-80')} strokeWidth={isActive ? 2 : 1.5} aria-hidden />
-                    <span className="hidden min-[1340px]:inline">{t(actualLabelKey)}</span>
-                  </>
-                )}
-              </NavLink>
-            )
-          })}
-        </nav>
+        <NavTray
+          items={items.map(({ to, labelKey, icon }) => ({
+            to,
+            icon,
+            label: t(to === '/nguoi-dung' && user?.role === 'companyAdmin' ? 'nav.employees' : labelKey),
+          }))}
+        />
       ) : null}
 
       <div className="ml-auto flex flex-none items-center gap-2.5">

@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test'
 import { attachScreenshot, expect, test } from './fixtures'
 import { navigateInApp, optimizeAndOpenPlanner, switchUser } from './spec-flow-helpers'
+import { navLabels } from './nav-helpers'
 
 /**
  * Luồng tối ưu → so sánh → duyệt (LM-104; FE-0-07, D-80; FE-5b-05, FE-5b-06) trên cùng một kho in-memory, đổi người ngay trong app:
@@ -71,7 +72,8 @@ test('the dispatcher optimizes into three plans, approves one of them; the compa
 
   // Hàng đợi duyệt đã bỏ: không còn mục điều hướng, đường dẫn cũ là màn 404
   await navigateInApp(page, '/tong-quan')
-  await expect(page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link')).toHaveText(['Bảng điều khiển', 'Yêu cầu giao', 'Kho kiện', 'Chuyến hàng', 'Giám sát', 'Đội xe', 'Kho bãi', 'Bảng lương'])
+  const nav = page.getByRole('navigation', { name: 'Điều hướng chính' })
+  await expect.poll(() => navLabels(nav, page)).toStrictEqual(['Bảng điều khiển', 'Yêu cầu giao', 'Kho kiện', 'Chuyến hàng', 'Giám sát', 'Đội xe', 'Kho bãi', 'Bảng lương'])
   await navigateInApp(page, '/duyet')
   await expect(page.getByRole('heading', { level: 1, name: 'Không tìm thấy trang', exact: true })).toBeVisible()
   expect(browserErrors).toStrictEqual([])
