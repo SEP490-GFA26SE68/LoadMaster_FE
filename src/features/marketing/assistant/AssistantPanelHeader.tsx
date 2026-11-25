@@ -57,9 +57,9 @@ export function AssistantPanelHeader({ phone, pending, hasEntries, expanded, mov
       <span className="assistant-avatar-ring" data-thinking={pending || undefined}>
         <AssistantAvatar pose="explain" size="md" />
       </span>
-      <div className="flex min-w-0 flex-1 flex-col select-none">
+      <div className="assistant-panel-heading flex min-w-0 flex-1 flex-col select-none">
         <DialogPrimitive.Title className="m-0 font-display text-h3 font-[650] font-stretch-108% text-sky-text">{LUMO_NAME}</DialogPrimitive.Title>
-        <p className="m-0 text-small text-sky-text-2 pointer-coarse:text-body-lg in-[.assistant-touch]:text-body-lg">{t('assistant.panel.subtitle')}</p>
+        <p className="assistant-panel-subtitle m-0 text-small whitespace-nowrap text-sky-text-2 pointer-coarse:text-body-lg in-[.assistant-touch]:text-body-lg">{t('assistant.panel.subtitle')}</p>
       </div>
       {moved && !phone ? (
         <Button

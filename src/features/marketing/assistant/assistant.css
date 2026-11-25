@@ -340,3 +340,30 @@
     transition: none;
   }
 }
+
+/* Phụ đề đầu khung ("Hỏi đáp về LoadMaster") luôn một dòng. Đầu khung có tay nắm, ảnh và tới bốn nút (về chỗ mặc định, bắt đầu lại, phóng
+   to, đóng), nên khung 380 px có lúc không đủ chỗ: khi khối tên hẹp hơn chữ thì phụ đề ẩn hẳn — không xuống dòng, không cắt bằng dấu ba
+   chấm; tên "Lumo" vẫn còn. Ngưỡng theo chữ dài hơn (tiếng Anh) ở cỡ 13 px, và ở cỡ 16 px của máy cảm ứng / màn kho, tài xế. */
+.assistant-panel-heading {
+  container-type: inline-size;
+}
+
+@container (max-width: 11.5rem) {
+  .assistant-panel-subtitle {
+    display: none;
+  }
+}
+
+@container (max-width: 14rem) {
+  .assistant-touch .assistant-panel-subtitle {
+    display: none;
+  }
+}
+
+@media (pointer: coarse) {
+  @container (max-width: 14rem) {
+    .assistant-panel-subtitle {
+      display: none;
+    }
+  }
+}
