@@ -62,3 +62,28 @@ test('the AI assistant button sits on the nav bar right after quick search and o
   expect(assistant).toHaveAttribute('aria-expanded', 'false')
   expect(assistant).toHaveFocus()
 })
+
+/** Số đếm xu hướng của trợ lý Lumo chỉ có khi nhóm `assistant` nối máy chủ: mục cuối của hai vai trò nền tảng có quyền xem. */
+test.each([
+  ['systemManager', ['Gói cước', 'Lịch sử gói cước', 'Công ty', 'Đơn dùng thử', 'Trợ lý Lumo']],
+  ['systemAdmin', ['Công ty', 'Người dùng', 'Nhật ký', 'Liên hệ của khách', 'Đơn dùng thử', 'Trợ lý Lumo']],
+] as const)('the %s nav ends with the Lumo assistant counts when the assistant is on the server', (role, items) => {
+  signedInAs(role)
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  render(
+    <QueryClientProvider client={client}>
+      <I18nProvider>
+        <AuthProvider>
+          <TooltipProvider>
+            <MemoryRouter initialEntries={['/']}>
+              <NavRail />
+            </MemoryRouter>
+          </TooltipProvider>
+        </AuthProvider>
+      </I18nProvider>
+    </QueryClientProvider>,
+  )
+  const nav = screen.getByRole('navigation')
+  expect(Array.from(nav.querySelectorAll('a')).map((link) => link.textContent)).toStrictEqual(items)
+  expect(within(nav).getByRole('link', { name: 'Trợ lý Lumo' })).toHaveAttribute('href', '/nen-tang/tro-ly-lumo')
+})

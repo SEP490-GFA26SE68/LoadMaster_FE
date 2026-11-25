@@ -39,7 +39,7 @@ function leafRoutes(list: readonly RouteObject[], parentPath = ''): { path: stri
 test('the route table is what these checks think it is: known screens exist, removed and future screens do not', () => {
   expect([
     '/', '/chuyen', '/chuyen/TRIP-001/phuong-an', '/phieu-xin-chuyen', '/ho-so', '/kho', '/tai-xe/diem-giao', '/yeu-cau-giao', '/giam-sat', '/nen-tang/goi', '/nen-tang/cong-ty',
-    '/cong-ty', '/ho-tro', '/lien-he-khach', '/gioi-thieu', '/bang-gia', '/chinh-sach-bao-mat', '/phuong-an-mau', '/nen-tang/yeu-cau-dung-thu',
+    '/cong-ty', '/ho-tro', '/lien-he-khach', '/gioi-thieu', '/bang-gia', '/chinh-sach-bao-mat', '/phuong-an-mau', '/nen-tang/yeu-cau-dung-thu', '/nen-tang/tro-ly-lumo',
   ].filter((path) => !routeAccess(path).exists)).toStrictEqual([])
   expect(['/duyet', '/lo-hang', '/nhan-hang'].filter((path) => routeAccess(path).exists))
     .toStrictEqual([])
@@ -54,6 +54,8 @@ test('the route table is what these checks think it is: known screens exist, rem
   expect(routeAccess('/nen-tang/goi').permissions).toStrictEqual(['subscriptionPlans.manage'])
   // Đơn yêu cầu dùng thử (FE-8-08): quản lý nền tảng
   expect(routeAccess('/nen-tang/yeu-cau-dung-thu').permissions).toStrictEqual(['trialRequests.manage'])
+  // Số đếm xu hướng của trợ lý Lumo: quản trị hệ thống, quản lý nền tảng (chỉ khi nối máy chủ)
+  expect(routeAccess('/nen-tang/tro-ly-lumo').permissions).toStrictEqual(['assistantStats.view'])
   // Công ty (FE-8-06): quản trị hệ thống
   expect(routeAccess('/nen-tang/cong-ty').permissions).toStrictEqual(['companies.manage'])
   // Thông tin công ty của chính mình: quản trị công ty

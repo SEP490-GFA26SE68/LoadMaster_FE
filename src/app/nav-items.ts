@@ -1,7 +1,8 @@
-import { Banknote, Box, Building2, ClipboardCheck, ClipboardList, CreditCard, Inbox, LayoutDashboard, Layers, LifeBuoy, MapPinned, Package, ScrollText, Tablet, Truck, Users, Warehouse } from 'lucide-react'
+import { Banknote, Bot, Box, Building2, ClipboardCheck, ClipboardList, CreditCard, Inbox, LayoutDashboard, Layers, LifeBuoy, MapPinned, Package, ScrollText, Tablet, Truck, Users, Warehouse } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { ROLE_HOME } from '@/features/auth/landing'
 import { can, type Permission } from '@/features/auth/permissions'
+import type { BackendFeature } from '@/lib/backend-config'
 import type { MessageKey } from '@/lib/i18n'
 import type { Role } from '@/types/user'
 
@@ -11,6 +12,8 @@ export type NavScreen = {
   readonly icon: LucideIcon
   /** Quyền của route đích trong `App.tsx` (D-41): mục chỉ hiện khi người đăng nhập mở được màn đó. */
   readonly permission: Permission
+  /** Màn chỉ có khi nhóm này nối máy chủ (kho mẫu không có dữ liệu cho nó): thanh điều hướng bỏ mục khi nhóm còn là kho mẫu. */
+  readonly backend?: BackendFeature
 }
 
 /**
@@ -56,6 +59,8 @@ export const NAV_SCREENS = {
   subscriptionHistory: { to: '/nen-tang/lich-su-goi', labelKey: 'nav.subscriptionHistory', icon: ScrollText, permission: 'subscriptionPlans.manage' },
   // Đơn yêu cầu tạo tài khoản dùng thử
   trialRequests: { to: '/nen-tang/yeu-cau-dung-thu', labelKey: 'nav.trialRequests', icon: ClipboardList, permission: 'trialRequests.manage' },
+  // Số đếm xu hướng của trợ lý Lumo ở trang công khai: chỉ khi nhóm `assistant` nối máy chủ
+  assistantStats: { to: '/nen-tang/tro-ly-lumo', labelKey: 'nav.assistantStats', icon: Bot, permission: 'assistantStats.view', backend: 'assistant' },
   billing: { to: '/goi-cuoc', labelKey: 'nav.billing', icon: CreditCard, permission: 'billing.manage' },
   payroll: { to: '/bang-luong', labelKey: 'nav.payroll', icon: Banknote, permission: 'payroll.manage' },
   payrollOwn: { to: '/phieu-luong', labelKey: 'nav.payrollOwn', icon: Banknote, permission: 'payroll.viewOwn' },
@@ -71,13 +76,13 @@ export type NavScreenId = keyof typeof NAV_SCREENS
  * Mục điều hướng của từng vai trò, theo thứ tự của vai trò đó (FE-0-04): màn chính của vai trò đứng đầu. Danh sách là phần chọn lọc
  * và thứ tự; quyền vẫn là cổng — `navItemsFor` bỏ mục vai trò không còn quyền mở.
  *
- * - Quản trị hệ thống: Công ty (FE-8-06) · Người dùng · Nhật ký · Liên hệ của khách · Đơn dùng thử. Quản trị công ty: Người dùng · Nhật ký ·
- *   Gói và credit (FE-8-03) · Thông tin công ty.
- *   Quản lý nền tảng: Gói cước (FE-8-02) · Lịch sử gói · Công ty · Đơn dùng thử. Hỗ trợ khách hàng: Hỗ trợ (FE-8-07) · Liên hệ của khách.
+ * - Quản trị hệ thống: Công ty (FE-8-06) · Người dùng · Nhật ký · Liên hệ của khách · Đơn dùng thử · Trợ lý Lumo. Quản trị công ty: Người
+ *   dùng · Nhật ký · Gói và credit (FE-8-03) · Thông tin công ty.
+ *   Quản lý nền tảng: Gói cước (FE-8-02) · Lịch sử gói · Công ty · Đơn dùng thử · Trợ lý Lumo. Hỗ trợ khách hàng: Hỗ trợ (FE-8-07) · Liên hệ của khách.
  */
 export const NAV_ITEMS: Readonly<Record<Role, readonly NavScreenId[]>> = {
-  systemAdmin: ['companies', 'users', 'audit', 'contacts', 'trialRequests'],
-  systemManager: ['plans', 'subscriptionHistory', 'companies', 'trialRequests'],
+  systemAdmin: ['companies', 'users', 'audit', 'contacts', 'trialRequests', 'assistantStats'],
+  systemManager: ['plans', 'subscriptionHistory', 'companies', 'trialRequests', 'assistantStats'],
   systemSupporter: ['support', 'contacts'],
   companyAdmin: ['users', 'audit', 'billing', 'companyProfile'],
   companyManager: ['dashboard', 'requirements', 'packages', 'trips', 'tripClaims', 'monitoring', 'fleet', 'companyWarehouses', 'payroll'],

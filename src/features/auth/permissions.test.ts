@@ -7,8 +7,8 @@ import { can, permissionsOf, PERMISSIONS, ROLE_PERMISSIONS, type Permission } fr
  * từ bảng trong code.
  */
 const EXPECTED: Readonly<Record<Role, readonly Permission[]>> = {
-  systemAdmin: ['companies.manage', 'users.manage', 'audit.view', 'contacts.handle', 'trialRequests.manage'],
-  systemManager: ['companies.manage', 'subscriptionPlans.manage', 'trialRequests.manage'],
+  systemAdmin: ['companies.manage', 'users.manage', 'audit.view', 'contacts.handle', 'trialRequests.manage', 'assistantStats.view'],
+  systemManager: ['companies.manage', 'subscriptionPlans.manage', 'trialRequests.manage', 'assistantStats.view'],
   systemSupporter: ['support.handle', 'contacts.handle'],
   companyAdmin: ['companyProfile.manage', 'users.manage', 'audit.view', 'billing.manage', 'support.create'],
   companyManager: [
@@ -54,11 +54,11 @@ test('exactly the eight roles of the backend, each with its backend code; manufa
   })
 })
 
-test('one table: 37 permissions, each granted to at least one role; a role lists each of its permissions once, in the order of the matrix rows', () => {
-  // 33 quyền của ma trận PRD v2 cộng `contacts.handle`, `companyProfile.manage`, `trialRequests.manage`, `companyWarehouses.manage`, `payroll.manage`, `payroll.viewOwn`; ba
+test('one table: 38 permissions, each granted to at least one role; a role lists each of its permissions once, in the order of the matrix rows', () => {
+  // 33 quyền của ma trận PRD v2 cộng `contacts.handle`, `companyProfile.manage`, `trialRequests.manage`, `companyWarehouses.manage`, `payroll.manage`, `payroll.viewOwn`, `assistantStats.view`; ba
   // quyền của nhà sản xuất và logistics đã bỏ (FE-0-06), hai quyền đơn hàng tạm đã bỏ (FE-4b-01), hai quyền nhận hàng dọc đường đã bỏ
-  expect(PERMISSIONS).toHaveLength(37)
-  expect(new Set(PERMISSIONS).size).toBe(37)
+  expect(PERMISSIONS).toHaveLength(38)
+  expect(new Set(PERMISSIONS).size).toBe(38)
   expect(PERMISSIONS.filter((permission) => /^(packages\.register|shipments\.|receiving\.|orders\.)/.test(permission))).toStrictEqual([])
   expect(PERMISSIONS.slice(-2)).toStrictEqual(['warehouse.operate', 'driver.operate'])
   for (const permission of PERMISSIONS) expect(ROLES.some((role) => can(role, permission)), permission).toBe(true)

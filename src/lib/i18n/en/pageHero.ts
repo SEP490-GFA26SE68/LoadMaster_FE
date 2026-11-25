@@ -31,4 +31,5 @@ export const pageHero = {
   support: 'Support requests from every company: reply, change the status and see the company’s plan and credits.',
   supportStatusOnly: 'Support requests from every company: read them and change their status.',
   contacts: 'Requests that guests send from the website: take them on, change the status and keep internal notes.',
+  assistantStats: 'What guests ask Lumo on the public website, how many answers need no model, and which topics need a better prepared answer.',
 } satisfies Dictionary<typeof source>

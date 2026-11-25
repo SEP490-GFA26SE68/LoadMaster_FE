@@ -34,4 +34,5 @@ export const pageHero = {
   /** `/ho-tro` khi nối backend: chưa có trao đổi và thông tin công ty. */
   supportStatusOnly: 'Yêu cầu hỗ trợ của mọi công ty: đọc nội dung và đổi trạng thái.',
   contacts: 'Yêu cầu khách gửi từ trang giới thiệu: nhận việc, đổi trạng thái và ghi chú nội bộ.',
+  assistantStats: 'Khách hỏi Lumo gì ở trang công khai, bao nhiêu câu trả lời ngay không cần mô hình, và chủ đề nào nên sửa câu soạn sẵn.',
 } as const

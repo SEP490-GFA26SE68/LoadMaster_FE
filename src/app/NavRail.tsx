@@ -59,6 +59,8 @@ export function NavRail() {
   // Mục và thứ tự theo vai trò (`NAV_ITEMS`), chỉ mục vai trò có quyền mở
   let items = user ? navItemsFor(user.role) : []
   if (!usesBackend('trips')) items = items.filter((item) => item.to !== '/phieu-xin-chuyen')
+  // Màn chỉ có khi nhóm của nó nối máy chủ (`NavScreen.backend`): kho mẫu không có mục đó
+  items = items.filter((item) => item.backend === undefined || usesBackend(item.backend))
 
   // Nếu Company Admin có gói cước hết hạn: Chỉ hiển thị duy nhất mục "Gói và Credit" (/goi-cuoc)
   if (user?.subscriptionExpired && user.role === 'companyAdmin') {

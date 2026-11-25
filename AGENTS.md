@@ -16,8 +16,8 @@ tảng, năm vai trò của công ty logistics (khách hàng của app); `ROLES`
 
 | Vai trò (mã FE · mã backend) | Thiết bị | Đặc điểm |
 |---|---|---|
-| Quản trị hệ thống (`systemAdmin` · `SYSTEM_ADMIN`) | Desktop | Nền tảng: công ty `/nen-tang/cong-ty` (FE-8-06), người dùng, nhật ký, ma trận quyền, liên hệ của khách `/lien-he-khach`; không có quyền vận hành |
-| Quản lý nền tảng (`systemManager` · `SYSTEM_MANAGER`) | Desktop | Nền tảng: danh mục gói cước `/nen-tang/goi` (FE-8-02), lịch sử gói `/nen-tang/lich-su-goi`, công ty, yêu cầu dùng thử |
+| Quản trị hệ thống (`systemAdmin` · `SYSTEM_ADMIN`) | Desktop | Nền tảng: công ty `/nen-tang/cong-ty` (FE-8-06), người dùng, nhật ký, ma trận quyền, liên hệ của khách `/lien-he-khach`, số đếm xu hướng của trợ lý Lumo `/nen-tang/tro-ly-lumo`; không có quyền vận hành |
+| Quản lý nền tảng (`systemManager` · `SYSTEM_MANAGER`) | Desktop | Nền tảng: danh mục gói cước `/nen-tang/goi` (FE-8-02), lịch sử gói `/nen-tang/lich-su-goi`, công ty, yêu cầu dùng thử, số đếm xu hướng của trợ lý Lumo `/nen-tang/tro-ly-lumo` |
 | Hỗ trợ khách hàng (`systemSupporter` · `SYSTEM_SUPPORTER`) | Desktop | Nền tảng: yêu cầu hỗ trợ của mọi công ty `/ho-tro` (FE-8-07), liên hệ của khách `/lien-he-khach` |
 | Quản trị công ty (`companyAdmin` · `COMPANY_ADMIN`) | Desktop | Người dùng, nhật ký, gói cước và credit `/goi-cuoc` (FE-8-03), thông tin công ty `/cong-ty` |
 | Quản lý công ty (`companyManager` · `MANAGER`) | Desktop / tablet | Dashboard `/tong-quan`, biểu đồ, xuất báo cáo; kho của công ty `/quan-ly-kho`; bảng lương tài xế, điều phối và kho `/bang-luong`; xem yêu cầu giao, chuyến và phương án chỉ đọc |
@@ -38,10 +38,10 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
 
 **Phân quyền**
 
-- Ma trận `features/auth/permissions.ts`: **một bảng** `ROLE_PERMISSIONS` theo PRD v2 mục 5.2 cộng `contacts.handle`, `companyProfile.manage`, `trialRequests.manage`, `companyWarehouses.manage`, `payroll.manage`, `payroll.viewOwn`, đúng 37 quyền; đọc quyền qua
+- Ma trận `features/auth/permissions.ts`: **một bảng** `ROLE_PERMISSIONS` theo PRD v2 mục 5.2 cộng `contacts.handle`, `companyProfile.manage`, `trialRequests.manage`, `companyWarehouses.manage`, `payroll.manage`, `payroll.viewOwn`, `assistantStats.view`, đúng 38 quyền; đọc quyền qua
   `can`/`permissionsOf`; thứ tự `PERMISSIONS` là thứ tự dòng của Ma trận quyền. Ba vai trò nền tảng **không có quyền vận hành**: quản trị hệ
-  thống có `companies.manage`, `users.manage`, `audit.view`, `contacts.handle`, `trialRequests.manage`; quản lý nền tảng `subscriptionPlans.manage`,
-  `companies.manage`, `trialRequests.manage`; hỗ trợ khách hàng `support.handle`, `contacts.handle`. Quản trị công ty có `companyProfile.manage`,
+  thống có `companies.manage`, `users.manage`, `audit.view`, `contacts.handle`, `trialRequests.manage`, `assistantStats.view`; quản lý nền tảng `subscriptionPlans.manage`,
+  `companies.manage`, `trialRequests.manage`, `assistantStats.view`; hỗ trợ khách hàng `support.handle`, `contacts.handle`. Quản trị công ty có `companyProfile.manage`,
   `users.manage`, `audit.view`, `billing.manage`, `support.create`. Quản lý công ty thêm `companyWarehouses.manage` (`/quan-ly-kho`) và `payroll.manage` (`/bang-luong`). Điều phối viên và nhân viên kho thêm `payroll.viewOwn` (`/phieu-luong`).
 - Mỗi nhóm route bọc `RequirePermission` trong `app/App.tsx`, thiếu quyền là màn 403 (`app/ForbiddenPage.tsx`) có nút về màn chính; thanh
   điều hướng chỉ hiện mục có quyền; nút ghi ẩn qua `useCan()`. Backend thật phải kiểm lại ở server. Màn mới thêm route vào đúng nhóm quyền.
@@ -54,7 +54,8 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   cho `WAREHOUSE_WORKER`; gỡ cờ kiện: chỉ điều phối viên (`trips.edit`, như máy chủ), "đã tìm thấy" kiện
   mang cờ "Không tìm thấy": chỉ nhân viên kho. Nhân viên kho còn có `/kho-khach-hang` (khách gửi hàng, `warehouse.operate`).
   `labels.print` mở In nhãn `/kien-hang/nhan`, `packages.lookup` mở Tra cứu kiện `/tra-cuu-kien` — điều phối viên và nhân viên kho.
-  `trialRequests.manage`: `/nen-tang/yeu-cau-dung-thu`; `subscriptionPlans.manage` còn mở `/nen-tang/lich-su-goi`.
+  `trialRequests.manage`: `/nen-tang/yeu-cau-dung-thu`; `subscriptionPlans.manage` còn mở `/nen-tang/lich-su-goi`. `assistantStats.view`:
+  `/nen-tang/tro-ly-lumo` (quản trị hệ thống, quản lý nền tảng; chỉ khi nhóm `assistant` nối máy chủ — mục 9 "Nối backend").
   `routes.optimize`: nút "Tối ưu tuyến" ở Chi tiết chuyến (điều phối viên, FE-4b-09). `manualConfirm.approve`: Duyệt / Từ chối ở thẻ "Xác nhận
   tay chờ duyệt" (điều phối viên, FE-6-04). `subscriptionPlans.manage`: `/nen-tang/goi`
   (FE-8-02). `payroll.manage`: `/bang-luong` (quản lý công ty: tab Tài xế, Điều phối và Kho). `payroll.viewOwn`: `/phieu-luong` (điều phối viên và nhân viên kho xem phiếu lương của mình — `PayslipPage` chọn phiếu theo `warehouse.operate`; nhân viên kho mở từ thanh điều hướng hoặc menu tài khoản 56 px của `/kho`, màn cảm ứng có nút "Về màn kho"). `billing.manage`: `/goi-cuoc`, `/thanh-toan/gia-lap` và `/thanh-toan/ket-qua` (FE-8-03, FE-8-04). `companies.manage`: `/nen-tang/cong-ty`
@@ -291,7 +292,8 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   nút gợi ý; cạnh nó lối sang form liên hệ đổi chữ thành "Gửi câu hỏi cho đội LoadMaster". Từ lúc có hội thoại với mô hình, câu sau (trừ xã
   giao) nói tiếp với mô hình. Mỗi lượt trang công khai không gọi mô hình (`SMALL_TALK`, `PREPARED`) và mỗi lần bấm "Hỏi Lumo chi tiết"
   (`ESCALATED`) gửi một lượt đếm `POST /api/assistant/public/route-events` `{ route, topicId, locale }` (`recordRoute`): client không
-  token, gửi rồi quên, lỗi bỏ qua, không bao giờ có chữ khách gõ hay mã khách; kho mẫu không gửi. Trong ứng dụng chỉ câu xã giao không gọi
+  token, gửi rồi quên, lỗi bỏ qua, không bao giờ có chữ khách gõ hay mã khách; kho mẫu không gửi. Số đếm đó đọc ở màn
+  `/nen-tang/tro-ly-lumo` (mục 9 "Nối backend", ý "Số đếm xu hướng của trợ lý Lumo"). Trong ứng dụng chỉ câu xã giao không gọi
   mô hình. Trang Chính sách bảo mật nói đúng điều này. Máy chủ bận, hết
   ngân sách (`ASSISTANT_*`) hay không tới được thì trả câu soạn sẵn kèm một dòng "Trợ lý AI đang bận…" (`degraded`), không hiện thông điệp thô.
   Câu trả lời của mô hình vẽ bằng phần tử thường (`assistant-text.ts`: đoạn, gạch đầu dòng, bước — bỏ dấu Markdown, không bao giờ đưa HTML vào
@@ -395,12 +397,14 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
 
 - Mục điều hướng khai **theo vai trò** ở `app/nav-items.ts` (FE-0-04): `NAV_SCREENS` là các màn có mục — chỉ màn đang có route (D-20) — và
   `NAV_ITEMS` là danh sách của từng vai trò theo thứ tự của vai trò đó, màn chính đứng đầu; quyền vẫn là cổng (`navItemsFor` bỏ mục thiếu quyền).
-  Quản trị hệ thống: Công ty · Người dùng · Nhật ký · Liên hệ của khách · Đơn dùng thử. Quản trị công ty: Người dùng · Nhật ký · Gói và credit ·
+  Quản trị hệ thống: Công ty · Người dùng · Nhật ký · Liên hệ của khách · Đơn dùng thử · Trợ lý Lumo. Quản trị công ty: Người dùng · Nhật ký · Gói và credit ·
   Thông tin công ty. Quản lý công ty: Bảng điều khiển · Yêu cầu giao · Kho kiện (chỉ đọc) · Chuyến hàng · Giám sát · Đội xe · Kho bãi (`/quan-ly-kho`; nhãn ngắn `nav.companyWarehouses` để thanh vừa 1.366 px ở cả hai ngôn ngữ) · Bảng lương (`/bang-luong`). Tám mục chỉ vừa 1.366 px khi lề mục là 8 px tới dưới 1.536 px (`2xl:px-3.5` từ 1.536 px). Điều phối
   viên: Chuyến hàng · Giám sát · Kho kiện (chỉ đọc) · Yêu cầu giao · Đội xe · Bảng điều khiển · Phiếu lương (`/phieu-luong`). Nhân viên kho: Kho · Xe trong kho · Kho kiện · Khách hàng · Phiếu lương (`/phieu-luong`). Tài xế: một
-  mục về màn của mình (thanh chỉ hiện ở màn hồ sơ). Quản lý nền tảng: Gói cước · Lịch sử gói cước · Công ty (chỉ xem danh sách; tạo, sửa công ty là của quản trị hệ thống) · Đơn dùng thử. Hỗ trợ khách hàng: Hỗ trợ ·
+  mục về màn của mình (thanh chỉ hiện ở màn hồ sơ). Quản lý nền tảng: Gói cước · Lịch sử gói cước · Công ty (chỉ xem danh sách; tạo, sửa công ty là của quản trị hệ thống) · Đơn dùng thử · Trợ lý Lumo. Hỗ trợ khách hàng: Hỗ trợ ·
   Liên hệ của khách (không có nút đổi gói của khách trên thanh). Màn chính của ba vai trò nền tảng vẫn là màn riêng của từng vai trò. Màn mới
-  thêm một dòng vào `NAV_SCREENS` và mã của nó vào `NAV_ITEMS`, trong issue của màn đó.
+  thêm một dòng vào `NAV_SCREENS` và mã của nó vào `NAV_ITEMS`, trong issue của màn đó. Màn chỉ có khi một nhóm nối máy chủ khai `backend`
+  ở dòng `NAV_SCREENS` ("Trợ lý Lumo": `assistant`): `NavRail` bỏ mục khi nhóm đó còn là kho mẫu, và mở thẳng đường dẫn thì màn chuyển về
+  màn chính của vai trò.
 - Loại kiện và In nhãn không có mục riêng, mở từ màn Kho kiện (nút "Loại kiện" trên dải tiêu đề, nút quay lại ở hai màn kia); Loại xe mở từ màn
   Đội xe; Tra cứu kiện: điều phối viên mở bằng nút "Tra cứu kiện" trên dải tiêu đề của Kho kiện, nhân viên kho bằng nút 56 px ở thanh màn chính `/kho`.
 - `app/role-routes.dom.test.tsx` kiểm bằng **bảng route thật** và ma trận quyền: màn chính, đích của logo, mọi mục điều hướng và mọi nhóm tìm
@@ -592,7 +596,8 @@ src/
     requirements/       yêu cầu giao `/yeu-cau-giao`: danh sách, form tạo / sửa, chi tiết, đưa vào chuyến
     vehicle-types/      danh mục loại xe
     billing/            gói cước và credit của công ty `/goi-cuoc`, trang thanh toán giả lập `/thanh-toan/gia-lap`
-    platform/           màn của nền tảng: danh mục gói cước `/nen-tang/goi`, Công ty `/nen-tang/cong-ty`
+    platform/           màn của nền tảng: danh mục gói cước `/nen-tang/goi`, Công ty `/nen-tang/cong-ty`, số đếm xu hướng của trợ lý
+                        Lumo `assistant-stats/` (`/nen-tang/tro-ly-lumo`, luật thuần `assistant-stats.ts`)
     support/            yêu cầu hỗ trợ: màn `/ho-tro`, hộp thoại `SupportTicketDialog` của người dùng công ty, cuộc trao đổi dùng chung `TicketThread`
     marketing/          bốn trang công khai ngoài `RequireAuth`: giới thiệu `/gioi-thieu` (kèm form liên hệ của khách `ContactForm`), bảng giá
                         `/bang-gia`, chính sách bảo mật `privacy/` (`PrivacyPage`, `/chinh-sach-bao-mat`) và điều khoản sử dụng `terms/`
@@ -1754,6 +1759,16 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   phía có nhãn.
 - **Bảng điều khiển** (theo nhóm `monitoring`; `dashboard-backend-api.ts`, DTO ở `dashboard-dto.ts`): đọc `GET /api/manager/dashboard?from&to` theo
   kỳ; số `null` là "—" kèm lý do, không MOCK RESULT; bảng và sheet chỉ có chuyến gần đây; `DASHBOARD_CAPABILITIES` bỏ cột máy chủ không trả.
+- **Số đếm xu hướng của trợ lý Lumo** (`/nen-tang/tro-ly-lumo`, `assistantStats.view`; chỉ khi nhóm `assistant` nối máy chủ — kho mẫu không đếm
+  gì nên không có mục điều hướng, mở thẳng đường dẫn là về màn chính; `platform/assistant-stats/`, DTO ở `assistant-stats-dto.ts`): đọc
+  `GET /api/assistant/route-stats?from&to` (ngày `YYYY-MM-DD` giờ Việt Nam, tính cả hai đầu, tối đa 90 ngày — dài hơn là 400 `INVALID_INPUT`).
+  Khoảng ngày trên URL (`tu`, `den`; mặc định 30 ngày tới hôm nay), ba nút chọn nhanh 7 · 30 · 90 ngày; form không gửi khoảng sai thứ tự,
+  thiếu ngày hay quá 90 ngày và nói lý do dưới ô. Bốn ô số: tổng lượt, tỉ lệ trả ngay không gọi mô hình (`SMALL_TALK` + `PREPARED` +
+  `CACHED` trên tổng), lượt gọi mô hình, tỉ lệ hỏi chi tiết (`ESCALATED` / `PREPARED`) — mẫu số 0 là "—" kèm lý do; bảng năm đường trả lời
+  (số + phần của tổng), tỉ lệ ngôn ngữ, bảng chủ đề sắp xếp được (tên là câu hỏi trên nút gợi ý `assistant.topics.<id>.chip`, không rõ chủ đề
+  là một dòng). Chủ đề từ 30 % hỏi chi tiết với ít nhất 5 lượt soạn sẵn mang nhãn "Nên xem lại câu soạn sẵn" (`needsReview`, luật thuần
+  `assistant-stats.ts`). `partial` (máy chủ không đọc được nơi lưu bền) là banner cảnh báo; tổng 0 là trạng thái rỗng. Không chuỗi theo
+  ngày nên không biểu đồ; số không chứa chữ khách gõ hay mã khách, màn nói điều đó.
 - **Đội xe, loại xe** (`fleet`; DTO ở `fleet-dto.ts`): đọc `/api/vehicles`, `/api/vehicle-types` (đủ mọi trang), cấu hình một xe
   `/api/vehicles/{id}/config`; xe ghép kích thước, cửa, vật cản, giới hạn của loại đang gắn; `RETIRED` là "Ngừng sử dụng". Điều phối viên và
   quản lý công ty đọc được (`fleet.view`, như `VEHICLES_READ` của backend). Ghi theo `fleet.edit` qua `fleet/backend/`, `vehicle-types/backend/`:

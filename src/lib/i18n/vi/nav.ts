@@ -21,6 +21,8 @@ export const nav = {
   plans: 'Gói cước',
   subscriptionHistory: 'Lịch sử gói cước',
   trialRequests: 'Đơn dùng thử',
+  /** Số đếm xu hướng của trợ lý Lumo ở trang công khai: hai vai trò nền tảng, chỉ khi nhóm `assistant` nối máy chủ. */
+  assistantStats: 'Trợ lý Lumo',
   billing: 'Gói và credit',
   payroll: 'Bảng lương',
   payrollOwn: 'Phiếu lương',

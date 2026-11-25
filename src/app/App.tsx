@@ -58,6 +58,7 @@ const SupportPage = lazy(() => import('@/features/support/SupportPage').then((m)
 const PlansPage = lazy(() => import('@/features/platform/PlansPage').then((m) => ({ default: m.PlansPage })))
 const SubscriptionHistoryPage = lazy(() => import('@/features/platform/SubscriptionHistoryPage').then((m) => ({ default: m.SubscriptionHistoryPage })))
 const TrialRequestsPage = lazy(() => import('@/features/platform/TrialRequestsPage').then((m) => ({ default: m.TrialRequestsPage })))
+const AssistantStatsPage = lazy(() => import('@/features/platform/assistant-stats/AssistantStatsPage').then((m) => ({ default: m.AssistantStatsPage })))
 const BillingPage = lazy(() => import('@/features/billing/BillingPage').then((m) => ({ default: m.BillingPage })))
 const PayrollPage = lazy(() => import('@/features/payroll/PayrollPage').then((m) => ({ default: m.PayrollPage })))
 const PayslipPage = lazy(() => import('@/features/payroll/PayslipPage').then((m) => ({ default: m.PayslipPage })))
@@ -240,6 +241,8 @@ export const routes: RouteObject[] = [
                   ]),
                   // Đơn yêu cầu tạo tài khoản dùng thử
                   guarded('trialRequests.manage', [{ path: '/nen-tang/yeu-cau-dung-thu', element: <TrialRequestsPage />, handle: titled((t) => t('titles.trialRequests')) }]),
+                  // Số đếm xu hướng của trợ lý Lumo ở trang công khai: hai vai trò nền tảng, chỉ khi nhóm `assistant` nối máy chủ (kho mẫu về màn chính)
+                  guarded('assistantStats.view', [{ path: '/nen-tang/tro-ly-lumo', element: <AssistantStatsPage />, handle: titled((t) => t('titles.assistantStats')) }]),
                   // Gói cước và credit của công ty, thanh toán giả lập (FE-8-03, FE-8-04): quản trị công ty
                   guarded('billing.manage', [
                     { path: '/goi-cuoc', element: <BillingPage />, handle: titled((t) => t('titles.billing')) },
