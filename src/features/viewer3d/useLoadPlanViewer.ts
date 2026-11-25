@@ -25,7 +25,11 @@ export function useLoadPlanViewer(
 
   const [cameraPreset, setCameraPreset] = useState<CameraPreset>('goc-cheo')
   const [colorMode, setColorMode] = useState<ColorMode>('diem-giao')
-  const [sliceCm, setSliceCm] = useState(sceneModel.vehicle.innerLengthCm)
+  // Lát cắt nhớ kèm chiều dài lòng thùng lúc đặt: đổi xe (cùng phương án, phiên không dựng lại) thì về trọn thùng mới — suy lúc vẽ, không effect
+  const innerLengthCm = sceneModel.vehicle.innerLengthCm
+  const [slice, setSlice] = useState({ lengthCm: innerLengthCm, cm: innerLengthCm })
+  const sliceCm = slice.lengthCm === innerLengthCm ? slice.cm : innerLengthCm
+  const setSliceCm = useCallback((cm: number) => setSlice({ lengthCm: innerLengthCm, cm }), [innerLengthCm])
   // Mở màn là thấy trọn phương án; timeline chỉ tua khi người dùng chủ động.
   const [step, setStepState] = useState(totalSteps)
   const [playing, setPlaying] = useState(false)
