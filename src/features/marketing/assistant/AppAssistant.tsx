@@ -23,8 +23,8 @@ export function appAssistantShown(user: User | null | undefined): boolean {
  * Nút "Trợ lý AI" trên thanh điều hướng của khung ứng dụng (`NavRail`), cạnh tìm nhanh — như trợ lý AI của các ứng dụng nhiều dữ liệu, không
  * nổi đè lên bảng: nút nổi góc dưới phải che nút phân trang, nút thao tác của dòng và khung xử lý bên phải. Màn toàn màn hình kho,
  * tài xế không có thanh điều hướng: nút 56 px nằm trên thanh dải trời của chúng (`TouchAssistant`); Planner bản máy chủ có nút riêng ở góc
- * khung 3D (`PlannerAssistant`). Câu hỏi đi tới `POST /api/assistant/messages` kèm màn đang mở; khung chat neo góc trên phải, ngay dưới
- * thanh (`assistant.css`).
+ * khung 3D (`PlannerAssistant`). Câu hỏi đi tới `POST /api/assistant/messages` kèm màn đang mở; khung chat neo góc dưới phải khung nhìn, không theo
+ * chỗ nút (`assistant.css`), và kéo đi được.
  */
 export function AppAssistant() {
   const user = useAuthSafe()?.user

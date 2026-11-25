@@ -1,19 +1,17 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog'
-import { Maximize2, Minimize2, RotateCcw, X } from 'lucide-react'
 import { useRef, useSyncExternalStore, type RefObject } from 'react'
 import { LUMO_NAME } from '@/components/brand/Lumo'
-import { SKY_FOCUS } from '@/components/sky-focus'
-import { Button } from '@/components/ui/Button'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { ASSISTANT_USES_AI } from './assistant-api'
 import { ASSISTANT_PANEL_ID, assistantSession, useAssistantSession } from './assistant-session'
 import { useAssistantSurface } from './assistant-surface'
-import { AssistantAvatar } from './AssistantAvatar'
 import { AssistantComposer, focusAssistantInput } from './AssistantComposer'
 import { AssistantLog } from './AssistantLog'
+import { AssistantPanelHeader } from './AssistantPanelHeader'
 import { useAssistantChat, useAssistantContext } from './useAssistantChat'
 import type { AssistantDock } from './useAssistantLauncher'
+import { usePanelPlacement } from './usePanelPlacement'
 
 const PHONE_QUERY = '(max-width: 767.98px)'
 const hasMatchMedia = () => typeof window !== 'undefined' && typeof window.matchMedia === 'function'
@@ -32,7 +30,8 @@ const isPhone = () => hasMatchMedia() && window.matchMedia(PHONE_QUERY).matches
  * điều hướng (liên kết của câu trả lời, chuyển sang form liên hệ): trang đích tự đặt focus. `skipInitialFocus`: khung dựng lại khi đã mở
  * sẵn (chuyển giữa hai trang công khai) thì không giành focus của trang. Mô tả của hộp thoại là dòng nhỏ dưới ô gõ: Lumo trả lời từ tài
  * liệu, không phải nhân viên tư vấn (nối máy chủ: Lumo là trợ lý AI và có thể nhầm). Từ 768 px nút phóng to ở đầu khung mở khung rộng 720 px, cao gần hết màn để đọc câu trả lời dài; nhãn
- * của nút đổi theo trạng thái ("Phóng to" / "Thu nhỏ").
+ * của nút đổi theo trạng thái ("Phóng to" / "Thu nhỏ"). Từ 768 px khung kéo đi được bằng đầu khung, hay dời bằng phím ở tay nắm
+ * (`usePanelPlacement`); chỗ đã chọn nằm trong phiên trò chuyện.
  */
 export default function AssistantPanel({ launcherRef, skipInitialFocus = false, dock }: {
   launcherRef: RefObject<HTMLButtonElement | null>
@@ -44,7 +43,7 @@ export default function AssistantPanel({ launcherRef, skipInitialFocus = false, 
   dock?: AssistantDock
 }) {
   const t = useT()
-  const { open, entries, pending, expanded } = useAssistantSession()
+  const { open, entries, pending, expanded, placement } = useAssistantSession()
   const phone = useSyncExternalStore(subscribePhone, isPhone, () => false)
   const context = useAssistantContext()
   const surface = useAssistantSurface()
@@ -58,6 +57,7 @@ export default function AssistantPanel({ launcherRef, skipInitialFocus = false, 
     assistantSession.setOpen(false)
   }
   const chat = useAssistantChat(leave)
+  const { panelRef, gripRef, announcement, resetPlacement, headerHandlers, handleGripKeyDown } = usePanelPlacement({ contentRef, phone, placement, expanded, surface, dock })
 
   function handleRestart() {
     assistantSession.restart()
@@ -69,10 +69,10 @@ export default function AssistantPanel({ launcherRef, skipInitialFocus = false, 
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="fixed inset-0 z-200 bg-scrim" />
         <DialogPrimitive.Content
-          ref={contentRef}
+          ref={panelRef}
           id={ASSISTANT_PANEL_ID}
           data-expanded={expanded || undefined}
-          // Trong ứng dụng khung neo góc trên phải, dưới nút "Trợ lý AI" của thanh điều hướng (assistant.css)
+          // Chỗ mặc định theo bề mặt và nơi neo (assistant.css); người dùng dời khung thì vị trí nằm ở style (usePanelPlacement)
           data-surface={surface}
           data-dock={dock}
           aria-modal={phone ? true : undefined}
@@ -100,46 +100,21 @@ export default function AssistantPanel({ launcherRef, skipInitialFocus = false, 
             'md:rounded-xl md:border md:border-border md:shadow-e2 md:data-[state=open]:animate-[lm-dialog-in_220ms_var(--ease-standard)]',
           )}
         >
-          <div className="flex flex-none items-center gap-3 bg-sky-end bg-(image:--sky) px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 text-sky-text md:pt-3">
-            {/* Vòng gradient trợ lý quanh ảnh (assistant.css): đứng yên lúc nghỉ, quay khi Lumo đang trả lời — chỉ là hình */}
-            <span className="assistant-avatar-ring" data-thinking={pending || undefined}>
-              <AssistantAvatar pose="explain" size="md" />
-            </span>
-            <div className="flex min-w-0 flex-1 flex-col">
-              <DialogPrimitive.Title className="m-0 font-display text-h3 font-[650] font-stretch-108% text-sky-text">{LUMO_NAME}</DialogPrimitive.Title>
-              <p className="m-0 text-small text-sky-text-2 pointer-coarse:text-body-lg in-[.assistant-touch]:text-body-lg">{t('assistant.panel.subtitle')}</p>
-            </div>
-            {entries.length > 0 ? (
-              <Button
-                type="button"
-                variant="skyGhost"
-                size="icon"
-                onClick={handleRestart}
-                aria-label={t('assistant.panel.restart')}
-                title={t('assistant.panel.restart')}
-                className={cn(SKY_FOCUS, 'pointer-coarse:size-12 in-[.assistant-touch]:size-14')}
-              >
-                <RotateCcw aria-hidden />
-              </Button>
-            ) : null}
-            {/* Phóng to chỉ từ 768 px: dưới đó khung đã phủ cả màn */}
-            <Button
-              type="button"
-              variant="skyGhost"
-              size="icon"
-              onClick={() => assistantSession.setExpanded(!expanded)}
-              aria-label={t(expanded ? 'assistant.panel.shrink' : 'assistant.panel.expand')}
-              title={t(expanded ? 'assistant.panel.shrink' : 'assistant.panel.expand')}
-              className={cn(SKY_FOCUS, 'hidden md:inline-flex in-[.assistant-touch]:size-14')}
-            >
-              {expanded ? <Minimize2 aria-hidden /> : <Maximize2 aria-hidden />}
-            </Button>
-            <DialogPrimitive.Close asChild>
-              <Button type="button" variant="skyGhost" size="icon" aria-label={t('assistant.panel.close')} className={cn(SKY_FOCUS, 'pointer-coarse:size-12 in-[.assistant-touch]:size-14')}>
-                <X aria-hidden />
-              </Button>
-            </DialogPrimitive.Close>
-          </div>
+          <AssistantPanelHeader
+            phone={phone}
+            pending={pending}
+            hasEntries={entries.length > 0}
+            expanded={expanded}
+            moved={placement !== null}
+            gripRef={gripRef}
+            headerHandlers={headerHandlers}
+            onGripKeyDown={handleGripKeyDown}
+            onRestart={handleRestart}
+            onToggleExpanded={() => assistantSession.setExpanded(!expanded)}
+            onResetPlacement={resetPlacement}
+          />
+          {/* Vị trí sau khi dời bằng phím — ngắn, chỉ cho trình đọc màn hình */}
+          <p className="sr-only" aria-live="polite">{announcement}</p>
           {/* Vạch gradient chạy ngang khi Lumo đang trả lời (assistant.css) — chỉ là hình, vùng log đã có dấu "đang gõ" */}
           <div aria-hidden className="assistant-thinking-bar flex-none" data-on={pending || undefined} />
           <AssistantLog

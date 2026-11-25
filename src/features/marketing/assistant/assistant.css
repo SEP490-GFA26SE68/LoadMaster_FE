@@ -3,7 +3,7 @@
  * home). `--assistant-lift` do `useLauncherLift` ghi lên <html>: nút nâng lên khi nút chính của phần mở đầu hay nút "Lên đầu trang" chạm
  * vào chỗ của nó; khung chat (từ 768 px) đứng ngay trên nút. Dưới 768 px khung chat là tờ phủ cả màn (`100dvh`: bàn phím ảo không che ô
  * nhập). Lớp z 200: trên đầu trang dính (z 20), dưới hộp thoại (z 300) và toast. Trong ứng dụng nút mở nằm trên thanh điều hướng
- * (`AppAssistant`, `.assistant-rail`) và khung chat neo góc trên phải (`data-surface='app'`).
+ * (`AppAssistant`, `.assistant-rail`) và khung chat neo góc dưới phải khung nhìn (`data-surface='app'`); từ 768 px người dùng kéo khung đi được.
  */
 :root {
   /* Thứ tự màu của gradient AI AWS (`--genai-*` ở index.css), dùng cho viền nút và vạch "đang trả lời" */
@@ -247,23 +247,18 @@
     height: min(880px, calc(100dvh - var(--assistant-base) - var(--assistant-launcher-h) - 5.75rem - var(--assistant-lift, 0px)));
   }
 
-  /* Trong ứng dụng: nút mở nằm trên thanh điều hướng 60 px nên khung neo góc trên phải, ngay dưới thanh, mép phải thẳng mép nội dung của
-     thanh (16 px; từ 1.280 px là lề `px-shell`) */
+  /* Trong ứng dụng: khung neo góc dưới phải của khung nhìn, cách mép 24 px — không theo chỗ nút "Trợ lý AI" trên thanh điều hướng, cũng
+     không theo cột nội dung `--shell-max` (màn 2K trở lên từng đẩy khung vào giữa trang). Cao 560 px: ở 1.366 × 768 đỉnh khung nằm dưới
+     nút hành động của dải tiêu đề; màn thấp hơn thì cao tới dưới thanh 60 px cộng khe 8 px. */
   .assistant-panel[data-surface='app'] {
-    top: calc(3.75rem + 0.5rem);
-    right: max(1rem, env(safe-area-inset-right));
-    bottom: auto;
-    height: min(640px, calc(100dvh - 3.75rem - 0.5rem - var(--assistant-base)));
+    top: auto;
+    right: var(--assistant-edge);
+    bottom: var(--assistant-base);
+    height: min(560px, calc(100dvh - 3.75rem - 0.5rem - var(--assistant-base)));
   }
 
   .assistant-panel[data-surface='app'][data-expanded] {
     height: calc(100dvh - 3.75rem - 0.5rem - var(--assistant-base));
-  }
-}
-
-@media (min-width: 1280px) {
-  .assistant-panel[data-surface='app'] {
-    right: max(1.5rem, calc((100vw - var(--shell-max)) / 2 + 1.5rem));
   }
 }
 
@@ -294,7 +289,7 @@
 
 /* Màn cảm ứng kho, tài xế (`TouchAssistant`, nút 56 px trên thanh dải trời `TouchTopBar`): từ 768 px (máy tính bảng ở kho) khung neo góc
    phải ngay dưới thanh — `--assistant-touch-top` là đáy thanh do nút đo, vì thanh của màn tài xế cao theo nội dung — rộng hơn khung của
-   khung ứng dụng một chút cho chữ 16 px. Dưới 768 px vẫn là tờ phủ cả màn như mọi khung chat (`100dvh`). Đứng sau luật 1.280 px của khung
+   khung ứng dụng một chút cho chữ 16 px. Dưới 768 px vẫn là tờ phủ cả màn như mọi khung chat (`100dvh`). Đứng sau luật của khung
    ứng dụng ở trên để thắng nó. */
 @media (min-width: 768px) {
   .assistant-panel[data-surface='app'][data-dock='touch'] {
@@ -314,6 +309,30 @@
 /* Nút "Trợ lý AI" của thanh điều hướng và của Planner: vòng gradient quay khi rê chuột / focus, như nút nổi của trang công khai */
 .assistant-rail:is(:hover, :focus-visible) .assistant-avatar-ring {
   animation-play-state: running;
+}
+
+/* Kéo khung chat (từ 768 px, `usePanelPlacement`): đầu khung là chỗ nắm — con trỏ `grab`, ngón tay kéo khung chứ không cuộn trang. Lúc đang
+   kéo khung là lớp đang nhấc lên: bóng `--e3` thay `--e2`, không chọn chữ. Hút mép và về chỗ mặc định không có chuyển động (vị trí không
+   nằm trong `transition`). */
+@media (min-width: 768px) {
+  .assistant-panel-head {
+    cursor: grab;
+    touch-action: none;
+  }
+
+  .assistant-panel-head button:not(.assistant-grip) {
+    cursor: pointer;
+  }
+
+  .assistant-panel[data-dragging] {
+    box-shadow: var(--e3);
+    user-select: none;
+  }
+
+  .assistant-panel[data-dragging] .assistant-panel-head,
+  .assistant-panel[data-dragging] .assistant-grip {
+    cursor: grabbing;
+  }
 }
 
 @media (min-width: 768px) and (prefers-reduced-motion: reduce) {

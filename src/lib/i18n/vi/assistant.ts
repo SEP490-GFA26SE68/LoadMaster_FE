@@ -17,6 +17,14 @@ export const assistant = {
     restart: 'Bắt đầu lại',
     expand: 'Phóng to khung chat',
     shrink: 'Thu nhỏ khung chat',
+    /** Tay nắm ở đầu khung chat (từ 768 px): kéo, hay mũi tên / Shift + mũi tên / Home. */
+    move: 'Di chuyển khung chat',
+    moveHint: 'Kéo để di chuyển, hoặc dùng phím mũi tên; Home về chỗ mặc định',
+    resetPosition: 'Về chỗ mặc định',
+    /** Câu cho trình đọc màn hình sau khi dời khung bằng phím. */
+    moved: 'Khung chat cách mép {x} {dx} px, mép {y} {dy} px.',
+    positionReset: 'Khung chat đã về chỗ mặc định.',
+    edges: { left: 'trái', right: 'phải', top: 'trên', bottom: 'dưới' },
     log: 'Cuộc trò chuyện với {name}',
     /** Dòng nhỏ dưới ô gõ, cũng là mô tả của khung chat cho trình đọc màn hình. */
     disclaimer: '{name} trả lời từ tài liệu của LoadMaster — không phải nhân viên tư vấn.',
