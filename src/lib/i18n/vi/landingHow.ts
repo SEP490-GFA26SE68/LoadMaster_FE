@@ -1,11 +1,9 @@
 /**
- * "Tính thế nào?" trên các con số của trang công khai (`features/marketing/HowComputed`): khung 3D mở đầu, "Thử với hàng của bạn" (thẻ
+ * "Tính thế nào?" trên các con số của trang công khai (nút `components/HowComputed`, chữ của nút ở `common.howComputed`): khung 3D mở đầu, "Thử với hàng của bạn" (thẻ
  * phương án, tab Tải trục) và trang `/phuong-an-mau`. Mỗi câu nói công thức bằng lời thường, tham số là số đã tính của chính lần chạy.
  * Không tên thuật toán; trang công khai gọi là "bộ tối ưu mô phỏng".
  */
 export const landingHow = {
-  toggle: 'Tính thế nào?',
-  toggleFor: 'Tính thế nào? — {subject}',
   source: 'Mọi số do bộ tối ưu mô phỏng của LoadMaster tính trên trình duyệt của bạn, từ đúng lần chạy này.',
   placed: {
     label: 'Xếp được',

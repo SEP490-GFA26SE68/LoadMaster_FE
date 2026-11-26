@@ -23,8 +23,9 @@ const TONES = {
 } as const
 
 /**
- * "Tính thế nào?" cạnh một nhóm số của trang công khai: nút chữ nhỏ mở (`aria-expanded`) phần giải thích ngay bên dưới — mỗi số một
- * dòng: nhãn rồi công thức bằng lời thường, tham số là số đã tính của chính lần chạy (nơi gọi dựng `entries`, `how-entries.ts`). Một nút
+ * "Tính thế nào?" cạnh một nhóm số — số của trang công khai, điểm J của màn So sánh theo lần chạy: nút chữ nhỏ mở (`aria-expanded`) phần
+ * giải thích ngay bên dưới — mỗi số một dòng: nhãn rồi công thức bằng lời thường, tham số là số đã tính của chính lần chạy (nơi gọi dựng
+ * `entries`: `marketing/how/how-entries.ts`, `trips/plan-score-entries.ts`). Một nút
  * cho cả nhóm số chứ không mỗi số một nút: vùng chạm 44 px (56 px trên máy cảm ứng) cạnh từng số sẽ dài hơn chính các số. `subject` nói
  * nhóm số nào để nhiều nút trên một trang khác tên truy cập. Phần giải thích chỉ dựng khi mở. Trên nền tối dùng `tone="dark"`.
  */
@@ -47,7 +48,7 @@ export function HowComputed({ entries, subject, tone = 'light', note, className 
         type="button"
         aria-expanded={open}
         aria-controls={panelId}
-        aria-label={subject ? t('landingHow.toggleFor', { subject }) : undefined}
+        aria-label={subject ? t('common.howComputed.toggleFor', { subject }) : undefined}
         onClick={() => setOpen((value) => !value)}
         className={cn(
           '-mx-2 inline-flex min-h-11 items-center gap-1.5 rounded-md px-2 text-small font-medium transition-colors duration-(--dur-fast) ease-standard',
@@ -55,7 +56,7 @@ export function HowComputed({ entries, subject, tone = 'light', note, className 
           look.button,
         )}
       >
-        {t('landingHow.toggle')}
+        {t('common.howComputed.toggle')}
         <ChevronDown aria-hidden strokeWidth={1.5} className={cn('size-4 flex-none transition-transform duration-(--dur-fast) ease-standard', open && 'rotate-180')} />
       </button>
       <div id={panelId} hidden={!open} className="w-full">

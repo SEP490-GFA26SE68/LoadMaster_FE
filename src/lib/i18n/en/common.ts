@@ -52,6 +52,10 @@ export const common = {
     to: 'To date',
     clear: 'Clear filters',
   },
+  howComputed: {
+    toggle: 'How is this worked out?',
+    toggleFor: 'How is this worked out? — {subject}',
+  },
   phoneInput: {
     countryCode: 'Country code',
     countryList: 'Select a country code',

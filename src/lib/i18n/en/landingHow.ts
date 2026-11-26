@@ -2,13 +2,11 @@ import type { Dictionary } from '../types'
 import type { landingHow as source } from '../vi/landingHow'
 
 /**
- * "How is this worked out?" on the figures of the public pages (`features/marketing/HowComputed`): the opening 3D stage, "Try it with your
+ * "How is this worked out?" on the figures of the public pages (button `components/HowComputed`, its label in `common.howComputed`): the opening 3D stage, "Try it with your
  * cargo" (plan cards, the Axle load tab) and the `/phuong-an-mau` page. Each sentence states the formula in plain words; the parameters
  * are the figures of the run itself. No algorithm names; public pages say "simulated optimizer".
  */
 export const landingHow = {
-  toggle: 'How is this worked out?',
-  toggleFor: 'How is this worked out? — {subject}',
   source: 'Every figure is worked out by LoadMaster’s simulated optimizer in your browser, from this very run.',
   placed: {
     label: 'Loaded',

@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import type { OptimizationRequest, OptimizationResult } from '@/domain/models'
 import { useFormat, useT } from '@/lib/i18n'
 import { howEntries, planFacts, type HowMetric } from './how-entries'
-import { HowComputed } from './HowComputed'
+import { HowComputed } from '@/components/HowComputed'
 
 /**
  * "Tính thế nào?" cho các số của một phương án: dựng từng dòng công thức từ `result.metrics` và xe của chính `request` đã chạy
