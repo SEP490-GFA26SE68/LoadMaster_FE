@@ -53,6 +53,7 @@ export type CompanySubscription = {
   /** Hết kỳ hiện tại: tới đây mà chưa trả gia hạn (hoặc đã huỷ) thì gói hết hạn. */
   expiresAt: string
   autoRenew: boolean
+  isTrial?: boolean
   /** Lúc huỷ gói (còn hiệu lực tới `expiresAt`). */
   cancelledAt?: string
 }

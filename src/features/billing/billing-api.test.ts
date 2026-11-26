@@ -86,7 +86,7 @@ test('gia hạn: đọc gói vừa dùng, có gia hạn được không và than
   ]
   expect(await getRenewal()).toStrictEqual({
     planName: 'Pro', planOnSale: false, expiresAt: '2026-10-10T01:00:00.000Z', amountVnd: 1490000, renewable: true, block: null, windowDays: 3,
-    pending: { reference: 'MOCK_42', renewal: true, amountVnd: 1490000 },
+    pending: { reference: 'MOCK_42', renewal: true, amountVnd: 1490000, paymentUrl: '/api/payment/mock-checkout?txnRef=MOCK_42' },
   })
   expect(backend.calls.map((call) => `${call.method} ${call.url}`)).toStrictEqual(['GET http://be.test/api/subscription/renewal'])
   backend.replies = [

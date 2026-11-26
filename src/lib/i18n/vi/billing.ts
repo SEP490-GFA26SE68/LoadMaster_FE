@@ -29,7 +29,7 @@ export const billing = {
   },
   plan: {
     title: 'Gói hiện tại',
-    status: { ACTIVE: 'Đang hoạt động', CANCELLED: 'Đã huỷ — còn hiệu lực', EXPIRED: 'Đã hết hạn' },
+    status: { ACTIVE: 'Đang hoạt động', CANCELLED: 'Đã huỷ — còn hiệu lực', EXPIRED: 'Đã hết hạn', TRIAL: 'Dùng thử' },
     started: 'Bắt đầu',
     expires: 'Hết hạn',
     autoRenew: 'Tự gia hạn',
@@ -39,10 +39,12 @@ export const billing = {
     yearlyPrice: 'Giá gia hạn năm',
     credits: 'Credit mỗi tháng',
     cancel: 'Huỷ gói',
+    upgradeTrial: 'Nâng cấp tài khoản chính thức',
     /** Chỉ khi nối backend: tự gia hạn đúng gói đang dùng. */
     renew: 'Gia hạn thêm một kỳ',
     renewYear: 'Gia hạn theo năm',
     expiredNote: 'Gói đã hết hạn nên chưa chạy tối ưu được. Số dư credit được giữ lại, chọn gói mới để dùng tiếp.',
+    trialNote: 'Gói dùng thử có hiệu lực đến hết ngày {date}.',
     cancelledNote: 'Gói đã huỷ, dùng được tới hết {date} rồi hết hạn, không tự gia hạn.',
   },
   noPlan: {
@@ -54,6 +56,8 @@ export const billing = {
   },
   choose: {
     title: 'Chọn gói',
+    trialHighlightTitle: 'Nâng cấp tài khoản chính thức',
+    trialHighlightDesc: 'Doanh nghiệp đang trong giai đoạn dùng thử. Chọn một gói cước bên dưới để nâng cấp chính thức và kích hoạt toàn bộ nhân sự.',
     subscribe: 'Đăng ký',
     subscribeTo: 'Đăng ký gói {name}',
     upgrade: 'Nâng cấp',
@@ -65,7 +69,9 @@ export const billing = {
   },
   upgradeDialog: {
     title: 'Nâng cấp lên gói {plan}?',
+    trialTitle: 'Nâng cấp lên tài khoản chính thức: Gói {plan}',
     description: 'Cảnh báo: Bạn đang còn {months} tháng trong gói {currentPlan}. Bạn có chắc chắn muốn đổi sang gói {plan} không? Số dư credit hiện tại đang còn dư sẽ được reset về 0, không quy đổi hay cộng dồn. Sau khi thanh toán thành công, công ty sẽ nhận định mức credit của gói {plan} và bắt đầu chu kỳ mới.',
+    trialDescription: 'Bạn đang nâng cấp từ tài khoản Dùng thử lên tài khoản Chính thức gói {plan}. Toàn bộ tài khoản quản trị và nhân viên của công ty sẽ được kích hoạt chính thức. Định mức credit của gói {plan} sẽ được cấp mới ngay sau khi thanh toán thành công.',
     cycleLabel: 'Chọn chu kỳ thanh toán',
     monthly: 'Theo tháng (1 tháng)',
     yearly: 'Theo năm (12 tháng)',

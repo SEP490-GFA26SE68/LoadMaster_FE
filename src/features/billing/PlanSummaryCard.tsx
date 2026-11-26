@@ -44,6 +44,7 @@ export function PlanSummaryCard({
   renewPending = false,
   onRenewYear,
   renewYearPending = false,
+  isTrial = false,
 }: {
   current: CurrentSubscription
   onCancel: () => void
@@ -51,6 +52,7 @@ export function PlanSummaryCard({
   renewPending?: boolean
   onRenewYear?: () => void
   renewYearPending?: boolean
+  isTrial?: boolean
 }) {
   const t = useT()
   const format = useFormat()
@@ -65,7 +67,11 @@ export function PlanSummaryCard({
       <CardHeader>
         <CardTitle as="h2" id="billing-plan">{t('billing.plan.title')}</CardTitle>
         <CardActions>
-          <Badge tone={look.tone} dot={look.dot}>{t(`billing.plan.status.${subscription.status}`)}</Badge>
+          {isTrial ? (
+            <Badge tone="warning" dot="ring">{t('billing.plan.status.TRIAL')}</Badge>
+          ) : (
+            <Badge tone={look.tone} dot={look.dot}>{t(`billing.plan.status.${subscription.status}`)}</Badge>
+          )}
         </CardActions>
       </CardHeader>
       <div className="flex flex-col gap-4 p-4.5">
@@ -77,18 +83,29 @@ export function PlanSummaryCard({
         <dl className="m-0 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
           <Field label={t('billing.plan.started')}>{format.date(subscription.startedAt)}</Field>
           <Field label={t('billing.plan.expires')}>{format.date(subscription.expiresAt)}</Field>
-          {BILLING_CAPABILITIES.autoRenew ? (
+          {!isTrial && BILLING_CAPABILITIES.autoRenew ? (
             <Field label={t('billing.plan.autoRenew')}>{subscription.autoRenew ? t('billing.plan.autoRenewOn') : t('billing.plan.autoRenewOff')}</Field>
           ) : null}
-          <Field label={t('billing.plan.price')}>{format.currency(plan.priceVnd)}</Field>
-          {BILLING_CAPABILITIES.contractRenewal && subscription.status === 'ACTIVE' && remainingToYear > 0 ? (
+          {!isTrial ? (
+            <Field label={t('billing.plan.price')}>{format.currency(plan.priceVnd)}</Field>
+          ) : null}
+          {!isTrial && BILLING_CAPABILITIES.contractRenewal && subscription.status === 'ACTIVE' && remainingToYear > 0 ? (
             <Field label={t('billing.plan.yearlyPrice')}>{format.currency(plan.priceVnd * remainingToYear)}</Field>
           ) : null}
-          <Field label={t('billing.plan.credits')}>{plan.monthlyCredits === null ? t('common.unlimitedCredits') : format.integer(plan.monthlyCredits)}</Field>
+          {!isTrial ? (
+            <Field label={t('billing.plan.credits')}>{plan.monthlyCredits === null ? t('common.unlimitedCredits') : format.integer(plan.monthlyCredits)}</Field>
+          ) : null}
         </dl>
-        {subscription.status === 'CANCELLED' ? <p className="m-0 text-small text-ink-2">{t('billing.plan.cancelledNote', { date: format.date(subscription.expiresAt) })}</p> : null}
-        {subscription.status === 'EXPIRED' ? <p className="m-0 text-small text-ink-2">{t('billing.plan.expiredNote')}</p> : null}
-        {subscription.status === 'ACTIVE' || (onRenew && subscription.status === 'EXPIRED') ? (
+        {isTrial && subscription.status !== 'EXPIRED' ? (
+          <p className="m-0 text-small text-ink-2">{t('billing.plan.trialNote', { date: format.date(subscription.expiresAt) })}</p>
+        ) : null}
+        {!isTrial && subscription.status === 'CANCELLED' ? (
+          <p className="m-0 text-small text-ink-2">{t('billing.plan.cancelledNote', { date: format.date(subscription.expiresAt) })}</p>
+        ) : null}
+        {subscription.status === 'EXPIRED' ? (
+          <p className="m-0 text-small text-ink-2">{t('billing.plan.expiredNote')}</p>
+        ) : null}
+        {!isTrial && (subscription.status === 'ACTIVE' || (onRenew && subscription.status === 'EXPIRED')) ? (
           <div className="flex flex-wrap gap-2">
             {onRenew ? <Button variant="secondary" disabled={atMaxYearCap} loading={renewPending} onClick={onRenew}>{t('billing.plan.renew')}</Button> : null}
             {onRenewYear ? <Button variant="secondary" disabled={atMaxYearCap} loading={renewYearPending} onClick={onRenewYear}>{t('billing.plan.renewYear')}</Button> : null}

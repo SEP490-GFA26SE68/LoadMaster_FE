@@ -97,7 +97,7 @@ export async function getTopUpTerms(): Promise<TopUpTerms> {
  * Gói của công ty. `current` là gói hiện tại kèm gói cước nó theo, `null` khi chưa có gói. Backend chỉ trả gói khi còn `ACTIVE`: gói đã
  * hết hạn không có tên hay ngày, chỉ còn `lapsed` để màn nói "đã hết hạn" thay vì "chưa có gói".
  */
-export type SubscriptionView = { readonly current: CurrentSubscription | null; readonly lapsed: boolean }
+export type SubscriptionView = { readonly current: CurrentSubscription | null; readonly lapsed: boolean; readonly isTrial?: boolean }
 
 /** Hoá đơn của công ty (chỉ có ở backend). */
 export type InvoiceStatus = 'UNPAID' | 'PAID' | 'FAILED' | 'VOID'
@@ -127,8 +127,11 @@ type InvoiceDto = {
 export async function getSubscriptionView(): Promise<SubscriptionView> {
   if (!ON_BACKEND) return { current: await getMockDb().getCurrentSubscription(), lapsed: false }
   const dto = await getCurrentSubscriptionDto()
+  const isTrial = dto.isTrial === true
   const status = subscriptionStatusOf(dto, new Date().toISOString())
-  if (status === null || dto.planId === null) return { current: null, lapsed: status === 'EXPIRED' }
+  if (status === null || dto.planId === null) {
+    return { current: null, lapsed: status === 'EXPIRED', ...(isTrial ? { isTrial: true } : {}) }
+  }
   const planId = String(dto.planId)
   const subscription: CompanySubscription = {
     id: String(dto.subscriptionId ?? ''),
@@ -138,8 +141,13 @@ export async function getSubscriptionView(): Promise<SubscriptionView> {
     startedAt: fromBackendLocalDateTime(dto.startedAt) ?? '',
     expiresAt: fromBackendLocalDateTime(dto.expiresAt) ?? '',
     autoRenew: dto.autoRenew === true,
+    ...(isTrial ? { isTrial: true } : {}),
   }
-  return { current: { subscription, plan: planFromDto(await getPlanDto(planId)) }, lapsed: false }
+  return {
+    current: { subscription, plan: planFromDto(await getPlanDto(planId)) },
+    lapsed: false,
+    ...(isTrial ? { isTrial: true } : {}),
+  }
 }
 
 /** Gói đang bán, theo thứ tự hạng — các gói công ty chọn khi chưa có gói hoặc gói đã hết hạn. */
@@ -231,7 +239,12 @@ export async function listInvoices(): Promise<Invoice[]> {
 export type RenewalBlock = 'NO_SUBSCRIPTION' | 'CANCELLED' | 'TRIAL' | 'NOT_DUE'
 
 /** Thanh toán gói (đăng ký hay gia hạn) còn chờ trả: `reference` là mã giao dịch gửi cổng thử (`MOCK_…`). */
-export type PendingPlanPayment = { readonly reference: string; readonly renewal: boolean; readonly amountVnd: number }
+export type PendingPlanPayment = {
+  readonly reference: string
+  readonly renewal: boolean
+  readonly amountVnd: number
+  readonly paymentUrl?: string | null
+}
 
 /** Gia hạn gói của công ty theo máy chủ. `planName` là gói đang hoặc vừa dùng (`null` khi chưa từng có gói). */
 export type Renewal = {
@@ -255,6 +268,7 @@ type RenewalDto = {
   readonly renewalWindowDays: number | null
   readonly pendingPayment: {
     readonly transactionId: string | null
+    readonly paymentUrl?: string | null
     readonly orderType: string | null
     readonly amountVnd: number | string | null
   } | null
@@ -276,7 +290,12 @@ function renewalOf(dto: RenewalDto): Renewal {
     pending:
       pending === null || reference === ''
         ? null
-        : { reference, renewal: pending.orderType === 'SUBSCRIPTION_RENEWAL', amountVnd: Math.round(Number(pending.amountVnd ?? 0)) },
+        : {
+            reference,
+            renewal: pending.orderType === 'SUBSCRIPTION_RENEWAL',
+            amountVnd: Math.round(Number(pending.amountVnd ?? 0)),
+            paymentUrl: pending.paymentUrl ?? null,
+          },
   }
 }
 

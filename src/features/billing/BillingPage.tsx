@@ -44,17 +44,20 @@ function pendingPlanPayment(payments: readonly PaymentTransaction[]): PaymentTra
 }
 
 /** Banner thanh toán gói còn chờ: kho mẫu đọc lịch sử thanh toán, backend đọc gia hạn của máy chủ (`BILLING_CAPABILITIES.renewal`). */
-type PendingBanner = { readonly key: 'RENEWAL' | 'RENEWAL_LAPSED' | 'SUBSCRIBE'; readonly plan: string; readonly amountVnd: number; readonly date: string; readonly to: string }
+type PendingBanner = { readonly key: 'RENEWAL' | 'RENEWAL_LAPSED' | 'SUBSCRIBE'; readonly plan: string; readonly amountVnd: number; readonly date: string; readonly to: string; readonly external?: boolean }
 
 function serverPendingBanner(renewal: Renewal | undefined, lapsed: boolean): PendingBanner | null {
   const pending = renewal?.pending
   if (!renewal || !pending) return null
+  const paymentUrl = pending.paymentUrl ?? ''
+  const isWebUrl = /^https?:\/\//i.test(paymentUrl)
   return {
     key: !pending.renewal ? 'SUBSCRIBE' : lapsed ? 'RENEWAL_LAPSED' : 'RENEWAL',
     plan: renewal.planName ?? '',
     amountVnd: pending.amountVnd,
     date: renewal.expiresAt ?? '',
-    to: paymentResultPath(pending.reference, 'SUBSCRIBE'),
+    to: isWebUrl ? paymentUrl : paymentResultPath(pending.reference, 'SUBSCRIBE'),
+    external: isWebUrl,
   }
 }
 
@@ -134,8 +137,9 @@ export function BillingPage() {
   }, [searchParams, setSearchParams, t, subscription, balance, payments, renewal])
 
   const view = subscription.data
+  const isTrial = view?.isTrial === true || view?.current?.subscription.isTrial === true
   const current = view?.current
-  const canSubscribe = current !== undefined && (current === null || current.subscription.status === 'EXPIRED')
+  const canSubscribe = current !== undefined && (current === null || current.subscription.status === 'EXPIRED' || isTrial)
   // Backend: gói còn hiệu lực gia hạn đúng gói đó; gói hạng cao hơn qua yêu cầu hỗ trợ
   const contract = BILLING_CAPABILITIES.contractRenewal && current?.subscription.status === 'ACTIVE' ? current : null
   const pending = pendingPlanPayment(payments.data ?? [])
@@ -173,7 +177,7 @@ export function BillingPage() {
   }
 
   function handleChoosePlan(plan: SubscriptionPlan) {
-    if (contract !== null) {
+    if (contract !== null || isTrial) {
       setUpgradeCycle('MONTHLY')
       setUpgradePlan(plan)
       return
@@ -272,7 +276,11 @@ export function BillingPage() {
                 tone="warning"
                 action={
                   <Button variant="secondary" size="sm" asChild>
-                    <Link to={pendingBanner.to}>{t('billing.pay')}</Link>
+                    {pendingBanner.external ? (
+                      <a href={pendingBanner.to}>{t('billing.pay')}</a>
+                    ) : (
+                      <Link to={pendingBanner.to}>{t('billing.pay')}</Link>
+                    )}
                   </Button>
                 }
               >
@@ -288,6 +296,7 @@ export function BillingPage() {
               {current ? (
                 <PlanSummaryCard
                   current={current}
+                  isTrial={isTrial}
                   onCancel={() => setCancelOpen(true)}
                   onRenew={BILLING_CAPABILITIES.contractRenewal ? () => handleSubscribe(current.plan, 'MONTHLY') : undefined}
                   renewPending={
@@ -342,7 +351,8 @@ export function BillingPage() {
                     : null
                 }
                 onSubscribe={handleChoosePlan}
-                current={contract ? { tier: contract.plan.tier } : null}
+                current={!isTrial && contract ? { tier: contract.plan.tier } : null}
+                isTrial={isTrial}
               />
             ) : null}
             <BillingHistoryCard />
@@ -365,8 +375,8 @@ export function BillingPage() {
       <ConfirmDialog
         open={upgradePlan !== null}
         onOpenChange={(open) => { if (!open) setUpgradePlan(null) }}
-        title={t('billing.upgradeDialog.title', { plan: upgradePlan?.name ?? '' })}
-        description={t('billing.upgradeDialog.description', {
+        title={t(isTrial ? 'billing.upgradeDialog.trialTitle' : 'billing.upgradeDialog.title', { plan: upgradePlan?.name ?? '' })}
+        description={t(isTrial ? 'billing.upgradeDialog.trialDescription' : 'billing.upgradeDialog.description', {
           plan: upgradePlan?.name ?? '',
           currentPlan: current?.plan.name ?? '',
           months: current ? remainingMonthsOf(current.subscription.startedAt, current.subscription.expiresAt) : 0,
