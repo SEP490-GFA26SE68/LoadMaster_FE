@@ -17,8 +17,8 @@ import { nextMonthPeriod, PAYROLL_CAPABILITIES, type PayrollRate } from './payro
 import { payrollRateFormSchema, type PayrollRateFormInput, type PayrollRateFormValues } from './payroll-rate-form'
 import { PayrollRateSettings } from './PayrollRateSettings'
 import { PayrollResults } from './PayrollResults'
-import { lockedPayrollMonth } from './payroll-version-row'
 import { WarehousePayrollPanel } from './WarehousePayrollPanel'
+import { isFuturePayrollMonth } from './payroll-version-row'
 import {
   useCalculatePayrollPeriodMutation,
   useCreatePayrollRateMutation,
@@ -46,10 +46,9 @@ export function PayrollPage() {
   const [confirmVersionUnlock, setConfirmVersionUnlock] = useState<string | null>(null)
   const rates = usePayrollRatesQuery()
   const payroll = usePayrollPeriodQuery(period)
-  const lockedMonth = lockedPayrollMonth(rates.data ?? [], period, payroll.data?.status)
-  const lockedBoard = usePayrollPeriodQuery(lockedMonth ?? period, lockedMonth != null)
-  const board = lockedBoard.data?.status === 'LOCKED' ? lockedBoard.data : null
-  const statement = usePayrollDriverStatementQuery(board?.period ?? period, selectedDriverId)
+  const board = payroll.data
+  const isFuturePeriod = isFuturePayrollMonth(period)
+  const statement = usePayrollDriverStatementQuery(period, selectedDriverId)
   const createRate = useCreatePayrollRateMutation()
   const calculate = useCalculatePayrollPeriodMutation()
   const lock = useLockPayrollPeriodMutation()
@@ -180,7 +179,7 @@ export function PayrollPage() {
                       <Button
                         variant="primary"
                         loading={lock.isPending}
-                        disabled={calculate.isPending || lock.isPending || deleteDraft.isPending}
+                        disabled={isFuturePeriod || calculate.isPending || lock.isPending || deleteDraft.isPending}
                         onClick={() => setConfirmLockOpen(true)}>
                         {t('payroll.lockPeriod')}
                       </Button>
@@ -189,17 +188,21 @@ export function PayrollPage() {
                 </div>
               </div>
 
+              {payroll.data?.status === 'DRAFT' && isFuturePeriod ? (
+                <p role="note" className="text-small text-ink-2">{t('payroll.futurePeriodLockDescription')}</p>
+              ) : null}
+
               {calculate.error || lock.error || unlock.error || deleteDraft.error ? (
                 <p role="alert" className="text-small text-danger">{dataErrorMessage(calculate.error ?? lock.error ?? unlock.error ?? deleteDraft.error, t)}</p>
               ) : null}
-              {rates.isPending || payroll.isPending || (lockedMonth != null && lockedBoard.isPending) ? (
+              {rates.isPending || payroll.isPending ? (
                 <div role="status" aria-label={t('payroll.loading')} className="flex justify-center py-16"><Spinner /></div>
-              ) : payroll.isError || lockedBoard.isError ? (
+              ) : payroll.isError ? (
                 <EmptyState
                   mascot="error"
                   title={t('payroll.loadErrorTitle')}
-                  description={dataErrorMessage(payroll.error ?? lockedBoard.error, t)}
-                  action={<Button variant="secondary" onClick={() => void (lockedBoard.isError ? lockedBoard.refetch() : payroll.refetch())}>{t('payroll.retry')}</Button>}
+                  description={dataErrorMessage(payroll.error, t)}
+                  action={<Button variant="secondary" onClick={() => void payroll.refetch()}>{t('payroll.retry')}</Button>}
                 />
               ) : board ? (
                 <PayrollResults
@@ -211,14 +214,8 @@ export function PayrollPage() {
                   selectedDriverId={selectedDriverId}
                   onSelectDriver={setSelectedDriverId}
                 />
-              ) : hasRates ? (
-                <EmptyState
-                  mascot="empty"
-                  title={t('payroll.selectVersionToLockTitle')}
-                  description={t('payroll.selectVersionToLock')}
-                />
               ) : (
-                <EmptyState mascot="empty" title={t('payroll.noPeriodTitle')} description={t('payroll.noPeriodDescription')} />
+                <EmptyState mascot="empty" title={t('payroll.unlockedPeriodTitle')} description={t('payroll.unlockedPeriodDescription')} />
               )}
             </section>
           </div>

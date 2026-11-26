@@ -18,6 +18,7 @@ export type TicketStatus = (typeof BACKEND_TICKET_STATUSES)[number]
 /** Giới hạn độ dài do kho kiểm (`TICKET_INVALID`): tiêu đề, và mô tả hoặc nội dung trả lời. */
 export const MAX_TICKET_TITLE = 120
 export const MAX_TICKET_TEXT = 2000
+export const MAX_SUPPORT_IMAGES = 5
 
 /** Một lần trả lời. Tên và vai trò chụp lúc trả lời: người của công ty không đọc được tài khoản nền tảng của Hỗ trợ. */
 export type TicketReply = {
@@ -25,6 +26,7 @@ export type TicketReply = {
   authorName: string
   authorRole: Role
   text: string
+  images?: readonly string[]
   /** ISO 8601 */
   at: string
 }
@@ -51,12 +53,16 @@ export type SupportTicket = {
   description: string
   status: TicketStatus
   replies: TicketReply[]
+  /** Images attached to the initial ticket description. */
+  attachments?: readonly string[]
   /** Phản hồi của đội hỗ trợ ở backend (`resolutionNote`, một trường, không phải trao đổi); kho mẫu dùng `replies`. */
   resolutionNote?: string
+  /** Raw backend note retained when chat JSON also contains attachments or legacy messages. */
+  resolutionNoteRaw?: string
   /** ISO 8601 */
   createdAt: string
   /** Lần hoạt động gần nhất (gửi, trả lời, đổi trạng thái): danh sách xếp theo đây. */
   updatedAt: string
 }
 
-export type NewSupportTicket = Pick<SupportTicket, 'kind' | 'title' | 'description'>
+export type NewSupportTicket = Pick<SupportTicket, 'kind' | 'title' | 'description'> & { images?: readonly string[] }

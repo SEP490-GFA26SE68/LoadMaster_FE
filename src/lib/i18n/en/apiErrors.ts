@@ -94,6 +94,7 @@ VEHICLE_PRESENCE_CONFLICT: "Vehicle state or confirmation key conflict. Check th
   PAYROLL_KPI_BONUS_REQUIRED: 'A KPI bonus greater than 0 is required when a KPI target is set.',
   PAYROLL_PERIOD_NOT_FOUND: 'There is no payroll for this month yet.',
   PAYROLL_PERIOD_LOCKED: 'This payroll is locked and cannot be changed or recalculated.',
+  PAYROLL_FUTURE_PERIOD_CANNOT_LOCK: 'Payroll can only be locked for the current month or an earlier month.',
   PAYROLL_DATA_INCOMPLETE: 'The trip is missing planned weight or distance data.',
   PAYROLL_INVALID_PERIOD: 'The payroll month is invalid. Choose a month in year-month format.',
   PAYROLL_INVALID_DRIVER_ASSIGNMENT: 'The drivers assigned to productivity pay are not valid.',

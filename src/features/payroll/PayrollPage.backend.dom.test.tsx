@@ -40,6 +40,127 @@ function renderPayroll() {
   )
 }
 
+test('shows an unclosed period message instead of the most recently locked payroll', async () => {
+  const date = new Date()
+  const period = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+  const previousDate = new Date(date.getFullYear(), date.getMonth() - 1, 1)
+  const previousPeriod = `${previousDate.getFullYear()}-${String(previousDate.getMonth() + 1).padStart(2, '0')}`
+
+  stubBackend({
+    'GET /api/company/payroll/settings': reply([{
+      id: 4,
+      effectiveFrom: `${previousPeriod}-01`,
+      baseSalaryVnd: 8_000_000,
+      rateVndPerKg: 100,
+      commissionPercent: 15,
+      handlingFeeVndPerKg: 150,
+      handlingDriverPercent: 85,
+      periodStatus: 'LOCKED',
+    }]),
+    [`GET /api/company/payroll/periods/${period}`]: {
+      status: 404,
+      body: { success: false, code: 'PAYROLL_PERIOD_NOT_FOUND', message: 'not found' },
+    },
+    [`GET /api/company/payroll/periods/${previousPeriod}`]: reply({
+      period: previousPeriod,
+      status: 'LOCKED',
+      drivers: [{ driverId: 21, driverName: 'Older Month Driver', baseSalaryVnd: 8_000_000, totalKg: 500, kgAmountVnd: 50_000, handlingAmountVnd: 120_000, totalSalaryVnd: 8_170_000 }],
+    }),
+  })
+
+  renderPayroll()
+
+  expect(await screen.findByText('Tháng này chưa chốt lương')).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Older Month Driver' })).not.toBeInTheDocument()
+})
+
+test('shows the selected draft payroll table before it is locked', async () => {
+  const date = new Date()
+  const period = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+
+  stubBackend({
+    'GET /api/company/payroll/settings': reply([{
+      id: 4,
+      effectiveFrom: `${period}-01`,
+      baseSalaryVnd: 8_000_000,
+      rateVndPerKg: 100,
+      commissionPercent: 15,
+      handlingFeeVndPerKg: 150,
+      handlingDriverPercent: 85,
+      periodStatus: 'DRAFT',
+    }]),
+    [`GET /api/company/payroll/periods/${period}`]: reply({
+      period,
+      status: 'DRAFT',
+      drivers: [{ driverId: 21, driverName: 'Draft Month Driver', baseSalaryVnd: 8_000_000, totalKg: 500, kgAmountVnd: 50_000, handlingAmountVnd: 120_000, totalSalaryVnd: 8_170_000 }],
+    }),
+  })
+
+  renderPayroll()
+
+  expect(await screen.findByRole('button', { name: 'Draft Month Driver' })).toBeInTheDocument()
+  expect(screen.queryByText('Tháng này chưa chốt lương')).not.toBeInTheDocument()
+})
+
+test('calculates and shows a future draft but does not allow locking it', async () => {
+  const user = userEvent.setup()
+  const date = new Date()
+  const currentPeriod = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+  const futurePeriod = nextMonthPeriod(date)
+  const futureDrivers = [
+    { driverId: 21, driverName: 'Driver A', baseSalaryVnd: 12_000_000, totalKg: 0, kgAmountVnd: 0, handlingAmountVnd: 0, totalSalaryVnd: 12_000_000 },
+    { driverId: 22, driverName: 'Driver B', baseSalaryVnd: 0, totalKg: 0, kgAmountVnd: 0, handlingAmountVnd: 0, totalSalaryVnd: 0 },
+  ]
+  let futurePayroll = { period: futurePeriod, status: 'DRAFT', drivers: futureDrivers }
+  const { calls } = stubBackend({
+    'GET /api/company/payroll/settings': reply([{
+      id: 4,
+      effectiveFrom: `${currentPeriod}-01`,
+      baseSalaryVnd: 8_000_000,
+      rateVndPerKg: 100,
+      commissionPercent: 15,
+      handlingFeeVndPerKg: 150,
+      handlingDriverPercent: 85,
+      periodStatus: 'DRAFT',
+    }, {
+      id: 5,
+      effectiveFrom: `${futurePeriod}-01`,
+      baseSalaryVnd: 0,
+      rateVndPerKg: 0,
+      commissionPercent: 0,
+      handlingFeeVndPerKg: 0,
+      handlingDriverPercent: 0,
+      periodStatus: 'DRAFT',
+    }]),
+    [`GET /api/company/payroll/periods/${currentPeriod}`]: {
+      status: 404,
+      body: { success: false, code: 'PAYROLL_PERIOD_NOT_FOUND', message: 'not found' },
+    },
+    [`GET /api/company/payroll/periods/${futurePeriod}`]: () => reply(futurePayroll),
+    [`POST /api/company/payroll/periods/${futurePeriod}/calculate`]: () => reply(futurePayroll),
+    [`POST /api/company/payroll/periods/${futurePeriod}/lock`]: () => reply({ ...futurePayroll, status: 'LOCKED' }),
+  })
+
+  renderPayroll()
+  fireEvent.change(screen.getByLabelText('Kỳ lương'), { target: { value: futurePeriod } })
+
+  expect(await screen.findByRole('button', { name: 'Driver A' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Driver B' })).toBeInTheDocument()
+  const lockButton = screen.getByRole('button', { name: 'Chốt bảng lương' })
+  expect(lockButton).toBeDisabled()
+  expect(screen.getByText('Chỉ được chốt bảng lương từ tháng hiện tại trở về trước.')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Tính lại bảng lương' })).toBeEnabled()
+
+  await user.click(screen.getByRole('button', { name: 'Tính lại bảng lương' }))
+  await waitFor(() => expect(calls.map(({ method, path }) => `${method} ${path}`)).toContain(`POST /api/company/payroll/periods/${futurePeriod}/calculate`))
+  await user.click(lockButton)
+  expect(calls.map(({ method, path }) => `${method} ${path}`)).not.toContain(`POST /api/company/payroll/periods/${futurePeriod}/lock`)
+
+  await user.click(screen.getByRole('button', { name: 'Xem phiên bản đã lưu' }))
+  const versionsDialog = await screen.findByRole('dialog', { name: 'Các phiên bản đã lưu' })
+  expect(within(versionsDialog).getByRole('button', { name: `Chốt phiên bản ${futurePeriod}` })).toBeDisabled()
+})
+
 test('loads company pay rates, calculates a monthly payroll, and shows the driver statement after locking', async () => {
   const user = userEvent.setup()
   const date = new Date()
@@ -78,15 +199,13 @@ test('loads company pay rates, calculates a monthly payroll, and shows the drive
       totalSalaryVnd: 8_170_000,
       trips: [{ tripId: 42, tripCode: 'TRIP-0042', planKg: 1_000, sharePercent: 50, allocatedKg: 500, kgAmountVnd: 50_000, handlingAmountVnd: 120_000, totalAmountVnd: 170_000 }],
     }),
-    'GET /api/company/payroll/trips/42/drivers': reply([{ driverId: 21, driverName: 'Nguyen Van An', sharePercent: 50 }]),
   })
 
   renderPayroll()
-  expect(await screen.findByText('Vui lòng vào chọn phiên bản chốt bảng lương')).toBeInTheDocument()
+  expect(await screen.findByText('Tháng này chưa chốt lương')).toBeInTheDocument()
   await user.click(screen.getByRole('button', { name: 'Tính bảng lương' }))
   await waitFor(() => expect(calls.map(({ method, path }) => `${method} ${path}`)).toContain(`POST /api/company/payroll/periods/${period}/calculate`))
-  expect(screen.getByText('Vui lòng vào chọn phiên bản chốt bảng lương')).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: 'Nguyen Van An' })).not.toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Nguyen Van An' })).toBeInTheDocument()
 
   await user.click(screen.getByRole('button', { name: 'Chốt bảng lương' }))
   await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Chốt bảng lương' }))
@@ -97,18 +216,27 @@ test('loads company pay rates, calculates a monthly payroll, and shows the drive
   expect(await screen.findByText('TRIP-0042')).toBeInTheDocument()
   expect(await screen.findByText('Khối lượng phương án')).toBeInTheDocument()
   expect(screen.getAllByText('Tiền bốc dỡ').length).toBeGreaterThan(0)
-  await waitFor(() => expect(calls.map(({ method, path }) => `${method} ${path}`)).toContain('GET /api/company/payroll/trips/42/drivers'))
+  expect(calls.map(({ method, path }) => `${method} ${path}`)).not.toContain('GET /api/company/payroll/trips/42/drivers')
+  expect(screen.queryByText('Tài xế cùng tính lương chuyến này')).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Lưu phân công' })).not.toBeInTheDocument()
 })
 
-test('allows company manager to adjust driver base salary starting next month', async () => {
+test('starts a driver base salary adjustment after the selected payroll month', async () => {
   const user = userEvent.setup()
   const date = new Date()
-  const period = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-  const nextMonth = nextMonthPeriod(date)
+  const currentPeriod = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+  const selectedDate = new Date(date.getFullYear(), date.getMonth() + 3, 1)
+  const period = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}`
+  const effectiveMonth = nextMonthPeriod(selectedDate)
+  let savedEffectiveFrom: string | null = null
   const { calls } = stubBackend({
     'GET /api/company/payroll/settings': reply([
-      { id: 4, effectiveFrom: '2026-11-01', baseSalaryVnd: 8_000_000, rateVndPerKg: 100, commissionPercent: 15, handlingFeeVndPerKg: 150, handlingDriverPercent: 85 },
+      { id: 4, effectiveFrom: `${currentPeriod}-01`, baseSalaryVnd: 8_000_000, rateVndPerKg: 100, commissionPercent: 15, handlingFeeVndPerKg: 150, handlingDriverPercent: 85 },
     ]),
+    [`GET /api/company/payroll/periods/${currentPeriod}`]: {
+      status: 404,
+      body: { success: false, code: 'PAYROLL_PERIOD_NOT_FOUND', message: 'not found' },
+    },
     [`GET /api/company/payroll/periods/${period}`]: reply({
       period,
       status: 'LOCKED',
@@ -131,25 +259,31 @@ test('allows company manager to adjust driver base salary starting next month', 
       totalSalaryVnd: 8_170_000,
       trips: [],
     }),
-    'PUT /api/company/payroll/drivers/21/base-salary': reply({
-      id: 1,
-      driverId: 21,
-      driverName: 'Nguyen Van An',
-      effectiveFrom: `${nextMonth}-01`,
-      baseSalaryVnd: 9_500_000,
-    }),
+    'PUT /api/company/payroll/drivers/21/base-salary': ({ body }) => {
+      savedEffectiveFrom = (body as { effectiveFrom: string }).effectiveFrom
+      return reply({
+        id: 1,
+        driverId: 21,
+        driverName: 'Nguyen Van An',
+        effectiveFrom: savedEffectiveFrom,
+        baseSalaryVnd: 9_500_000,
+      })
+    },
   })
 
   renderPayroll()
+  fireEvent.change(screen.getByLabelText('Kỳ lương'), { target: { value: period } })
   expect(await screen.findByRole('button', { name: 'Nguyen Van An' })).toBeInTheDocument()
   await user.click(screen.getByRole('button', { name: 'Nguyen Van An' }))
 
   expect(await screen.findByRole('region', { name: 'Điều chỉnh lương cứng' })).toBeInTheDocument()
+  expect(screen.getByText(new RegExp(`Áp dụng từ tháng sau \\(${effectiveMonth}\\)`))).toBeInTheDocument()
   const input = screen.getByLabelText(/Mức lương mới/)
   await user.type(input, '9500000')
   await user.click(screen.getByRole('button', { name: 'Lưu mức lương mới' }))
 
   expect(await screen.findByText('Đã lưu mức lương cứng cho tài xế từ tháng sau.')).toBeInTheDocument()
+  await waitFor(() => expect(savedEffectiveFrom).toBe(`${effectiveMonth}-01`))
   expect(calls.map(({ method, path }) => `${method} ${path}`)).toContain('PUT /api/company/payroll/drivers/21/base-salary')
 })
 
@@ -351,7 +485,7 @@ test('deletes a draft before editing its saved rate and calculating again', asyn
   expect(calls.map(({ method, path }) => `${method} ${path}`)).not.toContain(`DELETE /api/company/payroll/periods/${period}`)
   await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Xóa bản nháp' }))
   await waitFor(() => expect(calls.map(({ method, path }) => `${method} ${path}`)).toContain(`DELETE /api/company/payroll/periods/${period}`))
-  expect(await screen.findByText('Vui lòng vào chọn phiên bản chốt bảng lương')).toBeInTheDocument()
+  expect(await screen.findByText('Tháng này chưa chốt lương')).toBeInTheDocument()
 
   await chooseSavedVersion(user, period)
   const salary = screen.getByRole('spinbutton', { name: /Lương cứng mỗi tài xế/ })
@@ -391,8 +525,8 @@ test('refreshes a later draft after its saved company rate changes', async () =>
   renderPayroll()
   await screen.findByRole('button', { name: 'Xem phiên bản đã lưu' })
   fireEvent.change(screen.getByLabelText('Kỳ lương'), { target: { value: nextMonth } })
-  expect(await screen.findByText('Vui lòng vào chọn phiên bản chốt bảng lương')).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: 'Nguyen Van An' })).not.toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Nguyen Van An' })).toBeInTheDocument()
+  expect(screen.getAllByText('20.000 ₫').length).toBeGreaterThan(0)
   await chooseSavedVersion(user, currentMonth)
   const salaryInput = screen.getByRole('spinbutton', { name: /Lương cứng mỗi tài xế/ })
   await user.clear(salaryInput)
@@ -400,11 +534,11 @@ test('refreshes a later draft after its saved company rate changes', async () =>
   await user.click(screen.getByRole('button', { name: 'Lưu phiên bản mức lương' }))
 
   await waitFor(() => expect(calls.filter((call) => call.method === 'GET' && call.path === `/api/company/payroll/periods/${nextMonth}`).length).toBeGreaterThan(1))
-  expect(screen.getByText('Vui lòng vào chọn phiên bản chốt bảng lương')).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: 'Nguyen Van An' })).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Nguyen Van An' })).toBeInTheDocument()
+  expect(screen.getAllByText('30.000 ₫').length).toBeGreaterThan(0)
 })
 
-test('locks a later saved version from the versions dialog and shows that payroll table', async () => {
+test('does not allow locking a later saved version before its month starts', async () => {
   const user = userEvent.setup()
   const currentMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`
   const nextMonth = nextMonthPeriod()
@@ -439,14 +573,9 @@ test('locks a later saved version from the versions dialog and shows that payrol
   const versions = await screen.findByRole('dialog', { name: 'Các phiên bản đã lưu' })
   expect(versions).toHaveTextContent('Đã chốt')
   expect(versions).toHaveTextContent('Bản nháp')
-  await user.click(within(versions).getByRole('button', { name: `Chốt phiên bản ${nextMonth}` }))
-  await user.click(within(await screen.findByRole('dialog', { name: `Chốt phiên bản ${nextMonth}?` })).getByRole('button', { name: 'Chốt' }))
-
-  await waitFor(() => expect(calls.map(({ method, path }) => `${method} ${path}`)).toEqual(expect.arrayContaining([
-    `POST /api/company/payroll/periods/${nextMonth}/calculate`,
-    `POST /api/company/payroll/periods/${nextMonth}/lock`,
-  ])))
-  expect(await screen.findByText(`Bảng lương tháng ${nextMonth}`)).toBeInTheDocument()
+  expect(within(versions).getByRole('button', { name: `Chốt phiên bản ${nextMonth}` })).toBeDisabled()
+  expect(calls.map(({ method, path }) => `${method} ${path}`)).not.toContain(`POST /api/company/payroll/periods/${nextMonth}/calculate`)
+  expect(calls.map(({ method, path }) => `${method} ${path}`)).not.toContain(`POST /api/company/payroll/periods/${nextMonth}/lock`)
 })
 
 test('shows KPI target and bonus on the same row as commission in the saved versions dialog', async () => {
@@ -677,15 +806,19 @@ test('shows total kilograms and KPI achievement with the server bonus in payroll
 
   renderPayroll()
   expect(await screen.findByRole('columnheader', { name: 'Tổng kg' })).toBeInTheDocument()
+  const headers = screen.getAllByRole('columnheader').map((header) => header.textContent)
+  expect(headers).toEqual(['Tài xế', 'Lương cứng', 'Tổng kg', 'Tiền cước theo kg', 'Tiền bốc dỡ', 'Thưởng KPI', 'Tổng lương'])
   expect(screen.getByRole('columnheader', { name: 'Thưởng KPI' })).toBeInTheDocument()
   const achievedRow = screen.getByRole('button', { name: 'Nguyen Van An' }).closest('tr')
   const missedRow = screen.getByRole('button', { name: 'Tran Van Binh' }).closest('tr')
   expect(achievedRow).toHaveTextContent('1.200 kg')
+  expect(achievedRow?.querySelectorAll('td')[3]).toHaveTextContent('60.000 ₫')
   expect(achievedRow).toHaveTextContent('Đạt')
   expect(achievedRow).toHaveTextContent('250.000 ₫')
   expect(missedRow).toHaveTextContent('900 kg')
+  expect(missedRow?.querySelectorAll('td')[3]).toHaveTextContent('45.000 ₫')
   expect(missedRow).toHaveTextContent('Chưa đạt')
-  expect(missedRow?.querySelectorAll('td')[4]).toHaveTextContent(/^Chưa đạt$/)
+  expect(missedRow?.querySelectorAll('td')[5]).toHaveTextContent(/^Chưa đạt$/)
   expect(screen.getByText('16.455.000 ₫')).toBeInTheDocument()
 })
 

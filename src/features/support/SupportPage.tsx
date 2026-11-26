@@ -193,8 +193,8 @@ export function SupportPage() {
                         ticket={selected}
                         viewerIsSupport
                         pending={reply.isPending || unlockTrial.isPending}
-                        onReply={async (text) => {
-                          await reply.mutateAsync({ ticketId: selected.id, text })
+                        onReply={async (text, images) => {
+                          await reply.mutateAsync({ ticketId: selected.id, text, images })
                           toast.success(t('support.thread.sent'))
                         }}
                         onUnlockTrial={async (staffNote) => {

@@ -1,6 +1,8 @@
 import { isoFromBackend } from '@/lib/backend-time'
-import type { SupportTicket, TicketReply } from '@/lib/mock-db'
+import { MAX_SUPPORT_IMAGES, type SupportTicket, type TicketReply } from '@/lib/mock-db'
 import { ROLES, type Role } from '@/types/user'
+
+export { MAX_SUPPORT_IMAGES }
 
 /**
  * Trao đổi của yêu cầu hỗ trợ. Máy chủ giữ trao đổi ở bảng riêng; yêu cầu cũ còn mảng JSON ghi trong `resolutionNote` (bản trước, mốc giờ
@@ -16,7 +18,7 @@ function chatTimestamp(iso: string): string {
   return new Date(Date.parse(iso) + VIETNAM_OFFSET_MS).toISOString().slice(0, 19).replace('T', ' ')
 }
 
-type StoredReply = { authorId: string; authorName: string; authorRole: string; text: string; at: string }
+type StoredReply = { authorId: string; authorName: string; authorRole: string; text: string; at: string; images?: string[] }
 
 function isStoredReply(value: unknown): value is StoredReply {
   if (typeof value !== 'object' || value === null) return false
@@ -44,11 +46,76 @@ export function repliesOfNote(note: string | null): TicketReply[] | null {
     const authorRole = roleOf(item.authorRole)
     if (authorRole === null) return []
     try {
-      return [{ authorId: item.authorId, authorName: item.authorName, authorRole, text: item.text, at: isoFromBackend(item.at) }]
+      return [{
+        authorId: item.authorId,
+        authorName: item.authorName,
+        authorRole,
+        text: item.text,
+        at: isoFromBackend(item.at),
+        ...(Array.isArray(item.images) && item.images.every((image) => typeof image === 'string') && item.images.length > 0 ? { images: item.images } : {}),
+      }]
     } catch {
       return []
     }
   })
+}
+
+function noteItemsOf(note: string | null | undefined): unknown[] | null {
+  const text = note?.trim() ?? ''
+  if (!text.startsWith('[')) return null
+  try {
+    const parsed: unknown = JSON.parse(text)
+    return Array.isArray(parsed) ? parsed : null
+  } catch {
+    return null
+  }
+}
+
+function imagesOf(value: unknown): string[] {
+  if (typeof value !== 'object' || value === null) return []
+  const images = (value as Record<string, unknown>).images
+  return Array.isArray(images) ? images.filter((image): image is string => typeof image === 'string') : []
+}
+
+/** Request attachments are separate note entries, not chat replies. */
+export function requestAttachmentsOfNote(note: string | null): string[] {
+  return (noteItemsOf(note) ?? []).flatMap((item) => {
+    if (typeof item !== 'object' || item === null || (item as Record<string, unknown>).type !== 'requestAttachments') return []
+    return imagesOf(item)
+  })
+}
+
+/** A legacy plain note stays a visible support note after the note becomes chat JSON. */
+export function supportNoteOfNote(note: string | null): string | undefined {
+  const text = note?.trim() ?? ''
+  if (!text) return undefined
+  const items = noteItemsOf(text)
+  if (items === null) return text
+  const entry = items.find((item) => typeof item === 'object' && item !== null && (item as Record<string, unknown>).type === 'supportNote')
+  if (typeof entry !== 'object' || entry === null) return undefined
+  const message = (entry as Record<string, unknown>).text
+  return typeof message === 'string' && message.trim() ? message : undefined
+}
+
+/** Merge legacy note replies with current table replies; migrated legacy rows may exist in both places. */
+export function mergeReplies(noteReplies: readonly TicketReply[], tableReplies: readonly TicketReply[]): TicketReply[] {
+  const unique = new Map<string, TicketReply>()
+  for (const reply of [...noteReplies, ...tableReplies]) {
+    const key = [reply.authorName, reply.authorRole, reply.text, Date.parse(reply.at)].join('\u0000')
+    const previous = unique.get(key)
+    if (previous === undefined || (!previous.images?.length && reply.images?.length)) unique.set(key, reply)
+  }
+  return [...unique.values()].toSorted((a, b) => Date.parse(a.at) - Date.parse(b.at))
+}
+
+/** Serialize the recent thread while retaining request attachments and an earlier plain support note. */
+export function noteOfReplies(replies: readonly TicketReply[], existingNote?: string): string {
+  const items = noteItemsOf(existingNote)
+  const retained = items === null
+    ? (existingNote?.trim() ? [{ type: 'supportNote', text: existingNote }] : [])
+    : items.filter((item) => !isStoredReply(item))
+  const messages = recentReplies(replies).map((reply) => ({ ...reply, at: chatTimestamp(reply.at) }))
+  return JSON.stringify([...retained, ...messages])
 }
 
 /** Chỉ giữ các lần trả lời thuộc `maxDays` ngày (giờ Việt Nam) có hoạt động gần nhất, theo thứ tự thời gian. */

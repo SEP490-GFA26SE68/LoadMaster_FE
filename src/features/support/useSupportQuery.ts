@@ -53,7 +53,7 @@ export function useCreateTicketMutation() {
 
 export function useReplyMutation() {
   const refresh = useRefreshSupport()
-  return useMutation({ mutationFn: ({ ticketId, text }: { ticketId: string; text: string }) => replyToSupportTicket(ticketId, text), onSuccess: refresh })
+  return useMutation({ mutationFn: ({ ticketId, text, images }: { ticketId: string; text: string; images?: string[] }) => replyToSupportTicket(ticketId, text, images), onSuccess: refresh })
 }
 
 export function useSetTicketStatusMutation() {

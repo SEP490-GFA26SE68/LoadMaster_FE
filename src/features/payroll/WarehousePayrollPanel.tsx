@@ -10,7 +10,7 @@ import { Spinner } from '@/components/ui/Spinner'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 
 import { nextMonthPeriod } from './payroll-api'
-import { lockedPayrollMonth } from './payroll-version-row'
+import { isFuturePayrollMonth, lockedPayrollMonth } from './payroll-version-row'
 import type { WarehousePayrollRate } from './warehouse-payroll-api'
 import {
   EMPTY_WAREHOUSE_RATE_FORM,
@@ -50,6 +50,7 @@ export function WarehousePayrollPanel() {
   const [confirm, setConfirm] = useState<WarehouseConfirm | null>(null)
   const rates = useWarehousePayrollRatesQuery()
   const payroll = useWarehousePayrollPeriodQuery(period)
+  const isFuturePeriod = isFuturePayrollMonth(period)
   const lockedMonth = lockedPayrollMonth(rates.data ?? [], period, payroll.data?.status)
   const lockedBoard = useWarehousePayrollPeriodQuery(lockedMonth ?? period, lockedMonth != null)
   const board = lockedBoard.data?.status === 'LOCKED' ? lockedBoard.data : null
@@ -134,13 +135,17 @@ export function WarehousePayrollPanel() {
                   <Button variant="danger" loading={deleteDraft.isPending} disabled={busy} onClick={() => setConfirm({ kind: 'delete', period })}>
                     {t('payroll.deleteDraft')}
                   </Button>
-                  <Button variant="primary" loading={lock.isPending} disabled={busy} onClick={() => setConfirm({ kind: 'lock', period })}>
+                  <Button variant="primary" loading={lock.isPending} disabled={busy || isFuturePeriod} onClick={() => setConfirm({ kind: 'lock', period })}>
                     {t('payroll.lockPeriod')}
                   </Button>
                 </>
               ) : null}
             </div>
           </div>
+
+          {payroll.data?.status === 'DRAFT' && isFuturePeriod ? (
+            <p role="note" className="text-small text-ink-2">{t('payroll.futurePeriodLockDescription')}</p>
+          ) : null}
 
           {calculate.error || lock.error || unlock.error || deleteDraft.error ? (
             <p role="alert" className="text-small text-danger">{dataErrorMessage(calculate.error ?? lock.error ?? unlock.error ?? deleteDraft.error, t)}</p>

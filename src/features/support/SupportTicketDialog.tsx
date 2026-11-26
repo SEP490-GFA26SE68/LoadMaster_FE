@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/Textarea'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import { TICKET_KINDS, type SupportTicket } from '@/lib/mock-db'
 import { ticketFormSchema, translateSupportError, type TicketFormValues } from './support-form'
+import { SupportImagePicker } from './SupportImagePicker'
 import { TicketKindBadge, TicketStatusBadge } from './TicketBadges'
 import { TicketThread } from './TicketThread'
 import { ticketLabel, withThread } from './ticket-view'
@@ -56,17 +57,18 @@ function NewTicketForm({ onBack, onSent, pending, send }: {
   onBack: () => void
   onSent: (ticket: SupportTicket) => void
   pending: boolean
-  send: (values: TicketFormValues) => Promise<SupportTicket>
+  send: (values: TicketFormValues & { images: string[] }) => Promise<SupportTicket>
 }) {
   const t = useT()
   const [serverError, setServerError] = useState<unknown>(null)
+  const [images, setImages] = useState<string[]>([])
   const form = useForm<TicketFormValues>({ resolver: zodResolver(ticketFormSchema), defaultValues: { kind: 'TECHNICAL', title: '', description: '' } })
   const { errors } = form.formState
 
   async function handleValid(values: TicketFormValues) {
     setServerError(null)
     try {
-      onSent(await send(values))
+      onSent(await send({ ...values, images }))
     } catch (error) {
       setServerError(error)
     }
@@ -97,6 +99,7 @@ function NewTicketForm({ onBack, onSent, pending, send }: {
         error={translateSupportError(t, errors.description?.message)}
         {...form.register('description')}
       />
+      <SupportImagePicker images={images} onChange={setImages} disabled={pending} />
       {serverError ? (
         <p role="alert" className="m-0 rounded-md border border-badge-danger-border bg-badge-danger-bg px-3 py-2 text-body text-badge-danger-fg">
           {dataErrorMessage(serverError, t)}
@@ -160,8 +163,8 @@ export function SupportTicketDialog({ onClose }: { onClose: () => void }) {
                 ticket={current}
                 viewerIsSupport={false}
                 pending={reply.isPending}
-                onReply={async (text) => {
-                  await reply.mutateAsync({ ticketId: current.id, text })
+                onReply={async (text, images) => {
+                  await reply.mutateAsync({ ticketId: current.id, text, images })
                   toast.success(t('support.thread.sent'))
                 }}
               />

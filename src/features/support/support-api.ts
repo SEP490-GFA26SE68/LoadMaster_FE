@@ -21,6 +21,7 @@ import {
 } from '@/lib/mock-db'
 import { ticketCreateBody, ticketOf, threadOf, type SupportTicketDto, type SupportTicketThreadDto } from './support-dto'
 import { ticketsToDisplay } from './ticket-view'
+import { noteOfReplies } from './support-chat'
 
 const ON_BACKEND = usesBackend('support')
 
@@ -97,10 +98,28 @@ export async function getSupportTicketThread(ticketId: string): Promise<SupportT
  * (`SUPPORT_TICKET_CLOSED`) hay đang do người khác xử lý (`SUPPORT_TICKET_LOCKED`).
  */
 // POST /api/support-tickets/{id}/replies
-export async function replyToSupportTicket(ticketId: string, text: string): Promise<SupportTicket> {
-  if (!ON_BACKEND) return getMockDb().replyToSupportTicket(ticketId, text)
-  const body = { message: text.trim() }
-  return requiredThreadOf(await api().post<SupportTicketThreadDto>(`/api/support-tickets/${encodeURIComponent(ticketId)}/replies`, { body }))
+export async function replyToSupportTicket(ticketId: string, text: string, images: readonly string[] = []): Promise<SupportTicket> {
+  if (!ON_BACKEND) return getMockDb().replyToSupportTicket(ticketId, text, images)
+  if (images.length === 0) {
+    const body = { message: text.trim() }
+    return requiredThreadOf(await api().post<SupportTicketThreadDto>(`/api/support-tickets/${encodeURIComponent(ticketId)}/replies`, { body }))
+  }
+
+  const [current, viewer] = await Promise.all([getSupportTicketThread(ticketId), fetchBackendMe()])
+  if (viewer.role === null) throw new ApiError('UNAUTHORIZED')
+  const note = noteOfReplies([
+    ...current.replies,
+    {
+      authorId: viewer.id,
+      authorName: viewer.fullName,
+      authorRole: viewer.role,
+      text: text.trim(),
+      at: new Date().toISOString(),
+      images: [...images],
+    },
+  ], current.resolutionNoteRaw ?? current.resolutionNote)
+  await api().patch<SupportTicketDto>(`/api/support-tickets/${encodeURIComponent(ticketId)}`, { body: { resolutionNote: note } })
+  return getSupportTicketThread(ticketId)
 }
 
 /** Hỗ trợ khách hàng đổi trạng thái, kể cả mở lại yêu cầu đã đóng. */

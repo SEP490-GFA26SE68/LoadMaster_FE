@@ -40,6 +40,21 @@ test('sending a ticket opens it for the sender and the company, trims the text a
   expect((await db.listEvents())[0]).toMatchObject({ action: 'ticket.created', actorId: DISPATCHER, companyId: 'LOG-001', target: { type: 'ticket', id: 'TKT-003' }, params: { ticketKind: 'BILLING' } })
 })
 
+test('the mock keeps image attachments on a new request and on replies from either side', async () => {
+  const image = 'data:image/png;base64,evidence'
+  const db = dbAs(DISPATCHER)
+  const created = await db.createSupportTicket({ ...INPUT, images: [image] })
+
+  expect(created.attachments).toStrictEqual([image])
+
+  const requesterReply = await db.replyToSupportTicket(created.id, 'Requester evidence', [image])
+  expect(requesterReply.replies.at(-1)).toMatchObject({ text: 'Requester evidence', images: [image], authorRole: 'dispatcher' })
+
+  db.restoreSession(SUPPORT)
+  const supportReply = await db.replyToSupportTicket(created.id, 'Support guide', [image])
+  expect(supportReply.replies.at(-1)).toMatchObject({ text: 'Support guide', images: [image], authorRole: 'systemSupporter' })
+})
+
 test.each([
   ['kind', { kind: 'OTHER' }],
   ['title', { title: '   ' }],

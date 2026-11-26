@@ -9,6 +9,7 @@ import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import type { SupportTicket } from '@/lib/mock-db'
 import { cn } from '@/lib/utils'
 import { replyFormSchema, translateSupportError, type ReplyFormValues } from './support-form'
+import { SupportImagePicker, SupportImages } from './SupportImagePicker'
 import { TicketKindBadge, TicketStatusBadge } from './TicketBadges'
 import { ticketLabel } from './ticket-view'
 import { SUPPORT_SOURCE } from './useSupportQuery'
@@ -16,17 +17,19 @@ import { SUPPORT_SOURCE } from './useSupportQuery'
 /** Cỡ cảm ứng cho kho và tài xế mở hộp thoại từ nút tài khoản 56 px (AGENTS mục 5, 10): nút 56 px, chữ từ 16 px. */
 const TOUCH_BUTTON = 'pointer-coarse:h-14 pointer-coarse:text-body-lg'
 
-function ReplyForm({ onReply, pending }: { onReply: (text: string) => Promise<void>; pending: boolean }) {
+function ReplyForm({ onReply, pending }: { onReply: (text: string, images: string[]) => Promise<void>; pending: boolean }) {
   const t = useT()
   const [serverError, setServerError] = useState<unknown>(null)
+  const [images, setImages] = useState<string[]>([])
   const form = useForm<ReplyFormValues>({ resolver: zodResolver(replyFormSchema), defaultValues: { text: '' } })
   const { errors } = form.formState
 
   async function handleValid({ text }: ReplyFormValues) {
     setServerError(null)
     try {
-      await onReply(text)
+      await onReply(text, images)
       form.reset({ text: '' })
+      setImages([])
     } catch (error) {
       setServerError(error)
     }
@@ -42,6 +45,7 @@ function ReplyForm({ onReply, pending }: { onReply: (text: string) => Promise<vo
         error={translateSupportError(t, errors.text?.message)}
         {...form.register('text')}
       />
+      <SupportImagePicker images={images} onChange={setImages} disabled={pending} />
       {serverError ? (
         <p role="alert" className="m-0 rounded-md border border-badge-danger-border bg-badge-danger-bg px-3 py-2 text-body text-badge-danger-fg">
           {dataErrorMessage(serverError, t)}
@@ -72,6 +76,7 @@ function Replies({ ticket, when }: { ticket: SupportTicket; when: (iso: string) 
                 <time dateTime={reply.at} className="tabular-nums">{when(reply.at)}</time>
               </div>
               <p className="m-0 whitespace-pre-wrap text-body text-ink-1 pointer-coarse:text-body-lg">{reply.text}</p>
+              <SupportImages images={reply.images} />
             </li>
           ))}
         </ol>
@@ -100,7 +105,7 @@ function SupportNote({ note }: { note: string }) {
 export function TicketThread({ ticket, viewerIsSupport, onReply, onUnlockTrial, pending }: {
   ticket: SupportTicket
   viewerIsSupport: boolean
-  onReply: (text: string) => Promise<void>
+  onReply: (text: string, images: string[]) => Promise<void>
   onUnlockTrial?: (staffNote?: string) => Promise<void>
   pending: boolean
 }) {
@@ -194,6 +199,7 @@ export function TicketThread({ ticket, viewerIsSupport, onReply, onUnlockTrial, 
 
       <section aria-label={t('support.thread.body')} className="rounded-md border border-line-soft bg-n-25 px-3.5 py-3">
         <p className="m-0 whitespace-pre-wrap text-body text-ink-1 pointer-coarse:text-body-lg">{ticket.description}</p>
+        <SupportImages images={ticket.attachments} />
       </section>
 
       {ticket.resolutionNote === undefined ? null : <SupportNote note={ticket.resolutionNote} />}

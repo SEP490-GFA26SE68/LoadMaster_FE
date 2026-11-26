@@ -7,6 +7,18 @@ export function payrollVersionMonth(effectiveFrom: string) {
   return effectiveFrom.slice(0, 7)
 }
 
+export function isFuturePayrollMonth(period: string, now = new Date()) {
+  const monthParts = new Intl.DateTimeFormat('en', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+    month: '2-digit',
+  }).formatToParts(now)
+  const year = monthParts.find(({ type }) => type === 'year')?.value
+  const month = monthParts.find(({ type }) => type === 'month')?.value
+  const currentMonth = `${year}-${month}`
+  return period > currentMonth
+}
+
 export function lockedPayrollMonth(
   rates: readonly { readonly effectiveFrom: string; readonly periodStatus?: PayrollVersionStatus }[],
   selectedPeriod: string,
@@ -48,6 +60,7 @@ export function PayrollVersionLockButton({
 }) {
   const t = useT()
   const locked = status === 'LOCKED'
+  const future = !locked && isFuturePayrollMonth(period)
   return locked ? (
     <Button
       type="button"
@@ -66,7 +79,8 @@ export function PayrollVersionLockButton({
       variant="primary"
       size="sm"
       loading={pending}
-      disabled={pending}
+      disabled={pending || future}
+      title={future ? t('payroll.futurePeriodLockDescription') : undefined}
       aria-label={t('payroll.rate.lockVersionOf', { period })}
       onClick={() => onLock(period)}
     >

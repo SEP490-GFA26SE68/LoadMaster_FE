@@ -19,7 +19,7 @@ import {
   type DispatcherPayrollRateFormInput,
   type DispatcherPayrollRateFormValues,
 } from './dispatcher-payroll-rate-form'
-import { lockedPayrollMonth } from './payroll-version-row'
+import { isFuturePayrollMonth, lockedPayrollMonth } from './payroll-version-row'
 import {
   useCalculateDispatcherPayrollPeriodMutation,
   useCreateDispatcherPayrollRateMutation,
@@ -47,6 +47,7 @@ export function DispatcherPayrollPanel() {
   const [confirmVersionUnlock, setConfirmVersionUnlock] = useState<string | null>(null)
   const rates = useDispatcherPayrollRatesQuery()
   const payroll = useDispatcherPayrollPeriodQuery(period)
+  const isFuturePeriod = isFuturePayrollMonth(period)
   const lockedMonth = lockedPayrollMonth(rates.data ?? [], period, payroll.data?.status)
   const lockedBoard = useDispatcherPayrollPeriodQuery(lockedMonth ?? period, lockedMonth != null)
   const board = lockedBoard.data?.status === 'LOCKED' ? lockedBoard.data : null
@@ -158,7 +159,7 @@ export function DispatcherPayrollPanel() {
                   <Button
                     variant="primary"
                     loading={lock.isPending}
-                    disabled={calculate.isPending || lock.isPending || deleteDraft.isPending}
+                    disabled={isFuturePeriod || calculate.isPending || lock.isPending || deleteDraft.isPending}
                     onClick={() => setConfirmLockOpen(true)}>
                     {t('payroll.lockPeriod')}
                   </Button>
@@ -166,6 +167,10 @@ export function DispatcherPayrollPanel() {
               ) : null}
             </div>
           </div>
+
+          {payroll.data?.status === 'DRAFT' && isFuturePeriod ? (
+            <p role="note" className="text-small text-ink-2">{t('payroll.futurePeriodLockDescription')}</p>
+          ) : null}
 
           {calculate.error || lock.error || unlock.error || deleteDraft.error ? (
             <p role="alert" className="text-small text-danger">{dataErrorMessage(calculate.error ?? lock.error ?? unlock.error ?? deleteDraft.error, t)}</p>
