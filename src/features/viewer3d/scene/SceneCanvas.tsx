@@ -107,6 +107,10 @@ const STATIC_CANVAS_STYLE = { ...CANVAS_STYLE, pointerEvents: 'none', touchActio
  */
 const NO_SCROLL_RESIZE = { scroll: false } as const
 
+/** Cấu hình renderer: hằng số, không tạo object mới mỗi lần khung 3D vẽ lại. */
+const GL_OPTIONS = { antialias: true, alpha: true, powerPreference: 'high-performance' } as const
+const CAMERA_POSITION: [number, number, number] = [8.5, 5.2, 7]
+
 /** Độ sáng thêm của thùng ở xem trước form xe (`sceneMaterials`). */
 const SPEC_VIEW_LIFT = 2.2
 
@@ -119,7 +123,10 @@ export function SceneCanvas({
   fov = 38, framePoints, zoneLabels = true, vehicleRef, vehicleChildren, doorsClosed = false, children,
 }: SceneCanvasProps) {
   const materials = useMemo(() => sceneMaterials(specView ? SPEC_VIEW_LIFT : 1), [specView])
-  const colorContext = useMemo(() => createColorContext(model), [model])
+  // Màu theo kiện gốc chỉ đọc placements của phương án: giữ nguyên khi nơi gọi dựng lại object model mà placements không đổi
+  const modelPlacements = model.placements
+  const colorContext = useMemo(() => createColorContext({ placements: modelPlacements }), [modelPlacements])
+  const camera = useMemo(() => ({ fov, near: 0.1, far: 160, position: CAMERA_POSITION }), [fov])
   const [cx, cy, cz] = containerCenter(model.vehicle)
   const visibleSelection = placements.find((p) => p.id === selectedId && p.id !== hiddenId && semantics?.appearanceById.get(p.id)?.visibility !== 'hidden')
   const selected = visibleSelection ?? placements.find((p) => p.id === semantics?.currentId && p.id !== hiddenId && semantics?.appearanceById.get(p.id)?.visibility !== 'hidden')
@@ -169,8 +176,7 @@ export function SceneCanvas({
   </>
   return <><Canvas key={canvasKey} data-experience={experience} frameloop="demand" dpr={flags.dpr} resize={interactive ? undefined : NO_SCROLL_RESIZE}
     shadows={flags.shadows ? 'percentage' : false} flat
-    gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
-    camera={{ fov, near: 0.1, far: 160, position: [8.5, 5.2, 7] }}
+    gl={GL_OPTIONS} camera={camera}
     onPointerMissed={() => handleSelect(null)} style={interactive ? CANVAS_STYLE : STATIC_CANVAS_STYLE}>
     <SceneLighting shadows={flags.shadows} />
     <CameraRig preset={preset} reducedMotion={flags.reducedMotion} vehicle={frameVehicle ?? model.vehicle} fit fitRequest={fitRequest} specFrame={specView} focus={focus}
@@ -179,7 +185,7 @@ export function SceneCanvas({
       {vehicleRef ? <group ref={vehicleRef} name="vehicle-motion">{vehicleParts}</group> : vehicleParts}
       {children}
     </group>
-    <PerfProbe onSample={handleSample} placementCount={placements.length} qualityTier={flags.tier} />
+    <PerfProbe onSample={handleSample} placementCount={placements.length} qualityTier={flags.tier} scene={model} />
     <ContextLossWatch onLost={handleContextLost} onRestored={handleReloadCanvas} />
   </Canvas>
   {contextLost ? <ContextLostOverlay onReload={handleReloadCanvas} /> : null}

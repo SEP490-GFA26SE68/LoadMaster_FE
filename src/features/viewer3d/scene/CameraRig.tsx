@@ -45,6 +45,16 @@ const SPEC_FRAME_MARGIN = 1.08
 /** smoothTime của SmoothDamp ≈ 60% thời gian tới đích → ~500ms */
 const SMOOTH_TIME = 0.3
 
+/**
+ * Khoá canh khung của xe. Khung chỉ phụ thuộc kích thước lòng thùng (`containerCenter`), nên nơi gọi dựng lại object xe cùng kích thước
+ * (đọc lại phương án, đổi sang xe cùng cỡ) không làm camera bay về góc mặc định. Xem trước ở form xe canh theo cả cửa và trục
+ * (`specFramePoints`): giữ so theo tham chiếu, nơi gọi đã giữ `frameVehicle` khi chỉ vật cản đổi.
+ */
+function frameKeyOf(vehicle: VehicleConfig | undefined, specFrame: boolean): unknown {
+  if (!vehicle || specFrame) return vehicle
+  return `${vehicle.innerLengthCm}x${vehicle.innerWidthCm}x${vehicle.innerHeightCm}`
+}
+
 export function CameraRig({
   preset,
   reducedMotion,
@@ -78,7 +88,7 @@ export function CameraRig({
   onUserControl?: () => void
 }) {
   const controlsRef = useRef<ComponentRef<typeof CameraControls>>(null)
-  const applied = useRef<{ preset: CameraPreset; vehicle?: VehicleConfig; request: number; points?: FramePoints } | null>(null)
+  const applied = useRef<{ preset: CameraPreset; vehicle: unknown; request: number; points?: FramePoints } | null>(null)
   const size = useThree((state) => state.size)
   const camera = useThree((state) => state.camera)
   const invalidate = useThree((state) => state.invalidate)
@@ -90,8 +100,9 @@ export function CameraRig({
     // Responsive panels can resize the Canvas mid-orbit. Keep the user's pose;
     // only an explicit preset, a new vehicle, new frame points or `fitRequest` requests a fresh framing.
     const previous = applied.current
-    if (previous?.preset === preset && previous.vehicle === vehicle && previous.request === fitRequest && previous.points === framePoints) return
-    applied.current = { preset, vehicle, request: fitRequest, points: framePoints }
+    const frameKey = frameKeyOf(vehicle, specFrame)
+    if (previous?.preset === preset && previous.vehicle === frameKey && previous.request === fitRequest && previous.points === framePoints) return
+    applied.current = { preset, vehicle: frameKey, request: fitRequest, points: framePoints }
     beforeFocus.current = null
     const transition = !reducedMotion && !(jumpFirst && !previous)
     let [x, y, z] = (specFrame ? SPEC_PRESET_POSITIONS[preset] : undefined) ?? PRESET_POSITIONS[preset]
@@ -142,9 +153,11 @@ export function CameraRig({
     invalidate()
   }, [preset, reducedMotion, vehicle, fit, fitRequest, specFrame, vehicleDecoration, zoom, framePoints, jumpFirst, size.width, size.height, camera, invalidate])
 
+  // Lấy nét theo kích thước lòng thùng, không theo tham chiếu xe: object xe mới cùng kích thước không lấy nét lại
+  const innerLengthCm = vehicle?.innerLengthCm, innerWidthCm = vehicle?.innerWidthCm, innerHeightCm = vehicle?.innerHeightCm
   useEffect(() => {
     const controls = controlsRef.current
-    if (!controls || !vehicle) return
+    if (!controls || innerLengthCm === undefined || innerWidthCm === undefined || innerHeightCm === undefined) return
     if (!focus) {
       const saved = beforeFocus.current
       beforeFocus.current = null
@@ -154,7 +167,7 @@ export function CameraRig({
       }
       return
     }
-    const center = containerCenter(vehicle)
+    const center = containerCenter({ innerLengthCm, innerWidthCm, innerHeightCm })
     const target = boxCenter(focus.placement).map((value, i) => value - center[i]!) as Vec3
     if (!beforeFocus.current) beforeFocus.current = { position: controls.getPosition(new Vector3()), target: controls.getTarget(new Vector3()) }
     // Keep orientation, with a contextual dolly rather than fitToBox's automatic rotation.
@@ -162,7 +175,7 @@ export function CameraRig({
     const diagonal = Math.hypot(focus.placement.lengthCm, focus.placement.widthCm, focus.placement.heightCm) * SCENE_SCALE
     void controls.dollyTo(focus.follow ? Math.max(6, diagonal * 3) : Math.max(3, Math.min(6, diagonal * 3)), !reducedMotion)
     invalidate()
-  }, [focus, vehicle, reducedMotion, invalidate])
+  }, [focus, innerLengthCm, innerWidthCm, innerHeightCm, reducedMotion, invalidate])
 
   useEffect(() => {
     function handleKey(event: KeyboardEvent) {

@@ -6,7 +6,6 @@ import { EmptyState } from '@/components/EmptyState'
 import { Button } from '@/components/ui/Button'
 import { useCan } from '@/features/auth/useCan'
 import { PlannerAssistant } from '@/features/marketing/assistant/PlannerAssistant'
-import { ChangeVehicleDialog } from '@/features/trips/ChangeVehicleDialog'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import type { TripStatus } from '@/types/trip'
 import { backendEditApproval, baselineErrorKeys } from './approval/backend-edit-approval'
@@ -15,6 +14,7 @@ import { backendPlacementIds, backendPlanScene, planShownOn, unknownStopCodes } 
 import { BackendPlannerActions } from './BackendPlannerActions'
 import { createColorContext } from './colors'
 import { createPerfStore, DebugOverlay } from './DebugOverlay'
+import { useDialogOpener } from './dialog-opener'
 import { EditorGestureHud } from './editor/EditorGestureHud'
 import { EditorPanel } from './editor/EditorPanel'
 import { EditorToolbar } from './editor/EditorToolbar'
@@ -24,6 +24,7 @@ import { useOperations } from './operations/useOperations'
 import { usePlannerAssistant } from './usePlannerAssistant'
 import { PlannerLockNotice } from './PlannerLockNotice'
 import { PlannerNoticeBar, PlannerNoticeLink } from './PlannerNoticeBar'
+import { ChangeVehicleHost } from './PlannerDialogHosts'
 import { PlannerSimulationControls } from './PlannerSimulationControls'
 import { SceneInspector } from './panels/SceneInspector'
 import { WorkspaceToolbar, type InspectorTab } from './panels/WorkspaceToolbar'
@@ -128,11 +129,13 @@ function BackendPlannerSession({ tripCode, source }: { tripCode: string; source:
   const editable = pinnable && !stale
   const handleEdit = editable ? () => handleModeChange('edit') : undefined
   const canChangeVehicle = phaseLock === null && source.status === 'PLANNED' && can('trips.edit')
-  const [vehicleOpen, setVehicleOpen] = useState(false)
+  // State mở của hộp Đổi xe nằm ở chính hộp thoại: mở / đóng không vẽ lại phiên và khung 3D
+  const vehicleDialog = useDialogOpener()
   const pinMutation = useTogglePinMutation(tripCode, plan.id)
   const editsMutation = useApproveBackendEditsMutation(plan.id)
   const placementIds = useMemo(() => backendPlacementIds(plan), [plan])
-  const baseline = useMemo(() => baselineErrorKeys(model), [model])
+  // Lỗi có sẵn của phương án: tính lười, chỉ khi bản chỉnh đã dời / xoay kiện — chế độ Xem không dựng constraint engine nào
+  const baseline = useMemo(() => { let keys: ReadonlySet<string> | undefined; return () => (keys ??= baselineErrorKeys(model)) }, [model])
   const editApproval = useMemo(() => editable ? backendEditApproval(model, state.placements, state.draft, placementIds, baseline) : null,
     [editable, model, state.placements, state.draft, placementIds, baseline])
   const pin = pinnable || pinBlocked !== undefined ? {
@@ -210,7 +213,7 @@ function BackendPlannerSession({ tripCode, source }: { tripCode: string; source:
             <LoadPlanViewer state={state} flags={flags} editor={editor} operations={operations} onPerfSample={showPerf ? perfStore.publish : undefined} />
           </Suspense>
           {editing ? null : <SceneHud state={state} operations={operations} onInspect={setInspectorTab}
-            onChangeVehicle={canChangeVehicle ? () => setVehicleOpen(true) : undefined}
+            onChangeVehicle={canChangeVehicle ? vehicleDialog.open : undefined}
             onRerunPinned={canRerun ? () => void navigate(keepPinsPath) : undefined} rerunBlockedReason={pinBlocked}
             onResetFocus={editor.focus ? () => { setFollow('off'); editor.resetFocus() } : undefined}
             onFocus={(p) => { operations.pauseFollow(); if (p) editor.focusPlacement(p); else editor.focusSelected() }} onEdit={handleEdit}
@@ -240,7 +243,7 @@ function BackendPlannerSession({ tripCode, source }: { tripCode: string; source:
         onTogglePlaying={operations.togglePlaying}
         onSpeedChange={state.setSpeed}
       />}
-      {canChangeVehicle ? <ChangeVehicleDialog tripId={tripCode} open={vehicleOpen} onOpenChange={setVehicleOpen} /> : null}
+      {canChangeVehicle ? <ChangeVehicleHost opener={vehicleDialog} tripId={tripCode} /> : null}
     </div>
   )
 }

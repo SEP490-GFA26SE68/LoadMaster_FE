@@ -8,6 +8,8 @@ import type { SceneZone } from '@/features/viewer3d/scene-input'
 import { useFormat, useT } from '@/lib/i18n'
 import { stopColor, stopForeground } from '@/lib/stops'
 import { SCENE_SCALE } from '../scene/units'
+import { useObservedSizes } from '../scene/useObservedSizes'
+import { rearDoorCueAnchor } from './OperationsCues'
 import { zoneStrips } from './stop-map'
 
 /** Nhãn nằm dưới điểm neo chừng này px; hai nhãn đè nhau thì nhãn thấp hơn trên màn lùi xuống, cách nhãn kia chừng này px. */
@@ -25,7 +27,8 @@ type Rect = { left: number; right: number; top: number; bottom: number }
  * Tier `low` vẫn vẽ: đây là cue nghiệp vụ.
  *
  * Nhãn không đè nhau và không đè nhãn "Cửa sau": mỗi khung hình được vẽ, điểm neo chiếu ra màn rồi nhãn nào chạm nhãn đã đặt thì lùi
- * xuống dưới nhãn đó. Vị trí ghi thẳng vào DOM, không qua React, và chỉ ghi khi đổi.
+ * xuống dưới nhãn đó. Vị trí ghi thẳng vào DOM, không qua React, và chỉ ghi khi đổi. Không đọc layout trong khung hình: kích thước nhãn
+ * (và nhãn "Cửa sau") đo bằng ResizeObserver, vị trí nhãn "Cửa sau" chiếu từ điểm neo 3D của nó như nhãn vùng.
  *
  * `<Html>` của drei dựng nội dung ở một React root riêng, không có context của app: chữ dịch và số đã định dạng được tính ở đây rồi
  * truyền vào, trong nhãn không gọi `useT` / `useFormat`. `labels` false: chỉ dải màu (trang giới thiệu ngoài góc Vùng điểm giao).
@@ -54,6 +57,9 @@ export function ZoneStrips({ zones, vehicle, reducedMotion, labels: showLabels =
   const applied = useRef('')
   const retries = useRef(0)
   const point = useMemo(() => new Vector3(), [])
+  const { track, sizeOf } = useObservedSizes(invalidate)
+  const door = useRef<HTMLElement | null>(null)
+  const doorAnchor = useMemo(() => rearDoorCueAnchor(vehicle), [vehicle])
   useFrame(({ camera, size }) => {
     const root = group.current
     // Nhãn ẩn rồi hiện lại là phần tử DOM mới: lần đo sau phải ghi lại vị trí dù khoá không đổi
@@ -63,17 +69,25 @@ export function ZoneStrips({ zones, vehicle, reducedMotion, labels: showLabels =
     let unmeasured = false
     strips.forEach((strip, index) => {
       const element = labels.current[index]
-      if (!element || element.offsetWidth === 0) { unmeasured = true; return }
+      const measured = element ? sizeOf(element) : null
+      if (!measured || measured.width === 0) { unmeasured = true; return }
       root.localToWorld(point.set(strip.labelAt[0], strip.labelAt[1], strip.labelAt[2]).multiplyScalar(SCENE_SCALE)).project(camera)
-      boxes.push({ index, x: (point.x + 1) * size.width / 2, y: (1 - point.y) * size.height / 2, width: element.offsetWidth, height: element.offsetHeight })
+      boxes.push({ index, x: (point.x + 1) * size.width / 2, y: (1 - point.y) * size.height / 2, width: measured.width, height: measured.height })
     })
     const placed: Rect[] = []
     const drops: number[] = []
-    // Nội dung <Html> của drei nằm trong khung bọc canvas của R3F, không phải ngay cạnh canvas
-    const door = canvas.closest('[data-experience]')?.querySelector('[data-rear-door-cue]')?.getBoundingClientRect()
-    if (door && door.width > 0) {
-      const frame = canvas.getBoundingClientRect()
-      placed.push({ left: door.left - frame.left, right: door.right - frame.left, top: door.top - frame.top, bottom: door.bottom - frame.top })
+    // Nội dung <Html> của drei nằm trong khung bọc canvas của R3F, không phải ngay cạnh canvas. Tìm lại chỉ khi nhãn cũ đã rời DOM
+    if (!door.current?.isConnected) {
+      const previous = door.current
+      door.current = canvas.closest('[data-experience]')?.querySelector<HTMLElement>('[data-rear-door-cue]') ?? null
+      track(door.current, previous)
+    }
+    const doorSize = door.current ? sizeOf(door.current) : null
+    // Nhãn "Cửa sau" căn giữa theo chiều ngang, mép trên ở điểm neo (như drei đặt nội dung <Html>)
+    root.localToWorld(point.set(...doorAnchor)).project(camera)
+    if (doorSize && doorSize.width > 0 && point.z < 1) {
+      const x = (point.x + 1) * size.width / 2, y = (1 - point.y) * size.height / 2
+      placed.push({ left: x - doorSize.width / 2, right: x + doorSize.width / 2, top: y, bottom: y + doorSize.height })
     } else unmeasured = true
     if (unmeasured && retries.current < MEASURE_RETRIES) { retries.current += 1; invalidate() }
     for (const box of boxes.sort((a, b) => a.y - b.y || a.x - b.x)) {
@@ -109,7 +123,7 @@ export function ZoneStrips({ zones, vehicle, reducedMotion, labels: showLabels =
       const zone = zones.find(({ stopId }) => stopId === strip.stop)
       const [x, y, z] = strip.labelAt
       return <Html key={strip.stop} position={[x * SCENE_SCALE, y * SCENE_SCALE, z * SCENE_SCALE]} zIndexRange={[5, 0]} style={{ pointerEvents: 'none' }}>
-        <span ref={(element) => { labels.current[index] = element }} data-zone-label={strip.stop} title={zone?.name}
+        <span ref={(element) => { track(element, labels.current[index]); labels.current[index] = element }} data-zone-label={strip.stop} title={zone?.name}
           style={{ transform: `translate(-50%, ${LABEL_DROP_PX}px)` }}
           className="flex w-max items-center gap-1.5 rounded-md border border-glass-dark-border bg-panel-dark/85 px-2 py-1 text-body-lg leading-tight whitespace-nowrap text-glass-dark-text shadow-e2 xl:text-fine">
           <span aria-hidden className="grid size-5.5 flex-none place-items-center rounded-sm font-display text-note leading-none font-semibold"

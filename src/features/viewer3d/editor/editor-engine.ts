@@ -59,3 +59,12 @@ export function createEditorEngine(model: ViewerSceneModel): EditorEngine | null
     },
   }
 }
+
+/** `createEditorEngine` dựng ở lần gọi đầu, rồi dùng lại — editor chỉ trả giá dựng engine khi thật sự kiểm một tư thế (chế độ Chỉnh sửa). */
+export function lazyEditorEngine(model: ViewerSceneModel): () => EditorEngine | null {
+  let engine: EditorEngine | null | undefined
+  return () => {
+    if (engine === undefined) engine = createEditorEngine(model)
+    return engine
+  }
+}

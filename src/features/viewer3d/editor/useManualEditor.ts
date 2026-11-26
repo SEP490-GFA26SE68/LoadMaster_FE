@@ -26,7 +26,8 @@ export function useManualEditor(state: LoadPlanViewerState) {
   const patch = selected ? draft.patches.get(selected.id) : undefined
   const manual = Boolean(patch?.position || patch?.orientation !== undefined)
   const inspect = useEditorValidation(sceneModel, placements)
-  const validation = useMemo(() => selected ? inspect(selected) : null, [selected, inspect])
+  // Chỉ chế độ Chỉnh sửa đọc kết quả kiểm (EditorPanel): chế độ Xem không kiểm, nên không dựng constraint engine
+  const validation = useMemo(() => mode === 'edit' && selected ? inspect(selected) : null, [mode, selected, inspect])
 
   const setMode = (next: 'view' | 'edit') => {
     state.stopPlaying()

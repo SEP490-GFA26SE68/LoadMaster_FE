@@ -1,4 +1,4 @@
-import { expect, test } from 'vitest'
+import { expect, test, vi } from 'vitest'
 import type { VehicleConfig } from '@/domain/models'
 import type { LoadPlan, LoadPlacement } from '@/features/optimization/load-plan-dto'
 import { backendPlacementIds, backendPlanScene } from '../backend-plan-scene'
@@ -79,4 +79,35 @@ test('phương án máy chủ có cờ lỗi thời và chỉnh tay; kiện chư
   expect(model.engineInput?.placements.map(({ packageInstanceId }) => packageInstanceId)).toEqual(['PK-1'])
   expect(model.unplaced[0]).toMatchObject({ lengthCm: 120, widthCm: 80, heightCm: 60, weightKg: 45 })
   expect(model.unplaced[0]?.detailUnknown).toBeFalsy()
+})
+
+test('chưa dời / xoay kiện nào: không lỗi, không tính lỗi có sẵn của phương án (không dựng constraint engine)', () => {
+  const source = plan([placement('11', 'PK-1', 0), placement('12', 'PK-2', 50)])
+  const model = backendPlanScene({ tripCode: 'TRIP-1', plan: source, vehicle: VEHICLE, stops: STOPS })
+  const baseline = vi.fn(() => baselineErrorKeys(model))
+  const approval = backendEditApproval(model, model.placements, createViewerDraft(), backendPlacementIds(source), baseline)
+  expect(approval).toEqual({ edits: [], pinnedPlacementIds: undefined, hasEdits: false, errors: [] })
+  expect(baseline).not.toHaveBeenCalled()
+})
+
+test('chỉ đổi ghim: gửi bộ ghim mới, không chỉnh sửa tư thế, không lỗi', () => {
+  const source = plan([placement('11', 'PK-1', 0), placement('12', 'PK-2', 100)])
+  const model = backendPlanScene({ tripCode: 'TRIP-1', plan: source, vehicle: VEHICLE, stops: STOPS })
+  const draft = patchPlacement(model, createViewerDraft(), 'PK-2', { pinned: true })
+  const { placements } = resolveEffectiveScene(model, draft)
+  const baseline = vi.fn(() => baselineErrorKeys(model))
+  const approval = backendEditApproval(model, placements, draft, backendPlacementIds(source), baseline)
+  expect(approval).toEqual({ edits: [], pinnedPlacementIds: ['12'], hasEdits: true, errors: [] })
+  expect(baseline).not.toHaveBeenCalled()
+})
+
+test('đã dời kiện: lỗi có sẵn tính một lần qua hàm lười', () => {
+  const source = plan([placement('11', 'PK-1', 0), placement('12', 'PK-2', 100)])
+  const model = backendPlanScene({ tripCode: 'TRIP-1', plan: source, vehicle: VEHICLE, stops: STOPS })
+  const draft = patchPlacement(model, createViewerDraft(), 'PK-2', { position: { x: 50, y: 0, z: 0 } })
+  const { placements } = resolveEffectiveScene(model, draft)
+  const baseline = vi.fn(() => baselineErrorKeys(model))
+  const approval = backendEditApproval(model, placements, draft, backendPlacementIds(source), baseline)
+  expect(approval?.errors.map(({ code }) => code)).toContain('OVERLAP')
+  expect(baseline).toHaveBeenCalledTimes(1)
 })
