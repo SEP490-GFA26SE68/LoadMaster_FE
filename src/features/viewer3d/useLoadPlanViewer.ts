@@ -1,17 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { CameraPreset, ColorMode, PlaybackSpeed } from '@/features/viewer3d/viewer-types'
+import { DEFAULT_TIME_SCALE, type CameraPreset, type ColorMode, type TimeScale } from '@/features/viewer3d/viewer-types'
 import type { OrientationCode } from '@/domain/geometry'
 import type { ViewerSceneModel } from '@/features/viewer3d/scene-input'
 import { resolveEffectiveScene, type PlacementPatch } from './viewer-draft'
 import { commitCommand, commitGravityMove, createDraftHistory, travelHistory, type CommandType } from './editor/draft-history'
+import { createPlannerTiming, playbackDelayMs } from './operations/handling-schedule'
 
 /**
  * Toàn bộ state tương tác của màn xem phương án 3D.
  * Scene chỉ nhận giá trị và callback từ đây, không tự giữ state nghiệp vụ.
  */
-
-/** Một bước phát lại ở tốc độ 1× — trong khoảng 400–700ms của mục 8. */
-export const STEP_DURATION_MS = 600
 
 export type LeftTab = 'unplaced' | 'pinned' | 'placed'
 
@@ -33,7 +31,7 @@ export function useLoadPlanViewer(
   // Mở màn là thấy trọn phương án; timeline chỉ tua khi người dùng chủ động.
   const [step, setStepState] = useState(totalSteps)
   const [playing, setPlaying] = useState(false)
-  const [speed, setSpeed] = useState<PlaybackSpeed>(2)
+  const [timeScale, setTimeScale] = useState<TimeScale>(DEFAULT_TIME_SCALE)
   const [selectedId, setSelectedId] = useState<string | null>(
     initialSelected?.id ?? null,
   )
@@ -42,6 +40,8 @@ export function useLoadPlanViewer(
   const draft = history.draft
   const effectiveScene = useMemo(() => resolveEffectiveScene(sceneModel, draft), [sceneModel, draft])
   const placements = effectiveScene.placements
+  // Thời gian thật ước tính theo bản đang xem, kể cả bản đang chỉnh tay (quãng bê đổi theo chỗ đặt)
+  const timing = useMemo(() => createPlannerTiming(placements, innerLengthCm), [placements, innerLengthCm])
 
   const setStep = useCallback(
     (next: number) => setStepState(Math.min(totalSteps, Math.max(totalSteps > 0 ? 1 : 0, next))),
@@ -63,19 +63,17 @@ export function useLoadPlanViewer(
     })
   }, [step, totalSteps])
 
+  // Phát theo thời gian thật × hệ số (Spec vật lý 10.3): chờ đúng thời gian ước tính của kiện kế tiếp ÷ hệ số rồi mới sang bước
+  // đó; kiện vẫn rơi vào chỗ trong 500 ms như cũ (mục 8)
   useEffect(() => {
     if (!playing) return
-    const id = window.setInterval(() => {
-      setStepState((s) => {
-        if (s >= totalSteps) {
-          setPlaying(false)
-          return s
-        }
-        return s + 1
-      })
-    }, STEP_DURATION_MS / speed)
-    return () => window.clearInterval(id)
-  }, [playing, speed, totalSteps])
+    const next = step + 1
+    const id = window.setTimeout(() => {
+      if (next <= totalSteps) setStepState(next)
+      if (next >= totalSteps) setPlaying(false)
+    }, playbackDelayMs(timing.loading().secondsByStep.get(next), timeScale))
+    return () => window.clearTimeout(id)
+  }, [playing, step, totalSteps, timing, timeScale])
 
 
   const commitDraft = useCallback((type: CommandType, id?: string, patch?: PlacementPatch) => {
@@ -136,8 +134,9 @@ export function useLoadPlanViewer(
     goToStart,
     playing,
     togglePlaying,
-    speed,
-    setSpeed,
+    timeScale,
+    setTimeScale,
+    timing,
     selectedId,
     selected,
     select: setSelectedId,

@@ -5,7 +5,7 @@ import { useFormat, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import type { LoadPlanViewerState } from '../useLoadPlanViewer'
 import type { OperationsState } from './useOperations'
-import { MassCard } from './OperationsPanel'
+import { MassCard } from './GravityCards'
 import { PinnedRerun } from './PinnedRerun'
 import type { InspectorTab } from '../panels/WorkspaceToolbar'
 import { DARK_SCOPE, GLASS_PANEL, GLASS_PRESSED, MUTED, StopMark } from '../panels/scene-ui'
@@ -89,8 +89,8 @@ export function SceneHud({ state, operations, onInspect, onFocus, onEdit, onRese
           </Button>
         </div> : null}
       </section>
-      {/* Từ 1.280 px tâm khối lượng nằm trong cột nổi bên phải (SceneInspector) */}
-      <MassCard state={state} operations={operations} className="max-w-60 xl:hidden" />
+      {/* Từ 1.280 px thẻ trọng tâm hàng G nằm trong cột nổi bên phải (SceneInspector) */}
+      <MassCard operations={operations} vehicle={state.sceneModel.vehicle} className="max-w-60 xl:hidden" />
     </div>
     <div className="flex items-end justify-between gap-2">
       {/* Thanh kiện gọn: tablet và điện thoại; từ 1.280 px lúc xếp hàng thẻ kiện nổi bên phải thay nó, lúc dỡ hàng vẫn giữ (kiện chắn đang xem) */}

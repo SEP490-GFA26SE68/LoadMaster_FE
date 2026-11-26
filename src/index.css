@@ -220,6 +220,9 @@
      xám lam, không trùng tám màu điểm giao; nhạt hơn khi vật cản chịu tải (LM-033) */
   --obstacle: #64748b;
   --obstacle-bearing: #a3b1c2;
+  /* trọng tâm hàng G trên canvas tối của Planner (Spec vật lý 10.3) — cyan rất nhạt (= --cyan-100): không trùng tám màu điểm giao,
+     --highlight của kiện hiện tại hay xám của vật cản */
+  --cog-marker: #cbf7f9;
 
   /* màu định danh điểm giao Okabe–Ito, an toàn cho người mù màu; chữ trên mốc luôn tối */
   --stop-1: #e69f00;
@@ -397,6 +400,7 @@
   --color-table-head: var(--table-head);
   --color-switch-off: var(--switch-off);
   --color-highlight: var(--highlight);
+  --color-cog-marker: var(--cog-marker);
   --color-app: var(--app);
   --color-line-soft: var(--line-soft);
   --color-line-strong: var(--line-strong);

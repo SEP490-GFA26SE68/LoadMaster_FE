@@ -39,7 +39,8 @@ export type LifoIndex = {
   corridor(target: ScenePlacement, removedIds?: ReadonlySet<string>): ScenePlacement[]
 }
 
-function toPackagePlacement(p: ScenePlacement): PackagePlacement {
+/** Chỗ đặt theo contract của domain cho một kiện của scene (cm, kích thước đã xoay). */
+export function toPackagePlacement(p: ScenePlacement): PackagePlacement {
   return {
     packageInstanceId: p.id, orientation: p.orientation, xCm: p.position.x, yCm: p.position.y, zCm: p.position.z,
     placedLengthCm: p.lengthCm, placedWidthCm: p.widthCm, placedHeightCm: p.heightCm,

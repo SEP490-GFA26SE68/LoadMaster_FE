@@ -1,24 +1,16 @@
 import type { ReactNode } from 'react'
-import { Badge } from '@/components/ui/Badge'
 import type { DeadlineStatus } from '@/domain/routing'
 import { useFormat, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { GlassChip, MUTED, StopMark, type GlassChipTone } from '../panels/scene-ui'
 import type { ScenePlacement, SceneStop, SceneZone } from '../scene-input'
+import { IndicatorCard } from './IndicatorCard'
 
 /** Mức hạn: kịp hạn xanh lá, sát hạn hổ phách, trễ hạn dự kiến đỏ — luôn kèm chữ (như chi tiết chuyến, FE-4b-09). */
 const DEADLINE_TONE: Readonly<Record<DeadlineStatus, GlassChipTone>> = { OK: 'ok', AT_RISK: 'warn', MISSED: 'bad' }
 
 function Card({ title, mock, children }: { title: string; mock: boolean; children: ReactNode }) {
-  return (
-    <section aria-label={title} className="flex w-full min-w-64 flex-col gap-2 rounded-lg border border-glass-dark-border bg-canvas-2/45 p-3 text-body-lg xl:text-caption">
-      <div className="flex items-center justify-between gap-3">
-        <h3 className="font-semibold text-sky-text">{title}</h3>
-        {mock ? <Badge shape="tag" tone="mock" className="border-amber-500/45 text-amber-500">MOCK RESULT</Badge> : null}
-      </div>
-      {children}
-    </section>
-  )
+  return <IndicatorCard title={title} tag={mock ? 'mock' : undefined}>{children}</IndicatorCard>
 }
 
 /**

@@ -287,8 +287,8 @@ export const viewer = {
     tabs: { operations: 'Operations', package: 'Package', display: 'Display', packages: 'List' },
     selectPackage: 'Select package',
     layers: 'Display layers',
-    showMass: 'Show cargo center of mass',
-    hideMass: 'Hide cargo center of mass',
+    showMass: 'Show cargo center of gravity (G)',
+    hideMass: 'Hide cargo center of gravity (G)',
     showZones: 'Show stop zones',
     hideZones: 'Hide stop zones',
     zonesHint: 'Zone strips lie on the cargo floor in the stop colors, with the stop name and its share of the volume; cargo can hide them. Packages outside the zone of their stop have a thick white outline.',
@@ -377,7 +377,6 @@ export const viewer = {
   },
   cues: {
     rearDoor: 'Rear door · Unloading direction',
-    centerOfMass: 'Cargo center of mass',
   },
   spec: {
     length: 'Length {value}',
@@ -403,7 +402,6 @@ export const viewer = {
     overview: 'View whole vehicle',
     backToTarget: 'Back to package to unload',
     skipStep: 'Skip step in simulation',
-    lateralOffset: 'Lateral offset {value}',
     selectPackage: 'Select package',
     focus: 'Focus on package',
     edit: 'Edit package',

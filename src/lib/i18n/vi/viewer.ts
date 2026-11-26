@@ -308,8 +308,8 @@ export const viewer = {
     tabs: { operations: 'Vận hành', package: 'Kiện', display: 'Hiển thị', packages: 'Danh sách' },
     selectPackage: 'Chọn kiện',
     layers: 'Lớp hiển thị',
-    showMass: 'Hiện tâm khối lượng hàng',
-    hideMass: 'Ẩn tâm khối lượng hàng',
+    showMass: 'Hiện trọng tâm hàng (G)',
+    hideMass: 'Ẩn trọng tâm hàng (G)',
     showZones: 'Hiện dải vùng điểm giao',
     hideZones: 'Ẩn dải vùng điểm giao',
     zonesHint: 'Dải vùng nằm trên sàn thùng theo màu điểm giao, kèm tên điểm và tỷ lệ thể tích; hàng có thể che dải. Kiện nằm ngoài vùng của điểm mình có viền trắng dày.',
@@ -406,7 +406,6 @@ export const viewer = {
   },
   cues: {
     rearDoor: 'Cửa sau · Hướng dỡ',
-    centerOfMass: 'Tâm khối lượng hàng',
   },
   /** Nhãn đường kích thước trên mô hình ở form xe (`VehicleSpecMarks`): số là số đang nhập. */
   spec: {
@@ -435,7 +434,6 @@ export const viewer = {
     overview: 'Xem toàn xe',
     backToTarget: 'Quay lại kiện cần dỡ',
     skipStep: 'Bỏ qua bước trong mô phỏng',
-    lateralOffset: 'Lệch ngang {value}',
     selectPackage: 'Chọn kiện',
     focus: 'Tập trung vào kiện',
     edit: 'Chỉnh sửa kiện',

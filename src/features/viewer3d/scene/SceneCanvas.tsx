@@ -7,7 +7,8 @@ import type { SceneZone, ViewerSceneModel } from '@/features/viewer3d/scene-inpu
 import type { VehicleConfig } from '@/domain/models'
 import type { ExperienceMode,PerformanceFlags } from '../usePerformanceFlags'
 import type { SceneSemantics } from '../operations/scene-semantics'
-import { CargoMassMarker, RearDoorCue } from '../operations/OperationsCues'
+import { RearDoorCue } from '../operations/OperationsCues'
+import { CargoMassDescription, CargoMassMarker } from '../operations/CargoMassMarker'
 import { ZoneStrips } from '../operations/ZoneStrips'
 import { UnloadMotion, type UnloadMotionStep } from '../operations/UnloadMotion'
 import { ExtractionCorridor } from '../operations/ExtractionCorridor'
@@ -47,7 +48,11 @@ export type SceneCanvasProps = {
   animateLoading?: boolean
   decoration?: boolean
   xraySelection?: boolean
-  showMass?: boolean
+  /**
+   * Trọng tâm hàng G (Spec vật lý 10.3) của đúng các kiện này: điểm đánh dấu, đường chiếu xuống sàn và nhãn — hai draw call cố
+   * định — kèm câu `sr-only` ngoài canvas. Chỉ Planner truyền (hàng trên xe ở bước đang xem); vắng là không vẽ.
+   */
+  centerOfGravity?: readonly ScenePlacement[]
   /**
    * Vùng theo điểm giao của phương án (FE-5b-07). Có và không rỗng thì vẽ dải vùng trên sàn (một draw call, mọi tier) và viền
    * trắng dày quanh kiện nằm ngoài vùng của điểm mình; Planner bật / tắt ở hộp Hiển thị. Kho và tài xế không truyền.
@@ -118,7 +123,7 @@ const SPEC_VIEW_LIFT = 2.2
 export function SceneCanvas({
   experience, model, placements, flags, preset, focus, onUserControl, selectedId, onSelect, onFocus, warningSignal = 0,
   colorMode = 'diem-giao', sliceCm = model.vehicle.innerLengthCm, step, semantics, hiddenId,
-  animateLoading = true, decoration = true, xraySelection, showMass, zones, unloadMotion, onPerfSample, obstaclePicking = true,
+  animateLoading = true, decoration = true, xraySelection, centerOfGravity, zones, unloadMotion, onPerfSample, obstaclePicking = true,
   frameVehicle, fitRequest, highlightedObstacleId, onObstacleSelect, specView = false, interactive = true, frameZoom = 1,
   fov = 38, framePoints, zoneLabels = true, vehicleRef, vehicleChildren, doorsClosed = false, children,
 }: SceneCanvasProps) {
@@ -168,7 +173,7 @@ export function SceneCanvas({
     {/* Form xe đã có nhãn "Cửa rộng × cao" ngay trên ô cửa; cửa đã đóng (xe rời kho ở trang giới thiệu) thì không còn hướng dỡ để chỉ */}
     {specView || doorsClosed ? null : <RearDoorCue vehicle={model.vehicle} />}
     {zones?.length ? <ZoneStrips zones={zones} vehicle={model.vehicle} reducedMotion={flags.reducedMotion} labels={zoneLabels} /> : null}
-    {showMass ? <CargoMassMarker placements={semantics?.massPlacements ?? placements} vehicle={model.vehicle} /> : null}
+    {centerOfGravity ? <CargoMassMarker placements={centerOfGravity} vehicle={model.vehicle} /> : null}
     {inspected ? <ExtractionCorridor key={`${inspected.id}:${warningSignal}`} target={inspected} vehicle={model.vehicle} blockers={semantics?.blockers ?? []} reducedMotion={flags.reducedMotion} /> : null}
     {unloadMotion ? <UnloadMotion motion={unloadMotion} remaining={semantics?.massPlacements ?? placements}
       vehicle={model.vehicle} quality={flags.animationQuality} reducedMotion={flags.reducedMotion} /> : null}
@@ -190,5 +195,6 @@ export function SceneCanvas({
   </Canvas>
   {contextLost ? <ContextLostOverlay onReload={handleReloadCanvas} /> : null}
   <ObstacleDescriptions obstacles={model.vehicle.obstacles} />
+  {centerOfGravity ? <CargoMassDescription placements={centerOfGravity} vehicle={model.vehicle} /> : null}
   </>
 }

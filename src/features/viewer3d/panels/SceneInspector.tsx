@@ -8,7 +8,8 @@ import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import type { LeftTab, LoadPlanViewerState } from '../useLoadPlanViewer'
 import type { OperationsState } from '../operations/useOperations'
-import { MassCard, OperationsPanel, UnloadingPanel } from '../operations/OperationsPanel'
+import { MassCard } from '../operations/GravityCards'
+import { OperationsPanel, UnloadingPanel } from '../operations/OperationsPanel'
 import { SelectedPackagePanel, type PinAction } from './SelectedPackagePanel'
 import { PackageListPanel } from './PackageListPanel'
 import { PlanMetricsPanel } from './PlanMetricsPanel'
@@ -51,7 +52,7 @@ function FloatingColumn({ state, operations, tripId, issues, onEdit, pin, onFocu
   const selected = state.selected
   const editBlocker = onEdit ? (p: ScenePlacement) => { state.select(p.id); onEdit() } : undefined
   return <div className={cn('pointer-events-none absolute top-3 right-3 bottom-16 z-10 hidden w-83 flex-col gap-3 xl:flex', DARK_SCOPE)}>
-    <MassCard state={state} operations={operations} />
+    <MassCard operations={operations} vehicle={state.sceneModel.vehicle} />
     {operations.kind === 'loading' ? (
       <SelectedPackagePanel className={cn('pointer-events-auto', GLASS_PANEL)} placement={selected} placements={state.placements}
         totalSteps={state.totalSteps} stops={state.sceneModel.stops} zones={state.sceneModel.zones} tripId={tripId} issues={issues}

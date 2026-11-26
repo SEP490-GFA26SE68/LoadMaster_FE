@@ -2,6 +2,7 @@ import { easings, useSpring } from '@react-spring/three'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useLayoutEffect, useRef, type RefObject } from 'react'
 import { DynamicDrawUsage, type InstancedMesh } from 'three'
+import { freeFallDropM } from '@/domain/handling'
 import type { ScenePlacement } from '@/features/viewer3d/scene-input'
 import type { AnimationQuality } from '../usePerformanceFlags'
 import { cargoBounds, DROP_HEIGHT, HULL_PADDING, writeCargoMatrix, ZONE_MARK_PADDING } from './cargo-buffers'
@@ -23,8 +24,8 @@ function hullPadding(placement: ScenePlacement, markZones: boolean): number {
   return markZones && placement.outOfZone ? ZONE_MARK_PADDING : HULL_PADDING
 }
 
-/** Track animated items: drop (new item) hoặc settle (item rơi xuống sau khi item dưới bị kéo ra). */
-type AnimatedItem = { id: string; height: number; type: 'drop' | 'settle' }
+/** Kiện đang rơi tự do sau khi mất chỗ đỡ lúc chỉnh tay: quãng rơi còn lại, đơn vị cảnh (= m). */
+type FallingItem = { id: string; height: number }
 
 /** Keep high frequency spring writes outside React. Only changed GPU slots upload. */
 export function useCargoMatrices({
@@ -48,12 +49,10 @@ export function useCargoMatrices({
   const previousMeshes = useRef<Array<InstancedMesh | null>>([])
   const previousStep = useRef(step)
   const animation = useRef<{ id: string; height: number } | null>(null)
-  /** Multi-item settle animation: id → yOffset trước khi settle */
-  const settleAnimations = useRef<Map<string, AnimatedItem>>(new Map())
+  /** Kiện rơi theo trọng lực khi chỉnh tay và mốc buông (`performance.now()`), đặt lại mỗi lần vẽ */
+  const falling = useRef<{ items: Map<string, FallingItem>; startedAt: number }>({ items: new Map(), startedAt: 0 })
   /** Drop spring: dùng cho 1 item mới (playback step forward) */
   const [spring, api] = useSpring(() => ({ t: 1 }))
-  /** Settle spring: dùng cho nhiều items rơi xuống sau khi item bên dưới bị di chuyển */
-  const [settleSpring, settleApi] = useSpring(() => ({ t: 1 }))
   /** Snapshot position của các placement trước lần render — để detect item nào đã dịch chuyển xuống */
   const previousPositions = useRef<Map<string, { z: number }>>(new Map())
   /** Đổi phương án (layout mới) thì không coi chênh `z` giữa hai phương án là kiện rơi */
@@ -75,7 +74,7 @@ export function useCargoMatrices({
 
     // Kiện rơi theo trọng lực khi chỉnh tay (LM-108): `z` giảm so với lần vẽ trước thì rơi từ chỗ cũ xuống chỗ mới. Kiện đang kéo
     // (`hiddenId`, proxy thay nó) đã hiện đúng chỗ nên không rơi lại; đổi phương án thì không phải rơi. Reduced motion: đặt thẳng.
-    const newSettles = new Map<string, AnimatedItem>()
+    const newSettles = new Map<string, FallingItem>()
     if (layout !== previousLayout.current) previousPositions.current = new Map()
     previousLayout.current = layout
     if (!reducedMotion && animationQuality !== 'none' && previousPositions.current.size > 0) {
@@ -85,10 +84,12 @@ export function useCargoMatrices({
         // Chất lượng thấp chỉ rơi một quãng ngắn như kiện mới xếp, không vẽ cả quãng rơi
         const fall = toScene(prev.z - placement.position.z)
         const height = animationQuality === 'full' ? fall : Math.min(fall, REDUCED_DROP_HEIGHT)
-        newSettles.set(placement.id, { id: placement.id, height, type: 'settle' })
+        newSettles.set(placement.id, { id: placement.id, height })
       }
     }
-    settleAnimations.current = newSettles
+    // Vẽ lại giữa lúc rơi mà không có kiện rơi mới thì để kiện đang rơi rơi tiếp; đổi phương án thì bỏ
+    if (newSettles.size > 0) falling.current = { items: newSettles, startedAt: performance.now() }
+    else if (previousPositions.current.size === 0) falling.current.items.clear()
 
     const nextCache = layout.instanceToPlacementId.map((id, index): CachedSlot => {
       const placement = layout.placementById.get(id)!
@@ -145,19 +146,9 @@ export function useCargoMatrices({
       }
     }
 
-    // Settle animation: các item rơi xuống khi item bên dưới bị di chuyển
-    if (newSettles.size > 0) {
-      settleApi.stop()
-      settleApi.set({ t: 0 })
-      void settleApi.start({
-        to: { t: 1 },
-        config: { duration: DROP_DURATION_MS, easing: easings.easeOutCubic },
-      })
-      invalidate()
-    }
     previousStep.current = step
     invalidate()
-  }, [meshes, layout, placements, step, sliceCm, outlines, reducedMotion, animationQuality, hiddenId, semantics, markZones, api, settleApi, invalidate])
+  }, [meshes, layout, placements, step, sliceCm, outlines, reducedMotion, animationQuality, hiddenId, semantics, markZones, api, invalidate])
 
   useFrame(() => {
     const opaque = meshes.opaque.current
@@ -185,14 +176,17 @@ export function useCargoMatrices({
       }
     }
 
-    // Settle animation: các item phía trên rơi xuống khi item dưới bị kéo ra
-    if (settleAnimations.current.size > 0) {
-      const st = settleSpring.t.get()
-      for (const [id, settle] of settleAnimations.current) {
+    // Rơi tự do (Spec vật lý 10.1): z(t) = z₀ − ½·g·t², mỗi kiện chạm mặt đỡ ở √(2h/g) của riêng nó và dừng ngay, không nảy
+    const { items: fallingItems, startedAt } = falling.current
+    if (fallingItems.size > 0) {
+      const dropped = freeFallDropM((performance.now() - startedAt) / 1000)
+      let airborne = false
+      for (const [id, item] of fallingItems) {
         const placement = layout.placementById.get(id)
         const index = layout.placementIdToInstance.get(id)
         if (!placement || index === undefined) continue
-        const offset = (1 - st) * settle.height
+        const offset = Math.max(0, item.height - dropped)
+        airborne ||= offset > 0
         const beyond = cargoVisibility(placement, step, sliceCm) === 'dim'
         // Render vào đúng mesh theo visibility, mesh kia ẩn đi
         writeCargoMatrix(beyond ? dim : opaque, index, placement, true, offset)
@@ -200,9 +194,9 @@ export function useCargoMatrices({
         if (meshes.hull.current && !beyond && outlines) {
           writeCargoMatrix(meshes.hull.current, index, placement, true, offset, hullPadding(placement, markZones))
         }
-        needsInvalidate = true
       }
-      if (st >= 1) settleAnimations.current.clear()
+      if (airborne) needsInvalidate = true
+      else fallingItems.clear()
     }
 
     if (needsInvalidate) invalidate()

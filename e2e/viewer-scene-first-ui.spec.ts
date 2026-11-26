@@ -28,7 +28,7 @@ test('planner defaults to the scene; follow step, stop focus, unloading advisory
   await login(`${PLANNER_ROUTE}?debug&quality=balanced`); await settle(page)
   expect(await page.getByRole('dialog').count()).toBe(0)
   expect((await page.locator('canvas:not(.maplibregl-canvas)').boundingBox())!.width).toBeGreaterThanOrEqual(1580)
-  // Dải vùng điểm giao là cue nghiệp vụ: có sẵn khi mở Planner (FE-5b-07); tâm khối lượng thì chỉ khi bật
+  // Dải vùng điểm giao là cue nghiệp vụ: có sẵn khi mở Planner (FE-5b-07); dấu trọng tâm hàng G thì chỉ khi bật
   expect(await hasSceneObject(page, 'stop-zone-strips')).toBe(true)
   expect(await hasSceneObject(page, 'cargo-center-of-mass')).toBe(false)
   await shot('01-planner-default')
@@ -72,7 +72,7 @@ test('planner defaults to the scene; follow step, stop focus, unloading advisory
   await openInspector(page, 'operations')
   expect(await page.getByRole('dialog').innerText(), 'approved seed orders were recomputed on approval (D-32)').toMatch(/tính lại ở FE/)
   await closeInspector(page)
-  await openInspector(page, 'display'); await page.getByRole('dialog').getByRole('button', { name: 'Hiện tâm khối lượng hàng', exact: true }).click()
+  await openInspector(page, 'display'); await page.getByRole('dialog').getByRole('button', { name: 'Hiện trọng tâm hàng (G)', exact: true }).click()
   await closeInspector(page); await cameraPreset(page, 'Góc chéo'); await shot('06-center-of-mass')
   await attachJson(testInfo, 'report', { scenes })
   expect(browserErrors).toStrictEqual([])

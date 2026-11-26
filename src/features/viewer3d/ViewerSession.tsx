@@ -20,7 +20,7 @@ import { PlannerSimulationControls } from './PlannerSimulationControls'
 import { SceneInspector } from './panels/SceneInspector'
 import { WorkspaceToolbar, type InspectorTab } from './panels/WorkspaceToolbar'
 import type { ViewerSceneModel } from './scene-input'
-import { Timeline } from './Timeline'
+import { PlannerTimeline } from './PlannerTimeline'
 import { useLoadPlanViewer } from './useLoadPlanViewer'
 import { usePerformanceFlags } from './usePerformanceFlags'
 import { usePlanApprovalQuery } from './usePlanSourceQuery'
@@ -148,22 +148,7 @@ export function ViewerSession({ model: plan, phase, source }: { model: ViewerSce
             tab={inspectorTab} onTab={setInspectorTab} onClose={() => setInspectorTab(null)} />}
       </div>
 
-      {editor.mode === 'view' ? <Timeline
-        placements={state.placements}
-        kind={operations.kind}
-        orderedOverride={operations.kind === 'unloading' ? operations.unload.ordered : undefined}
-        suggested={!operations.unload.fromResult}
-        step={operations.kind === 'unloading' ? operations.unload.cursor : state.step}
-        totalSteps={operations.kind === 'unloading' ? operations.unload.ordered.length : state.totalSteps}
-        playing={operations.playing}
-        speed={state.speed}
-        onStepChange={operations.kind === 'unloading' ? operations.unload.setCursor : state.setStep}
-        onStepForward={operations.stepForward}
-        onStepBackward={operations.stepBackward}
-        onGoToStart={operations.goToStart}
-        onTogglePlaying={operations.togglePlaying}
-        onSpeedChange={state.setSpeed}
-      /> : null}
+      {editor.mode === 'view' ? <PlannerTimeline state={state} operations={operations} /> : null}
 
       <ApprovePlanHost opener={approveDialog} plan={plan} approval={approval} placements={state.placements} poseEdits={poseEdits}
         onShowUnloading={handleShowUnloading} />

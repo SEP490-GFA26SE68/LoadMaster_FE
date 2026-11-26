@@ -45,7 +45,7 @@ test('loading, unloading advisories, blockers and approval wording on 1,000 pack
   await page.mouse.click(point.x, point.y)
   expect(await selectedPlacementId(page)).toBe('BENCH-01000-01')
   await openInspector(page, 'display')
-  await button(page, 'Hiện tâm khối lượng hàng').click(); await settle(page)
+  await button(page, 'Hiện trọng tâm hàng (G)').click(); await settle(page)
   await closeInspector(page)
   expect(await hasSceneObject(page, 'cargo-center-of-mass')).toBe(true)
 
@@ -206,7 +206,7 @@ test.describe('touch', () => {
     await button(page, 'Chi tiết / Hiển thị').tap()
     const drawer = page.getByRole('dialog')
     await drawer.getByRole('button', { name: 'Hiển thị', exact: true }).tap()
-    await drawer.getByRole('button', { name: 'Hiện tâm khối lượng hàng', exact: true }).tap()
+    await drawer.getByRole('button', { name: 'Hiện trọng tâm hàng (G)', exact: true }).tap()
     await drawer.getByRole('button', { name: 'Theo khối lượng', exact: true }).tap()
     await drawer.getByRole('button', { name: 'Đóng', exact: true }).tap()
     expect(await page.getByRole('dialog').count()).toBe(0)
