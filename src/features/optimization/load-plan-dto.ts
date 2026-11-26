@@ -90,6 +90,8 @@ export type StopZoneDto = {
 export type LoadPlanDto = {
   readonly id: number
   readonly tripId: number
+  /** Xe của lần chạy tối ưu; máy chủ cũ không trả, phương án cũ không suy ra được xe thì `null`. */
+  readonly vehicleId?: number | null
   readonly jobUuid?: string | null
   readonly objective?: string | null
   /** Hợp đồng đích: `A` · `B` · `C` theo mục tiêu; phương án cũ `null`. */
@@ -199,6 +201,8 @@ export type LoadStopZone = {
 export type LoadPlan = {
   readonly id: string
   readonly tripId: string
+  /** Mã số xe mà phương án được tính cho; vắng / `null` là không biết (Planner coi như xe hiện tại của chuyến). */
+  readonly vehicleId?: string | null
   readonly jobId: string | null
   readonly objective: PlanObjective | null
   readonly label: PlanLabel | null
@@ -327,6 +331,7 @@ export function loadPlanOf(dto: LoadPlanDto): LoadPlan {
   return {
     id: String(dto.id),
     tripId: String(dto.tripId),
+    vehicleId: dto.vehicleId == null ? null : String(dto.vehicleId),
     jobId: dto.jobUuid ?? null,
     objective,
     label,

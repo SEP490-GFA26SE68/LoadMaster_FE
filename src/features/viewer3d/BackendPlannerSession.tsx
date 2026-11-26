@@ -103,10 +103,15 @@ function BackendPlannerSession({ tripCode, source }: { tripCode: string; source:
   const can = useCan()
   const navigate = useNavigate()
   // Query giữ nguyên tham chiếu khi dữ liệu đọc lại không đổi (structural sharing): scene chỉ dựng lại khi máy chủ trả khác đi
-  const { plan, vehicle, stops } = source
-  // Phương án lỗi thời tính cho xe trước khi đổi xe: không đặt kiện vào thùng xe hiện tại (`planShownOn`)
-  const shown = useMemo(() => planShownOn(plan, vehicle), [plan, vehicle])
+  const { plan, planVehicle, stops } = source
+  // Phương án tính cho xe trước khi đổi xe: máy chủ biết xe đó thì vẽ trong chính xe đó; không biết thì không đặt kiện nào vào thùng xe
+  // hiện tại khi chúng không vừa (`planShownOn`)
+  const vehicle = planVehicle ?? source.vehicle
+  const shown = useMemo(() => (planVehicle ? { plan, otherVehicle: false } : planShownOn(plan, vehicle)), [plan, planVehicle, vehicle])
   const model = useMemo(() => backendPlanScene({ tripCode, plan: shown.plan, vehicle, stops }), [tripCode, shown, vehicle, stops])
+  const staleDetail = planVehicle
+    ? t('plannerRecovery.planVehicle', { vehicle: planVehicle.name })
+    : shown.otherVehicle ? t('plannerRecovery.otherVehicle') : t('viewer.plan.staleApprove')
   const flags = usePerformanceFlags(debugQualityTier(searchParams))
   const state = useLoadPlanViewer(model, { initialSelectedId: model.placements[0]?.id })
   const editor = useManualEditor(state)
@@ -199,7 +204,7 @@ function BackendPlannerSession({ tripCode, source }: { tripCode: string; source:
         <PlannerLockNotice lock={lock} />
         {stale ? (
           <PlannerNoticeBar role="alert" data-planner-stale tone="warning" icon={TriangleAlert} title={t('viewer.plan.staleBanner')}
-            detail={shown.otherVehicle ? t('plannerRecovery.otherVehicle') : t('viewer.plan.staleApprove')}
+            detail={staleDetail}
             action={rerunTo ? <PlannerNoticeLink tone="warning" to={rerunTo} icon={SlidersHorizontal}>{t('viewer.plan.rerun')}</PlannerNoticeLink> : null} />
         ) : null}
         {approve === 'draft' && !plan.approved ? (
