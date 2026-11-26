@@ -86,7 +86,7 @@ export function suggestCompanyCode(name?: string | null): string {
 
 /** Số ngày dùng thử mặc định khi duyệt. */
 const DEFAULT_TRIAL_DAYS = '14'
-const DEFAULT_TRIAL_CREDITS = '100'
+const DEFAULT_TRIAL_CREDITS = '1000'
 
 /**
  * Duyệt và khởi tạo tài khoản (System Admin):

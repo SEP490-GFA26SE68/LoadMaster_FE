@@ -1,4 +1,6 @@
 import { Plus } from 'lucide-react'
+import { useNavigate } from 'react-router'
+import { Banner } from '@/components/Banner'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { EmptyState } from '@/components/EmptyState'
 import { PageHero } from '@/components/PageHero'
@@ -6,6 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs'
 import { useAuth } from '@/features/auth/AuthProvider'
+import { useMyAgreementQuery } from '@/features/billing/useAgreementQuery'
 import { useT } from '@/lib/i18n'
 import { userScopeOf } from '@/lib/mock-db'
 import { accountGuards } from './account-guards'
@@ -28,9 +31,11 @@ import { userDepotAvailable, useUserCompanyNamesQuery, useUsersQuery } from './u
  */
 export function UsersPage() {
   const t = useT()
+  const navigate = useNavigate()
   const { user: currentUser } = useAuth()
   const query = useUsersQuery()
   const actions = useUserActions()
+  const { data: agreement } = useMyAgreementQuery()
   const users = query.data ?? []
   // Chưa biết người xem (màn luôn nằm sau `RequireAuth`) thì theo phạm vi hẹp hơn
   const scope = currentUser ? userScopeOf(currentUser.role) : 'company'
@@ -72,6 +77,16 @@ export function UsersPage() {
       </PageHero>
 
         <TabsContent value="accounts" className="min-h-0 flex-1 overflow-auto px-shell py-6">
+          {isCompany && agreement?.status === 'PENDING' ? (
+            <Banner tone="warning" className="mb-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <span>{t('admin.users.agreementPendingNotice')}</span>
+                <Button size="sm" variant="secondary" onClick={() => void navigate('/goi-cuoc')}>
+                  {t('billing.agreementCard.sign')}
+                </Button>
+              </div>
+            </Banner>
+          ) : null}
           {query.isPending ? (
             <div role="status" aria-label={t('admin.users.loading')} className="flex h-24 items-center justify-center"><Spinner /></div>
           ) : query.isError ? (

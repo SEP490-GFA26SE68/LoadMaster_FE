@@ -13,9 +13,11 @@ import {
 import { Input } from '@/components/ui/Input'
 import { SelectField } from '@/components/ui/SelectField'
 import { FieldMessage } from '@/components/ui/field-styles'
+import { isApiError } from '@/lib/api-client'
 import { dataErrorMessage, useT, type MessageKey } from '@/lib/i18n'
 import type { UserScope } from '@/lib/mock-db'
 import type { Role, User } from '@/types/user'
+import { useNavigate } from 'react-router'
 import type { AccountBlock } from './account-guards'
 import {
   companyError,
@@ -83,6 +85,7 @@ export function UserFormDialog({
   onSubmit: (values: UserFormValues) => Promise<void>
 }) {
   const t = useT()
+  const navigate = useNavigate()
   const isEdit = Boolean(user)
   const [serverError, setServerError] = useState<unknown>(null)
 
@@ -163,9 +166,23 @@ export function UserFormDialog({
             </div>
 
             {serverError ? (
-              <p role="alert" className="rounded-md border border-badge-danger-border bg-badge-danger-bg px-3 py-2 text-body text-badge-danger-fg">
-                {dataErrorMessage(serverError, t)}
-              </p>
+              <div role="alert" className="flex flex-col gap-2 rounded-md border border-badge-danger-border bg-badge-danger-bg p-3 text-body text-badge-danger-fg">
+                <p>{dataErrorMessage(serverError, t)}</p>
+                {isApiError(serverError) && serverError.code === 'AGREEMENT_REQUIRED' ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    className="w-fit"
+                    onClick={() => {
+                      onClose()
+                      void navigate('/goi-cuoc')
+                    }}
+                  >
+                    {t('billing.agreementCard.sign')}
+                  </Button>
+                ) : null}
+              </div>
             ) : null}
           </div>
 

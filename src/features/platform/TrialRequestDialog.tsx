@@ -199,7 +199,7 @@ function TrialRequestDetail({
                 t('platform.trialRequests.detail.trialCredits'),
                 request.trialCredits !== null && request.trialCredits !== undefined
                   ? t('platform.trialRequests.detail.trialCreditsValue', { credits: request.trialCredits })
-                  : t('platform.trialRequests.detail.trialCreditsValue', { credits: 100 }),
+                  : t('platform.trialRequests.detail.trialCreditsValue', { credits: 1000 }),
               ],
               ...(request.note ? [[t('platform.trialRequests.detail.note'), <span key="fact-note" className="whitespace-pre-wrap">{request.note}</span>] as const] : []),
             ]}

@@ -98,11 +98,11 @@ test('gia hạn: đọc gói vừa dùng, có gia hạn được không và than
   expect(await getRenewal()).toMatchObject({ renewable: false, block: 'NOT_DUE', pending: null })
 })
 
-test('gia hạn gửi cổng MOCK tới /renew và mở trang xác nhận; chưa tới kỳ là SUBSCRIPTION_NOT_RENEWABLE', async () => {
-  backend.replies = [envelope({ paymentUrl: 'http://be.test/api/payment/mock-checkout?txnRef=MOCK_7', transactionId: 'MOCK_7', id: 7, status: 'PENDING', amountVnd: 1490000 })]
-  expect(await renewSubscription()).toStrictEqual({ kind: 'confirm', reference: 'MOCK_7', purpose: 'SUBSCRIBE', amountVnd: 1490000 })
+test('gia hạn gửi cổng VNPAY tới /renew và chuyển hướng sang cổng thanh toán; chưa tới kỳ là SUBSCRIPTION_NOT_RENEWABLE', async () => {
+  backend.replies = [envelope({ paymentUrl: 'https://sandbox.vnpaytest.vn/paymentv2/vpcpay.html?vnp_TxnRef=VNPAY_7', transactionId: 'VNPAY_7', id: 7, status: 'PENDING', amountVnd: 1490000 })]
+  expect(await renewSubscription()).toStrictEqual({ kind: 'redirect', url: 'https://sandbox.vnpaytest.vn/paymentv2/vpcpay.html?vnp_TxnRef=VNPAY_7' })
   expect(backend.calls.map((call) => `${call.method} ${call.url} ${JSON.stringify(call.body)}`)).toStrictEqual([
-    'POST http://be.test/api/subscription/renew {"gateway":"MOCK"}',
+    'POST http://be.test/api/subscription/renew {"gateway":"VNPAY"}',
   ])
   backend.replies = [failure(409)]
   await expect(renewSubscription()).rejects.toMatchObject({ code: 'SUBSCRIPTION_NOT_RENEWABLE' })
@@ -144,10 +144,10 @@ test('gói đang bán: danh sách của backend theo thứ tự hạng', async (
   expect((await listPlansOnSale()).map((plan) => [plan.id, plan.monthlyCredits])).toStrictEqual([['2', 500], ['3', null]])
 })
 
-test('đăng ký: gửi mã gói dạng số qua cổng MOCK, trang kế tiếp là trang xác nhận của app', async () => {
-  backend.replies = [envelope({ id: 7, transactionId: 'MOCK_ABC123', paymentUrl: '/api/payment/mock-checkout?txnRef=MOCK_ABC123', status: 'PENDING' })]
-  expect(await subscribe('1')).toStrictEqual({ kind: 'confirm', reference: 'MOCK_ABC123', purpose: 'SUBSCRIBE' })
-  expect(backend.calls[0]).toMatchObject({ method: 'POST', url: 'http://be.test/api/subscription/subscribe', body: { planId: 1, gateway: 'MOCK' } })
+test('đăng ký: gửi mã gói dạng số qua cổng VNPAY, chuyển hướng sang cổng thanh toán', async () => {
+  backend.replies = [envelope({ id: 7, transactionId: 'VNPAY_ABC123', paymentUrl: 'https://sandbox.vnpaytest.vn/paymentv2/vpcpay.html?vnp_TxnRef=VNPAY_ABC123', status: 'PENDING' })]
+  expect(await subscribe('1')).toStrictEqual({ kind: 'redirect', url: 'https://sandbox.vnpaytest.vn/paymentv2/vpcpay.html?vnp_TxnRef=VNPAY_ABC123' })
+  expect(backend.calls[0]).toMatchObject({ method: 'POST', url: 'http://be.test/api/subscription/subscribe', body: { planId: 1, gateway: 'VNPAY' } })
 })
 
 test('đăng ký gói miễn phí: backend kích hoạt ngay; đang có gói (409) và gói không bán (404) thành mã nghiệp vụ', async () => {
@@ -195,10 +195,10 @@ test('sổ cái: đọc hết các trang, lượt dùng là "đã trừ" hoặc 
   ])
 })
 
-test('nạp credit: gửi số credit qua cổng MOCK', async () => {
-  backend.replies = [envelope({ id: 8, transactionId: 'MOCK_TOPUP1', paymentUrl: '/api/payment/mock-checkout?txnRef=MOCK_TOPUP1', status: 'PENDING' })]
-  expect(await topUpCredits(50)).toStrictEqual({ kind: 'confirm', reference: 'MOCK_TOPUP1', purpose: 'TOPUP' })
-  expect(backend.calls[0]).toMatchObject({ method: 'POST', url: 'http://be.test/api/credits/topup', body: { credits: 50, gateway: 'MOCK' } })
+test('nạp credit: gửi số credit qua cổng VNPAY, chuyển hướng sang cổng thanh toán', async () => {
+  backend.replies = [envelope({ id: 8, transactionId: 'VNPAY_TOPUP1', paymentUrl: 'https://sandbox.vnpaytest.vn/paymentv2/vpcpay.html?vnp_TxnRef=VNPAY_TOPUP1', status: 'PENDING' })]
+  expect(await topUpCredits(50)).toStrictEqual({ kind: 'redirect', url: 'https://sandbox.vnpaytest.vn/paymentv2/vpcpay.html?vnp_TxnRef=VNPAY_TOPUP1' })
+  expect(backend.calls[0]).toMatchObject({ method: 'POST', url: 'http://be.test/api/credits/topup', body: { credits: 50, gateway: 'VNPAY' } })
 })
 
 test('hoá đơn: mảng trần của backend, mới nhất trước, không đọc paidAt', async () => {

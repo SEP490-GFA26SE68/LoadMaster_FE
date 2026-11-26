@@ -150,7 +150,7 @@ test('topping up at the backend price shows monthly reset warning without cap an
   expect(dialog).not.toHaveTextContent('còn nạp được')
   await user.click(within(dialog).getByRole('button', { name: 'Tiếp tục thanh toán' }))
   expect(await screen.findByText('Đang ở /thanh-toan/ket-qua?ma=MOCK_TOPUP1&loai=credit', {}, SLOW)).toBeInTheDocument()
-  expect(backend.calls.find((call) => call.method === 'POST')).toMatchObject({ url: 'http://be.test/api/credits/topup', body: { credits: 50, gateway: 'MOCK' } })
+  expect(backend.calls.find((call) => call.method === 'POST')).toMatchObject({ url: 'http://be.test/api/credits/topup', body: { credits: 50, gateway: 'VNPAY' } })
 })
 
 test('the plan expires while the top-up dialog is open: the server refuses with SUBSCRIPTION_EXPIRED, the dialog says why and stays open', async () => {
@@ -197,7 +197,7 @@ test('an expired plan the backend no longer names: says so, offers the plans and
   const choose = within(screen.getByRole('region', { name: 'Chọn gói' }))
   await user.click(choose.getByRole('button', { name: 'Đăng ký gói Basic' }))
   expect(await screen.findByText('Đang ở /thanh-toan/ket-qua?ma=MOCK_SUB1&loai=goi', {}, SLOW)).toBeInTheDocument()
-  expect(backend.calls.find((call) => call.method === 'POST')).toMatchObject({ body: { planId: 1, gateway: 'MOCK' } })
+  expect(backend.calls.find((call) => call.method === 'POST')).toMatchObject({ body: { planId: 1, gateway: 'VNPAY' } })
 })
 
 test('an expired plan the server can renew: renews that same plan (even off sale) through the gateway; credits cannot be topped up', async () => {
@@ -215,7 +215,7 @@ test('an expired plan the server can renew: renews that same plan (even off sale
   await user.click(within(dialog).getByRole('button', { name: 'Huỷ' }))
   await user.click(screen.getByRole('button', { name: 'Gia hạn gói Pro' }))
   expect(await screen.findByText('Đang ở /thanh-toan/ket-qua?ma=MOCK_RENEW1&loai=goi', {}, SLOW)).toBeInTheDocument()
-  expect(backend.calls.find((call) => call.method === 'POST')).toMatchObject({ url: 'http://be.test/api/subscription/renew', body: { gateway: 'MOCK' } })
+  expect(backend.calls.find((call) => call.method === 'POST')).toMatchObject({ url: 'http://be.test/api/subscription/renew', body: { gateway: 'VNPAY' } })
 })
 
 test('a waiting plan payment of the server has a banner whose Pay opens its confirmation page', async () => {
@@ -251,7 +251,7 @@ test('a plan still running renews itself; upgrading to a higher tier warns about
   await user.click(within(dialog).getByRole('button', { name: 'Tiếp tục nâng cấp' }))
 
   expect(await screen.findByText('Đang ở /thanh-toan/ket-qua?ma=MOCK_UPGRADE1&loai=goi', {}, SLOW)).toBeInTheDocument()
-  expect(backend.calls.find((call) => call.method === 'POST')).toMatchObject({ body: { planId: 3, gateway: 'MOCK' } })
+  expect(backend.calls.find((call) => call.method === 'POST')).toMatchObject({ body: { planId: 3, gateway: 'VNPAY' } })
 })
 
 test('renews current plan by year from PlanSummaryCard and allows selecting yearly billing cycle in upgrade dialog', async () => {
@@ -282,7 +282,7 @@ test('renews current plan by year from PlanSummaryCard and allows selecting year
   expect(await screen.findByText('Đang ở /thanh-toan/ket-qua?ma=MOCK_YEARLY1&loai=goi', {}, SLOW)).toBeInTheDocument()
   expect(sessionStorage.getItem('lm_payment_amount_MOCK_YEARLY1')).toBe('16390000')
   expect(backend.calls.find((call) => call.method === 'POST')).toMatchObject({
-    body: { planId: 2, billingCycle: 'YEARLY', gateway: 'MOCK' },
+    body: { planId: 2, billingCycle: 'YEARLY', gateway: 'VNPAY' },
   })
 })
 
@@ -302,7 +302,7 @@ test('upgrading with yearly cycle selected sends billingCycle YEARLY', async () 
 
   expect(await screen.findByText('Đang ở /thanh-toan/ket-qua?ma=MOCK_UPGRADE_YR&loai=goi', {}, SLOW)).toBeInTheDocument()
   expect(backend.calls.find((call) => call.method === 'POST')).toMatchObject({
-    body: { planId: 3, billingCycle: 'YEARLY', gateway: 'MOCK' },
+    body: { planId: 3, billingCycle: 'YEARLY', gateway: 'VNPAY' },
   })
 })
 

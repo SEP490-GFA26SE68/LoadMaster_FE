@@ -36,6 +36,7 @@ export const admin = {
     resetSuccess: 'Password for {name} has been reset. A new temporary password has been sent to {email}.',
   },
   users: {
+    agreementPendingNotice: 'The company has not completed signing the trial service agreement. Please sign the agreement to create new employees.',
     title: 'Users',
     count: { one: '{count} account', other: '{count} accounts' },
     heroCount: {
@@ -211,7 +212,8 @@ export const admin = {
     labels: {
       companies: { manage: 'Create and manage customer companies' },
       companyProfile: { manage: 'View and edit your own company details' },
-      users: { manage: 'Manage users' },
+      users: {
+    agreementPendingNotice: 'The company has not completed signing the trial service agreement. Please sign the agreement to create new employees.', manage: 'Manage users' },
       audit: { view: 'View the system log' },
       subscriptionPlans: { manage: 'Create and edit subscription plans and the credit policy' },
       billing: { manage: 'Buy plans, top up credits, view transactions' },

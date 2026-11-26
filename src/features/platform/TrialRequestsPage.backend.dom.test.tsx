@@ -104,7 +104,7 @@ test('pending requests first; approving sends company, tax code, plan, trial day
 
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
   const approve = backend.calls.find((call) => call.method === 'POST' && call.path === '/api/trial-requests/2/approve')
-  expect(approve?.body).toEqual({ companyName: 'Hoa Logistics', companyCode: 'HOA_LOGISTICS', taxCode: '0398765432', planId: 2, trialDays: 30, trialCredits: 100 })
+  expect(approve?.body).toEqual({ companyName: 'Hoa Logistics', companyCode: 'HOA_LOGISTICS', taxCode: '0398765432', planId: 2, trialDays: 30, trialCredits: 1000 })
   expect(await screen.findByText('Đã duyệt yêu cầu của Lê Thị Hoa.')).toBeInTheDocument()
 })
 
