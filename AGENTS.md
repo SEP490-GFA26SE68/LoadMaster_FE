@@ -1658,7 +1658,10 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   số máy chủ không trả thì bỏ: tải trục tính ở FE, thời gian chạy của bản chỉnh tay, kích thước kiện chưa xếp khi máy chủ không
   trả; mức hạn từng điểm đọc `plannedArrival` của tuyến máy chủ, không MOCK RESULT) và Duyệt bằng
   `POST /api/load-plans/{id}/approve` (điều phối viên, chuyến Đã lập kế hoạch). Phương án máy chủ đánh dấu `stale` (đổi xe, đưa / gỡ yêu cầu
-  giao) có thanh lỗi thời, nút Duyệt mờ kèm lý do, không chỉnh tay; máy chủ từ chối `PLAN_STALE`. **Chỉnh tay** (`plans.approve`, chuyến Đã lập
+  giao) có thanh lỗi thời, nút Duyệt mờ kèm lý do, không chỉnh tay; máy chủ từ chối `PLAN_STALE`. Phương án mang xe của lần chạy
+  (`vehicleId`): khác xe hiện tại của chuyến (đã đổi xe) thì Planner đọc `GET /api/vehicles/{id}/config` và vẽ phương án trong chính xe đó,
+  thanh lỗi thời nói tên xe; máy chủ không biết xe (phương án cũ) hay đọc xe đó lỗi thì kiện không vừa thùng xe hiện tại không được vẽ
+  (`planShownOn`). **Chỉnh tay** (`plans.approve`, chuyến Đã lập
   kế hoạch, chưa lỗi thời): constraint engine dựng từ chính các chỗ xếp (`engineInputOf`: mỗi chỗ xếp một instance; hướng xoay được là
   `allowedRotations` máy chủ trả cho từng chỗ xếp theo cờ xoay của loại kiện và `upright_only` của kiện, luôn gồm hướng đang dùng — không có
   loại kiện thì không xoay). **Vùng điểm giao**: máy chủ trả `stopZones` (cm, kèm `stopSequence`) và `stopZoneId` của từng chỗ xếp khi đọc
