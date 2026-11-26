@@ -1,6 +1,7 @@
 import { useId } from 'react'
 import { Card, CardHeader, CardMeta, CardTitle } from '@/components/ui/Card'
 import { useFormat, useT } from '@/lib/i18n'
+import { SupportImages } from './SupportImagePicker'
 import type { CompanyChatEntry } from './support-chat'
 
 /** Trao đổi gần đây của công ty đang chọn ở `/ho-tro`: mọi lần trả lời trong các yêu cầu của công ty, hai ngày có hoạt động gần nhất. */
@@ -22,6 +23,7 @@ export function CompanyChatCard({ entries }: { entries: readonly CompanyChatEntr
               <time dateTime={entry.at} className="tabular-nums">{format.date(entry.at)} {format.time(entry.at)}</time>
             </div>
             <p className="m-0 text-small break-words whitespace-pre-wrap text-ink-1">{entry.text}</p>
+            <SupportImages images={entry.images} />
           </li>
         ))}
       </ul>

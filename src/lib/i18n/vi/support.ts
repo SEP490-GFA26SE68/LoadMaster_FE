@@ -43,6 +43,16 @@ export const support = {
       bodyTooLong: 'Tối đa {max} ký tự',
     },
   },
+  attachments: {
+    choose: 'Ảnh đính kèm',
+    count: '{count}/{max} ảnh',
+    hint: 'Chọn tối đa {max} ảnh.',
+    maxReached: 'Chỉ được đính kèm tối đa {max} ảnh.',
+    invalidType: 'Tệp đính kèm phải là ảnh.',
+    readFailed: 'Không đọc được ảnh. Vui lòng thử lại.',
+    preview: 'Ảnh đính kèm {index}',
+    remove: 'Xóa ảnh {index}',
+  },
   thread: {
     body: 'Nội dung yêu cầu',
     replies: 'Trao đổi',

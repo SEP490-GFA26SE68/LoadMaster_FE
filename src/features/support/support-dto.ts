@@ -2,7 +2,7 @@ import { roleOfBackend } from '@/features/auth/backend-user'
 import { isoFromBackend } from '@/lib/backend-time'
 import { BACKEND_TICKET_STATUSES, type NewSupportTicket, type SupportTicket, type TicketKind, type TicketReply } from '@/lib/mock-db'
 import { ROLES, type Role } from '@/types/user'
-import { repliesOfNote } from './support-chat'
+import { mergeReplies, repliesOfNote, requestAttachmentsOfNote, supportNoteOfNote } from './support-chat'
 
 /**
  * DTO của `/api/support-tickets` (entity `SupportTicket` của backend) và phép đổi sang kiểu của app. Chỉ `support-api.ts` dùng — kiểu DTO
@@ -41,6 +41,7 @@ export type TicketReplyDto = {
   readonly authorName: string | null
   readonly authorRole: string | null
   readonly message: string
+  readonly images?: readonly string[] | null
   /** `yyyy-MM-dd HH:mm:ss`, giờ Việt Nam. */
   readonly createdAt: string
 }
@@ -78,6 +79,8 @@ export function ticketOf(dto: SupportTicketDto): SupportTicket | null {
   if (kind === undefined || status === undefined) return null
   const createdAt = isoFromBackend(dto.createdAt)
   const replies = repliesOfNote(dto.resolutionNote)
+  const supportNote = supportNoteOfNote(dto.resolutionNote)
+  const attachments = requestAttachmentsOfNote(dto.resolutionNote)
   return {
     id: String(dto.id),
     ...(filled(dto.ticketCode) ? { code: dto.ticketCode } : {}),
@@ -92,7 +95,9 @@ export function ticketOf(dto: SupportTicketDto): SupportTicket | null {
     description: dto.description ?? '',
     status,
     replies: replies ?? [],
-    ...(replies === null && filled(dto.resolutionNote) ? { resolutionNote: dto.resolutionNote } : {}),
+    ...(attachments.length > 0 ? { attachments } : {}),
+    ...(supportNote === undefined ? {} : { resolutionNote: supportNote }),
+    ...(filled(dto.resolutionNote) ? { resolutionNoteRaw: dto.resolutionNote } : {}),
     createdAt,
     updatedAt: filled(dto.updatedAt ?? null) ? isoFromBackend(dto.updatedAt!) : (replies?.at(-1)?.at ?? createdAt),
   }
@@ -107,13 +112,19 @@ function replyRoleOf(code: string | null): Role | null {
 function replyOf(dto: TicketReplyDto): TicketReply | null {
   const authorRole = replyRoleOf(dto.authorRole)
   if (authorRole === null) return null
-  return { authorId: dto.authorId ?? '', authorName: dto.authorName ?? '', authorRole, text: dto.message, at: isoFromBackend(dto.createdAt) }
+  return {
+    authorId: dto.authorId ?? '', authorName: dto.authorName ?? '', authorRole, text: dto.message, at: isoFromBackend(dto.createdAt),
+    ...(dto.images && dto.images.length > 0 ? { images: dto.images } : {}),
+  }
 }
 
 /** Yêu cầu kèm trao đổi của máy chủ — thay mảng tạm đọc ở danh sách. */
 export function threadOf(dto: SupportTicketThreadDto): SupportTicket | null {
   const ticket = ticketOf(dto.ticket)
-  return ticket === null ? null : { ...ticket, replies: (dto.replies ?? []).flatMap((reply) => replyOf(reply) ?? []) }
+  if (ticket === null) return null
+  const tableReplies = (dto.replies ?? []).flatMap((reply) => replyOf(reply) ?? [])
+  const noteReplies = tableReplies.length === 0 ? ticket.replies : ticket.replies.filter((reply) => (reply.images?.length ?? 0) > 0)
+  return { ...ticket, replies: mergeReplies(noteReplies, tableReplies) }
 }
 
 /** Mức ưu tiên backend theo loại: thanh toán Trung bình, kỹ thuật và mở khóa tài khoản Cao. */
@@ -125,5 +136,12 @@ const PRIORITY_OF_KIND: Readonly<Record<TicketKind, string>> = {
 
 /** Thân `POST`. */
 export function ticketCreateBody(input: NewSupportTicket) {
-  return { subject: input.title, description: input.description, category: CATEGORY_OF_KIND[input.kind], priority: PRIORITY_OF_KIND[input.kind] }
+  const images = input.images ?? []
+  return {
+    subject: input.title,
+    description: input.description,
+    category: CATEGORY_OF_KIND[input.kind],
+    priority: PRIORITY_OF_KIND[input.kind],
+    ...(images.length > 0 ? { resolutionNote: JSON.stringify([{ type: 'requestAttachments', images }]) } : {}),
+  }
 }

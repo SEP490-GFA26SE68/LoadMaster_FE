@@ -107,6 +107,7 @@ VEHICLE_PRESENCE_CONFLICT: "Trạng thái xe hoặc mã xác nhận xung đột.
   PAYROLL_KPI_BONUS_REQUIRED: 'Đã nhập chỉ tiêu KPI thì phải nhập tiền thưởng KPI lớn hơn 0',
   PAYROLL_PERIOD_NOT_FOUND: 'Chưa có bảng lương cho tháng này.',
   PAYROLL_PERIOD_LOCKED: 'Bảng lương đã chốt nên không thể thay đổi hoặc tính lại.',
+  PAYROLL_FUTURE_PERIOD_CANNOT_LOCK: 'Chỉ được chốt bảng lương từ tháng hiện tại trở về trước.',
   PAYROLL_DATA_INCOMPLETE: 'Chuyến có dữ liệu phương án khối lượng hoặc quãng đường còn thiếu.',
   PAYROLL_INVALID_PERIOD: 'Kỳ lương không hợp lệ. Chọn tháng theo định dạng năm-tháng.',
   PAYROLL_INVALID_DRIVER_ASSIGNMENT: 'Phân công tài xế nhận lương năng suất không hợp lệ.',

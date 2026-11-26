@@ -184,3 +184,49 @@ test('a closed ticket refuses a reply with the code of the server', async () => 
   const error = await replyToSupportTicket('2', 'Còn ai không?').catch((caught: unknown) => caught)
   expect(isApiError(error) && error.code).toBe('SUPPORT_TICKET_CLOSED')
 })
+
+test('creating a ticket stores its selected images in resolutionNote', async () => {
+  routes = { 'POST /api/support-tickets': envelope({ ...OWN, id: 14, resolutionNote: '[{"type":"requestAttachments","images":["data:image/png;base64,request"]}]' }, 201) }
+
+  await createSupportTicket({
+    kind: 'TECHNICAL', title: 'Cannot print', description: 'The print page is blank.', images: ['data:image/png;base64,request'],
+  })
+
+  expect(calls).toStrictEqual([{
+    key: 'POST /api/support-tickets',
+    body: {
+      subject: 'Cannot print', description: 'The print page is blank.', category: 'SYSTEM_BUG', priority: 'HIGH',
+      resolutionNote: '[{"type":"requestAttachments","images":["data:image/png;base64,request"]}]',
+    },
+  }])
+})
+
+test('a reply with images patches resolutionNote and returns the merged thread; text-only replies still use the reply table', async () => {
+  let note = JSON.stringify([{ type: 'requestAttachments', images: ['data:image/png;base64,request'] }])
+  const threadResponse = () => envelope({
+    ticket: { ...COLLEAGUE, resolutionNote: note, status: 'IN_PROGRESS' },
+    replies: [],
+  })()
+  routes = {
+    'GET /api/support-tickets/1/replies': threadResponse,
+    'GET /api/users/me': meAs(4, 'SYSTEM_SUPPORTER'),
+    'PATCH /api/support-tickets/1': () => {
+      const body = calls.at(-1)?.body as { resolutionNote: string }
+      note = body.resolutionNote
+      return envelope({ ...COLLEAGUE, status: 'IN_PROGRESS', resolutionNote: note })()
+    },
+    'POST /api/support-tickets/1/replies': envelope({ ticket: { ...COLLEAGUE }, replies: [] }),
+  }
+
+  const imageReply = await replyToSupportTicket('1', 'See attached', ['data:image/jpeg;base64,reply'])
+  await replyToSupportTicket('1', 'Text only')
+
+  const patch = calls.find((call) => call.key === 'PATCH /api/support-tickets/1')
+  const stored = JSON.parse((patch?.body as { resolutionNote: string }).resolutionNote) as Array<Record<string, unknown>>
+  expect(stored).toContainEqual(expect.objectContaining({
+    authorId: '4', authorName: 'Người xem', authorRole: 'systemSupporter', text: 'See attached', images: ['data:image/jpeg;base64,reply'],
+  }))
+  expect(stored[0]).toStrictEqual({ type: 'requestAttachments', images: ['data:image/png;base64,request'] })
+  expect(imageReply.replies.at(-1)).toMatchObject({ text: 'See attached', images: ['data:image/jpeg;base64,reply'], authorRole: 'systemSupporter' })
+  expect(calls.some((call) => call.key === 'POST /api/support-tickets/1/replies' && (call.body as { message: string }).message === 'Text only')).toBe(true)
+})

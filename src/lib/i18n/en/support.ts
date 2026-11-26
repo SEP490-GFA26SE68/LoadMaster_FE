@@ -39,6 +39,16 @@ export const support = {
       bodyTooLong: 'At most {max} characters',
     },
   },
+  attachments: {
+    choose: 'Attach images',
+    count: '{count}/{max} images',
+    hint: 'Choose up to {max} images.',
+    maxReached: 'You can attach up to {max} images.',
+    invalidType: 'Attachments must be images.',
+    readFailed: 'Could not read the image. Please try again.',
+    preview: 'Attachment {index}',
+    remove: 'Remove image {index}',
+  },
   thread: {
     body: 'Request',
     replies: 'Conversation',

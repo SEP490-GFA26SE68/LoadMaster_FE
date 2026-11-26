@@ -7,6 +7,7 @@ import { assertRole, sessionUser } from './session-role'
 import {
   MAX_TICKET_TEXT,
   MAX_TICKET_TITLE,
+  MAX_SUPPORT_IMAGES,
   TICKET_KINDS,
   TICKET_STATUSES,
   type SupportTicket,
@@ -83,25 +84,28 @@ export function supportMethods(ctx: DbContext): SupportDb {
         const user = writer()
         if (user.role === 'systemSupporter') throw new MockDbError('ROLE_NOT_ALLOWED', { role: user.role })
         if (!TICKET_KINDS.includes(input.kind)) throw bad('kind')
+        if ((input.images?.length ?? 0) > MAX_SUPPORT_IMAGES) throw bad('images')
         const title = required(input.title, 'title', MAX_TICKET_TITLE)
         const description = required(input.description, 'description', MAX_TICKET_TEXT)
         const at = ctx.nowIso()
         const ticket = put(supportTickets, {
           id: nextId('TKT', supportTickets.keys()), companyId: ctx.scope.newRecordCompany(), senderId: user.id, senderName: user.fullName,
           kind: input.kind as TicketKind, title, description, status: 'OPEN', replies: [], createdAt: at, updatedAt: at,
+          ...(input.images?.length ? { attachments: [...input.images] } : {}),
         })
         ctx.log('ticket.created', target(ticket.id), { ticketKind: ticket.kind }, ticket.companyId)
         return ticket
       }),
 
-    replyToSupportTicket: (ticketId, text) =>
+    replyToSupportTicket: (ticketId, text, images = []) =>
       ctx.respond(() => {
         const ticket = writable(ticketId)
         const user = writer()
         if (ticket.status === 'CLOSED') throw new MockDbError('TICKET_CLOSED', { ticketId })
+        if (images.length > MAX_SUPPORT_IMAGES) throw bad('images')
         const reply = required(text, 'text', MAX_TICKET_TEXT)
         const at = ctx.nowIso()
-        ticket.replies.push({ authorId: user.id, authorName: user.fullName, authorRole: user.role, text: reply, at })
+        ticket.replies.push({ authorId: user.id, authorName: user.fullName, authorRole: user.role, text: reply, at, ...(images.length ? { images: [...images] } : {}) })
         // Hỗ trợ khách hàng nhận việc: yêu cầu mới thành đang xử lý
         if (user.role === 'systemSupporter' && ticket.status === 'OPEN') ticket.status = 'IN_PROGRESS'
         ticket.updatedAt = at

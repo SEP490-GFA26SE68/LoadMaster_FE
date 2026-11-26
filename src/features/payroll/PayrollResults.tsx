@@ -11,7 +11,7 @@ import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 
 import { nextMonthPeriod, type PayrollDriverStatement, type PayrollPeriod } from './payroll-api'
 import { PAYROLL_TABLE_PAGE_SIZE, PayrollDialogPager, usePagedPayrollItems } from './payroll-dialog-pager'
-import { useSetDriverBaseSalaryMutation, useSetTripPayrollDriversMutation, useTripPayrollDriversQuery } from './usePayrollQueries'
+import { useSetDriverBaseSalaryMutation } from './usePayrollQueries'
 
 type PayrollResultsProps = {
   period: PayrollPeriod
@@ -58,6 +58,7 @@ export function PayrollResults({ period, hasKpi, statement, statementLoading, st
                   <th className="px-3 py-2">{t('payroll.results.driver')}</th>
                   <th className="px-3 py-2 text-right">{t('payroll.rate.baseShort')}</th>
                   <th className="px-3 py-2 text-right">{t('payroll.results.totalKg')}</th>
+                  <th className="px-3 py-2 text-right">{t('payroll.results.kgAmount')}</th>
                   <th className="px-3 py-2 text-right">{t('payroll.results.handling')}</th>
                   {hasKpi ? <th className="px-3 py-2 text-right">{t('payroll.results.kpiBonus')}</th> : null}
                   <th className="px-3 py-2 text-right">{t('payroll.results.total')}</th>
@@ -76,6 +77,7 @@ export function PayrollResults({ period, hasKpi, statement, statementLoading, st
                       </td>
                       <td className="px-3 py-2 text-right">{format.currency(driver.baseSalaryVnd)}</td>
                       <td className="px-3 py-2 text-right">{format.weight(driver.totalKg)}</td>
+                      <td className="px-3 py-2 text-right">{format.currency(driver.kgAmountVnd)}</td>
                       <td className="px-3 py-2 text-right">{format.currency(driver.handlingAmountVnd)}</td>
                       {hasKpi ? (
                         <td className="px-3 py-2 text-right">
@@ -128,9 +130,9 @@ export function PayrollResults({ period, hasKpi, statement, statementLoading, st
                     <Metric label={t('payroll.statement.handlingAmount')} value={format.currency(statement.handlingAmountVnd)} />
                     <Metric label={t('payroll.statement.totalSalary')} value={format.currency(statement.totalSalaryVnd)} />
                   </div>
-                  <DriverBaseSalaryAdjustment driverId={statement.driverId} currentBaseSalary={statement.baseSalaryVnd} />
+                  <DriverBaseSalaryAdjustment period={statement.period} driverId={statement.driverId} currentBaseSalary={statement.baseSalaryVnd} />
                   {statement.trips.map((trip) => (
-                    <TripPayrollAssignment key={trip.tripId} trip={trip} drivers={period.drivers} locked={period.status === 'LOCKED'} />
+                    <PayrollTripSummary key={trip.tripId} trip={trip} driverName={statement.driverName} />
                   ))}
                   {statement.trips.length === 0 ? <p className="text-small text-ink-2">{t('payroll.statement.noTrips')}</p> : null}
                 </div>
@@ -150,41 +152,22 @@ export function PayrollResults({ period, hasKpi, statement, statementLoading, st
   )
 }
 
-function TripPayrollAssignment({
+function PayrollTripSummary({
   trip,
-  drivers,
-  locked,
+  driverName,
 }: {
   trip: PayrollDriverStatement['trips'][number]
-  drivers: PayrollPeriod['drivers']
-  locked: boolean
+  driverName: string
 }) {
   const t = useT()
   const format = useFormat()
-  const query = useTripPayrollDriversQuery(trip.tripId)
-  const update = useSetTripPayrollDriversMutation()
-  const [selected, setSelected] = useState<number[] | null>(null)
-  const [saved, setSaved] = useState(false)
-
-  const currentIds = (query.data ?? []).map((driver) => driver.driverId).sort((a, b) => a - b)
-  const selectedIds = selected ?? currentIds
-  const sortedSelectedIds = [...selectedIds].sort((a, b) => a - b)
-  const unchanged = currentIds.length === sortedSelectedIds.length && currentIds.every((id, index) => id === sortedSelectedIds[index])
-
-  function toggle(driverId: number, checked: boolean) {
-    setSaved(false)
-    setSelected((current) => {
-      const currentSelection = current ?? query.data?.map((driver) => driver.driverId) ?? []
-      return checked ? [...new Set([...currentSelection, driverId])] : currentSelection.filter((id) => id !== driverId)
-    })
-  }
 
   return (
     <section className="rounded-md border border-line-soft p-4" aria-label={t('payroll.statement.trip', { code: trip.tripCode })}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="font-semibold">{trip.tripCode}</h3>
         <span className="text-small text-ink-2">
-          {query.isPending ? t('payroll.loading') : (query.data ?? []).map((driver) => `${driver.driverName} · ${format.percent(driver.sharePercent)}`).join(' / ')}
+          {`${driverName} · ${format.percent(trip.sharePercent)}`}
         </span>
       </div>
       <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -194,46 +177,27 @@ function TripPayrollAssignment({
         <Metric label={t('payroll.statement.handlingAmount')} value={format.currency(trip.handlingAmountVnd)} />
         <Metric label={t('payroll.statement.tripTotal')} value={format.currency(trip.totalAmountVnd)} />
       </div>
-      {query.isError ? <p role="alert" className="mt-2 text-small text-danger">{dataErrorMessage(query.error, t)}</p> : null}
-      {query.data ? (
-        <fieldset disabled={locked || update.isPending} className="mt-3 flex flex-wrap gap-x-4 gap-y-2">
-          <legend className="mb-2 text-small text-ink-2">{t('payroll.statement.assignDrivers')}</legend>
-          {drivers.map((driver) => (
-            <label key={driver.driverId} className="inline-flex items-center gap-2 text-small">
-              <input type="checkbox" checked={selectedIds.includes(driver.driverId)} onChange={(event) => toggle(driver.driverId, event.currentTarget.checked)} />
-              {driver.driverName}
-            </label>
-          ))}
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={locked || selectedIds.length === 0 || update.isPending || unchanged}
-            loading={update.isPending}
-            onClick={() => update.mutate({ tripId: trip.tripId, driverIds: selectedIds }, {
-              onSuccess: (shares) => {
-                setSelected(shares.map((driver) => driver.driverId))
-                setSaved(true)
-              },
-            })}>
-            {t('payroll.statement.saveDrivers')}
-          </Button>
-        </fieldset>
-      ) : null}
-      {saved ? <p className="mt-2 text-small text-cyan-800">{t('payroll.statement.recalculateAfterChange')}</p> : null}
-      {update.error ? <p role="alert" className="mt-2 text-small text-danger">{dataErrorMessage(update.error, t)}</p> : null}
     </section>
   )
 }
 
 function DriverBaseSalaryAdjustment({
+  period,
   driverId,
   currentBaseSalary,
 }: {
+  period: string
   driverId: number
   currentBaseSalary: number
 }) {
   const t = useT()
-  const nextMonth = nextMonthPeriod()
+  const year = Number(period.slice(0, 4))
+  const month = Number(period.slice(5, 7))
+  const nextMonthAfterSelectedPeriod = nextMonthPeriod(new Date(year, month - 1, 1))
+  const nextMonthAfterCurrentPeriod = nextMonthPeriod()
+  const effectiveMonth = nextMonthAfterSelectedPeriod > nextMonthAfterCurrentPeriod
+    ? nextMonthAfterSelectedPeriod
+    : nextMonthAfterCurrentPeriod
   const [amount, setAmount] = useState('')
   const [saved, setSaved] = useState(false)
   const mutation = useSetDriverBaseSalaryMutation()
@@ -245,7 +209,7 @@ function DriverBaseSalaryAdjustment({
     mutation.mutate(
       {
         driverId,
-        effectiveFrom: `${nextMonth}-01`,
+        effectiveFrom: `${effectiveMonth}-01`,
         baseSalaryVnd: numericAmount,
       },
       {
@@ -261,7 +225,7 @@ function DriverBaseSalaryAdjustment({
     <section className="rounded-md border border-line-soft p-4" aria-label={t('payroll.statement.editBaseSalary')}>
       <h3 className="font-semibold">{t('payroll.statement.editBaseSalary')}</h3>
       <p className="mt-1 text-small text-ink-2">
-        {t('payroll.statement.baseSalaryOverrideHelp')} ({t('payroll.statement.effectiveFromNextMonth', { month: nextMonth })})
+        {t('payroll.statement.baseSalaryOverrideHelp')} ({t('payroll.statement.effectiveFromNextMonth', { month: effectiveMonth })})
       </p>
       <form onSubmit={handleSave} className="mt-3 flex flex-wrap items-end gap-3">
         <div className="w-56">

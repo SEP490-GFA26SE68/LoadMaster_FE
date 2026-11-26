@@ -28,7 +28,7 @@ export type SupportDb = {
    * Thêm một trả lời (người gửi hoặc Hỗ trợ khách hàng). Yêu cầu đã đóng: `TICKET_CLOSED`. Hỗ trợ khách hàng trả lời yêu cầu `OPEN`
    * thì yêu cầu sang `IN_PROGRESS`. Ghi `ticket.replied` mang người gửi — chuông của người gửi.
    */
-  replyToSupportTicket(ticketId: string, text: string): Promise<SupportTicket>
+  replyToSupportTicket(ticketId: string, text: string, images?: readonly string[]): Promise<SupportTicket>
   /** Hỗ trợ khách hàng đổi trạng thái, kể cả mở lại yêu cầu đã đóng. Đúng trạng thái đang có thì không ghi gì. */
   setSupportTicketStatus(ticketId: string, status: TicketStatus): Promise<SupportTicket>
   /** Hỗ trợ khách hàng đọc gói, số dư và giao dịch credit gần nhất của một công ty. */

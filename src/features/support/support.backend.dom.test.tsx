@@ -123,11 +123,16 @@ test('a dispatcher sees only the tickets they sent; a new ticket goes to the bac
   await user.click(within(dialog).getByRole('button', { name: 'Gửi yêu cầu mới' }))
   await user.type(within(dialog).getByRole('textbox', { name: 'Tiêu đề' }), 'QA không in được nhãn')
   await user.type(within(dialog).getByRole('textbox', { name: 'Mô tả' }), 'Bấm In nhãn QR thì trang trắng.')
+  await user.upload(within(dialog).getByLabelText('Ảnh đính kèm'), new File(['evidence'], 'screen.png', { type: 'image/png' }))
   await user.click(within(dialog).getByRole('button', { name: 'Gửi yêu cầu' }))
   expect(await within(dialog).findByRole('heading', { name: 'QA không in được nhãn' }, SLOW)).toBeInTheDocument()
   expect(within(dialog).getByText('TCK-20261017-7777')).toBeInTheDocument()
   expect(within(dialog).getByRole('textbox', { name: 'Trả lời' })).toBeInTheDocument()
-  expect(calls.find((call) => call.key === 'POST /api/support-tickets')?.body).toStrictEqual({
+  expect(await within(dialog).findByRole('img', { name: 'Ảnh đính kèm 1' }, SLOW)).toBeInTheDocument()
+  const body = calls.find((call) => call.key === 'POST /api/support-tickets')?.body as { resolutionNote: string }
+  const attachments = JSON.parse(body.resolutionNote) as Array<{ images: string[] }>
+  expect(attachments[0]?.images[0]).toMatch(/^data:image\/png;base64,/)
+  expect(calls.find((call) => call.key === 'POST /api/support-tickets')?.body).toMatchObject({
     subject: 'QA không in được nhãn', description: 'Bấm In nhãn QR thì trang trắng.', category: 'SYSTEM_BUG', priority: 'HIGH',
   })
 })
@@ -204,6 +209,62 @@ test('a CLOSED ticket is dimmed and strictly read-only for both supporter and cl
   expect(within(panel).getByRole('combobox', { name: 'Trạng thái yêu cầu' })).toBeDisabled()
   expect(within(panel).queryByRole('textbox', { name: 'Trả lời' })).not.toBeInTheDocument()
   expect(within(panel).getByText(/Phiếu hỗ trợ đã đóng \(chỉ đọc\)/i)).toBeInTheDocument()
+})
+
+test('a requester can attach an image to a reply and sees it after the resolutionNote is refreshed', async () => {
+  const user = userEvent.setup()
+  me = { id: 7, userRoleType: 'DISPATCHER' }
+  tickets = [DISPATCHER_TICKET]
+  replies = {}
+  renderAs('dispatcher', <SupportTicketDialog onClose={() => {}} />)
+  const dialog = await screen.findByRole('dialog')
+  await user.click(await within(dialog).findByRole('button', { name: /Mở yêu cầu Ly thu/ }, SLOW))
+  const thread = await within(dialog).findByRole('region', { name: 'Trao đổi' })
+  await user.type(within(dialog).getByRole('textbox', { name: 'Trả lời' }), 'Ảnh lỗi từ phía khách hàng')
+  await user.upload(within(dialog).getByLabelText('Ảnh đính kèm'), new File(['evidence'], 'requester.png', { type: 'image/png' }))
+  await user.click(within(dialog).getByRole('button', { name: 'Gửi trả lời' }))
+
+  expect(await within(thread).findByRole('img', { name: 'Ảnh đính kèm 1' }, SLOW)).toBeInTheDocument()
+  const patch = calls.find((call) => call.key === 'PATCH /api/support-tickets/2')
+  const entries = JSON.parse((patch?.body as { resolutionNote: string }).resolutionNote) as Array<Record<string, unknown>>
+  expect(entries).toContainEqual(expect.objectContaining({
+    authorRole: 'dispatcher', text: 'Ảnh lỗi từ phía khách hàng', images: [expect.stringMatching(/^data:image\/png;base64,/)],
+  }))
+})
+
+test('system support can attach an image to a reply and keeps the existing support note', async () => {
+  const user = userEvent.setup()
+  tickets = [ADMIN_TICKET]
+  me = { id: 4, userRoleType: 'SYSTEM_SUPPORTER' }
+  renderAs('systemSupporter', <SupportPage />, '/ho-tro?ticket=1')
+  const panel = await screen.findByRole('region', { name: 'Hoá đơn tháng 10 thiếu mã số thuế' }, SLOW)
+  const thread = within(panel).getByRole('region', { name: 'Trao đổi' })
+  await user.type(within(panel).getByRole('textbox', { name: 'Trả lời' }), 'Ảnh hướng dẫn xử lý')
+  await user.upload(within(panel).getByLabelText('Ảnh đính kèm'), new File(['guide'], 'support.png', { type: 'image/png' }))
+  await user.click(within(panel).getByRole('button', { name: 'Gửi trả lời' }))
+
+  expect(await within(thread).findByRole('img', { name: 'Ảnh đính kèm 1' }, SLOW)).toBeInTheDocument()
+  const companyChat = screen.getByRole('region', { name: 'Trao đổi gần đây của công ty' })
+  expect(within(companyChat).getByRole('img', { name: 'Ảnh đính kèm 1' })).toBeInTheDocument()
+  const patch = calls.find((call) => call.key === 'PATCH /api/support-tickets/1' && (call.body as { resolutionNote?: string }).resolutionNote)
+  const entries = JSON.parse((patch?.body as { resolutionNote: string }).resolutionNote) as Array<Record<string, unknown>>
+  expect(entries).toContainEqual({ type: 'supportNote', text: 'Đã gửi lại hoá đơn qua email.' })
+  expect(entries).toContainEqual(expect.objectContaining({
+    authorRole: 'systemSupporter', text: 'Ảnh hướng dẫn xử lý', images: [expect.stringMatching(/^data:image\/png;base64,/)],
+  }))
+})
+
+test('the image picker refuses a sixth image', async () => {
+  const user = userEvent.setup()
+  renderAs('dispatcher', <SupportTicketDialog onClose={() => {}} />)
+  const dialog = await screen.findByRole('dialog')
+  await user.click(await within(dialog).findByRole('button', { name: 'Gửi yêu cầu mới' }, SLOW))
+  const files = Array.from({ length: 6 }, (_, index) => new File([String(index)], `image-${index}.png`, { type: 'image/png' }))
+
+  await user.upload(within(dialog).getByLabelText('Ảnh đính kèm'), files)
+
+  expect(await within(dialog).findByRole('alert')).toHaveTextContent('Chỉ được đính kèm tối đa 5 ảnh.')
+  expect(within(dialog).queryByRole('img')).not.toBeInTheDocument()
 })
 
 test('shows unlock trial button for TRIAL_ACCOUNT_UNLOCK ticket and unlocks it', async () => {
