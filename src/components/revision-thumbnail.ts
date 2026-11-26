@@ -45,9 +45,21 @@ export function revisionThumbnail(
       },
     ]
   })
+  return thumbnailOf(request.vehicle, boxes, placements.length, maxBoxes)
+}
+
+/**
+ * Ảnh thu nhỏ từ lòng thùng (cm) và các khối đã dựng (mét): vượt `maxBoxes` thì giữ các khối gần người nhìn nhất, như
+ * `revisionThumbnail`. Dùng chung cho phương án của máy chủ (`server-plan-thumbnail.ts`).
+ */
+export function thumbnailOf(
+  vehicle: Pick<OptimizationRequest['vehicle'], 'innerLengthCm' | 'innerWidthCm' | 'innerHeightCm'>,
+  boxes: readonly IsoBox[],
+  placedCount: number,
+  maxBoxes = THUMBNAIL_MAX_BOXES,
+): RevisionThumbnail {
   const nearest = (box: IsoBox) => box.x + box.length + box.y + box.width + box.z + box.height
-  const drawn = boxes.length > maxBoxes ? boxes.toSorted((a, b) => nearest(b) - nearest(a)).slice(0, maxBoxes) : boxes
-  const { vehicle } = request
+  const drawn = boxes.length > maxBoxes ? boxes.toSorted((a, b) => nearest(b) - nearest(a)).slice(0, maxBoxes) : [...boxes]
   return {
     container: {
       length: vehicle.innerLengthCm / CM_PER_M,
@@ -55,6 +67,6 @@ export function revisionThumbnail(
       height: vehicle.innerHeightCm / CM_PER_M,
     },
     boxes: drawn,
-    placedCount: placements.length,
+    placedCount,
   }
 }

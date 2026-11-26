@@ -4,6 +4,8 @@ import { ApiError } from '@/lib/api-client'
 import { isoFromBackend } from '@/lib/backend-time'
 
 import { dataWarningsOf, type DataWarning, type DataWarningDto } from './data-warnings'
+import { elapsedMsOf, jobProgressOf, type JobProgress, type JobProgressDto } from './job-progress-dto'
+export type { JobProgress, JobStage } from './job-progress-dto'
 import { placementWhyOf, planScoreOf, type PlacementWhy, type PlacementWhyDto, type PlanScore, type PlanScoreDto } from './plan-score-dto'
 
 /**
@@ -43,6 +45,10 @@ export type OptimizationJobDto = {
   readonly runAlgorithm?: string | null
   /** Cảnh báo dữ liệu đầu vào (kiện thiếu σ, kiện chưa có loại kiện); máy chủ cũ không trả. */
   readonly dataWarnings?: readonly DataWarningDto[] | null
+  /** Thời gian đã chạy của job đang chạy; vắng khi chưa bắt đầu, đã xong, hoặc máy chủ cũ. */
+  readonly elapsedMs?: number | null
+  /** Tiến trình của dịch vụ tối ưu; vắng khi chưa báo gì hoặc máy chủ cũ. */
+  readonly progress?: JobProgressDto | null
 }
 
 /** Kèm lý do đặt và số đo (`PlacementWhyDto`) khi dịch vụ tối ưu chấm điểm J. */
@@ -164,6 +170,12 @@ export type OptimizationJob = {
   readonly runAlgorithm: string | null
   /** Cảnh báo dữ liệu đã lọc mã lạ; rỗng khi không có hoặc máy chủ không trả. */
   readonly dataWarnings: readonly DataWarning[]
+  /** Giới hạn thời gian tính của lần chạy, giây; vắng / `null` khi máy chủ không trả. */
+  readonly timeLimitSec?: number | null
+  /** Thời gian đã chạy máy chủ báo ở lần đọc này; vắng / `null` khi máy chủ không trả (chưa chạy, đã xong, máy chủ cũ). */
+  readonly elapsedMs?: number | null
+  /** Tiến trình của dịch vụ tối ưu; vắng / `null` khi máy chủ không báo gì. */
+  readonly progress?: JobProgress | null
 }
 
 export type LoadPlacement = {
@@ -286,6 +298,9 @@ export function optimizationJobOf(dto: OptimizationJobDto): OptimizationJob {
     createdAt: dto.createdAt ? isoFromBackend(dto.createdAt) : null,
     runAlgorithm: dto.runAlgorithm?.trim() || null,
     dataWarnings: dataWarningsOf(dto.dataWarnings),
+    timeLimitSec: typeof dto.timeLimitSec === 'number' && dto.timeLimitSec > 0 ? dto.timeLimitSec : null,
+    elapsedMs: elapsedMsOf(dto.elapsedMs),
+    progress: jobProgressOf(dto.progress),
   }
 }
 

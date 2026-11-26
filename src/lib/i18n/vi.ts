@@ -67,6 +67,7 @@ import { seo } from './vi/seo'
 import { warehouseCustomers } from './vi/warehouseCustomers'
 import { backendTripRoute } from './vi/backendTripRoute'
 import { serverPlans } from './vi/serverPlans'
+import { serverRun } from './vi/serverRun'
 import { companyWarehouses } from './vi/companyWarehouses'
 import { tripWarehouse } from './vi/tripWarehouse'
 import { packageStatus } from './vi/packageStatus'
@@ -155,6 +156,7 @@ export const vi = {
   warehouseCustomers,
   backendTripRoute,
   serverPlans,
+  serverRun,
   companyWarehouses,
   tripWarehouse,
   packageStatus,

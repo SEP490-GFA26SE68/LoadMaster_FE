@@ -12,6 +12,8 @@ import { dataErrorMessage, useT } from '@/lib/i18n'
 import { BackendLoadPlansCard } from './BackendLoadPlansCard'
 import { BackendPinsCard } from './BackendPinsCard'
 import { BackendRunDialog } from './BackendRunDialog'
+import type { RunInputs } from './BackendRunProgress'
+import type { BackendTripDetail } from '@/features/trips/trips-api'
 import { useTripLoadPlansQuery } from './useLoadPlansQuery'
 import { BackendInitialActionPanel } from './BackendInitialActionPanel'
 import type { OptimizationJob } from './load-plan-dto'
@@ -112,9 +114,20 @@ function BackendTripOptimizationPage({ tripId }: { tripId: string }) {
           error={jobError}
           hasPlans={hasPlans}
           constraintCodes={constraintCodes}
+          inputs={runInputsOf(trip, stops.length)}
           compareTo={`${tripPath}/so-sanh?lan-chay=${encodeURIComponent(jobId)}`}
         />
       ) : null}
     </div>
   )
+}
+
+/** Đầu vào thật của lần chạy từ Chi tiết chuyến của máy chủ: số kiện (máy chủ cũ không trả thì bỏ), số điểm giao, xe. */
+function runInputsOf(trip: BackendTripDetail['trip'], stopCount: number): RunInputs {
+  const vehicle = [trip.vehicleName?.trim(), trip.licensePlate?.trim()].filter(Boolean).join(' · ')
+  return {
+    packageCount: typeof trip.packageCount === 'number' ? trip.packageCount : null,
+    stopCount,
+    vehicleName: vehicle === '' ? null : vehicle,
+  }
 }
