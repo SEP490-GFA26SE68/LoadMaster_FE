@@ -13,6 +13,8 @@ export type PackageTypeApi = {
   height: number
   weightKg: number
   maxStackingWeightKg: number
+  /** σ, kg/m² (BigDecimal: số hoặc chuỗi); `null` / vắng là chưa khai. */
+  topLoadCapacityKgM2?: number | string | null
 
   isFragile: boolean
   rotationAllowed: boolean
@@ -32,6 +34,8 @@ export type PackageType = {
   heightCm: number
   weightKg: number
   maxStackWeightKg: number
+  /** Sức chịu nén mặt trên σ, kg/m²; `null` là chưa khai — không có giá trị mặc định. */
+  topLoadCapacityKgM2: number | null
 
   isFragile: boolean
   rotationAllowed: boolean
@@ -62,6 +66,13 @@ export type PageResponse<T> = {
   last: boolean
 }
 
+/** BigDecimal của Jackson (số hoặc chuỗi) → số; trống hay không đọc được là `null`. */
+export function decimalOrNull(value: number | string | null | undefined): number | null {
+  if (value === null || value === undefined || value === '') return null
+  const number = Number(value)
+  return Number.isFinite(number) ? number : null
+}
+
 function mapPackageType(
   item: PackageTypeApi,
 ): PackageType {
@@ -76,6 +87,7 @@ function mapPackageType(
     heightCm: item.height,
     weightKg: item.weightKg,
     maxStackWeightKg: item.maxStackingWeightKg,
+    topLoadCapacityKgM2: decimalOrNull(item.topLoadCapacityKgM2),
 
     isFragile: item.isFragile,
     rotationAllowed: item.rotationAllowed,
@@ -94,6 +106,8 @@ function toRequest(input: PackageTypeInput) {
     height: input.heightCm,
     weightKg: input.weightKg,
     maxStackingWeightKg: input.maxStackWeightKg,
+    // Máy chủ bỏ qua `null` khi sửa: gửi `null` không xoá giá trị đã lưu (form chặn việc xoá trước khi gửi).
+    topLoadCapacityKgM2: input.topLoadCapacityKgM2,
     isFragile: input.isFragile,
     rotationAllowed: input.rotationAllowed,
     allowRotateX: input.allowRotateX,

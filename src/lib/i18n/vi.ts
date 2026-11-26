@@ -73,6 +73,7 @@ import { serverAudit } from './vi/serverAudit'
 import { serverWarehouse } from './vi/serverWarehouse'
 import { trialRegistration } from './vi/trialRegistration'
 import { guestRegistration } from './vi/guestRegistration'
+import { physicalData } from './vi/physicalData'
 import { assistant } from './vi/assistant'
 
 /**
@@ -160,6 +161,7 @@ export const vi = {
   trialRegistration,
   guestRegistration,
   transfers,
+  physicalData,
 
   assistant,
 } as const

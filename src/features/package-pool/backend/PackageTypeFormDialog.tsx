@@ -3,7 +3,6 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Shapes } from 'lucide-react'
 import { useId, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
-import { z } from 'zod'
 
 import { Banner } from '@/components/Banner'
 import { Button } from '@/components/ui/Button'
@@ -16,60 +15,16 @@ import type {
   PackageType,
   PackageTypeInput,
 } from './package-types-api'
-
-const schema = z.object({
-  typeCode: z.string(),
-  name: z.string().trim().min(1),
-
-  lengthCm: z.number().int().positive(),
-  widthCm: z.number().int().positive(),
-  heightCm: z.number().int().positive(),
-
-  weightKg: z.number().positive(),
-  maxStackWeightKg: z.number().min(0),
-
-  isFragile: z.boolean(),
-  rotationAllowed: z.boolean(),
-  allowRotateX: z.boolean(),
-  allowRotateY: z.boolean(),
-  allowRotateZ: z.boolean(),
-})
-
-type FormValues = z.infer<typeof schema>
-
-const DEFAULT_VALUES: FormValues = {
-  typeCode: '',
-  name: '',
-  lengthCm: 1,
-  widthCm: 1,
-  heightCm: 1,
-  weightKg: 1,
-  maxStackWeightKg: 0,
-  isFragile: false,
-  rotationAllowed: true,
-  allowRotateX: true,
-  allowRotateY: true,
-  allowRotateZ: true,
-}
-
-function toFormValues(type?: PackageType): FormValues {
-  return type
-    ? {
-      typeCode: type.typeCode ?? '',
-      name: type.name,
-      lengthCm: type.lengthCm,
-      widthCm: type.widthCm,
-      heightCm: type.heightCm,
-      weightKg: type.weightKg,
-      maxStackWeightKg: type.maxStackWeightKg,
-      isFragile: type.isFragile,
-      rotationAllowed: type.rotationAllowed,
-      allowRotateX: type.allowRotateX,
-      allowRotateY: type.allowRotateY,
-      allowRotateZ: type.allowRotateZ,
-    }
-    : DEFAULT_VALUES
-}
+import {
+  CANNOT_CLEAR,
+  clearsSavedValue,
+  packageTypeFormSchema,
+  toPackageTypeForm,
+  toPackageTypeInput,
+  type PackageTypeFormInput,
+  type PackageTypeFormValues,
+} from './package-type-form'
+import { TopLoadCapacityField } from './TopLoadCapacityField'
 
 export function PackageTypeFormDialog({
   type,
@@ -84,9 +39,9 @@ export function PackageTypeFormDialog({
   const baseId = useId()
   const [serverError, setServerError] = useState<unknown>(null)
 
-  const form = useForm<FormValues>({
-    resolver: zodResolver(schema),
-    defaultValues: toFormValues(type),
+  const form = useForm<PackageTypeFormInput, unknown, PackageTypeFormValues>({
+    resolver: zodResolver(packageTypeFormSchema),
+    defaultValues: toPackageTypeForm(type),
   })
 
   const {
@@ -142,15 +97,16 @@ export function PackageTypeFormDialog({
     />
   )
 
-  async function handleValid(values: FormValues) {
+  async function handleValid(values: PackageTypeFormValues) {
     setServerError(null)
 
+    if (clearsSavedValue(type?.topLoadCapacityKgM2, values.topLoadCapacityKgM2)) {
+      form.setError('topLoadCapacityKgM2', { message: CANNOT_CLEAR }, { shouldFocus: true })
+      return
+    }
+
     try {
-      await onSubmit({
-        ...values,
-        typeCode: values.typeCode.trim() || null,
-        name: values.name.trim(),
-      })
+      await onSubmit(toPackageTypeInput(values))
     } catch (error) {
       setServerError(error)
     }
@@ -204,6 +160,8 @@ export function PackageTypeFormDialog({
               'kg',
               '0.01',
             )}
+
+            <TopLoadCapacityField form={form} />
 
             <Switch
               label={t('sourcing.server.packageType.fragile')}

@@ -1,4 +1,5 @@
 import { listParams, type CargoListQuery } from './package-list-query'
+import { decimalOrNull } from './package-types-api'
 import { auditEntryOf, type AuditLogDto, type ServerAuditEntry } from '@/features/admin/audit-dto'
 import { apiFetch, apiFetchBlob } from '@/lib/api-client'
 
@@ -52,6 +53,8 @@ export type CargoPackageApi = {
   fragilityLevel: number | null
   stackable: boolean | null
   maxTopLoadKg: number | null
+  /** σ riêng của kiện, kg/m² (BigDecimal: số hoặc chuỗi); máy chủ cũ không trả. */
+  topLoadCapacityKgM2?: number | string | null
   maxLayers: number | null
   minSupportRatio: number | null
   priority: number | null
@@ -91,6 +94,8 @@ export type CargoPackage = {
   fragilityLevel: number | null
   stackable: boolean | null
   maxTopLoadKg: number | null
+  /** σ riêng của kiện, kg/m² (ghi đè σ của loại kiện); `null` là không ghi đè. */
+  topLoadCapacityKgM2: number | null
   maxLayers: number | null
   minSupportRatio: number | null
   priority: number | null
@@ -122,6 +127,8 @@ export type CargoPackageInput = {
   fragilityLevel?: number | null
   stackable?: boolean | null
   maxTopLoadKg?: number | null
+  /** σ riêng của kiện, kg/m²; ghi đè σ của loại kiện. Vắng / `null` là dùng σ của loại kiện. */
+  topLoadCapacityKgM2?: number | null
   maxLayers?: number | null
   minSupportRatio?: number | null
   priority?: number | null
@@ -190,6 +197,7 @@ function mapPackage(item: CargoPackageApi): CargoPackage {
     fragilityLevel: item.fragilityLevel ?? null,
     stackable: item.stackable ?? null,
     maxTopLoadKg: item.maxTopLoadKg ?? null,
+    topLoadCapacityKgM2: decimalOrNull(item.topLoadCapacityKgM2),
     maxLayers: item.maxLayers ?? null,
     minSupportRatio: item.minSupportRatio ?? null,
     priority: item.priority ?? null,
@@ -234,6 +242,8 @@ function toRequest(
     fragilityLevel: input.fragilityLevel ?? null,
     stackable: input.stackable ?? null,
     maxTopLoadKg: input.maxTopLoadKg ?? null,
+    // Máy chủ bỏ qua `null` khi sửa: không xoá được σ đã lưu (form chặn việc xoá trước khi gửi).
+    topLoadCapacityKgM2: input.topLoadCapacityKgM2 ?? null,
     maxLayers: input.maxLayers ?? null,
     minSupportRatio: input.minSupportRatio ?? null,
     priority: input.priority ?? null,
