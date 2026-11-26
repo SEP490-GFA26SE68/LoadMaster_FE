@@ -69,6 +69,7 @@ import { seo } from './en/seo'
 import { warehouseCustomers } from './en/warehouseCustomers'
 import { backendTripRoute } from './en/backendTripRoute'
 import { serverPlans } from './en/serverPlans'
+import { serverRun } from './en/serverRun'
 import { companyWarehouses } from './en/companyWarehouses'
 import { tripWarehouse } from './en/tripWarehouse'
 import { packageStatus } from './en/packageStatus'
@@ -149,6 +150,7 @@ export const en = {
   warehouseCustomers,
   backendTripRoute,
   serverPlans,
+  serverRun,
   companyWarehouses,
   tripWarehouse,
   packageStatus,

@@ -1251,10 +1251,15 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
   thật (132 kiện của chuyến mẫu), không phải số nghĩ ra.
 - **Hình của hộp thoại chạy tối ưu** (`optimization/RunFigure`): thùng xe đẳng cự có khối hiện dần, và số khối là hàm thuần của phần việc
   thật `checked / workload` mà service báo (`revealedBoxCount` ở `run-progress.ts`, làm tròn xuống — hình không bao giờ đi trước tiến
-  trình); trên hình không có số nào, khối không phải kiện thật. Chưa có sự kiện tiến trình nào, hoặc nguồn không báo số kiện (máy chủ chỉ báo
-  trạng thái job), thì `fraction` là `null`: một dải khối chạy vòng, không dừng ở mức đầy nào; giảm chuyển động thì hình đứng ở mức hiện tại,
+  trình); trên hình không có số nào, khối không phải kiện thật. Hộp chạy của máy chủ dùng `bestPlacedCount / totalPackages` của
+  `progress` mà job trả. Chưa có sự kiện tiến trình nào, hoặc nguồn không báo số kiện (máy chủ cũ không trả `progress`), thì `fraction` là
+  `null`: một dải khối chạy vòng, không dừng ở mức đầy nào; giảm chuyển động thì hình đứng ở mức hiện tại,
   chế độ không xác định là thùng rỗng. Cạnh hình là đúng các bước `runOptimization` báo qua `onStage` (giữ credit → xếp ba phương án → lưu
   kết quả); nguồn nào không có bước đó thì không vẽ bước đó. Khối tô thang azure ("đang chạy"), không dùng màu điểm giao.
+- **Hộp chạy và So sánh của máy chủ** chỉ hiện số máy chủ trả, của chuyến hoặc của đồng hồ: đồng hồ neo theo `elapsedMs` của job (không có
+  thì đếm từ lúc hộp thoại thấy job chạy, không đếm lúc còn chờ), không bao giờ lùi; ảnh cách xếp và thanh tải trục chỉ khi có xe và chỗ xếp
+  đủ số — thiếu thì không vẽ gì, không khung rỗng. Thời gian tính từ 1.000 ms viết bằng giây một chữ số lẻ ("60,0 giây" · "60.0 s"), dưới đó
+  bằng ms (`computation-time.ts`).
 - **Tải trục** (FE-5b-03, D-78) là số tính được: mô hình đòn bẩy thuần
   `axleLoadsOf` (`domain/metrics/axle-load.ts`) trên dữ liệu trục **người dùng khai ở trang xe** (`axles[]`: vị trí, tải rỗng, tải tối
   đa) và trọng tâm hàng — mọi số truy được về đó, và luôn mang **MOCK RESULT** vì là ước lượng của mock. Xe không đủ dữ liệu trục
@@ -1661,8 +1666,25 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   vận chuyển: hộp huỷ đọc `GET /api/trips/{id}/exceptions`, không còn sự cố `OPEN` / `ESCALATED` thì nút huỷ mờ kèm lý do (máy chủ 409
   `TRIP_CANCEL_NEEDS_OPEN_EXCEPTION`), huỷ xong toast nói số kiện thành Hoàn trả —, gỡ yêu cầu giao (`DELETE …/delivery-requirements/{rid}`). **Phương án xếp hàng** (`load-plans-backend-api.ts`, DTO ở `load-plan-dto.ts`): Thiết lập tối ưu gửi
   `POST …/optimize-loading` (một lần chạy, trừ credit một lần theo giá máy chủ, ba phương án A · B · C) rồi đọc lại `GET /api/trips/optimization-jobs/{jobId}` bằng
-  `refetchInterval` tới khi xong — hình chạy vòng (`fraction={null}`), `NO_SOLUTION` / `FAILED` nói rõ không trừ credit —, xong thì mở So
-  sánh `?lan-chay=<jobId>` (`…/plans`). Mỗi phương án mang `algorithmName` — thuật toán đã tạo ra nó (`EP_DBLF`, `GA`, `SA`,
+  `refetchInterval` tới khi xong — `NO_SOLUTION` / `FAILED` nói rõ không trừ credit —, xong thì mở So
+  sánh `?lan-chay=<jobId>` (`…/plans`). **Hộp chạy** (`BackendRunDialog` → `BackendRunProgress`): job trả thêm `elapsedMs` và `progress`
+  (`stage` `BUILDING | IMPROVING | SELECTING | SAVING`, `algorithm`, `layoutsTried`, `totalPackages`, `bestPlacedCount`, `bestVolumePercent`;
+  đọc ở `job-progress-dto.ts`, giá trị lạ bị bỏ từng trường, máy chủ cũ không trả thì vắng). Đồng hồ `mm:ss` so `timeLimitSec` kèm thanh dừng
+  ở đầy, quá giới hạn thì "đang hoàn tất" (`run-clock.ts`, `useRunClock`); các bước suy từ trạng thái + `progress.stage` (`server-run-steps.ts`:
+  chờ → xếp thử → tìm cách tốt hơn — chỉ khi máy chủ báo `IMPROVING` — → chọn và chấm điểm → kiểm và lưu; không có `progress` thì chỉ "chờ" →
+  "tính ba phương án"), bước đang chạy có một câu; số sống (cách xếp đã thử, xếp được nhiều nhất / tổng, lấp đầy cao nhất, thuật toán đang chạy
+  qua `server-algorithms.ts`) đếm lên tới đúng số máy chủ trả (`useCountUp`, giảm chuyển động thì đặt thẳng); hình `RunFigure` theo
+  `bestPlacedCount / totalPackages`, không có thì chạy vòng; đầu vào của lần chạy (số kiện, số điểm giao, xe) lấy từ Chi tiết chuyến đã đọc ở
+  Thiết lập tối ưu. Vùng `role="status"` duy nhất là câu trạng thái, thêm tên bước — chỉ đổi theo bước, không theo đồng hồ hay số sống.
+  **So sánh theo lần chạy** (`BackendRunComparisonPage` → `BackendRunPlanCard`): thẻ lần chạy (hạng của gói, thời gian tính của job, kiện xếp
+  được "n / tổng" hay "min–max / tổng"); mỗi thẻ sáu hàng trên lưới con từ `lg` (đầu thẻ · hồ sơ · ảnh · chỉ số · điểm · nút Planner) để ba
+  thẻ thẳng hàng, dưới `lg` một cột. Hồ sơ (`planProfile`: hồ sơ máy chủ chấm, không có thì theo nhãn) là icon Lucide + một câu
+  (`serverRun.compare.profile`). Ảnh `ThumbnailFrame` dựng từ chỗ xếp thật trong lòng thùng của xe phương án được tính cho
+  (`server-plan-thumbnail.ts`; xe đọc ở `run-vehicles-api.ts` — `/api/vehicles/{id}/config`, phương án không ghi xe thì xe của chuyến; đọc lỗi
+  chỉ mất ảnh và thanh tải trục). Biểu đồ điểm (`score-bars.ts`, `ScoreBars`): khoản cộng `--primary`, khoản trừ xám trung tính, luôn kèm dấu
+  và số, hình `aria-hidden`, một dòng đọc được nói khoản trừ lớn nhất; thanh mọc một lần (`lm-bar-grow`, `motion-safe`). Thanh tải trục
+  (`axle-usage.ts`) so tải máy chủ trả với giới hạn của xe, vượt có chữ "Vượt … kg". Phương án trùng (`duplicateOf`, `run-plan-cards.ts` — trỏ
+  về phương án gốc của chuỗi) giữ hồ sơ, điểm, biểu đồ, "Tính thế nào?" và nút Planner, bỏ ảnh và chỉ số. Mỗi phương án mang `algorithmName` — thuật toán đã tạo ra nó (`EP_DBLF`, `GA`, `SA`,
   `EP_LUMO_R1_1`, `LUMO_R1`, `LUMO_R1_1`, `LUMO_R2`; phương án cũ là mã của job) — và `runAlgorithm`, hạng của gói ghi ở job (job cũng trả
   `runAlgorithm`); tên đọc được ở `server-algorithms.ts` (nhánh `serverPlans.algorithms`, mã lạ hiện nguyên mã, không "(mock)") và chỉ hiện
   ở thẻ lần chạy + từng thẻ của So sánh, bảng lần chạy (`showAlgorithms`) và hộp chạy của Thiết lập tối ưu. Planner dựng scene từ `GET /api/trips/{id}/load-plans` (`backend-plan-scene.ts`, không MOCK RESULT,

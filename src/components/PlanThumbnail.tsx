@@ -11,7 +11,7 @@ import {
   sortByDepth,
 } from '@/lib/isometric'
 import { cn } from '@/lib/utils'
-import { revisionThumbnail } from './revision-thumbnail'
+import { revisionThumbnail, type RevisionThumbnail } from './revision-thumbnail'
 
 const SCALE = 21
 const PAD = 12
@@ -40,9 +40,30 @@ export function PlanThumbnail({
 }) {
   const t = useT()
   const format = useFormat()
+  const thumbnail = useMemo(() => revisionThumbnail(request, placements), [request, placements])
+  const label = t('trips.compare.thumbnail', {
+    id: revisionId,
+    placed: format.integer(thumbnail.placedCount),
+    total: format.integer(totalCount),
+  })
+  return <ThumbnailFrame thumbnail={thumbnail} label={label} totalCount={totalCount} overlays={overlays} className={className} />
+}
 
-  const { frame, faces, roof, drawnCount, placedCount } = useMemo(() => {
-    const thumbnail = revisionThumbnail(request, placements)
+/**
+ * Khung vẽ của ảnh thu nhỏ từ một `RevisionThumbnail` đã dựng — chung cho revision của kho mẫu (`PlanThumbnail`) và phương án của máy
+ * chủ (`server-plan-thumbnail.ts`). `label` là tên truy cập của hình.
+ */
+export function ThumbnailFrame({ thumbnail, label, totalCount, overlays = true, className }: {
+  thumbnail: RevisionThumbnail
+  label: string
+  totalCount: number
+  overlays?: boolean
+  className?: string
+}) {
+  const t = useT()
+  const format = useFormat()
+
+  const { frame, faces, roof } = useMemo(() => {
     const frame = fitViewBox(thumbnail.container, SCALE, PAD)
     const project = createProjector(SCALE, frame.offsetX, frame.offsetY)
     const cargo = thumbnail.boxes.flatMap((box) => boxFaces(box, project, { strokeWidth: 0.5, topTint: 0.08 }))
@@ -50,24 +71,14 @@ export function PlanThumbnail({
       frame,
       faces: sortByDepth([...containerShell(thumbnail.container, project, shellColors()), ...cargo]),
       roof: roofOutline(thumbnail.container, project),
-      drawnCount: thumbnail.boxes.length,
-      placedCount: thumbnail.placedCount,
     }
-  }, [request, placements])
+  }, [thumbnail])
+  const drawnCount = thumbnail.boxes.length
+  const { placedCount } = thumbnail
 
   return (
     <div className={cn('relative h-[190px] flex-none bg-canvas-1', className)}>
-      <svg
-        viewBox={frame.viewBox}
-        preserveAspectRatio="xMidYMid meet"
-        className="block h-full w-full"
-        role="img"
-        aria-label={t('trips.compare.thumbnail', {
-          id: revisionId,
-          placed: format.integer(placedCount),
-          total: format.integer(totalCount),
-        })}
-      >
+      <svg viewBox={frame.viewBox} preserveAspectRatio="xMidYMid meet" className="block h-full w-full" role="img" aria-label={label}>
         {faces.map((face, index) => (
           <polygon
             key={index}

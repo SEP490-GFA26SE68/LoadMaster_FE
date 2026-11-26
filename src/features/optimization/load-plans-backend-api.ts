@@ -23,7 +23,7 @@ import {
 } from './load-plan-dto'
 
 /** Kiểu của app dựng từ DTO — màn import từ đây, không từ `load-plan-dto.ts`. */
-export type { LoadPlacement, LoadPlan, OptimizationJob } from './load-plan-dto'
+export type { JobProgress, JobStage, LoadPlacement, LoadPlan, OptimizationJob } from './load-plan-dto'
 export type { PlacementReason, PlacementWhy, PlanScore, ScoreComponent, ScoreComponentCode, ScoreTerm } from './plan-score-dto'
 export { SCORE_PROFILES } from './plan-score-dto'
 

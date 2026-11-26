@@ -668,6 +668,13 @@
   }
 }
 
+/* Biểu đồ điểm của So sánh bản máy chủ (`ScoreBars`): thanh mọc một lần từ mép trái; giảm chuyển động thì đứng yên ở độ dài cuối */
+@keyframes lm-bar-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
 /* ---------------------------------------------------------------------------
    Thanh trượt native. Phần đã đi qua tô primary qua biến --lm-range-fill
    (component đặt inline), phần còn lại màu viền.
