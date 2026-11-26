@@ -75,6 +75,7 @@ describe('TrialAgreementNotifier', () => {
       signerName: 'Đỗ Hoàng Nam',
       signerPhone: '0918923451',
       ipAddress: null,
+      signerDevice: null,
       isExpired: false,
       hoursRemaining: 71,
     }
@@ -108,6 +109,7 @@ describe('TrialAgreementNotifier', () => {
       signerName: 'Đỗ Hoàng Nam',
       signerPhone: '0918923451',
       ipAddress: null,
+      signerDevice: null,
       isExpired: true,
       hoursRemaining: 0,
     }
@@ -134,6 +136,7 @@ describe('TrialAgreementNotifier', () => {
       signerName: 'Đỗ Hoàng Nam',
       signerPhone: '0918923451',
       ipAddress: '127.0.0.1',
+      signerDevice: null,
       isExpired: false,
       hoursRemaining: 0,
     }

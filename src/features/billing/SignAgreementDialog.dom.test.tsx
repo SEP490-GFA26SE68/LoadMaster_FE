@@ -34,6 +34,7 @@ const sampleAgreement: CompanyAgreement = {
   signerName: 'Đỗ Hoàng Nam',
   signerPhone: '0918923451',
   ipAddress: null,
+  signerDevice: null,
   isExpired: false,
   hoursRemaining: 71,
 }
