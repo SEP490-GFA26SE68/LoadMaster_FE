@@ -38,6 +38,7 @@ export const admin = {
     resetSuccess: 'Đã đặt lại mật khẩu cho {name}. Mật khẩu tạm thời mới đã được gửi tới email {email}.',
   },
   users: {
+    agreementPendingNotice: 'Doanh nghiệp chưa hoàn tất ký thỏa thuận dịch vụ thử nghiệm. Vui lòng ký thỏa thuận để có thể thêm nhân viên mới.',
     title: 'Người dùng',
     count: { one: '{count} tài khoản', other: '{count} tài khoản' },
     /** Dòng số đếm dưới tiêu đề màn: đếm trên danh sách kho trả cho người xem, ghép các phần bằng dấu chấm giữa. */
@@ -236,7 +237,8 @@ export const admin = {
     labels: {
       companies: { manage: 'Tạo và quản lý công ty khách hàng' },
       companyProfile: { manage: 'Xem và sửa thông tin công ty của mình' },
-      users: { manage: 'Quản lý người dùng' },
+      users: {
+    agreementPendingNotice: 'Doanh nghiệp chưa hoàn tất ký thỏa thuận dịch vụ thử nghiệm. Vui lòng ký thỏa thuận để có thể thêm nhân viên mới.', manage: 'Quản lý người dùng' },
       audit: { view: 'Xem nhật ký hệ thống' },
       subscriptionPlans: { manage: 'Tạo, sửa gói cước và chính sách credit' },
       billing: { manage: 'Mua gói cước, nạp credit, xem giao dịch' },

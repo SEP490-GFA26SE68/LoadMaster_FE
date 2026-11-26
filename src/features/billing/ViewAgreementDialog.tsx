@@ -58,6 +58,7 @@ export function ViewAgreementDialog({ agreement, open, onClose }: { agreement: C
                   <Field label={t('billing.agreement.view.signedAtLabel')}>{dateTime(agreement.signedAt)}</Field>
                   <Field label={t('billing.agreement.view.signerPhoneLabel')}><span className="font-mono tabular-nums">{agreement.signerPhone ?? '—'}</span></Field>
                   <Field label={t('billing.agreement.view.ipLabel')}><span className="font-mono">{agreement.ipAddress ?? '—'}</span></Field>
+                  <Field label={t('billing.agreement.view.deviceLabel')}>{agreement.signerDevice ?? '—'}</Field>
                 </>
               ) : null}
             </dl>

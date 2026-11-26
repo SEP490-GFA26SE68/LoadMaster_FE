@@ -27,6 +27,7 @@ export type CompanyAgreement = {
   readonly signerName: string | null
   readonly signerPhone: string | null
   readonly ipAddress: string | null
+  readonly signerDevice: string | null
   readonly isExpired: boolean
   readonly hoursRemaining: number
 }
@@ -51,6 +52,7 @@ type CompanyAgreementDto = {
   readonly signerName: string | null
   readonly signerPhone: string | null
   readonly ipAddress: string | null
+  readonly signerDevice: string | null
   readonly isExpired: boolean | null
   readonly hoursRemaining: number | null
 }
@@ -78,6 +80,7 @@ function agreementOf(dto: CompanyAgreementDto): CompanyAgreement {
     signerName: dto.signerName,
     signerPhone: dto.signerPhone,
     ipAddress: dto.ipAddress,
+    signerDevice: dto.signerDevice ?? null,
     isExpired: dto.isExpired === true,
     hoursRemaining: Math.max(0, Math.floor(dto.hoursRemaining ?? 0)),
   }

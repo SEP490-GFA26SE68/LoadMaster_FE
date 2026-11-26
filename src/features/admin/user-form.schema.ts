@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import type { MessageKey, TFunction } from '@/lib/i18n'
 import { rolesInScope, type UserScope } from '@/lib/mock-db'
-import { formatPhone, PHONE_PATTERN, phoneDigits } from '@/lib/phone'
+import { formatPhone, isVietnameseMobilePhone, phoneDigits } from '@/lib/phone'
 import type { Role } from '@/types/user'
 
 /**
@@ -39,7 +39,7 @@ export function userFormSchema(
         .trim()
         .min(1, ERRORS.phoneRequired)
         .transform(phoneDigits)
-        .refine((value) => PHONE_PATTERN.test(value), ERRORS.phoneInvalid)
+        .refine((value) => isVietnameseMobilePhone(value), ERRORS.phoneInvalid)
         // Lưu theo dạng hiển thị của kho ("0901 234 567"), để mở form rồi lưu không đổi gì thì kho không thấy thay đổi
         .transform(formatPhone),
       // Vai trò ngoài phạm vi không có trong ô chọn; lọt vào (dữ liệu cũ) thì coi như chưa chọn

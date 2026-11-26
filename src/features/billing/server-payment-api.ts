@@ -9,8 +9,8 @@
 import { api, ApiError, type TransportErrorCode } from '@/lib/api-client'
 import { getCurrentSubscriptionDto, listCreditTransactionDtos, subscriptionStatusOf, withBusinessCode } from '@/lib/billing-backend-api'
 
-/** Cổng thanh toán app gửi cho backend. Cổng mặc định của backend (VNPAY) ở chế độ thử không xác nhận được (sai chữ ký). */
-export const PAYMENT_GATEWAY = 'MOCK'
+/** Cổng thanh toán mặc định app gửi cho backend. */
+export const PAYMENT_GATEWAY = 'VNPAY'
 export const MOCK_CHECKOUT_PATH = '/api/payment/mock-checkout'
 
 export type ServerPaymentPurpose = 'SUBSCRIBE' | 'TOPUP'
@@ -68,7 +68,8 @@ export async function startServerPayment(
   purpose: ServerPaymentPurpose,
   codes: Partial<Record<TransportErrorCode, string>> = {},
 ): Promise<PaymentStart> {
-  const dto = await withBusinessCode(api().post<PaymentUrlDto | null>(path, { body: { ...body, gateway: PAYMENT_GATEWAY } }), codes)
+  const gateway = (body.gateway as string | undefined) ?? PAYMENT_GATEWAY
+  const dto = await withBusinessCode(api().post<PaymentUrlDto | null>(path, { body: { ...body, gateway } }), codes)
   return paymentStartOf(dto, purpose)
 }
 

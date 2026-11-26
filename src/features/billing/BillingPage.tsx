@@ -1,6 +1,6 @@
 import { Coins, LifeBuoy, RotateCcw } from 'lucide-react'
-import { useState } from 'react'
-import { Link } from 'react-router'
+import { useEffect, useState } from 'react'
+import { Link, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 import { Banner } from '@/components/Banner'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
@@ -86,6 +86,7 @@ export function BillingPage() {
   const t = useT()
   const format = useFormat()
   const openPayment = useOpenPayment()
+  const [searchParams, setSearchParams] = useSearchParams()
   const subscription = useSubscriptionQuery()
   const balance = useCreditBalanceQuery()
   const plans = usePlansOnSaleQuery()
@@ -103,6 +104,34 @@ export function BillingPage() {
   const [agreementDialog, setAgreementDialog] = useState<'sign' | 'view' | null>(null)
   const agreement = useMyAgreementQuery().data ?? null
   const sign = useSignAgreementMutation()
+
+  useEffect(() => {
+    const paymentStatus = searchParams.get('paymentStatus')
+    if (paymentStatus === 'success') {
+      toast.success(t('billing.paymentSuccess'))
+      void Promise.all([subscription.refetch(), balance.refetch(), payments.refetch(), renewal.refetch()])
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev)
+          next.delete('paymentStatus')
+          next.delete('txnRef')
+          return next
+        },
+        { replace: true }
+      )
+    } else if (paymentStatus === 'failed') {
+      toast.error(t('billing.paymentFailed'))
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev)
+          next.delete('paymentStatus')
+          next.delete('txnRef')
+          return next
+        },
+        { replace: true }
+      )
+    }
+  }, [searchParams, setSearchParams, t, subscription, balance, payments, renewal])
 
   const view = subscription.data
   const current = view?.current

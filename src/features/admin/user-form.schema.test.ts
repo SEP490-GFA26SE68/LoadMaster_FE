@@ -56,6 +56,18 @@ test('every broken field is reported together, the depot included', () => {
   ])
 })
 
+test('validates Vietnamese mobile phone prefixes (03x, 05x, 07x, 08x, 09x) and rejects invalid prefixes', () => {
+  // Invalid prefixes
+  for (const invalidPhone of ['0123456789', '02438234567', '0412345678', '0612345678', '09999999']) {
+    expect(errorsOf('company', { ...VALID, phone: invalidPhone })).toStrictEqual(['phone: admin.users.errors.phoneInvalid'])
+  }
+
+  // Valid prefixes (Viettel, Vinaphone, Mobifone, Vietnamobile, Itelecom, Wintel)
+  for (const validPhone of ['0326971238', '0562971238', '0702971238', '0862971238', '0912971238', '+84912971238']) {
+    expect(errorsOf('company', { ...VALID, phone: validPhone })).toStrictEqual([])
+  }
+})
+
 test('with the server roles, a company admin invited by the platform needs a company; the chosen one is kept', () => {
   const roles = ['systemAdmin', 'systemManager', 'systemSupporter', 'companyAdmin'] as const
   const schema = userFormSchema('platform', { roles })

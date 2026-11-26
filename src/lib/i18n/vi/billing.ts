@@ -12,6 +12,8 @@ export const billing = {
   topUp: 'Nạp credit',
   pay: 'Trả',
   payFor: 'Trả giao dịch {code}',
+  paymentSuccess: 'Thanh toán thành công qua VNPay! Gói cước và số dư credit đã được cập nhật.',
+  paymentFailed: 'Giao dịch thanh toán không thành công hoặc đã bị huỷ.',
   /** Banner của thanh toán đăng ký / gia hạn đang chờ trả. */
   pending: {
     RENEWAL: 'Thanh toán gia hạn gói {plan} ({amount}) đang chờ. Gói hết hạn ngày {date} nếu chưa trả.',

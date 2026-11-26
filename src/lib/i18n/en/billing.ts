@@ -10,6 +10,8 @@ export const billing = {
   topUp: 'Top up credits',
   pay: 'Pay',
   payFor: 'Pay transaction {code}',
+  paymentSuccess: 'Payment completed successfully via VNPay! Subscription plan and credit balance have been updated.',
+  paymentFailed: 'Payment was not successful or was cancelled.',
   pending: {
     RENEWAL: 'The renewal payment for plan {plan} ({amount}) is waiting. The plan expires on {date} if it is not paid.',
     SUBSCRIBE: 'The payment to subscribe to plan {plan} ({amount}) is not finished.',
