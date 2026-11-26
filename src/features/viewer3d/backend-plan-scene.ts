@@ -1,11 +1,10 @@
-import { roundKg, type OrientationCode, type PackageDimensions } from '@/domain/geometry'
+import { gt, lt, roundKg, type OrientationCode, type PackageDimensions } from '@/domain/geometry'
 import type { PackageInstance } from '@/domain/cargo'
 import { deadlineStatus } from '@/domain/routing'
 import { locateInZones, zoneSharePercent, type StopZone } from '@/domain/zones'
 import { DEFAULT_MIN_SUPPORT_RATIO, type ConstraintEngineInput } from '@/domain/constraints'
 import type { OptimizationResult, PackagePlacement, UnplacedPackage, VehicleConfig } from '@/domain/models'
 import type { LoadPlan, LoadPlacement } from '@/features/optimization/load-plans-backend-api'
-import { ApiError } from '@/lib/api-client'
 import type { ScenePlacement, SceneStop, SceneUnplaced, SceneZone, ViewerSceneModel } from './scene-types'
 
 /**
@@ -77,10 +76,37 @@ export function baseDimensionsOf(placed: { lengthCm: number; widthCm: number; he
   }
 }
 
-function stopNumberOf(placement: LoadPlacement, sequenceById: ReadonlyMap<string, number>): number {
+/** Số điểm giao của kiện theo chuyến; `undefined` khi kiện không gắn được điểm nào của chuyến (lỗi dữ liệu của máy chủ). */
+function stopNumberOf(placement: LoadPlacement, sequenceById: ReadonlyMap<string, number>): number | undefined {
   const number = placement.stopSequence ?? (placement.stopId === null ? undefined : sequenceById.get(placement.stopId))
-  if (number === undefined || number < 1) throw new ApiError('SERVER_ERROR')
-  return number
+  return number === undefined || number < 1 ? undefined : number
+}
+
+/**
+ * Mã các kiện của phương án không gắn được điểm giao nào của chuyến. Nơi dựng scene kiểm trước và hiện lỗi có câu: màu, vùng và thứ tự
+ * dỡ của kiện đều theo điểm giao nên không vẽ phương án như vậy. `backendPlanScene` không ném lỗi — nó chạy ngay lúc vẽ màn.
+ */
+export function unknownStopCodes(plan: LoadPlan, stops: readonly BackendSceneStop[]): string[] {
+  const sequenceById = new Map(stops.map((stop) => [stop.id, stop.sequence]))
+  return plan.placements.filter((item) => stopNumberOf(item, sequenceById) === undefined).map((item) => item.code || item.id)
+}
+
+/** Mọi kiện đã xếp của phương án nằm trọn trong lòng thùng của xe (cm, so qua `EPSILON`). */
+export function planFitsVehicle(plan: LoadPlan, vehicle: VehicleConfig): boolean {
+  const within = (start: number, size: number, limit: number) => !lt(start, 0) && !gt(start + size, limit)
+  return plan.placements.every((item) => within(item.x, item.lengthCm, vehicle.innerLengthCm)
+    && within(item.y, item.widthCm, vehicle.innerWidthCm) && within(item.z, item.heightCm, vehicle.innerHeightCm))
+}
+
+/**
+ * Phương án đem vẽ trên xe hiện tại của chuyến. Máy chủ không trả xe của phương án (`LoadPlanDetailResponse` không có mã hay kích thước
+ * xe), chỉ cờ `stale`; Planner đọc xe **hiện tại** (`/vehicle-config`). Phương án lỗi thời mà kiện không còn vừa lòng thùng xe này là
+ * phương án tính cho xe trước khi đổi xe: không đặt kiện nào vào xe mới (kiện sẽ trồi khỏi thùng) — `otherVehicle` để màn nói lý do.
+ * Kiện chưa xếp vẫn giữ.
+ */
+export function planShownOn(plan: LoadPlan, vehicle: VehicleConfig): { plan: LoadPlan; otherVehicle: boolean } {
+  if (!plan.stale || planFitsVehicle(plan, vehicle)) return { plan, otherVehicle: false }
+  return { plan: { ...plan, placements: [], stopZones: null }, otherVehicle: true }
 }
 
 /**
@@ -211,11 +237,13 @@ export function backendPlanScene({ tripCode, plan, vehicle, stops }: {
   const zones = zonesOf(plan, sequenceById, new Map(ordered.map((stop) => [stop.sequence, stop.name])))
   const allowedById = new Map(plan.placements.map((item, index) =>
     [sceneIds[index] ?? item.id, Object.freeze(allowedOrientationsOf(item, orientationOf(item.rotationType)))] as const))
-  const placements = plan.placements.map((item, index): ScenePlacement => {
+  // Kiện không gắn được điểm giao (`unknownStopCodes`) bị bỏ khỏi scene thay vì ném lỗi giữa lúc vẽ; nơi gọi đã kiểm và báo trước
+  const placements = plan.placements.flatMap((item, index): ScenePlacement[] => {
     const orientation = orientationOf(item.rotationType)
     const stop = stopNumberOf(item, sequenceById)
+    if (stop === undefined) return []
     const position = Object.freeze({ x: item.x, y: item.y, z: item.z })
-    return Object.freeze({
+    return [Object.freeze({
       id: sceneIds[index] ?? item.id,
       packageId: item.packageId,
       name: item.code,
@@ -236,7 +264,7 @@ export function backendPlanScene({ tripCode, plan, vehicle, stops }: {
       supportRatio: 1,
       constraintWarnings: Object.freeze([]),
       ...zoneOf(zones, item, stop),
-    })
+    })]
   })
   const unplaced = plan.unplaced.map((item): SceneUnplaced => Object.freeze({
     id: `unplaced-${item.packageId}`,
