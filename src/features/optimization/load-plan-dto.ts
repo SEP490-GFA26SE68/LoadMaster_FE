@@ -3,6 +3,8 @@ import { PLAN_OBJECTIVES, type PlanLabel, type PlanObjective } from '@/domain/mo
 import { ApiError } from '@/lib/api-client'
 import { isoFromBackend } from '@/lib/backend-time'
 
+import { dataWarningsOf, type DataWarning, type DataWarningDto } from './data-warnings'
+
 /**
  * DTO tối ưu xếp hàng của backend (`LoadingOptimizationController`, `LoadPlanController`) và phép đổi sang kiểu của app. Chỉ lớp `-api.ts`
  * của tối ưu và của Planner import file này. Toạ độ, kích thước là **cm**, khối lượng kg, tỷ lệ sử dụng 0..1 (app đổi sang %). Hàm thuần.
@@ -38,6 +40,8 @@ export type OptimizationJobDto = {
   readonly pinnedCount?: number | null
   /** Thuật toán của lần chạy — hạng của gói (`EP_DBLF`, `EP_DBLF_GA`, `EP_DBLF_GA_AI`); máy chủ cũ không trả. */
   readonly runAlgorithm?: string | null
+  /** Cảnh báo dữ liệu đầu vào (kiện thiếu σ, kiện chưa có loại kiện); máy chủ cũ không trả. */
+  readonly dataWarnings?: readonly DataWarningDto[] | null
 }
 
 export type PlacementDto = {
@@ -150,6 +154,8 @@ export type OptimizationJob = {
   readonly createdAt: string | null
   /** Thuật toán của lần chạy (hạng của gói); `null` khi máy chủ không trả. */
   readonly runAlgorithm: string | null
+  /** Cảnh báo dữ liệu đã lọc mã lạ; rỗng khi không có hoặc máy chủ không trả. */
+  readonly dataWarnings: readonly DataWarning[]
 }
 
 export type LoadPlacement = {
@@ -265,6 +271,7 @@ export function optimizationJobOf(dto: OptimizationJobDto): OptimizationJob {
     computationMs: dto.computationMs ?? null,
     createdAt: dto.createdAt ? isoFromBackend(dto.createdAt) : null,
     runAlgorithm: dto.runAlgorithm?.trim() || null,
+    dataWarnings: dataWarningsOf(dto.dataWarnings),
   }
 }
 

@@ -51,8 +51,8 @@ export const physicalData = {
     },
     codes: 'Packages: {codes}',
     more: {
-      one: 'and {count} more package',
-      other: 'and {count} more packages',
+      one: '{count} more package',
+      other: '{count} more packages',
     },
     openPackages: 'Open Package pool',
     openPackageTypes: 'Open Package types',

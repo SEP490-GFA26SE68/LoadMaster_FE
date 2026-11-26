@@ -6,12 +6,14 @@ import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import type { OptimizationJob } from './load-plans-backend-api'
 import { RunFigure } from './RunFigure'
 import { getBackendJobStatusKey } from './backend-job-status'
+import { DataWarningsBanner } from './DataWarningsBanner'
 import { runAlgorithmLabel } from './server-algorithms'
 import { solverConstraintMessage } from './solver-constraints'
 
 /**
  * Hộp thoại một lần chạy tối ưu của máy chủ. Hình là dải khối chạy vòng (`fraction={null}`). Khi xong: trạng thái, mã lần chạy, thời gian
- * tính, số phương án đã lưu, và — nếu lần chạy không ra chỗ đặt — các mã ràng buộc cứng đã chặn (`violatedConstraints`).
+ * tính, số phương án đã lưu, và — nếu lần chạy không ra chỗ đặt — các mã ràng buộc cứng đã chặn (`violatedConstraints`). Cảnh báo dữ
+ * liệu của job (`dataWarnings`) hiện ngay khi máy chủ trả, chỉ có số kiện (hộp thoại chưa có phương án để đổi mã số sang mã kiện).
  */
 export function BackendRunDialog({ open, onOpenChange, jobId, job, error, compareTo, hasPlans, constraintCodes = [] }: {
   open: boolean
@@ -40,6 +42,7 @@ export function BackendRunDialog({ open, onOpenChange, jobId, job, error, compar
           <p role={failed || error ? 'alert' : 'status'} className={failed || error ? 'text-body text-danger' : 'text-body text-ink-1'}>
             {error ? dataErrorMessage(error, t) : t(getBackendJobStatusKey(status))}
           </p>
+          <DataWarningsBanner warnings={job?.dataWarnings ?? []} />
           {constraintCodes.length > 0 ? (
             <div className="flex flex-col gap-2">
               <p className="text-small font-medium text-ink-2">{t('serverPlans.job.constraintsHeading')}</p>

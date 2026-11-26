@@ -53,8 +53,8 @@ export const physicalData = {
     },
     codes: 'Kiện: {codes}',
     more: {
-      one: 'và {count} kiện khác',
-      other: 'và {count} kiện khác',
+      one: '{count} kiện khác',
+      other: '{count} kiện khác',
     },
     openPackages: 'Mở Kho kiện',
     openPackageTypes: 'Mở Loại kiện',
