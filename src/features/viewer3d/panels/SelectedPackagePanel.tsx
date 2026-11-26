@@ -8,6 +8,7 @@ import { formatIssue, useFormat, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import type { SceneStop, ScenePlacement, SceneZone } from '@/features/viewer3d/scene-input'
 import { findAbove, findBelow, layerOf } from './placement-relations'
+import { PlacementWhySection } from './PlacementWhySection'
 import { DARK_SUBCARD, GlassChip, GlassValue, MUTED, StopMark } from './scene-ui'
 
 /** Ghim / bỏ ghim kiện đang chọn. `disabledReason`: luật đang chặn — nút mờ, câu đứng dưới nút (mục 5). */
@@ -42,7 +43,8 @@ export type SelectedPackageProps = {
 /**
  * Thẻ kiện đang chọn trên kính tối (V2.3 `.insp`): mã, tên, điểm giao, rồi các ô số — kích thước, khối lượng, kiện gốc, thứ tự
  * xếp/dỡ, hướng xoay, tỷ lệ đỡ đáy (%), vùng điểm giao kiện đang nằm (kèm câu báo khi nằm ngoài vùng của điểm mình, FE-5b-07), vị
- * trí — và lỗi ràng buộc của riêng kiện. Dùng hai nơi: nổi bên phải khung 3D từ 1.280 px và trong tab Kiện của hộp thông tin.
+ * trí —, "Vì sao đặt ở đây" khi dịch vụ tối ưu của máy chủ ghi lý do đặt (`PlacementWhySection`), và lỗi ràng buộc của riêng
+ * kiện. Dùng hai nơi: nổi bên phải khung 3D từ 1.280 px và trong tab Kiện của hộp thông tin.
  */
 export function SelectedPackagePanel({ placement, onClose, onPick, className, ...props }: SelectedPackageProps) {
   const t = useT()
@@ -116,9 +118,12 @@ function PackageDetails({ placement, placements, orientationRules, totalSteps, s
           <Cell label={t('viewer.selected.orientation')}>
             <GlassValue mono value={placement.orientation} unit={orientationRules?.keepUpright ? `· ${t('viewer.orientation.keepUpright')}` : undefined} />
           </Cell>
-          <Cell label={t('viewer.plan.detail.supportRatio')}>
-            <GlassValue value={format.percent(placement.supportRatio * 100)} />
-          </Cell>
+          {/* Máy chủ đo phần đáy được đỡ thì số đó nằm ở "Vì sao đặt ở đây" — không lặp lại số mặc định của nguồn */}
+          {placement.why?.supportRatio === undefined ? (
+            <Cell label={t('viewer.plan.detail.supportRatio')}>
+              <GlassValue value={format.percent(placement.supportRatio * 100)} />
+            </Cell>
+          ) : null}
           {zone ? (
             <Cell label={t('viewer.selected.zone')} wide>
               <span className="flex flex-wrap items-center gap-2 text-body-lg font-semibold text-sky-text xl:text-body">
@@ -138,6 +143,8 @@ function PackageDetails({ placement, placements, orientationRules, totalSteps, s
             </span>
           </Cell>
         </dl>
+
+        <PlacementWhySection why={placement.why} />
 
         <section className="flex flex-col gap-1.5 px-4 pb-2" aria-label={t('viewer.plan.detail.issues')}>
           {ownIssues.length === 0 ? (

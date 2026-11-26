@@ -3,7 +3,7 @@ import type { OptimizationRequest, OptimizationResult } from '@/domain/models'
 import { candidateAxles, type CandidateAxles } from '@/lib/candidate-metrics'
 import type { Formatter } from '@/lib/format'
 import type { TFunction } from '@/lib/i18n'
-import type { HowEntry } from './HowComputed'
+import type { HowEntry } from '@/components/HowComputed'
 
 /**
  * Số mà "Tính thế nào?" thay vào công thức của một phương án — đọc từ `result.metrics` của chính lần chạy và từ xe của chính request,

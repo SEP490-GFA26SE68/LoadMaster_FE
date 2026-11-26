@@ -4,6 +4,7 @@ import { ApiError } from '@/lib/api-client'
 import { isoFromBackend } from '@/lib/backend-time'
 
 import { dataWarningsOf, type DataWarning, type DataWarningDto } from './data-warnings'
+import { placementWhyOf, planScoreOf, type PlacementWhy, type PlacementWhyDto, type PlanScore, type PlanScoreDto } from './plan-score-dto'
 
 /**
  * DTO tối ưu xếp hàng của backend (`LoadingOptimizationController`, `LoadPlanController`) và phép đổi sang kiểu của app. Chỉ lớp `-api.ts`
@@ -44,7 +45,8 @@ export type OptimizationJobDto = {
   readonly dataWarnings?: readonly DataWarningDto[] | null
 }
 
-export type PlacementDto = {
+/** Kèm lý do đặt và số đo (`PlacementWhyDto`) khi dịch vụ tối ưu chấm điểm J. */
+export type PlacementDto = PlacementWhyDto & {
   readonly id: number
   readonly packageId: number
   readonly packageCode?: string | null
@@ -100,6 +102,12 @@ export type LoadPlanDto = {
   readonly objective?: string | null
   /** Hợp đồng đích: `A` · `B` · `C` theo mục tiêu; phương án cũ `null`. */
   readonly candidateLabel?: string | null
+  /** Hồ sơ ưu tiên của ứng viên (`A`, `B`, `C`); vắng khi máy chủ chưa chấm điểm J. */
+  readonly candidateProfile?: string | null
+  /** Ứng viên đứng trước có cùng hệt cách xếp (`A`, `B`). */
+  readonly duplicateOf?: string | null
+  /** Điểm J kèm phân rã; vắng khi cờ `PLAN_SCORE_J` của máy chủ tắt. */
+  readonly planScore?: PlanScoreDto | null
   /** Thuật toán đã tạo ra phương án (`EP_DBLF`, `GA`, `SA`, `EP_LUMO_R1_1`, `LUMO_R1`…); phương án cũ: thuật toán của lần chạy. */
   readonly algorithmName?: string | null
   /** Thuật toán của lần chạy — hạng của gói; máy chủ cũ không trả. */
@@ -181,6 +189,8 @@ export type LoadPlacement = {
    * không trả — chỉnh tay giữ nguyên hướng.
    */
   readonly allowedRotations?: readonly number[]
+  /** Lý do đặt và số đo của máy chủ; vắng khi máy chủ không trả gì. */
+  readonly why?: PlacementWhy
 }
 
 export type LoadUnplaced = {
@@ -231,6 +241,10 @@ export type LoadPlan = {
   readonly unplaced: readonly LoadUnplaced[]
   /** `null` khi máy chủ không trả vùng (hoặc trả vùng thiếu mốc): Planner không có dải vùng, không đếm dỡ-xếp lại. */
   readonly stopZones: readonly LoadStopZone[] | null
+  /** Điểm J theo hồ sơ của chính ứng viên; vắng khi máy chủ không chấm. */
+  readonly score?: PlanScore
+  /** Ứng viên đứng trước có cùng hệt cách xếp; vắng khi không trùng. */
+  readonly duplicateOf?: PlanLabel
 }
 
 export type TripLoadPlans = { readonly approvedPlanId: string | null; readonly plans: readonly LoadPlan[] }
@@ -279,6 +293,7 @@ const codeOf = (dto: { packageId: number; packageCode?: string | null; trackingB
   dto.packageCode?.trim() || dto.trackingBarcode?.trim() || String(dto.packageId)
 
 function placementOf(dto: PlacementDto): LoadPlacement {
+  const why = placementWhyOf(dto)
   return {
     id: String(dto.id),
     packageId: String(dto.packageId),
@@ -298,6 +313,7 @@ function placementOf(dto: PlacementDto): LoadPlacement {
     ...(dto.allowedRotations
       ? { allowedRotations: dto.allowedRotations.filter((code) => Number.isInteger(code) && code >= 0 && code <= 5) }
       : {}),
+    ...(why ? { why } : {}),
   }
 }
 
@@ -334,6 +350,8 @@ function stopZonesOf(dtos: readonly StopZoneDto[] | null | undefined): LoadStopZ
 export function loadPlanOf(dto: LoadPlanDto): LoadPlan {
   const objective = PLAN_OBJECTIVES.find((item) => item === dto.objective) ?? null
   const label = LABELS.find((item) => item === dto.candidateLabel) ?? null
+  const duplicateOf = LABELS.find((item) => item === dto.duplicateOf && item !== label)
+  const score = planScoreOf(dto.planScore, dto.candidateProfile)
   const [x, y, z] = [numberOf(dto.cogX), numberOf(dto.cogY), numberOf(dto.cogZ)]
   return {
     id: String(dto.id),
@@ -359,6 +377,8 @@ export function loadPlanOf(dto: LoadPlanDto): LoadPlan {
     placements: (dto.placements ?? []).map(placementOf),
     unplaced: (dto.unplaced ?? []).map(unplacedOf),
     stopZones: stopZonesOf(dto.stopZones),
+    ...(score === null ? {} : { score }),
+    ...(duplicateOf === undefined ? {} : { duplicateOf }),
   }
 }
 

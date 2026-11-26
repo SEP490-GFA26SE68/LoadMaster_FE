@@ -63,6 +63,11 @@ export const common = {
     to: 'Đến ngày',
     clear: 'Xoá lọc',
   },
+  /** Nút "Tính thế nào?" (`components/HowComputed`): số của trang công khai, điểm J của màn So sánh theo lần chạy. */
+  howComputed: {
+    toggle: 'Tính thế nào?',
+    toggleFor: 'Tính thế nào? — {subject}',
+  },
   /** Ô số điện thoại kèm mã vùng (`components/ui/PhoneInput`) của hai form đăng ký công khai. */
   phoneInput: {
     countryCode: 'Mã vùng',

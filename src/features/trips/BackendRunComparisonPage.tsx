@@ -12,6 +12,7 @@ import type { LoadPlan } from '@/features/optimization/load-plans-backend-api'
 import { planAlgorithmLabel, runAlgorithmLabel } from '@/features/optimization/server-algorithms'
 import { useJobPlansQuery, useOptimizationJobQuery, useTripLoadPlansQuery } from '@/features/optimization/useLoadPlansQuery'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
+import { BackendPlanScore } from './BackendPlanScore'
 import { useBackendTripIdQuery } from './useBackendTripQuery'
 
 type BestKey = 'volume' | 'payload' | 'rehandling' | 'unplaced'
@@ -41,7 +42,8 @@ export function bestPlanIds(plans: readonly LoadPlan[], key: BestKey): ReadonlyS
  * So sánh phương án khi nhóm `trips` nối backend: các phương án của một lần chạy (`?lan-chay=<mã job>`, không có thì lần chạy mới nhất của
  * chuyến), mỗi phương án một thẻ theo thứ tự A · B · C với đúng chỉ số máy chủ trả. Không có nút chính: mỗi thẻ mở Planner, duyệt ở đó.
  * Kết quả của máy chủ không mang MOCK RESULT. Cảnh báo dữ liệu của lần chạy (đọc trạng thái job; đọc lỗi thì bỏ qua) nằm trên các thẻ, mã
- * số kiện đổi sang mã kiện từ chính các phương án.
+ * số kiện đổi sang mã kiện từ chính các phương án. Máy chủ chấm điểm J thì mỗi thẻ có dòng điểm (`BackendPlanScore`, không "Tốt nhất" —
+ * một câu trên các thẻ nói vì sao); ứng viên trùng hệt cách xếp với ứng viên trước mang nhãn "Giống hệt phương án …".
  */
 export function BackendRunComparisonPage() {
   const { tripId: tripParam = '' } = useParams()
@@ -93,6 +95,7 @@ function RunPlans({ plans, tripParam, warnings }: {
         </Card>
       )}
       {pinned > 0 ? <p data-run-pinned className="flex items-center gap-1.5 text-small text-ink-2"><Pin className="size-4" strokeWidth={1.5} aria-hidden />{t('trips.compare.candidates.pinned', { count: pinned })}</p> : null}
+      {plans.some((plan) => plan.score) ? <p data-score-note className="text-small text-pretty text-ink-2">{t('serverPlans.score.noBest')}</p> : null}
       <div className="grid gap-4 lg:grid-cols-3">{plans.map((plan) => <PlanCard key={plan.id} plan={plan} plans={plans} tripParam={tripParam} />)}</div>
     </div>
   )
@@ -109,6 +112,7 @@ function PlanCard({ plan, plans, tripParam }: { plan: LoadPlan; plans: readonly 
         <h2 className="flex flex-wrap items-center gap-2 font-display text-h3 font-[650] text-ink-strong">
           {plan.label ? t('serverPlans.plans.candidate', { label: plan.label }) : t('serverPlans.plans.unlabeled', { id: plan.id })}
           {plan.approved ? <Badge shape="tag" tone="cyan" dot>{t('serverPlans.plans.approved')}</Badge> : null}
+          {plan.duplicateOf ? <Badge shape="tag">{t('landingTry.results.sameAs', { label: plan.duplicateOf })}</Badge> : null}
         </h2>
         {plan.objective ? <p className="text-small text-ink-2">{t(`runs.objectives.${plan.objective}`)}</p> : null}
       </header>
@@ -123,6 +127,7 @@ function PlanCard({ plan, plans, tripParam }: { plan: LoadPlan; plans: readonly 
         {plan.computationMs === null ? null : <Metric label={t('serverPlans.compare.metrics.computation')}>{t('serverPlans.job.computationValue', { ms: format.integer(plan.computationMs) })}</Metric>}
         {plan.algorithmName === null ? null : <Metric label={t('serverPlans.compare.metrics.planAlgorithm')} text>{planAlgorithmLabel(plan.algorithmName, t)}</Metric>}
       </dl>
+      <BackendPlanScore score={plan.score} planLabel={plan.label ?? `#${plan.id}`} />
       <Button variant="secondary" className="mt-auto" asChild>
         <Link to={`/chuyen/${encodeURIComponent(tripParam)}/phuong-an?revision=${encodeURIComponent(plan.id)}`}>
           <Box className="size-4" aria-hidden />{t('serverPlans.plans.openPlanner')}

@@ -155,6 +155,58 @@ export const serverPlans = {
     },
   },
   /**
+   * Điểm J của từng phương án ở So sánh theo lần chạy (từ vựng thuật toán được phép) và phần "Tính thế nào?" của nó. Tên hồ sơ, tên khoản
+   * dịch theo mã, không theo chữ máy chủ gửi; khoản lạ bị bỏ, hồ sơ lạ hiện nguyên mã.
+   */
+  score: {
+    label: 'Điểm phương án',
+    profile: 'theo hồ sơ {name}',
+    subject: 'Điểm phương án {label}',
+    noBest: 'Mỗi phương án được chấm theo hồ sơ ưu tiên của chính nó (A theo hồ sơ A…), nên điểm của các phương án không so trực tiếp được và không có "Tốt nhất".',
+    assumedWeights: 'Trọng số là số tạm, chưa chốt.',
+    formula: {
+      label: 'Công thức',
+      text: 'J = 100 × (w_vol × U_vol + w_n × U_n − Σ wₖ × Sₖ), mỗi Sₖ chặn trong khoảng 0–1.',
+    },
+    volume: { label: 'Thể tích (U_vol)', text: 'Lấp đầy {ratio} × trọng số {weight} → cộng {points} điểm.' },
+    count: { label: 'Số kiện (U_n)', text: 'Kiện xếp được {ratio} × trọng số {weight} → cộng {points} điểm.' },
+    component: '{code} · {name}',
+    penalty: 'Giá trị {value} × trọng số {weight} → trừ {points} điểm.',
+    notComputed: {
+      axle: 'Không tính: xe chưa khai đủ dữ liệu trục.',
+      pending: 'Không tính: dịch vụ tối ưu chưa tính khoản này.',
+      other: 'Không tính: máy chủ không tính khoản này cho phương án này.',
+    },
+    profiles: { default: 'Mặc định', A: 'Chở nhiều', B: 'An toàn tải', C: 'Dỡ nhanh' },
+    components: {
+      S1: 'Dỡ-xếp lại',
+      S2: 'Lệch trọng tâm ngang',
+      S3: 'Mất cân bằng hai trục',
+      S4: 'Trọng tâm cao',
+      S5: 'Kiện cùng nhóm bị tách',
+      S6: 'Ưu tiên vị trí',
+      S7: 'Nguy cơ lật khi phanh / cua',
+      S8: 'Khe hở dọc thùng',
+    },
+  },
+  /** "Vì sao đặt ở đây" của thẻ kiện đang chọn trong Planner (phương án máy chủ): lý do đặt theo mã và số đo của chỗ xếp. */
+  why: {
+    title: 'Vì sao đặt ở đây',
+    reasons: {
+      PINNED: 'Kiện đã ghim nên giữ nguyên chỗ',
+      MUST_LOAD: 'Kiện bắt buộc xếp nên được xếp trước',
+      ZONE_STOP: 'Trong vùng của điểm {stop}',
+      OUT_OF_ZONE_NO_SPACE: 'Ngoài vùng của điểm mình — vùng đã hết chỗ',
+      BOTTOM_HIGH_CAPACITY: 'Kiện chịu tải tốt nên đặt dưới cùng',
+      HEAVY_LOW: 'Kiện nặng nên đặt thấp',
+    },
+    pressure: 'Áp lực đè {pressure} kg/m²',
+    capacity: 'sức chịu {capacity} kg/m²',
+    noTopLoad: 'không nhận tải trên mặt',
+    support: 'Được đỡ {value}',
+    door: 'Cách cửa {distance}',
+  },
+  /**
    * Tên thuật toán máy chủ ghi: `plan` là thuật toán đã tạo ra một phương án, `run` là thuật toán của lần chạy — hạng của gói. Chỉ màn So
    * sánh, bảng lần chạy và hộp chạy của Thiết lập tối ưu dùng (từ vựng thuật toán). Mã lạ hiện nguyên mã.
    */
