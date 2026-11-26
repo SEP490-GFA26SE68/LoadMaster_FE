@@ -62,6 +62,7 @@ export type CurrentSubscriptionDto = {
   readonly creditsBalance: number | null
   readonly creditsMonthlyGrant: number | null
   readonly algorithmTier: AlgorithmTier | null
+  readonly isTrial?: boolean | null
 }
 
 /** `CreditBalanceResponse`. */
@@ -225,7 +226,7 @@ export function creditBalanceOf(dto: CreditBalanceDto): CreditBalance {
 export function subscriptionStatusOf(dto: CurrentSubscriptionDto, nowIso: string): SubscriptionStatus | null {
   if (dto.status === 'EXPIRED' || dto.status === 'CANCELLED') return 'EXPIRED'
   if (dto.status !== 'ACTIVE') return null
-  const status: SubscriptionStatus = dto.autoRenew === false ? 'CANCELLED' : 'ACTIVE'
+  const status: SubscriptionStatus = (dto.autoRenew === false && !dto.isTrial) ? 'CANCELLED' : 'ACTIVE'
   const expiresAt = fromBackendLocalDateTime(dto.expiresAt)
   return expiresAt === null ? status : effectiveSubscriptionStatus({ status, expiresAt }, nowIso)
 }

@@ -24,7 +24,7 @@ export const billing = {
   },
   plan: {
     title: 'Current plan',
-    status: { ACTIVE: 'Active', CANCELLED: 'Cancelled — still valid', EXPIRED: 'Expired' },
+    status: { ACTIVE: 'Active', CANCELLED: 'Cancelled — still valid', EXPIRED: 'Expired', TRIAL: 'Trial' },
     started: 'Started',
     expires: 'Expires',
     autoRenew: 'Auto-renew',
@@ -34,9 +34,11 @@ export const billing = {
     yearlyPrice: 'Yearly renewal price',
     credits: 'Credits per month',
     cancel: 'Cancel plan',
+    upgradeTrial: 'Upgrade to Official Account',
     renew: 'Renew for another period',
     renewYear: 'Renew for a year',
     expiredNote: 'The plan has expired, so optimisation cannot run. The credit balance is kept; choose a new plan to continue.',
+    trialNote: 'Trial plan is active until {date}.',
     cancelledNote: 'The plan is cancelled. It can be used until {date}, then expires and does not renew.',
   },
   noPlan: {
@@ -47,6 +49,8 @@ export const billing = {
   },
   choose: {
     title: 'Choose a plan',
+    trialHighlightTitle: 'Upgrade to Official Account',
+    trialHighlightDesc: 'Your company is currently in trial mode. Select a plan below to upgrade all team members to official accounts and unlock full features.',
     subscribe: 'Subscribe',
     subscribeTo: 'Subscribe to plan {name}',
     upgrade: 'Upgrade',
@@ -58,7 +62,9 @@ export const billing = {
   },
   upgradeDialog: {
     title: 'Upgrade to plan {plan}?',
+    trialTitle: 'Upgrade to Official Account: {plan} Plan',
     description: 'Warning: You still have {months} month(s) remaining in plan {currentPlan}. Are you sure you want to switch to plan {plan}? Your remaining credit balance will be reset to 0 without conversion or carry-over. Once payment succeeds, your company will receive the monthly credits of plan {plan} for a new billing cycle.',
+    trialDescription: 'You are upgrading from a Trial account to an Official account on the {plan} plan. All company administrator and employee accounts will be officially activated. New credit quota for the {plan} plan will be granted immediately upon successful payment.',
     cycleLabel: 'Select billing cycle',
     monthly: 'Monthly (1 month)',
     yearly: 'Yearly (12 months)',

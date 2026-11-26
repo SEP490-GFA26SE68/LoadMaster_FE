@@ -13,25 +13,32 @@ import { tierBesideName } from '@/lib/plan-tier'
  * Nối backend, gói còn hiệu lực (`current`, `BILLING_CAPABILITIES.contractRenewal`): thẻ chỉ còn các gói hạng cao hơn, mỗi gói một nút
  * "Gửi yêu cầu nâng cấp" (`onRequestUpgrade`) — backend chỉ cho đổi gói qua yêu cầu hỗ trợ; gia hạn gói đang dùng ở thẻ Gói hiện tại.
  */
-export function PlanChoiceCard({ plans, pendingId, onSubscribe, current = null }: {
+export function PlanChoiceCard({ plans, pendingId, onSubscribe, current = null, isTrial = false }: {
   plans: SubscriptionPlan[]
   /** Gói đang gửi đăng ký. */
   pendingId: string | null
   onSubscribe: (plan: SubscriptionPlan) => void
   /** Gói còn hiệu lực theo hợp đồng (chỉ khi nối backend). */
   current?: { readonly tier: PlanTier } | null
+  isTrial?: boolean
 }) {
   const t = useT()
   const format = useFormat()
   const rank = (tier: PlanTier) => PLAN_TIERS.indexOf(tier)
-  const shown = current === null ? plans : plans.filter((plan) => rank(plan.tier) > rank(current.tier))
+  const shown = current === null || isTrial ? plans : plans.filter((plan) => rank(plan.tier) > rank(current.tier))
   // Đã ở hạng cao nhất: không còn gói nào để nâng cấp
-  if (current !== null && shown.length === 0) return null
+  if (!isTrial && current !== null && shown.length === 0) return null
   return (
     <Card role="region" aria-labelledby="billing-choose">
       <CardHeader>
         <CardTitle as="h2" id="billing-choose">{t('billing.choose.title')}</CardTitle>
       </CardHeader>
+      {isTrial ? (
+        <div className="mx-4.5 my-3 rounded-lg border border-cyan-500/40 bg-cyan-50/80 p-3.5 text-small text-ink-strong dark:bg-cyan-950/20">
+          <div className="font-semibold text-cyan-900 dark:text-cyan-200">{t('billing.choose.trialHighlightTitle')}</div>
+          <div className="mt-1 text-ink-2">{t('billing.choose.trialHighlightDesc')}</div>
+        </div>
+      ) : null}
       {shown.length === 0 ? (
         <p className="m-0 p-4.5 text-ink-2">{t('billing.choose.none')}</p>
       ) : (
@@ -56,10 +63,10 @@ export function PlanChoiceCard({ plans, pendingId, onSubscribe, current = null }
                 variant="secondary"
                 loading={pendingId === plan.id}
                 disabled={pendingId !== null && pendingId !== plan.id}
-                aria-label={t(current !== null ? 'billing.choose.upgradeTo' : 'billing.choose.subscribeTo', { name: plan.name })}
+                aria-label={t(current !== null || isTrial ? 'billing.choose.upgradeTo' : 'billing.choose.subscribeTo', { name: plan.name })}
                 onClick={() => onSubscribe(plan)}
               >
-                {t(current !== null ? 'billing.choose.upgrade' : 'billing.choose.subscribe')}
+                {t(current !== null || isTrial ? 'billing.choose.upgrade' : 'billing.choose.subscribe')}
               </Button>
             </li>
           ))}

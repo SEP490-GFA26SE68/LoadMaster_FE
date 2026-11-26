@@ -344,3 +344,44 @@ test('a trial company signs its service agreement from the banner', async () => 
     body: { signerName: 'Nguyễn Văn An', signerPhone: '0901234567', confirmTerms: true },
   })
 })
+
+test('a trial company on Pro plan can see and choose all plans including Basic to upgrade to official account', async () => {
+  const user = userEvent.setup()
+  serve({ ...ACTIVE, isTrial: true }, 1000)
+  backend.routes['POST /api/subscription/subscribe'] = envelope({
+    id: 15,
+    transactionId: 'VNPAY_UPGRADE_OFFICIAL',
+    paymentUrl: '/api/payment/mock-checkout?txnRef=VNPAY_UPGRADE_OFFICIAL',
+    status: 'PENDING',
+  })
+  renderBilling()
+
+  // 1. Badge Dùng thử và ghi chú dùng thử hiển thị; ẩn giá mỗi tháng, credit mỗi tháng và không hiện thông báo huỷ
+  const planRegion = within(await screen.findByRole('region', { name: 'Gói hiện tại' }, SLOW))
+  expect(planRegion.getByText('Dùng thử')).toBeInTheDocument()
+  expect(planRegion.getByText(/Gói dùng thử có hiệu lực đến hết ngày/i)).toBeInTheDocument()
+  expect(planRegion.queryByText(/Gói đã huỷ/i)).not.toBeInTheDocument()
+  expect(planRegion.queryByText(/Giá mỗi tháng/i)).not.toBeInTheDocument()
+  expect(planRegion.queryByText(/Credit mỗi tháng/i)).not.toBeInTheDocument()
+  expect(planRegion.queryByRole('button', { name: 'Nâng cấp tài khoản chính thức' })).not.toBeInTheDocument()
+
+  // 2. PlanChoiceCard hiển thị div highlight Nâng cấp tài khoản chính thức và cả gói Basic (mặc dù đang thử gói Pro)
+  const chooseRegion = within(screen.getByRole('region', { name: 'Chọn gói' }))
+  expect(chooseRegion.getByText('Nâng cấp tài khoản chính thức')).toBeInTheDocument()
+  const basicBtn = chooseRegion.getByRole('button', { name: 'Nâng cấp lên gói Basic' })
+  expect(basicBtn).toBeInTheDocument()
+
+  // 3. Bấm Nâng cấp gói Basic -> Mở Dialog nâng cấp tài khoản chính thức
+  await user.click(basicBtn)
+  const dialog = await screen.findByRole('dialog')
+  expect(dialog).toHaveTextContent(/Nâng cấp lên tài khoản chính thức.*Basic/i)
+  expect(dialog).toHaveTextContent(/Toàn bộ tài khoản quản trị và nhân viên của công ty sẽ được kích hoạt chính thức/i)
+
+  // 4. Xác nhận nâng cấp -> gửi request subscribe với planId: 1 và gateway: VNPAY
+  await user.click(within(dialog).getByRole('button', { name: 'Tiếp tục nâng cấp' }))
+  expect(await screen.findByText('Đang ở /thanh-toan/ket-qua?ma=VNPAY_UPGRADE_OFFICIAL&loai=goi', {}, SLOW)).toBeInTheDocument()
+  expect(backend.calls.find((call) => call.method === 'POST')).toMatchObject({
+    url: 'http://be.test/api/subscription/subscribe',
+    body: { planId: 1, gateway: 'VNPAY' },
+  })
+})
