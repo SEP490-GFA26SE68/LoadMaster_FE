@@ -2,7 +2,9 @@ import type { TFunction } from '@/lib/i18n'
 
 /**
  * Mã ràng buộc cứng do dịch vụ tối ưu ghi vào `unplaced.violatedConstraints`.
- * Key i18n `serverPlans.constraints.*` trùng tên mã.
+ * Key i18n `serverPlans.constraints.*` trùng tên mã. Luật ràng buộc vật lý mới (M4) thêm `STACK_PRESSURE_EXCEEDED`,
+ * `FLOOR_LOAD_EXCEEDED`, `LIFO_BLOCKED`, `MUST_LOAD_UNPLACED`; mã cũ (`STACKING_WEIGHT_EXCEEDED`, `FRAGILITY_VIOLATION`,
+ * `MULTI_DROP_LIFO_VIOLATION`) vẫn còn trong phương án đã lưu nên giữ câu.
  */
 export const SOLVER_CONSTRAINT_CODES = [
   'AXLE_CONFIG_MISSING',
@@ -32,6 +34,19 @@ export const SOLVER_CONSTRAINT_CODES = [
   'OBSTACLE_OVERLAP',
   'MULTI_DROP_LIFO_VIOLATION',
   'PINNED_PLACEMENT_UNSUPPORTED',
+  'STACK_PRESSURE_EXCEEDED',
+  'FLOOR_LOAD_EXCEEDED',
+  'LIFO_BLOCKED',
+  'MUST_LOAD_UNPLACED',
+  'STACKING_WEIGHT_EXCEEDED',
+  'NON_BEARING_SUPPORT',
+  'INVALID_STACKING_DATA',
+  'DOOR_CONFIG_MISSING',
+  'DOOR_CONFIG_INVALID',
+  'INVALID_PACKAGE_PARTITION',
+  'INVALID_UNLOAD_DATA',
+  'UNLOAD_SEARCH_LIMIT_REACHED',
+  'UNLOAD_TIME_LIMIT_REACHED',
 ] as const
 
 export type SolverConstraintCode = (typeof SOLVER_CONSTRAINT_CODES)[number]
