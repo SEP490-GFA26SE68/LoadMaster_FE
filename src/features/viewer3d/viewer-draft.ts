@@ -61,7 +61,8 @@ export function patchPlacement(
 
 /**
  * Immutable snapshot + draft keyed by id = effective dimensions/positions. Kiện đã dời hoặc xoay được xét lại vùng điểm giao theo vị
- * trí mới (FE-5b-07), nên dấu "ngoài vùng" và số lần dỡ-xếp lại đi theo bản đang chỉnh tay.
+ * trí mới (FE-5b-07), nên dấu "ngoài vùng" và số lần dỡ-xếp lại đi theo bản đang chỉnh tay. Lý do đặt của dịch vụ tối ưu (`why`) bị bỏ
+ * khi kiện đã dời hay xoay — đó là lý do của vị trí cũ; chỉ ghim thì giữ.
  */
 export function resolveEffectiveScene(model: ViewerSceneModel, draft: ViewerDraft): EffectiveViewerScene {
   const placementById = new Map<string, ScenePlacement>()
@@ -75,9 +76,11 @@ export function resolveEffectiveScene(model: ViewerSceneModel, draft: ViewerDraf
     const orientation = patch.orientation ?? source.orientation
     const size = orientedSize(baseDimensions, orientation)
     const position = patch.position ?? source.position
-    const { zoneId: _sourceZone, ...rest } = source
+    const { zoneId: _sourceZone, why, ...rest } = source
+    const moved = patch.position !== undefined || patch.orientation !== undefined
     const placement: ScenePlacement = Object.freeze({
       ...rest,
+      ...(why && !moved ? { why } : {}),
       ...size,
       orientation,
       position,

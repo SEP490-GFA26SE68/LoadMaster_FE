@@ -3,6 +3,7 @@ import type { OrientationCode, OrientationRules, PackageDimensions } from '@/dom
 import type { FragilityLevel, OptimizationResult, UnplacedPackage, VehicleConfig } from '@/domain/models'
 import type { DeadlineStatus } from '@/domain/routing'
 import type { StopZone } from '@/domain/zones'
+import type { PlacementWhy } from '@/features/optimization/load-plans-backend-api'
 import type { Packaging } from './viewer-types'
 
 /**
@@ -43,6 +44,11 @@ export type ScenePlacement = {
   readonly zoneId?: string
   /** Kiện nằm ngoài vùng của điểm giao mình — một lần dỡ-xếp lại. */
   readonly outOfZone: boolean
+  /**
+   * Lý do đặt và số đo của dịch vụ tối ưu (phương án máy chủ chấm điểm J); vắng ở nguồn khác, và bị bỏ khi bản chỉnh tay dời hay xoay
+   * kiện — lý do là của vị trí cũ.
+   */
+  readonly why?: PlacementWhy
 }
 
 export type SceneUnplaced = {

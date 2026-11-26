@@ -211,8 +211,8 @@ mọi tab là về seed) và không thay backend (trình duyệt hay máy khác 
   đề kết quả là liên kết "Xem phương án mẫu ở dạng 3D" (`/phuong-an-mau`). Từ 1.280 px
   form trái, kết quả phải (ba thẻ cạnh nhau từ 640 px); `e2e/landing-try.spec.ts` đo cột kết quả gọn trong một màn hình ở 1.440 × 900 và
   1.280 × 768, cả phần không quá 1.335 px (1.440) / 1.900 px (390, trước lần chạy).
-- **"Tính thế nào?"** (`marketing/how/`: `HowComputed` — nút `aria-expanded` mở danh sách nhãn + câu; `PlanHow` + `how-entries.ts` dựng câu
-  từ số của **chính lần chạy**, nhánh từ điển `landingHow`): dưới số của khung 3D mở đầu, thẻ phương án và tab Tải trục của bản thử, và trang
+- **"Tính thế nào?"** (`components/HowComputed` — nút `aria-expanded` mở danh sách nhãn + câu, chữ nút ở `common.howComputed`, dùng cả ở điểm
+  J của màn So sánh máy chủ; `marketing/how/`: `PlanHow` + `how-entries.ts` dựng câu từ số của **chính lần chạy**, nhánh từ điển `landingHow`): dưới số của khung 3D mở đầu, thẻ phương án và tab Tải trục của bản thử, và trang
   `/phuong-an-mau`. Câu nói công thức bằng lời thường kèm số đã tính; số nào phương án không có (xe không trục, không chia vùng) thì bỏ dòng.
   Không tên thuật toán. Giả định của bản thử cũng nằm ở đây thay cho đoạn văn.
 - **Phương án mẫu** `/phuong-an-mau` (`marketing/sample-plan/`, `SamplePlanPage`; phần 3D `viewer3d/SamplePlanViewer` tải lười): chuyến mẫu
@@ -589,7 +589,7 @@ src/
                         StopChip / StopDot (số điểm giao trên màu định danh), VehicleName (tên xe không bẻ biển số), PageHero (thanh tiêu đề màn),
                         TouchTopBar (thanh dải trời điều khiển đặc của màn cảm ứng, kho và tài xế), KpiTile (ô số liệu),
                         QrCode / QrScanDialog (vẽ và quét mã QR), PackageVerify (đối chiếu kiện ba mức), CargoArtwork (thùng xe đẳng cự
-                        xếp dần của màn đăng nhập, hình dự phòng của khung 3D trang giới thiệu)...
+                        xếp dần của màn đăng nhập, hình dự phòng của khung 3D trang giới thiệu), HowComputed ("Tính thế nào?")...
   components/map/       bản đồ dùng chung: RouteMap (kho, điểm giao, tuyến, xe), nơi duy nhất import maplibre-gl; CoordinatePicker
                         (ô chọn toạ độ), `places-api.ts` (tìm địa chỉ, qua `/api/places/*` khi nối máy chủ)
   features/
@@ -1705,6 +1705,15 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   buộc của dịch vụ tối ưu (`unplaced.violatedConstraints`) dịch qua `solverConstraintMessage` (`SOLVER_CONSTRAINT_CODES`, nhánh
   `serverPlans.constraints`), gồm mã của luật vật lý mới (`STACK_PRESSURE_EXCEEDED`, `FLOOR_LOAD_EXCEEDED`, `LIFO_BLOCKED`,
   `MUST_LOAD_UNPLACED`…) và mã cũ còn trong phương án đã lưu; `backend-plan-scene.ts` đưa mã xếp chồng / thứ tự dỡ về lý do chưa xếp tương ứng.
+  **Điểm phương án J và lý do đặt** (dịch vụ tối ưu tính sau cờ `PLAN_SCORE_J` của máy chủ; DTO ở `plan-score-dto.ts`): phương án mang
+  `planScore` (J, hồ sơ ưu tiên, U_vol · U_n kèm trọng số, khoản trừ S1–S8 — `computed: false` là "Không tính"), `candidateProfile`,
+  `duplicateOf`; chỗ xếp mang `reasonCodes` và số đo (áp lực đè, sức chịu σ — `null` là không nhận tải trên mặt —, tỷ lệ đỡ, cách cửa). Màn
+  dịch **theo mã** (nhánh `serverPlans.score`, `serverPlans.why`), không dùng tên máy chủ gửi; mã khoản / mã lý do lạ bị bỏ, mã hồ sơ lạ hiện
+  nguyên mã. So sánh `?lan-chay=`: mỗi thẻ dòng "Điểm phương án" (J một chữ số lẻ, "theo hồ sơ …") và "Tính thế nào?" mở phân rã (trọng số tạm
+  thì thêm một câu); **không** "Tốt nhất" trên J — mỗi phương án chấm theo hồ sơ của chính nó, một câu trên các thẻ nói vậy; thẻ trùng cách xếp
+  mang nhãn "Giống hệt phương án …". Planner: thẻ kiện đang chọn có "Vì sao đặt ở đây" (`PlacementWhySection`), bỏ khi kiện đã dời / xoay trong
+  bản chỉnh tay (`resolveEffectiveScene`); máy chủ đo tỷ lệ đỡ thì ô "Tỷ lệ đỡ đáy" nhường chỗ. Cờ tắt hay máy chủ cũ: không trường nào, không
+  vẽ gì — không 0, không "—". Số của máy chủ, không MOCK RESULT.
   `TRIPS_CAPABILITIES` vẫn bỏ phương án trên danh sách, kiện, tên tuyến; lệnh ghi khác từ chối `NOT_SUPPORTED`. **Báo cáo chuyến**
   (`ServerTripReportPage`, `server-trip-report-api.ts`): `GET /api/trips/{id}/report` (điều phối viên, quản lý công ty) cho chuyến đã giao hoặc
   huỷ lúc đang vận chuyển (`cancelledFromStatus` của Chi tiết chuyến; khác là `TRIP_REPORT_NOT_AVAILABLE`), cùng bố cục với bản kho mẫu,

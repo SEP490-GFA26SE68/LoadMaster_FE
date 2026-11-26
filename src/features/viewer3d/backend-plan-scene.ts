@@ -267,6 +267,7 @@ export function backendPlanScene({ tripCode, plan, vehicle, stops }: {
       supportRatio: 1,
       constraintWarnings: Object.freeze([]),
       ...zoneOf(zones, item, stop),
+      ...(item.why ? { why: item.why } : {}),
     })]
   })
   const unplaced = plan.unplaced.map((item): SceneUnplaced => Object.freeze({

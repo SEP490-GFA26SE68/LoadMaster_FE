@@ -24,6 +24,8 @@ import {
 
 /** Kiểu của app dựng từ DTO — màn import từ đây, không từ `load-plan-dto.ts`. */
 export type { LoadPlacement, LoadPlan, OptimizationJob } from './load-plan-dto'
+export type { PlacementReason, PlacementWhy, PlanScore, ScoreComponent, ScoreComponentCode, ScoreTerm } from './plan-score-dto'
+export { SCORE_PROFILES } from './plan-score-dto'
 
 const tripPath = (tripId: string) => `/api/trips/${encodeURIComponent(tripId)}`
 const jobPath = (jobId: string) => `/api/trips/optimization-jobs/${encodeURIComponent(jobId)}`
