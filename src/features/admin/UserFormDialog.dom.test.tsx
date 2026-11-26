@@ -1,5 +1,6 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent, { type UserEvent } from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router'
 import { expect, test, vi } from 'vitest'
 import { I18nProvider } from '@/lib/i18n'
 import type { UserScope } from '@/lib/mock-db'
@@ -12,7 +13,7 @@ import { UserFormDialog } from './UserFormDialog'
  */
 function renderForm(scope: UserScope) {
   const onSubmit = vi.fn<(values: UserFormValues) => Promise<void>>().mockResolvedValue(undefined)
-  render(<I18nProvider><UserFormDialog scope={scope} onClose={() => {}} onSubmit={onSubmit} /></I18nProvider>)
+  render(<I18nProvider><MemoryRouter><UserFormDialog scope={scope} onClose={() => {}} onSubmit={onSubmit} /></MemoryRouter></I18nProvider>)
   return { onSubmit, form: within(screen.getByRole('dialog', { name: 'Thêm người dùng' })) }
 }
 

@@ -52,7 +52,7 @@ test('the table and the detail panel leave out the depot and the last activity t
 test('editing a company account has no depot field and saves without a depot', async () => {
   const user = userEvent.setup()
   const onSubmit = vi.fn<(values: UserFormValues) => Promise<void>>().mockResolvedValue(undefined)
-  render(<I18nProvider><UserFormDialog scope="company" user={DISPATCHER} onClose={() => {}} onSubmit={onSubmit} /></I18nProvider>)
+  render(<I18nProvider><MemoryRouter><UserFormDialog scope="company" user={DISPATCHER} onClose={() => {}} onSubmit={onSubmit} /></MemoryRouter></I18nProvider>)
   const form = within(screen.getByRole('dialog', { name: 'Sửa người dùng' }))
   expect(form.getByText('Sửa thông tin liên hệ và vai trò của tài khoản.')).toBeInTheDocument()
   expect(form.queryByLabelText(/^Kho . chi nhánh/)).toBeNull()
