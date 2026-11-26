@@ -24,6 +24,8 @@ import { SceneLighting } from './SceneLighting'
 import { PerfProbe, type PerfSample } from './PerfProbe'
 import { containerCenter } from './units'
 import type { FramePoints } from './frame-fit'
+import { ContextLossWatch } from './context-loss'
+import { ContextLostOverlay } from '../overlays/ContextLostOverlay'
 
 export type SceneCanvasProps = {
   experience: ExperienceMode
@@ -146,6 +148,11 @@ export function SceneCanvas({
     onPerformanceSample(sample)
     onPerfSample?.(sample)
   }, [onPerformanceSample, onPerfSample])
+  // Mất ngữ cảnh WebGL: lớp phủ có câu + nút dựng lại khung; ngữ cảnh tự về cũng dựng lại canvas (three không nạp lại hết bộ đệm)
+  const [contextLost, setContextLost] = useState(false)
+  const [canvasKey, setCanvasKey] = useState(0)
+  const handleContextLost = useCallback(() => setContextLost(true), [])
+  const handleReloadCanvas = useCallback(() => { setContextLost(false); setCanvasKey((key) => key + 1) }, [])
   const vehicleParts = <>
     <Container vehicle={model.vehicle} materials={materials} detail={flags.decoration} reducedMotion={flags.reducedMotion}
       doorOpening={specView} edgeOpacity={specView ? 0.6 : undefined} doorsClosed={doorsClosed} />
@@ -167,7 +174,7 @@ export function SceneCanvas({
       vehicle={model.vehicle} quality={flags.animationQuality} reducedMotion={flags.reducedMotion} /> : null}
     {vehicleChildren}
   </>
-  return <><Canvas data-experience={experience} frameloop="demand" dpr={flags.dpr} resize={interactive ? undefined : NO_SCROLL_RESIZE}
+  return <><Canvas key={canvasKey} data-experience={experience} frameloop="demand" dpr={flags.dpr} resize={interactive ? undefined : NO_SCROLL_RESIZE}
     shadows={flags.shadows ? 'percentage' : false} flat
     gl={GL_OPTIONS} camera={camera}
     onPointerMissed={() => handleSelect(null)} style={interactive ? CANVAS_STYLE : STATIC_CANVAS_STYLE}>
@@ -179,7 +186,9 @@ export function SceneCanvas({
       {children}
     </group>
     <PerfProbe onSample={handleSample} placementCount={placements.length} qualityTier={flags.tier} scene={model} />
+    <ContextLossWatch onLost={handleContextLost} onRestored={handleReloadCanvas} />
   </Canvas>
+  {contextLost ? <ContextLostOverlay onReload={handleReloadCanvas} /> : null}
   <ObstacleDescriptions obstacles={model.vehicle.obstacles} />
   </>
 }

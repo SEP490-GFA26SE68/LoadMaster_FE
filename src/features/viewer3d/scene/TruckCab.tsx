@@ -1,10 +1,11 @@
-import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
+import { useLayoutEffect, useMemo, useRef } from 'react'
 import { ExtrudeGeometry, InstancedMesh, Object3D, Shape } from 'three'
 import type { VehicleConfig } from '@/domain/models'
 import type { SceneMaterials } from './materials'
 import { containerSize } from './units'
 import { truckDetails, truckWheel } from './truck-geometry'
 import { CAB_X, truckLayout, WHEEL_RADIUS, WHEEL_Y } from './truck-layout'
+import { useDisposeOnChange } from './useDisposeOnChange'
 
 /**
  * Xe minh hoạ quanh thùng: cabin, chi tiết thân và khung gầm gộp một draw (`truckDetails`), mọi bánh một InstancedMesh.
@@ -36,7 +37,10 @@ export function TruckCab({ vehicle, materials, shadows }: {
     wheels.current.instanceMatrix.needsUpdate = true
     wheels.current.computeBoundingSphere()
   }, [layout])
-  useEffect(() => () => { detail.dispose(); wheel.dispose(); body.dispose() }, [detail, wheel, body])
+  // Mỗi geometry tự giải phóng khi chính nó đổi: đổi xe làm `detail` (và `body` khi đổi bề rộng) dựng lại mà `wheel` vẫn đang vẽ
+  useDisposeOnChange(detail)
+  useDisposeOnChange(wheel)
+  useDisposeOnChange(body)
   return <group name="vehicle-decoration">
     <mesh geometry={body} castShadow={shadows}>
       <meshStandardMaterial color={materials.cab} roughness={0.45} metalness={0.18} />

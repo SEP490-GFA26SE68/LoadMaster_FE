@@ -2,8 +2,7 @@ import { describe, expect, test } from 'vitest'
 import { ORIENTATION_CODES, orientDimensions } from '@/domain/geometry'
 import type { VehicleConfig } from '@/domain/models'
 import { loadPlanOf, type LoadPlan, type LoadPlacement } from '@/features/optimization/load-plan-dto'
-import { isApiError } from '@/lib/api-client'
-import { backendPlacementIds, backendPlanScene, baseDimensionsOf, orientationOf } from './backend-plan-scene'
+import { backendPlacementIds, backendPlanScene, baseDimensionsOf, orientationOf, planFitsVehicle, planShownOn, unknownStopCodes } from './backend-plan-scene'
 
 const VEHICLE: VehicleConfig = {
   id: '7', name: 'Xe tải 1,5 tấn', innerLengthCm: 400, innerWidthCm: 200, innerHeightCm: 200, maxPayloadKg: 1500,
@@ -46,10 +45,12 @@ describe('backendPlanScene', () => {
     expect(scene.engineInput?.instances?.map(({ packageInstanceId }) => packageInstanceId)).toEqual(['PK-301'])
   })
 
-  test('kiện thuộc điểm không có trong chuyến là lỗi dữ liệu của máy chủ', () => {
-    const broken = plan({ placements: [placement({ stopId: '999' })] })
-    expect(() => backendPlanScene({ tripCode: 'TRIP-1', plan: broken, vehicle: VEHICLE, stops: STOPS })).toThrow()
-    try { backendPlanScene({ tripCode: 'TRIP-1', plan: broken, vehicle: VEHICLE, stops: STOPS }) } catch (error) { expect(isApiError(error)).toBe(true) }
+  test('kiện thuộc điểm không có trong chuyến là lỗi dữ liệu của máy chủ: `unknownStopCodes` nêu kiện, scene không ném lỗi lúc vẽ', () => {
+    const broken = plan({ placements: [placement(), placement({ id: '12', code: 'PK-302', stopId: '999' }), placement({ id: '13', code: '', stopId: null, stopSequence: 0 })] })
+    expect(unknownStopCodes(broken, STOPS)).toEqual(['PK-302', '13'])
+    expect(unknownStopCodes(plan(), STOPS)).toEqual([])
+    const scene = backendPlanScene({ tripCode: 'TRIP-1', plan: broken, vehicle: VEHICLE, stops: STOPS })
+    expect(scene.placements.map((item) => item.id)).toEqual(['PK-301'])
   })
 
   test('số máy chủ không trả thì vắng, không vẽ 0', () => {
@@ -152,5 +153,40 @@ describe('backendPlacementIds', () => {
     expect(loadPlanOf(base).stopZones).toBeNull()
     expect(loadPlanOf({ ...base, stopZones: [] }).stopZones).toBeNull()
     expect(loadPlanOf({ ...base, stopZones: [{ id: 'ZONE-91', stopId: 91, startXCm: null, endXCm: 400 }] }).stopZones).toBeNull()
+  })
+})
+
+describe('planShownOn', () => {
+  // Xe nhỏ hơn sau khi đổi xe: lòng thùng 300 × 150 × 150 cm
+  const SMALLER: VehicleConfig = { ...VEHICLE, id: '8', innerLengthCm: 300, innerWidthCm: 150, innerHeightCm: 150 }
+  const wide = placement({ x: 250, lengthCm: 100 })
+
+  test('kiện vừa lòng thùng: vẽ nguyên phương án, kể cả khi lỗi thời', () => {
+    const fresh = plan({ placements: [wide] })
+    expect(planFitsVehicle(fresh, VEHICLE)).toBe(true)
+    expect(planShownOn(fresh, VEHICLE)).toEqual({ plan: fresh, otherVehicle: false })
+    const stale = plan({ stale: true })
+    expect(planShownOn(stale, SMALLER)).toEqual({ plan: stale, otherVehicle: false })
+  })
+
+  test('phương án lỗi thời mà kiện trồi khỏi lòng thùng xe hiện tại: không đặt kiện nào vào xe mới, giữ kiện chưa xếp', () => {
+    const unplaced = [{ packageId: '302', code: 'PK-302', reason: null, size: null, weightKg: null }]
+    const stale = plan({ stale: true, placements: [placement(), wide], unplaced })
+    expect(planFitsVehicle(stale, SMALLER)).toBe(false)
+    const shown = planShownOn(stale, SMALLER)
+    expect(shown.otherVehicle).toBe(true)
+    const scene = backendPlanScene({ tripCode: 'TRIP-1', plan: shown.plan, vehicle: SMALLER, stops: STOPS })
+    expect(scene.placements).toEqual([])
+    expect(scene.unplaced.map((item) => item.packageId)).toEqual(['302'])
+    expect(scene.vehicle.innerLengthCm).toBe(300)
+  })
+
+  test('phương án chưa lỗi thời không bị giấu kiện dù số không khớp (máy chủ chưa đánh dấu lỗi thời thì không đoán)', () => {
+    expect(planShownOn(plan({ placements: [wide] }), SMALLER).otherVehicle).toBe(false)
+  })
+
+  test('mép kiện chạm đúng vách vẫn là vừa (so qua EPSILON)', () => {
+    expect(planFitsVehicle(plan({ placements: [placement({ x: 100.4, lengthCm: 299.6 })] }), VEHICLE)).toBe(true)
+    expect(planFitsVehicle(plan({ placements: [placement({ x: -0.5 })] }), VEHICLE)).toBe(false)
   })
 })

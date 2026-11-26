@@ -10,7 +10,7 @@ import { dataErrorMessage, useT } from '@/lib/i18n'
 import type { TripStatus } from '@/types/trip'
 import { backendEditApproval, baselineErrorKeys } from './approval/backend-edit-approval'
 import type { PlannerLock } from './approval/planner-access'
-import { backendPlacementIds, backendPlanScene } from './backend-plan-scene'
+import { backendPlacementIds, backendPlanScene, planShownOn, unknownStopCodes } from './backend-plan-scene'
 import { BackendPlannerActions } from './BackendPlannerActions'
 import { createColorContext } from './colors'
 import { createPerfStore, DebugOverlay } from './DebugOverlay'
@@ -66,6 +66,22 @@ export function BackendResultSession() {
       </div>
     )
   }
+  // Kiện không gắn được điểm giao của chuyến: lỗi dữ liệu của máy chủ — nói rõ thay vì vẽ (màu, vùng, thứ tự dỡ đều theo điểm giao)
+  const unknownStops = unknownStopCodes(plan, query.data.stops)
+  if (unknownStops.length > 0) {
+    return (
+      <div className="flex h-dvh flex-col bg-bg p-8">
+        <EmptyState mascot="error" title={t('plannerRecovery.unknownStops.title')}
+          description={t('plannerRecovery.unknownStops.description', { count: unknownStops.length, codes: unknownStops.slice(0, 5).join(', ') })}
+          action={<Button variant="primary" asChild>
+            <Link to={`/chuyen/${encodeURIComponent(tripId)}/toi-uu`}>{t('viewer.plan.toSetup')}</Link>
+          </Button>}
+        />
+      </div>
+    )
+  }
+  // Phương án khác là phiên mới (bản chỉnh tay, lịch sử hoàn tác gắn với snapshot — như `LoadedResult` của kho mẫu) nên giữ `key`;
+  // đọc lại cùng phương án (đổi xe, ghim) giữ nguyên `plan.id`, khung 3D không dựng lại
   return <BackendPlannerSession key={plan.id} tripCode={tripId} source={{ ...query.data, plan }} />
 }
 
@@ -88,7 +104,9 @@ function BackendPlannerSession({ tripCode, source }: { tripCode: string; source:
   const navigate = useNavigate()
   // Query giữ nguyên tham chiếu khi dữ liệu đọc lại không đổi (structural sharing): scene chỉ dựng lại khi máy chủ trả khác đi
   const { plan, vehicle, stops } = source
-  const model = useMemo(() => backendPlanScene({ tripCode, plan, vehicle, stops }), [tripCode, plan, vehicle, stops])
+  // Phương án lỗi thời tính cho xe trước khi đổi xe: không đặt kiện vào thùng xe hiện tại (`planShownOn`)
+  const shown = useMemo(() => planShownOn(plan, vehicle), [plan, vehicle])
+  const model = useMemo(() => backendPlanScene({ tripCode, plan: shown.plan, vehicle, stops }), [tripCode, shown, vehicle, stops])
   const flags = usePerformanceFlags(debugQualityTier(searchParams))
   const state = useLoadPlanViewer(model, { initialSelectedId: model.placements[0]?.id })
   const editor = useManualEditor(state)
@@ -181,7 +199,7 @@ function BackendPlannerSession({ tripCode, source }: { tripCode: string; source:
         <PlannerLockNotice lock={lock} />
         {stale ? (
           <PlannerNoticeBar role="alert" data-planner-stale tone="warning" icon={TriangleAlert} title={t('viewer.plan.staleBanner')}
-            detail={t('viewer.plan.staleApprove')}
+            detail={shown.otherVehicle ? t('plannerRecovery.otherVehicle') : t('viewer.plan.staleApprove')}
             action={rerunTo ? <PlannerNoticeLink tone="warning" to={rerunTo} icon={SlidersHorizontal}>{t('viewer.plan.rerun')}</PlannerNoticeLink> : null} />
         ) : null}
         {approve === 'draft' && !plan.approved ? (
