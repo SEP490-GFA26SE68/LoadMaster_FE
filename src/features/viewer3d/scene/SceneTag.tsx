@@ -3,9 +3,10 @@ import { cn } from '@/lib/utils'
 
 /**
  * Vai trò của nhãn neo trong khung 3D (V2.3 `.ctag`): kiện đang chọn (trắng), hiện tại (vàng --highlight như viền kiện), tiếp theo
- * (cyan như viền --info), cảnh báo (hổ phách), lỗi cứng (đỏ); `plain` cho số đo và chú thích không có chấm.
+ * (cyan như viền --info), cảnh báo (hổ phách), lỗi cứng (đỏ), trọng tâm hàng G (`--cog-marker` như dấu G); `plain` cho số đo và chú
+ * thích không có chấm.
  */
-export type SceneTagTone = 'selected' | 'current' | 'next' | 'warn' | 'bad' | 'plain'
+export type SceneTagTone = 'selected' | 'current' | 'next' | 'warn' | 'bad' | 'gravity' | 'plain'
 
 const FRAME: Record<SceneTagTone, string> = {
   selected: 'border-glass-dark-text/50',
@@ -13,6 +14,7 @@ const FRAME: Record<SceneTagTone, string> = {
   next: 'border-cyan-400/70',
   warn: 'border-amber-500/60 bg-amber-700/50 text-amber-200',
   bad: 'border-red-500/75',
+  gravity: 'border-cog-marker/60',
   plain: 'border-glass-dark-border',
 }
 
@@ -22,6 +24,7 @@ const DOT: Record<Exclude<SceneTagTone, 'plain'>, string> = {
   next: 'bg-cyan-400',
   warn: 'bg-amber-500',
   bad: 'bg-red-500',
+  gravity: 'bg-cog-marker',
 }
 
 /**

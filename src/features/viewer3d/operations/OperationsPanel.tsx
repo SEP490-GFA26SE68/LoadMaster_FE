@@ -1,15 +1,17 @@
 import { useMemo } from 'react'
-import { Crosshair, Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
-import { useFormat, useT } from '@/lib/i18n'
+import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import type { ScenePlacement } from '@/features/viewer3d/scene-input'
 import type { LoadPlanViewerState } from '../useLoadPlanViewer'
 import { AxleLoadPanel } from '../overlays/AxleLoadPanel'
 import { DeadlinePanel, RehandlingPanel } from '../overlays/PlanIndicators'
+import { UnloadTimePanel } from '../overlays/UnloadTimePanel'
 import { DARK_FIELD, DARK_SUBCARD, GLASS_PANEL, GLASS_PRESSED, MUTED } from '../panels/scene-ui'
-import { cargoCenterOfMass, stopOrderConsistent } from './operations-model'
+import { stopOrderConsistent } from './operations-model'
 import { BlockerPanel } from './BlockerPanel'
+import { GravityPanel } from './GravityCards'
 import type { OperationsState } from './useOperations'
 
 type PanelProps = {
@@ -19,12 +21,14 @@ type PanelProps = {
 }
 
 /**
- * Tab "Vận hành" của hộp thông tin: điểm giao đang mô phỏng, thứ tự xếp/dỡ, kiện chắn lối dỡ, rồi ba chỉ số của phương án đang xem
- * (FE-5b-07): tải trục trước / sau so giới hạn, số lần dỡ-xếp lại, mức hạn của từng điểm giao.
+ * Tab "Vận hành" của hộp thông tin: điểm giao đang mô phỏng, thứ tự xếp/dỡ, kiện chắn lối dỡ, rồi các chỉ số của phương án đang xem
+ * (FE-5b-07, Spec vật lý 10.2–10.3): tải trục trước / sau và trọng tâm hàng G của hàng ở bước đang xem, số lần dỡ-xếp lại, mức hạn và
+ * thời gian dỡ ước tính của từng điểm giao.
  */
 export function OperationsPanel({ state, operations, onSelect, onEdit }: PanelProps) {
   const t = useT()
-  const { focusStop } = operations
+  const { focusStop, cargo } = operations
+  const mock = state.sceneModel.isMockResult
   const stop = state.sceneModel.stops.find((p) => p.number === focusStop)
   return <div className="flex flex-col gap-4 p-4 text-body-lg xl:text-body">
     <label className="flex flex-col gap-2 md:hidden">{t('viewer.operations.stop')}
@@ -47,14 +51,19 @@ export function OperationsPanel({ state, operations, onSelect, onEdit }: PanelPr
     {operations.inspectBlockers ? <BlockerPanel tone="dark" target={state.placements.find((p) => p.id === operations.semantics.inspectionId)}
       lifo={operations.semantics.lifo} onSelect={onSelect} onEdit={onEdit} /> : null}
     {operations.kind === 'unloading' ? <p className={MUTED}>{t('viewer.operations.blockers.corridor')}</p> : null}
-    {/* Tải trục là ước lượng của mock tính ở FE; phương án của máy chủ có số của chính nó ở tab Chỉ số, không tính lại ở đây.
+    {/* Tải trục là ước lượng tính ở FE trên hàng ở bước đang xem (`cargo`, cùng tập với dấu G). Phương án của máy chủ có số tải trục
+        của cả phương án ở tab Chỉ số nên chỉ có panel này khi đang dừng giữa lượt, nhãn "Ước tính".
         Dỡ-xếp lại đếm trên vùng của phương án: máy chủ trả vùng thì đếm như mock (cùng luật với máy chủ), không thì không có panel.
         Mức hạn đọc giờ đến dự kiến của tuyến: máy chủ tính thì không mang MOCK RESULT */}
-    {state.sceneModel.isMockResult ? <AxleLoadPanel vehicle={state.sceneModel.vehicle} placements={state.placements} /> : null}
-    {state.sceneModel.isMockResult || state.sceneModel.zones.length > 0
-      ? <RehandlingPanel zones={state.sceneModel.zones} placements={state.placements} isMockResult={state.sceneModel.isMockResult} />
+    {mock || cargo.at
+      ? <AxleLoadPanel vehicle={state.sceneModel.vehicle} placements={cargo.placements} at={cargo.at} tag={mock ? 'mock' : 'estimate'} />
       : null}
-    <DeadlinePanel stops={state.sceneModel.stops} mock={state.sceneModel.isMockResult} />
+    <GravityPanel cargo={cargo} vehicle={state.sceneModel.vehicle} />
+    {mock || state.sceneModel.zones.length > 0
+      ? <RehandlingPanel zones={state.sceneModel.zones} placements={state.placements} isMockResult={mock} />
+      : null}
+    <DeadlinePanel stops={state.sceneModel.stops} mock={mock} />
+    <UnloadTimePanel stops={state.sceneModel.stops} timing={state.timing} />
   </div>
 }
 
@@ -77,20 +86,6 @@ export function UnloadingPanel({ state, operations, onSelect, onEdit }: PanelPro
       <p className={cn('px-1', MUTED)}>{t('viewer.operations.blockers.corridor')}</p>
       <BlockerToggle operations={operations} />
     </div>
-  </section>
-}
-
-/** Tâm khối lượng hàng (lớp "Hiện tâm khối lượng hàng"): kính tối, nổi góc trên phải khung 3D. */
-export function MassCard({ state, operations, className }: Pick<PanelProps, 'state' | 'operations'> & { className?: string }) {
-  const t = useT()
-  const format = useFormat()
-  const mass = useMemo(() => operations.showMass ? cargoCenterOfMass(operations.semantics.massPlacements) : null, [operations.showMass, operations.semantics.massPlacements])
-  if (!mass) return null
-  return <section aria-label={t('viewer.cues.centerOfMass')} data-mass-hud className={cn('pointer-events-auto grid grid-cols-[auto_1fr] gap-x-2.5 px-4 py-3 text-body xl:text-small', GLASS_PANEL, className)}>
-    <span aria-hidden className="row-span-3 grid size-7.5 place-items-center rounded-md bg-amber-500/15 text-amber-500"><Crosshair className="size-4.5" strokeWidth={1.5} /></span>
-    <span className="font-semibold text-sky-text">{t('viewer.cues.centerOfMass')}</span>
-    <span className="font-mono">X {format.length(mass.position.x)} · Y {format.length(mass.position.y)} · Z {format.length(mass.position.z)}</span>
-    <span className={MUTED}>{t('viewer.hud.lateralOffset', { value: format.length(Math.abs(mass.position.y - state.sceneModel.vehicle.innerWidthCm / 2)) })}</span>
   </section>
 }
 

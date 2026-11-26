@@ -1,18 +1,22 @@
 import { ChevronLeft, ChevronRight, Pause, Play, SkipBack } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Button } from '@/components/ui/Button'
 import { useFormat, useT } from '@/lib/i18n'
 import { stopColor } from '@/lib/stops'
 import { cn } from '@/lib/utils'
 import type { ScenePlacement } from '@/features/viewer3d/scene-input'
-import type { PlaybackSpeed } from '@/features/viewer3d/viewer-types'
+import { PLAYBACK_SPEEDS, type PlaybackSpeed } from '@/features/viewer3d/viewer-types'
 import { timelineBins } from './operations/operations-model'
 import { DARK_FIELD, DARK_SCOPE, GLASS_PRESSED, GlassValue, MUTED } from './panels/scene-ui'
 
-export type TimelineProps = {
-  placements: readonly ScenePlacement[]; step: number; totalSteps: number; playing: boolean; speed: PlaybackSpeed
+export type TimelineProps<S extends number = PlaybackSpeed> = {
+  placements: readonly ScenePlacement[]; step: number; totalSteps: number; playing: boolean; speed: S
   onStepChange: (step: number) => void; onStepForward: () => void; onStepBackward: () => void
-  onGoToStart: () => void; onTogglePlaying: () => void; onSpeedChange: (speed: PlaybackSpeed) => void
+  onGoToStart: () => void; onTogglePlaying: () => void; onSpeedChange: (speed: S) => void
+  /** Các mức của ô tốc độ kèm tên truy cập và chữ riêng; vắng là 1× · 2× · 4× (mô phỏng tài xế, phương án mẫu) */
+  speeds?: readonly S[]; speedLabel?: string; speedText?: (speed: S) => string
+  /** Ô thêm ngay trước ô tốc độ (Planner: thời gian thật ước tính của lượt đang xem) */
+  extra?: ReactNode
   kind?: 'loading' | 'unloading'; orderedOverride?: readonly ScenePlacement[]
   /** Thứ tự dỡ do FE suy ra (phương án cũ không có `unloadingOrder`): nhãn ghi "gợi ý" */
   suggested?: boolean
@@ -28,8 +32,10 @@ const CONTROL = cn('size-14 p-0 xl:size-10 [&_svg]:size-5', GLASS_PRESSED)
  * kiện (8–64 ô); ô hiện tại viền trắng có quầng. Lệch có chủ ý so với bản mẫu: ô giữ cùng chiều cao (mục 7) thay vì ô hiện tại
  * cao gấp đôi; nút Phát là nút kính bật cyan, không phải nút chính tròn — màn chỉ có một nút chính (Duyệt).
  */
-export function Timeline({ placements, step, totalSteps, playing, speed, onStepChange, onStepForward,
-  onStepBackward, onGoToStart, onTogglePlaying, onSpeedChange, kind = 'loading', orderedOverride, suggested = false, solid = false }: TimelineProps) {
+export function Timeline<S extends number = PlaybackSpeed>({ placements, step, totalSteps, playing, speed, onStepChange, onStepForward,
+  onStepBackward, onGoToStart, onTogglePlaying, onSpeedChange, kind = 'loading', orderedOverride, suggested = false, solid = false,
+  speeds, speedLabel, speedText, extra }: TimelineProps<S>) {
+  const levels: readonly number[] = speeds ?? PLAYBACK_SPEEDS
   const t = useT()
   const variant = solid ? 'skySolid' : 'glass'
   const format = useFormat()
@@ -83,11 +89,13 @@ export function Timeline({ placements, step, totalSteps, playing, speed, onStepC
         aria-valuetext={t('viewer.timeline.valueText', { label, step, total: totalSteps })}
         style={{ '--lm-range-fill': `${percent}%`, '--border': 'var(--border-dark)' } as CSSProperties} />
     </div>
+    {extra}
     <label className="hidden shrink-0 sm:flex">
       <span className="sr-only">{t('viewer.timeline.speed')}</span>
-      <select aria-label={t('viewer.timeline.speedLabel')} value={speed} onChange={(e) => onSpeedChange(Number(e.target.value) as PlaybackSpeed)}
+      <select aria-label={speedLabel ?? t('viewer.timeline.speedLabel')} value={speed}
+        onChange={(e) => { const value = levels.find((level) => level === Number(e.target.value)); if (value !== undefined) onSpeedChange(value as S) }}
         className={cn(DARK_FIELD, 'font-display font-semibold tabular-nums')}>
-        <option value={1}>1×</option><option value={2}>2×</option><option value={4}>4×</option>
+        {levels.map((level) => <option key={level} value={level}>{speedText ? speedText(level as S) : `${level}×`}</option>)}
       </select>
     </label>
   </div>

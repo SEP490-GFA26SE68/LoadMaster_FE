@@ -6,7 +6,7 @@ import type { PlaybackSpeed } from '../viewer-types'
 
 export type SamplePlaybackMode = 'load' | 'unload'
 
-/** Một bước phát ở tốc độ 1× — cùng nhịp với Planner (`STEP_DURATION_MS` của `useLoadPlanViewer`). */
+/** Một bước phát ở tốc độ 1× — nhịp cố định của phương án mẫu (Planner phát theo thời gian thật ước tính × hệ số). */
 const STEP_MS = 600
 const NONE: readonly ScenePlacement[] = []
 

@@ -1,5 +1,8 @@
 import { useCallback, useMemo, useState } from 'react'
+import type { ScenePlacement } from '../scene-types'
 import type { LoadPlanViewerState } from '../useLoadPlanViewer'
+import { cargoAtStep } from './cargo-at-step'
+import { playbackDelayMs } from './handling-schedule'
 import { deriveSceneSemantics } from './scene-semantics'
 import { useUnloadPlayback } from './useUnloadPlayback'
 
@@ -11,7 +14,11 @@ export function useOperations(state: LoadPlanViewerState) {
   const [showZones, setShowZones] = useState(true)
   const [inspectBlockers, setInspectBlockers] = useState(false)
   const [follow, setFollow] = useState<'off' | 'on' | 'paused'>('off')
-  const unload = useUnloadPlayback(state.placements, state.speed)
+  const { timing, timeScale } = state
+  // Dỡ cũng theo thời gian thật × hệ số: bước dỡ gồm cả phần dời kiện chắn tính cho nó (Spec vật lý 10.1)
+  const unloadStepMs = useCallback((target: ScenePlacement) => playbackDelayMs(timing.unloading().secondsById.get(target.id), timeScale),
+    [timing, timeScale])
+  const unload = useUnloadPlayback(state.placements, timeScale, state.placements, unloadStepMs)
   // Hàm trả ra giữ tham chiếu giữa các lần vẽ (chỉ đổi khi thứ chúng đọc đổi): khung 3D, phím tắt và listener của camera không gắn lại
   // mỗi lần phiên vẽ lại
   const { stopPlaying, setCameraPreset, select, setStep, placements } = state
@@ -44,6 +51,9 @@ export function useOperations(state: LoadPlanViewerState) {
     currentId: unload.current?.id, nextId: unload.next?.id, inspectId: inspectBlockers || (kind === 'unloading' && unload.warning) ? inspected : null,
     lifo: unload.lifo,
   }), [state.placements, state.step, inspected, kind, focusStop, unload.unloadedIds, unload.current, unload.next, unload.warning, unload.lifo, inspectBlockers])
+  const cargo = useMemo(() => cargoAtStep(state.placements, {
+    kind, step: state.step, totalSteps: state.totalSteps, unloadedIds: unload.unloadedIds, unloadTotal: ordered.length,
+  }), [state.placements, kind, state.step, state.totalSteps, unload.unloadedIds, ordered.length])
   const current = state.placements.find((p) => p.id === semantics.currentId)
   const next = state.placements.find((p) => p.id === semantics.nextId)
   const togglePlaying = kind === 'loading' ? state.togglePlaying : unload.toggle
@@ -55,7 +65,7 @@ export function useOperations(state: LoadPlanViewerState) {
   const pauseFollow = useCallback(() => setFollow((f) => f === 'on' ? 'paused' : f), [])
   return { kind, setKind, focusStop, setFocusStop, showMass, setShowMass, showZones, setShowZones,
     follow, setFollow, pauseFollow,
-    inspectBlockers, setInspectBlockers, semantics, current, next, unload, stop,
+    inspectBlockers, setInspectBlockers, semantics, cargo, current, next, unload, stop,
     playing: kind === 'loading' ? state.playing : unload.playing, togglePlaying, stepForward, stepBackward, goToStart }
 }
 export type OperationsState = ReturnType<typeof useOperations>

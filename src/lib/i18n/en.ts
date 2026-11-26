@@ -19,6 +19,7 @@ import { assistantStats } from './en/assistantStats'
 import { warehouse } from './en/warehouse'
 import { viewer } from './en/viewer'
 import { plannerRecovery } from './en/plannerRecovery'
+import { plannerPhysics } from './en/plannerPhysics'
 import { fields } from './en/fields'
 import { admin } from './en/admin'
 import { designSystem } from './en/designSystem'
@@ -97,6 +98,7 @@ export const en = {
   warehouse,
   viewer,
   plannerRecovery,
+  plannerPhysics,
   fields,
   admin,
   designSystem,

@@ -17,6 +17,7 @@ import { assistantStats } from './vi/assistantStats'
 import { warehouse } from './vi/warehouse'
 import { viewer } from './vi/viewer'
 import { plannerRecovery } from './vi/plannerRecovery'
+import { plannerPhysics } from './vi/plannerPhysics'
 import { fields } from './vi/fields'
 import { admin } from './vi/admin'
 import { designSystem } from './vi/designSystem'
@@ -103,6 +104,7 @@ export const vi = {
   warehouse,
   viewer,
   plannerRecovery,
+  plannerPhysics,
   fields,
   admin,
   designSystem,

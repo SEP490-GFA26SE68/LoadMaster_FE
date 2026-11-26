@@ -28,7 +28,7 @@ import { ChangeVehicleHost } from './PlannerDialogHosts'
 import { PlannerSimulationControls } from './PlannerSimulationControls'
 import { SceneInspector } from './panels/SceneInspector'
 import { WorkspaceToolbar, type InspectorTab } from './panels/WorkspaceToolbar'
-import { Timeline } from './Timeline'
+import { PlannerTimeline } from './PlannerTimeline'
 import { useApproveBackendEditsMutation, useBackendPlanQuery, useTogglePinMutation } from './useBackendPlanQuery'
 import { useLoadPlanViewer } from './useLoadPlanViewer'
 import { usePerformanceFlags } from './usePerformanceFlags'
@@ -232,22 +232,7 @@ function BackendPlannerSession({ tripCode, source }: { tripCode: string; source:
             tab={inspectorTab} onTab={setInspectorTab} onClose={() => setInspectorTab(null)} listSection={state.leftTab} />
         )}
       </div>
-      {editing ? null : <Timeline
-        placements={state.placements}
-        kind={operations.kind}
-        orderedOverride={operations.kind === 'unloading' ? operations.unload.ordered : undefined}
-        suggested={!operations.unload.fromResult}
-        step={operations.kind === 'unloading' ? operations.unload.cursor : state.step}
-        totalSteps={operations.kind === 'unloading' ? operations.unload.ordered.length : state.totalSteps}
-        playing={operations.playing}
-        speed={state.speed}
-        onStepChange={operations.kind === 'unloading' ? operations.unload.setCursor : state.setStep}
-        onStepForward={operations.stepForward}
-        onStepBackward={operations.stepBackward}
-        onGoToStart={operations.goToStart}
-        onTogglePlaying={operations.togglePlaying}
-        onSpeedChange={state.setSpeed}
-      />}
+      {editing ? null : <PlannerTimeline state={state} operations={operations} />}
       {canChangeVehicle ? <ChangeVehicleHost opener={vehicleDialog} tripId={tripCode} /> : null}
     </div>
   )

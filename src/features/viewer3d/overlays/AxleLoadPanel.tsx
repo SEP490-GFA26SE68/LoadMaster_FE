@@ -1,26 +1,32 @@
 import { useMemo } from 'react'
-import { Badge } from '@/components/ui/Badge'
 import { gt } from '@/domain/geometry'
 import { axleLoadsOf, type AxleGroup, type AxleGroupLoad } from '@/domain/metrics'
 import type { VehicleConfig } from '@/domain/models'
 import { useFormat, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+import type { StepPosition } from '../operations/cargo-at-step'
 import { cargoCenterOfMass } from '../operations/operations-model'
 import type { ScenePlacement } from '../scene-input'
+import { IndicatorTagChip, type IndicatorTag } from './IndicatorCard'
 
 const GROUPS: readonly AxleGroup[] = ['front', 'rear']
 
 /**
- * Tải trục trong inspector (FE-5b-03, D-78): tải nhóm trục trước / sau của **toàn bộ kiện đang xếp trong phương án** (kể cả bản đang
- * chỉnh tay) theo mô hình đòn bẩy của `axleLoadsOf`, so với giới hạn của loại xe hoặc của trục. Số là ước lượng của mock nên luôn mang
- * nhãn MOCK RESULT. Xe không đủ dữ liệu trục thì không có số nào — chỉ một câu nói vì sao chưa tính. Vượt giới hạn có chữ, không chỉ màu.
+ * Tải trục trong inspector (FE-5b-03, D-78): tải nhóm trục trước / sau theo mô hình đòn bẩy của `axleLoadsOf`, so với giới hạn của
+ * loại xe hoặc của trục. `placements` là hàng đang ở trên xe: cả phương án (kể cả bản đang chỉnh tay), hoặc — khi Planner đang dừng
+ * giữa lượt xếp / dỡ — hàng ở bước đó, kèm dòng "Tại bước n / N" (`at`, Spec vật lý 10.3). Số là ước lượng: MOCK RESULT với phương án
+ * của mock, "Ước tính" (`tag="estimate"`) khi Planner tự tính cho phương án máy chủ. Xe không đủ dữ liệu trục thì không có số nào — chỉ
+ * một câu nói vì sao chưa tính. Vượt giới hạn có chữ, không chỉ màu.
  */
-export function AxleLoadPanel({ vehicle, placements, compact = false }: {
+export function AxleLoadPanel({ vehicle, placements, compact = false, at = null, tag = 'mock' }: {
   vehicle: VehicleConfig
   placements: readonly ScenePlacement[]
   compact?: boolean
+  at?: StepPosition | null
+  tag?: IndicatorTag
 }) {
   const t = useT()
+  const format = useFormat()
   const loads = useMemo(() => {
     const mass = cargoCenterOfMass(placements)
     return axleLoadsOf(vehicle, { totalKg: mass?.weightKg ?? 0, centerXCm: mass?.position.x })
@@ -28,12 +34,15 @@ export function AxleLoadPanel({ vehicle, placements, compact = false }: {
   return (
     <section
       aria-label={t('viewer.axles.title')}
+      data-axle-panel
       className={cn('flex min-w-64 flex-col gap-2 rounded-lg border border-glass-dark-border bg-canvas-2/45 p-3', compact ? 'w-70' : 'w-full')}
     >
       <div className="flex items-center justify-between gap-3 text-body-lg xl:text-caption">
         <span className="font-semibold text-sky-text">{t('viewer.axles.title')}</span>
-        {loads.status === 'computed' ? <Badge shape="tag" tone="mock" className="border-amber-500/45 text-amber-500">MOCK RESULT</Badge> : null}
+        {loads.status === 'computed' ? <IndicatorTagChip tag={tag} /> : null}
       </div>
+      {at ? <p data-at-step className="-mt-1.5 text-body-lg text-glass-dark-muted xl:text-caption">
+        {t('plannerPhysics.atStep', { step: format.integer(at.step), total: format.integer(at.total) })}</p> : null}
       {loads.status === 'computed' ? (
         <>
           <dl className="m-0 flex flex-col gap-1.5 text-body-lg xl:text-caption">
