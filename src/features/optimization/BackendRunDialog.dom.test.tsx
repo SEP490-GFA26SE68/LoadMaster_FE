@@ -21,6 +21,7 @@ test('NO_SOLUTION liệt kê ràng buộc cụ thể, không chỉ câu chung', 
             computationMs: 3234,
             createdAt: null,
             runAlgorithm: 'EP_DBLF_GA_AI',
+            dataWarnings: [],
           }}
           error={null}
           hasPlans

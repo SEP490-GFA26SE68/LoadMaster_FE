@@ -8,10 +8,11 @@ import { PackageOrientationPicker } from './PackageOrientationPicker'
 type PackageForm = UseFormReturn<PackageFormValues>
 
 /** Ô số của form kiện (máy chủ): để trống là không có giá trị, không phải 0. */
-export function PackageNumberInput({ form, field, label, suffix = '', step = '1', disabled = false }: {
+export function PackageNumberInput({ form, field, label, hint, suffix = '', step = '1', disabled = false }: {
   form: PackageForm
   field: PackageNumberField
   label: string
+  hint?: string
   suffix?: string
   step?: string
   disabled?: boolean
@@ -19,6 +20,7 @@ export function PackageNumberInput({ form, field, label, suffix = '', step = '1'
   return (
     <Input
       label={label}
+      hint={hint}
       numeric
       suffix={suffix}
       type="number"
@@ -83,6 +85,14 @@ export function PackageRuleSections({ form }: { form: PackageForm }) {
           <PackageNumberInput form={form} field="maxLayers" label={t('sourcing.form.maxLayers')} />
           <PackageNumberInput form={form} field="minSupportRatio" label={t('sourcing.form.minSupportRatio')} step="0.01" />
         </div>
+        <PackageNumberInput
+          form={form}
+          field="topLoadCapacityKgM2"
+          label={t('physicalData.sigma.packageLabel')}
+          hint={t('physicalData.sigma.packageHint')}
+          suffix="kg/m²"
+          step="0.01"
+        />
       </section>
 
       <section className="flex flex-col gap-3">

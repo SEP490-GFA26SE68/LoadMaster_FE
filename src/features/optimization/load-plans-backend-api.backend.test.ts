@@ -105,3 +105,17 @@ test('sửa chuyến chỉ gửi trường đã đổi; bỏ tài xế là unass
     'PATCH /api/trips/42', 'PATCH /api/trips/42', 'POST /api/trips/42/cancel', 'DELETE /api/trips/42/delivery-requirements/7',
   ])
 })
+
+test('trạng thái job mang cảnh báo dữ liệu: mã lạ bị bỏ, máy chủ cũ không trả là rỗng', async () => {
+  stubBackend({
+    'GET /api/trips/optimization-jobs/w': { body: envelope({ jobId: 'w', status: 'COMPLETED', dataWarnings: [
+      { code: 'TOP_LOAD_CAPACITY_MISSING', packageIds: ['3', '4'] }, { code: 'PACKAGE_TYPE_MISSING', packageIds: ['4'] },
+      { code: 'NEW_SERVER_WARNING', packageIds: ['5'] },
+    ] }) },
+    'GET /api/trips/optimization-jobs/old': { body: envelope({ jobId: 'old', status: 'COMPLETED' }) },
+  })
+  await expect(fetchOptimizationJob('w')).resolves.toMatchObject({ dataWarnings: [
+    { code: 'TOP_LOAD_CAPACITY_MISSING', packageIds: ['3', '4'] }, { code: 'PACKAGE_TYPE_MISSING', packageIds: ['4'] },
+  ] })
+  await expect(fetchOptimizationJob('old')).resolves.toMatchObject({ dataWarnings: [] })
+})

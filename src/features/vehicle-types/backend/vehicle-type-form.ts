@@ -9,11 +9,13 @@ import type {
 /**
  * Form loại xe (LM-104, FE-5b-01). Message của schema là key từ điển: đổi ngôn ngữ thì lỗi đổi theo. Kích thước cm, tải trọng và giới
  * hạn trục kg (D-03), làm tròn tại biên khi lưu. Ô số đọc bằng `valueAsNumber`: ô trống là `NaN` — giới hạn trục để trống nghĩa là
- * loại xe chưa khai. Độ lệch trọng tâm nhập bằng phần trăm, kho giữ tỷ lệ (`maxCogOffsetRatio`).
+ * loại xe chưa khai. Độ lệch trọng tâm nhập bằng phần trăm, kho giữ tỷ lệ (`maxCogOffsetRatio`). Lệch ngang (`maxCogOffsetRatioY`) và tải
+ * trọng sàn (kg/m²) tuỳ chọn: trống là chưa khai, không bao giờ tự điền.
  */
 export const NAME_MAX = 80
 export const POSITIVE = 'vehicleTypes.form.errors.positive' satisfies MessageKey
 export const COG_RANGE = 'vehicleTypes.form.errors.cogRange' satisfies MessageKey
+export const CANNOT_CLEAR = 'physicalData.errors.cannotClear' satisfies MessageKey
 /** Trần của ô phần trăm: trọng tâm không thể lệch quá nửa thùng. */
 export const MAX_COG_OFFSET_PERCENT = MAX_COG_OFFSET_RATIO_CEILING * 100
 
@@ -63,6 +65,14 @@ const optionalNonNegative = z
   )
 
 const optionalDoorDimension = optionalPositive
+
+/** Ô phần trăm tuỳ chọn: trống là chưa khai; có số thì lớn hơn 0 và không quá trần. */
+const optionalCogPercent = z
+  .union([z.number(), z.nan()])
+  .superRefine((value, ctx) => {
+    if (!Number.isNaN(value) && !(value > 0 && value <= MAX_COG_OFFSET_PERCENT)) ctx.addIssue({ code: 'custom', message: COG_RANGE })
+  })
+  .transform((value) => (Number.isNaN(value) ? undefined : value))
 export const vehicleTypeFormSchema = z.object({
   name: z
     .string()
@@ -100,6 +110,8 @@ export const vehicleTypeFormSchema = z.object({
       MAX_COG_OFFSET_PERCENT,
       { error: COG_RANGE },
     ),
+  maxCogOffsetPercentY: optionalCogPercent,
+  floorLoadCapacityKgM2: optionalPositive,
 
   hazardousCapable: z.boolean(),
 
@@ -186,6 +198,8 @@ export const EMPTY_VEHICLE_TYPE: VehicleTypeFormInput = {
     ratioToPercent(
       DEFAULT_MAX_COG_OFFSET_RATIO,
     ),
+  maxCogOffsetPercentY: Number.NaN,
+  floorLoadCapacityKgM2: Number.NaN,
 
   hazardousCapable: false,
 
@@ -233,6 +247,8 @@ export function toVehicleTypeForm(
       ratioToPercent(
         type.maxCogOffsetRatio,
       ),
+    maxCogOffsetPercentY: type.maxCogOffsetRatioY === null ? Number.NaN : ratioToPercent(type.maxCogOffsetRatioY),
+    floorLoadCapacityKgM2: type.floorLoadCapacityKgM2 ?? Number.NaN,
 
     hazardousCapable:
       type.hazardousCapable,
@@ -331,6 +347,13 @@ export function toVehicleTypeInput(
       percentToRatio(
         values.maxCogOffsetPercent,
       ),
+    ...(values.maxCogOffsetPercentY === undefined
+      ? {}
+      : { maxCogOffsetRatioY: percentToRatio(values.maxCogOffsetPercentY) }),
+    // kg/m², hai chữ số lẻ như cột của máy chủ.
+    ...(values.floorLoadCapacityKgM2 === undefined
+      ? {}
+      : { floorLoadCapacityKgM2: roundKg(values.floorLoadCapacityKgM2) }),
 
     hazardousCapable:
       values.hazardousCapable,
@@ -355,4 +378,19 @@ export function toVehicleTypeInput(
         }),
       ),
   }
+}
+
+/**
+ * Máy chủ bỏ qua `null` khi sửa loại xe, nên lệch ngang và tải trọng sàn đã lưu không xoá được: để trống rồi lưu thì giá trị cũ vẫn
+ * còn. Trả các ô đang bị xoá để form chặn kèm lý do thay vì báo đã lưu.
+ */
+export function clearedPhysicalLimits(
+  type: VehicleType | null,
+  values: VehicleTypeFormValues,
+): ('maxCogOffsetPercentY' | 'floorLoadCapacityKgM2')[] {
+  if (!type) return []
+  const cleared: ('maxCogOffsetPercentY' | 'floorLoadCapacityKgM2')[] = []
+  if (type.maxCogOffsetRatioY !== null && values.maxCogOffsetPercentY === undefined) cleared.push('maxCogOffsetPercentY')
+  if (type.floorLoadCapacityKgM2 !== null && values.floorLoadCapacityKgM2 === undefined) cleared.push('floorLoadCapacityKgM2')
+  return cleared
 }

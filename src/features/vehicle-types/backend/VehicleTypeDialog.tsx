@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader } from '@/components/ui/Dialog'
 import { Input } from '@/components/ui/Input'
-import { useFormat, useT, type MessageKey } from '@/lib/i18n'
+import { useT, type MessageKey } from '@/lib/i18n'
 import {
   useFieldArray,
   useForm,
@@ -23,10 +23,11 @@ import type {
   VehicleType,
   VehicleTypeInput,
 } from './vehicle-types-api'
+import { VehiclePhysicalLimitsFields } from './VehiclePhysicalLimitsFields'
 import {
-  COG_RANGE,
+  CANNOT_CLEAR,
+  clearedPhysicalLimits,
   EMPTY_VEHICLE_TYPE,
-  MAX_COG_OFFSET_PERCENT,
   NAME_MAX,
   POSITIVE,
   toVehicleTypeForm,
@@ -87,7 +88,6 @@ export function VehicleTypeDialog({ open, onOpenChange, type, pending, onSubmit 
   onSubmit: (input: VehicleTypeInput) => void
 }) {
   const t = useT()
-  const format = useFormat()
   const form = useForm<
     VehicleTypeFormInput,
     unknown,
@@ -137,6 +137,15 @@ export function VehicleTypeDialog({ open, onOpenChange, type, pending, onSubmit 
     setHighlightedObstacleId(null)
   }, [open, type, reset])
 
+  function handleValid(values: VehicleTypeFormValues) {
+    const cleared = clearedPhysicalLimits(type, values)
+    if (cleared.length > 0) {
+      cleared.forEach((field, index) => form.setError(field, { message: CANNOT_CLEAR }, { shouldFocus: index === 0 }))
+      return
+    }
+    onSubmit(toVehicleTypeInput(values))
+  }
+
   const nameError = errors.name?.message === 'vehicleTypes.form.errors.nameTooLong'
     ? t('vehicleTypes.form.errors.nameTooLong', { max: NAME_MAX })
     : errors.name ? t('vehicleTypes.form.errors.nameRequired') : undefined
@@ -144,7 +153,7 @@ export function VehicleTypeDialog({ open, onOpenChange, type, pending, onSubmit 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="!w-[min(98vw,1500px)] !max-w-none">
-        <form noValidate onSubmit={form.handleSubmit((values) => onSubmit(toVehicleTypeInput(values)))}>
+        <form noValidate onSubmit={form.handleSubmit(handleValid)}>
           <DialogHeader
             icon={Container}
             title={type ? t('vehicleTypes.form.editTitle', { id: type.id }) : t('vehicleTypes.form.createTitle')}
@@ -247,17 +256,7 @@ export function VehicleTypeDialog({ open, onOpenChange, type, pending, onSubmit 
                   />
                 ))}
               </div>
-              <div className="grid grid-cols-3 gap-3">
-                <Input
-                  label={t('vehicleTypes.form.maxCogOffset')}
-                  suffix="%"
-                  required
-                  error={errors.maxCogOffsetPercent ? t(COG_RANGE, { max: format.integer(MAX_COG_OFFSET_PERCENT) }) : undefined}
-                  {...NUMERIC}
-                  {...form.register('maxCogOffsetPercent', { valueAsNumber: true })}
-                />
-              </div>
-              <p className="-mt-2 text-fine text-ink-3">{t('vehicleTypes.form.maxCogOffsetHint')}</p>
+              <VehiclePhysicalLimitsFields form={form} />
               <label className="flex items-center gap-2 text-body text-ink-1">
                 <input
                   type="checkbox"

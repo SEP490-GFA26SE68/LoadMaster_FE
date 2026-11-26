@@ -30,7 +30,7 @@ const EDIT_PACKAGE: CargoPackage = {
   expectedPackageCount: null, packageCode: 'LB-0005', trackingBarcode: null, qrToken: 'qr-5', lengthCm: 60, widthCm: 40, heightCm: 30,
   weightKg: 12.5, handlingClass: 'STANDARD', destination: '12 Lê Lợi, Quận 1', status: 'PENDING', flag: null, isPinned: false,
   packageName: 'Tủ lạnh', note: null, orientation: null, uprightOnly: null, fragilityLevel: null, stackable: null, maxTopLoadKg: null,
-  maxLayers: null, minSupportRatio: null, priority: null, mustLoad: null, packingGroup: null,
+  maxLayers: null, minSupportRatio: null, priority: null, mustLoad: null, packingGroup: null, topLoadCapacityKgM2: null,
 }
 
 const NO_TYPES = { success: true, data: [], page: 0, size: 100, totalElements: 0, totalPages: 0, last: true }
@@ -43,11 +43,11 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-function renderEdit(onUpdated = vi.fn()) {
+function renderEdit(onUpdated = vi.fn(), editPackage: CargoPackage = EDIT_PACKAGE) {
   render(
     <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
       <I18nProvider>
-        <PackageFormDialog editPackage={EDIT_PACKAGE} onClose={vi.fn()} onDone={vi.fn()} onUpdated={onUpdated} />
+        <PackageFormDialog editPackage={editPackage} onClose={vi.fn()} onDone={vi.fn()} onUpdated={onUpdated} />
       </I18nProvider>
     </QueryClientProvider>,
   )
@@ -90,5 +90,42 @@ test('sửa kiện: máy chủ từ chối thì form hiện câu lỗi, không b
   await user.click(save)
 
   expect(await screen.findByText(/gỡ cờ/)).toBeInTheDocument()
+  expect(onUpdated).not.toHaveBeenCalled()
+})
+
+test('sức chịu nén riêng của kiện: gửi số đã nhập, đọc lại BigDecimal dạng chuỗi', async () => {
+  const backend = stubBackend({
+    'GET /api/package-types': { body: NO_TYPES },
+    'PUT /api/packages/5': { body: envelope({ ...PACKAGE_DTO, topLoadCapacityKgM2: '350.50' }) },
+  })
+  const onUpdated = renderEdit()
+  const user = userEvent.setup()
+
+  const sigma = screen.getByRole('spinbutton', { name: 'Sức chịu nén mặt trên riêng của kiện' })
+  expect(sigma).toHaveValue(null)
+  await user.type(sigma, '350.5')
+  const save = screen.getByRole('button', { name: 'Lưu thay đổi' })
+  await vi.waitFor(() => expect(save).toBeEnabled())
+  await user.click(save)
+
+  await vi.waitFor(() => expect(onUpdated).toHaveBeenCalledOnce())
+  expect(backend.calls.find((call) => call.method === 'PUT')?.body).toMatchObject({ topLoadCapacityKgM2: 350.5 })
+  expect(onUpdated.mock.calls[0]?.[0]).toMatchObject({ topLoadCapacityKgM2: 350.5 })
+})
+
+test('sức chịu nén riêng đã lưu: để trống thì form chặn và nói máy chủ chưa xoá được, không gửi', async () => {
+  const backend = stubBackend({ 'GET /api/package-types': { body: NO_TYPES } })
+  const onUpdated = renderEdit(vi.fn(), { ...EDIT_PACKAGE, topLoadCapacityKgM2: 420 })
+  const user = userEvent.setup()
+
+  const sigma = screen.getByRole('spinbutton', { name: 'Sức chịu nén mặt trên riêng của kiện' })
+  expect(sigma).toHaveValue(420)
+  await user.clear(sigma)
+  const save = screen.getByRole('button', { name: 'Lưu thay đổi' })
+  await vi.waitFor(() => expect(save).toBeEnabled())
+  await user.click(save)
+
+  expect(await screen.findByText(/Máy chủ chưa xoá được giá trị đã lưu/)).toBeInTheDocument()
+  expect(backend.calls.some((call) => call.method === 'PUT')).toBe(false)
   expect(onUpdated).not.toHaveBeenCalled()
 })

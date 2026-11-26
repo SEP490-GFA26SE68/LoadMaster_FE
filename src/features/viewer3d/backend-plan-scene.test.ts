@@ -101,6 +101,20 @@ describe('backendPlanScene', () => {
       detailUnknown: true,
     })
   })
+
+  test('mã của luật vật lý mới cho lý do xếp chồng / thứ tự dỡ, mã còn lại giữ "vi phạm ràng buộc" kèm câu của mã', () => {
+    const unplacedOf = (violatedConstraints: string[]) => ({
+      packageId: '747', code: 'PA-001-001', reason: 'CONSTRAINT_VIOLATED', violatedConstraints, size: null, weightKg: null,
+    })
+    const scene = backendPlanScene({
+      tripCode: 'TRIP-1', vehicle: VEHICLE, stops: STOPS,
+      plan: plan({ unplaced: [
+        unplacedOf(['STACK_PRESSURE_EXCEEDED']), unplacedOf(['LIFO_BLOCKED']), unplacedOf(['FLOOR_LOAD_EXCEEDED', 'MUST_LOAD_UNPLACED']),
+      ] }),
+    })
+    expect(scene.unplaced.map((item) => item.reasonCode)).toEqual(['STACKING_VIOLATION', 'LIFO_VIOLATION', 'CONSTRAINT_VIOLATED'])
+    expect(scene.unplaced[2]?.solverConstraints).toEqual(['FLOOR_LOAD_EXCEEDED', 'MUST_LOAD_UNPLACED'])
+  })
 })
 
 describe('backendPlacementIds', () => {

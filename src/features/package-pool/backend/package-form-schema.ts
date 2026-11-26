@@ -52,6 +52,9 @@ export const createPackageSchema = (t: TFunction) =>
       stackable: z.boolean(),
 
       maxTopLoadKg: optionalNumber.refine((value) => value === undefined || value >= 0),
+      topLoadCapacityKgM2: optionalNumber
+        .refine((value) => value === undefined || value >= 0, t('physicalData.errors.nonNegative'))
+        .refine(hasAtMostTwoDecimals, t('physicalData.errors.decimalScale')),
       maxLayers: optionalNumber.refine((value) => value === undefined || (Number.isInteger(value) && value >= 1)),
       minSupportRatio: optionalNumber.refine((value) => value === undefined || (value >= 0 && value <= 1)),
       priority: optionalNumber.refine((value) => value === undefined || Number.isInteger(value)),
@@ -77,6 +80,7 @@ export type PackageNumberField =
   | 'weightKg'
   | 'fragilityLevel'
   | 'maxTopLoadKg'
+  | 'topLoadCapacityKgM2'
   | 'maxLayers'
   | 'minSupportRatio'
   | 'priority'
@@ -99,6 +103,7 @@ const DEFAULT_VALUES: PackageFormValues = {
   fragilityLevel: undefined,
   stackable: false,
   maxTopLoadKg: undefined,
+  topLoadCapacityKgM2: undefined,
   maxLayers: undefined,
   minSupportRatio: undefined,
   priority: undefined,
@@ -130,6 +135,7 @@ export function packageFormDefaults(editPackage: CargoPackage | undefined): Defa
     fragilityLevel: editPackage.fragilityLevel ?? undefined,
     stackable: editPackage.stackable ?? false,
     maxTopLoadKg: editPackage.maxTopLoadKg ?? undefined,
+    topLoadCapacityKgM2: editPackage.topLoadCapacityKgM2 ?? undefined,
     maxLayers: editPackage.maxLayers ?? undefined,
     minSupportRatio: editPackage.minSupportRatio ?? undefined,
     priority: editPackage.priority ?? undefined,
@@ -165,6 +171,7 @@ export function packageInputOf(
     fragilityLevel: values.fragilityLevel,
     stackable: values.stackable,
     maxTopLoadKg: values.maxTopLoadKg,
+    topLoadCapacityKgM2: values.topLoadCapacityKgM2 ?? null,
     maxLayers: values.maxLayers,
     minSupportRatio: values.minSupportRatio,
     priority: values.priority,

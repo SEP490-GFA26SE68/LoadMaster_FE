@@ -1600,7 +1600,11 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   viên (`trips.edit`, ở cả hai nguồn) và nhân viên kho báo tìm thấy kiện
   `NOT_FOUND` bằng `POST /api/packages/{id}/found` (theo mã của kho). Chi tiết kiện có Lịch sử (`PackageHistorySection`): nhật ký của máy chủ
   về kiện `GET /api/packages/{id}/history` (đối tượng là kiện hoặc sự kiện mang mã kiện, mới nhất trước, 100 dòng), câu dịch như Nhật ký máy
-  chủ (`serverAuditRow`); máy chủ không ghi lúc tạo kiện.
+  chủ (`serverAuditRow`); máy chủ không ghi lúc tạo kiện. **Sức chịu nén mặt trên σ** (`topLoadCapacityKgM2`, kg/m², tuỳ chọn): ô của
+  form loại kiện (`TopLoadCapacityField`) và ô ghi đè của form kiện; để trống là chưa có số liệu — app không tự điền, máy chủ cảnh báo lúc chạy
+  tối ưu (dưới). Form loại kiện có phần mở rộng "Ước tính cho thùng carton" (công thức McKee, (`McKeeEstimator`, hàm thuần `top-load-capacity.ts`: ECT,
+  độ dày tấm, hệ số an toàn k → σ, kèm công thức và giới hạn của nó); "Dùng giá trị này" (nút phụ) mới chép kết quả vào ô. Máy chủ bỏ qua `null`
+  khi sửa, nên xoá giá trị đã lưu bị chặn ngay ở form kèm lý do (`physicalData.errors.cannotClear`).
 - **Tài xế** (`driver`; `driver-backend-api.ts`, DTO ở `driver-dto.ts`): mã tài xế đọc một lần ở `GET /api/users/me`, không gọi endpoint tài xế
   nào thiếu `driverId`. "Chuyến của tôi" là `GET /api/driver/trips` — nhóm Đang vận chuyển, Xếp xong — chờ xuất phát (`LOADING` +
   `loadingCompleted`), Kho đang soạn / xếp (`LOADING` chưa xong) và Đã giao gần đây (`DELIVERED`, 5 chuyến theo `completedAt` — giờ hoàn tất điểm
@@ -1693,6 +1697,14 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   ghim đọc từ phương án đó) và gửi `POST …/optimize-loading` với `{ keepPinsFromPlanId }` — một lần chạy, trừ credit một lần, ba phương án A · B · C
   giữ đúng chỗ các kiện ghim; máy chủ trả `pinnedCount` (hộp chạy ghi "Giữ N kiện đã ghim"), bộ ghim không đứng vững là 400
   `PINNED_SET_INVALID` trước khi chạy, không trừ credit. Không dùng `POST /api/load-plans/{id}/rerun` (một phương án, chạy đồng bộ).
+  **Cảnh báo dữ liệu** của lần chạy: job trả `dataWarnings` (`{ code, packageIds }` — `TOP_LOAD_CAPACITY_MISSING` kiện chưa có σ,
+  `PACKAGE_TYPE_MISSING` kiện chưa gắn loại kiện nên không xoay); `data-warnings.ts` chỉ giữ hai mã có câu, mã lạ bị bỏ, không hiện mã
+  thô. `DataWarningsBanner` (cảnh báo, không chặn) ở hộp chạy của Thiết lập tối ưu (chỉ số kiện) và đầu So sánh `?lan-chay=` (đọc job;
+  mã số kiện đổi sang mã in trên nhãn từ chỗ xếp và kiện chưa xếp của ba phương án — `packageCodeIndex` —, tối đa năm mã rồi "và n kiện
+  khác"; job đọc lỗi thì không có banner); lối sửa theo quyền người xem: Kho kiện (`packages.view`), Loại kiện (`packages.manage`). Mã ràng
+  buộc của dịch vụ tối ưu (`unplaced.violatedConstraints`) dịch qua `solverConstraintMessage` (`SOLVER_CONSTRAINT_CODES`, nhánh
+  `serverPlans.constraints`), gồm mã của luật vật lý mới (`STACK_PRESSURE_EXCEEDED`, `FLOOR_LOAD_EXCEEDED`, `LIFO_BLOCKED`,
+  `MUST_LOAD_UNPLACED`…) và mã cũ còn trong phương án đã lưu; `backend-plan-scene.ts` đưa mã xếp chồng / thứ tự dỡ về lý do chưa xếp tương ứng.
   `TRIPS_CAPABILITIES` vẫn bỏ phương án trên danh sách, kiện, tên tuyến; lệnh ghi khác từ chối `NOT_SUPPORTED`. **Báo cáo chuyến**
   (`ServerTripReportPage`, `server-trip-report-api.ts`): `GET /api/trips/{id}/report` (điều phối viên, quản lý công ty) cho chuyến đã giao hoặc
   huỷ lúc đang vận chuyển (`cancelledFromStatus` của Chi tiết chuyến; khác là `TRIP_REPORT_NOT_AVAILABLE`), cùng bố cục với bản kho mẫu,
@@ -1807,7 +1819,9 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   khiển). Nối backend thì route dựng thẳng màn của `fleet/backend/`, `vehicle-types/backend/` (máy chủ chưa có khoảng hở nên form máy chủ
   không có ô đó); `fleet/vehicles-api.ts`, `vehicle-types/vehicle-types-api.ts` chỉ còn là lớp kho mẫu, không nhánh backend. Tìm nhanh
   đọc xe máy chủ qua `fetchVehicleRefs`. Trục trước / sau chỉ có khi cấu hình trả đủ vị trí và tải rỗng; loại chưa khai cửa thì cửa là mặt
-  cắt lòng thùng (`doorUnknown`).
+  cắt lòng thùng (`doorUnknown`). Form loại xe máy chủ có hai ô tuỳ chọn (`VehiclePhysicalLimitsFields`): lệch trọng tâm ngang tối đa
+  (`maxCogOffsetRatioY`, nhập %, trong (0, 50]) và tải trọng sàn (`floorLoadCapacityKgM2`, kg/m²); để trống là chưa khai, không tự điền; máy
+  chủ bỏ qua `null` khi sửa nên xoá giá trị đã lưu bị chặn kèm lý do (`clearedPhysicalLimits`).
 
 ### Lớp dữ liệu
 

@@ -41,6 +41,9 @@ type VehicleTypeApi = {
   emptyFrontAxleLoadKg: number | null
   emptyRearAxleLoadKg: number | null
   maxCogOffsetRatio: number
+  /** BigDecimal, tuỳ chọn; máy chủ cũ không trả. */
+  maxCogOffsetRatioY?: number | string | null
+  floorLoadCapacityKgM2?: number | string | null
   hazardousCapable: boolean
   obstacles: VehicleTypeObstacleApi[]
   vehicleCount: number
@@ -83,6 +86,10 @@ export type VehicleType = {
   emptyRearAxleLoadKg: number | null
 
   maxCogOffsetRatio: number
+  /** Lệch trọng tâm ngang tối đa (tỷ lệ chiều rộng); `null` là dùng `maxCogOffsetRatio`. */
+  maxCogOffsetRatioY: number | null
+  /** Tải trọng sàn, kg/m²; `null` là không kiểm tải sàn. */
+  floorLoadCapacityKgM2: number | null
 
   hazardousCapable: boolean
   obstacles: VehicleTypeObstacle[]
@@ -100,6 +107,13 @@ export type VehicleTypeObstacle = {
   width: number
   height: number
   loadBearing: boolean
+}
+
+/** BigDecimal của máy chủ có thể là số hoặc chuỗi; vắng hay không đọc được là `null`. */
+function decimalOrNull(value: number | string | null | undefined): number | null {
+  if (value === null || value === undefined || value === '') return null
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : null
 }
 
 function mapVehicleType(
@@ -129,6 +143,8 @@ function mapVehicleType(
 
     maxCogOffsetRatio:
       item.maxCogOffsetRatio,
+    maxCogOffsetRatioY: decimalOrNull(item.maxCogOffsetRatioY),
+    floorLoadCapacityKgM2: decimalOrNull(item.floorLoadCapacityKgM2),
 
     hazardousCapable:
       item.hazardousCapable,
@@ -189,6 +205,8 @@ export type VehicleTypeInput = {
   emptyRearAxleLoadKg?: number | null
 
   maxCogOffsetRatio: number
+  maxCogOffsetRatioY?: number | null
+  floorLoadCapacityKgM2?: number | null
 
   hazardousCapable: boolean
   obstacles: VehicleTypeObstacleInput[]
@@ -223,6 +241,9 @@ function toCreateVehicleTypeRequest(
 
     maxCogOffsetRatio:
       input.maxCogOffsetRatio,
+    // Máy chủ bỏ qua null khi sửa: null chỉ có nghĩa "không đổi" (form chặn việc xoá giá trị đã lưu).
+    maxCogOffsetRatioY: input.maxCogOffsetRatioY ?? null,
+    floorLoadCapacityKgM2: input.floorLoadCapacityKgM2 ?? null,
 
     hazardousCapable:
       input.hazardousCapable,

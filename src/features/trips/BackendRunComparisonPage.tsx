@@ -6,9 +6,11 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Spinner } from '@/components/ui/Spinner'
+import { packageCodeIndex, type DataWarning } from '@/features/optimization/data-warnings'
+import { DataWarningsBanner } from '@/features/optimization/DataWarningsBanner'
 import type { LoadPlan } from '@/features/optimization/load-plans-backend-api'
 import { planAlgorithmLabel, runAlgorithmLabel } from '@/features/optimization/server-algorithms'
-import { useJobPlansQuery, useTripLoadPlansQuery } from '@/features/optimization/useLoadPlansQuery'
+import { useJobPlansQuery, useOptimizationJobQuery, useTripLoadPlansQuery } from '@/features/optimization/useLoadPlansQuery'
 import { dataErrorMessage, useFormat, useT } from '@/lib/i18n'
 import { useBackendTripIdQuery } from './useBackendTripQuery'
 
@@ -38,7 +40,8 @@ export function bestPlanIds(plans: readonly LoadPlan[], key: BestKey): ReadonlyS
 /**
  * So sánh phương án khi nhóm `trips` nối backend: các phương án của một lần chạy (`?lan-chay=<mã job>`, không có thì lần chạy mới nhất của
  * chuyến), mỗi phương án một thẻ theo thứ tự A · B · C với đúng chỉ số máy chủ trả. Không có nút chính: mỗi thẻ mở Planner, duyệt ở đó.
- * Kết quả của máy chủ không mang MOCK RESULT.
+ * Kết quả của máy chủ không mang MOCK RESULT. Cảnh báo dữ liệu của lần chạy (đọc trạng thái job; đọc lỗi thì bỏ qua) nằm trên các thẻ, mã
+ * số kiện đổi sang mã kiện từ chính các phương án.
  */
 export function BackendRunComparisonPage() {
   const { tripId: tripParam = '' } = useParams()
@@ -49,6 +52,7 @@ export function BackendRunComparisonPage() {
   const latest = useTripLoadPlansQuery(runId === null ? (resolved.data ?? '') : '')
   const jobId = runId ?? latest.data?.plans.findLast((plan) => plan.jobId !== null)?.jobId ?? ''
   const plans = useJobPlansQuery(tripParam, jobId)
+  const job = useOptimizationJobQuery(jobId === '' ? null : jobId)
   const loading = (runId === null && (resolved.isPending || latest.isPending)) || (jobId !== '' && plans.isPending)
   const error = resolved.error ?? latest.error ?? plans.error
   return (
@@ -62,7 +66,7 @@ export function BackendRunComparisonPage() {
         {loading ? <div role="status" className="grid place-items-center py-12"><Spinner /></div>
           : error ? <p role="alert" className="text-body text-danger">{dataErrorMessage(error, t)}</p>
             : (plans.data ?? []).length === 0 ? <p className="text-body text-ink-2">{t('serverPlans.compare.empty')}</p>
-              : <RunPlans plans={plans.data ?? []} tripParam={tripParam} />}
+              : <RunPlans plans={plans.data ?? []} tripParam={tripParam} warnings={job.data?.dataWarnings ?? []} />}
       </div>
     </div>
   )
@@ -72,12 +76,17 @@ export function BackendRunComparisonPage() {
  * Thẻ lần chạy (thuật toán của gói — hạng máy chủ ghi cho job) rồi ba thẻ phương án; lần chạy giữ ghim (mọi phương án cùng giữ các kiện
  * đó) có một dòng nói số kiện giữ nguyên chỗ.
  */
-function RunPlans({ plans, tripParam }: { plans: readonly LoadPlan[]; tripParam: string }) {
+function RunPlans({ plans, tripParam, warnings }: {
+  plans: readonly LoadPlan[]
+  tripParam: string
+  warnings: readonly DataWarning[]
+}) {
   const t = useT()
   const pinned = plans[0]?.placements.filter((placement) => placement.pinned).length ?? 0
   const runAlgorithm = plans.find((plan) => plan.runAlgorithm !== null)?.runAlgorithm ?? null
   return (
     <div className="flex flex-col gap-4">
+      <DataWarningsBanner warnings={warnings} codes={packageCodeIndex(plans)} />
       {runAlgorithm === null ? null : (
         <Card data-run-card className="px-5 py-1">
           <dl><Metric label={t('serverPlans.algorithms.runLabel')} last>{runAlgorithmLabel(runAlgorithm, t)}</Metric></dl>

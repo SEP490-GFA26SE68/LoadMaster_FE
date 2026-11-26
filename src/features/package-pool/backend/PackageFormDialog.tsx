@@ -21,6 +21,7 @@ import {
   type PackageFormValues,
   type PackageNumberField,
 } from './package-form-schema'
+import { CANNOT_CLEAR, clearsSavedValue } from './package-type-form'
 import type { CargoPackage } from './packages-api'
 import { PackageNumberInput, PackageRuleSections } from './PackageRuleSections'
 import { useCreateCargoPackagesMutation, useUpdateCargoPackageMutation, usePackageTypesQuery } from './usePackagePoolQuery'
@@ -102,6 +103,11 @@ export function PackageFormDialog({ onClose, onDone, editPackage, onUpdated }: P
     }
     if (hasPackageType && !selectedType) {
       form.setError('packageTypeId', { type: 'manual', message: t('sourcing.server.form.packageTypeMissing') })
+      return
+    }
+
+    if (clearsSavedValue(editPackage?.topLoadCapacityKgM2, values.topLoadCapacityKgM2)) {
+      form.setError('topLoadCapacityKgM2', { type: 'manual', message: t(CANNOT_CLEAR) }, { shouldFocus: true })
       return
     }
 

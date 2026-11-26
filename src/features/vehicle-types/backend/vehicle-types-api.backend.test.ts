@@ -45,3 +45,17 @@ test('deleting a type with vehicles keeps the business code', async () => {
   await expect(deleteVehicleType('7')).rejects.toMatchObject({ code: 'VEHICLE_TYPE_IN_USE' })
   await expect(deleteVehicleType('8')).resolves.toBeUndefined()
 })
+
+test('lệch trọng tâm ngang và tải trọng sàn: gửi khi có, null khi trống; đọc BigDecimal dạng chuỗi, máy chủ cũ không trả là null', async () => {
+  const { calls } = stubBackend({
+    'POST /api/vehicle-types': { body: envelope({ ...SAVED, maxCogOffsetRatioY: '0.1250', floorLoadCapacityKgM2: '1500.00' }) },
+    'PUT /api/vehicle-types/7': { body: envelope(SAVED) },
+  })
+  const created = await saveVehicleType({ ...INPUT, maxCogOffsetRatioY: 0.125, floorLoadCapacityKgM2: 1500 })
+  const updated = await saveVehicleType(INPUT, '7')
+
+  expect(calls[0]?.body).toMatchObject({ maxCogOffsetRatio: 0.15, maxCogOffsetRatioY: 0.125, floorLoadCapacityKgM2: 1500 })
+  expect(calls[1]?.body).toMatchObject({ maxCogOffsetRatioY: null, floorLoadCapacityKgM2: null })
+  expect(created).toMatchObject({ maxCogOffsetRatioY: 0.125, floorLoadCapacityKgM2: 1500 })
+  expect(updated).toMatchObject({ maxCogOffsetRatioY: null, floorLoadCapacityKgM2: null })
+})

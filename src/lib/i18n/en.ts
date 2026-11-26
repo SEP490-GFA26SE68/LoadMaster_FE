@@ -76,6 +76,7 @@ import { serverAudit } from './en/serverAudit'
 import { serverWarehouse } from './en/serverWarehouse'
 import { trialRegistration } from './en/trialRegistration'
 import { guestRegistration } from './en/guestRegistration'
+import { physicalData } from './en/physicalData'
 import { assistant } from './en/assistant'
 
 /** Bản tiếng Anh: mỗi nhánh một file trong `en/`, kiểm thiếu/thừa key theo nhánh nguồn `vi/`. */
@@ -156,6 +157,7 @@ export const en = {
   trialRegistration,
   guestRegistration,
   transfers,
+  physicalData,
 
   assistant,
 } satisfies Dictionary<typeof vi>
