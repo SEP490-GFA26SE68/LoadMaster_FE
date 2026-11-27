@@ -1397,7 +1397,7 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
   phương án có đúng một kiện mang mã đó), góc nhìn, bước xếp (đưa mô phỏng về Xếp hàng), chế độ màu; `openTab` mở tab Danh sách của hộp
   thông tin và cuộn tới khối chưa xếp / đã ghim / đã xếp (`leftTab` → `section` của `PackageListPanel`).
 - **Kiện ghim ở Planner** (FE-BL-02). Phương án có kiện ghim thì hàng dưới phải khung 3D có `PinnedRerun` — nhãn "N kiện đã ghim" (biểu tượng
-  ghim + chữ) và nút phụ "Chạy lại giữ ghim", bên trái "Đổi xe" / "Chi tiết" (từ 768 px, dưới 1.280 px chỉ biểu tượng; chọn chỗ này vì thanh trên không còn chỗ và
+  ghim + chữ) và nút phụ "Chạy lại giữ ghim", bên trái thẻ xe / "Chi tiết" (từ 768 px, dưới 1.280 px chỉ biểu tượng; chọn chỗ này vì thanh trên không còn chỗ và
   cột nổi bên phải che mọi thứ đặt chồng lên trên nó). Cần quyền `optimization.run` và chuyến Đã lập kế hoạch.
   Ghim mới chưa Duyệt thì nút mờ kèm câu "Duyệt bản chỉnh để lưu ghim trước khi chạy lại" ngay cạnh: lần chạy lại đọc ghim từ phương án đã lưu. Bấm nút mở
   `/chuyen/:id/toi-uu?giu-ghim=<mã revision>`. Kiện ghim nhận biết bằng biểu tượng ghim **và** chữ "Đã ghim": chip ở dòng của danh sách kiện đã xếp, dòng thứ

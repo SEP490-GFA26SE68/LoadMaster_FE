@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 import { GLASS_PANEL, GlassChip, MUTED } from '../panels/scene-ui'
 
 /**
- * Kiện đã ghim ở hàng dưới phải khung 3D của Planner (FE-BL-02), bên trái "Đổi xe" / "Chi tiết": nhãn "N kiện đã ghim" (biểu tượng ghim
+ * Kiện đã ghim ở hàng dưới phải khung 3D của Planner (FE-BL-02), bên trái thẻ xe / "Chi tiết": nhãn "N kiện đã ghim" (biểu tượng ghim
  * kèm chữ) và nút phụ "Chạy lại giữ ghim" — tối ưu lại với các kiện đó giữ nguyên chỗ. Hàng này nằm dưới cột nổi bên phải của
  * Planner (đặt chồng lên trên thì cột che mất nút) và thanh trên không thêm gì (đã đo ở 1.366 px). Không có kiện ghim thì không vẽ gì.
  * Ghim chưa lưu (draft chưa Duyệt) thì nút mờ kèm lý do ngay cạnh: lần chạy lại đọc ghim từ phương án đã lưu. Nơi gọi chặn vì luật khác
