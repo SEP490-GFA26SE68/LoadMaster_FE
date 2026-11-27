@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight, Pause, Play, SkipBack } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { memo, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Button } from '@/components/ui/Button'
 import { useFormat, useT } from '@/lib/i18n'
 import { stopColor } from '@/lib/stops'
@@ -31,8 +31,9 @@ const CONTROL = cn('size-14 p-0 xl:size-10 [&_svg]:size-5', GLASS_PRESSED)
  * Thanh phát lại bước xếp/dỡ trên nền tối của khung 3D (V2.3 `.tl`). Ô đều nhau, mật độ theo bề rộng thanh chứ không theo số
  * kiện (8–64 ô); ô hiện tại viền trắng có quầng. Lệch có chủ ý so với bản mẫu: ô giữ cùng chiều cao (mục 7) thay vì ô hiện tại
  * cao gấp đôi; nút Phát là nút kính bật cyan, không phải nút chính tròn — màn chỉ có một nút chính (Duyệt).
+ * Bọc `memo` (`Timeline`): chọn kiện, mở hộp thông tin không đổi props nào của thanh nên thanh không vẽ lại theo.
  */
-export function Timeline<S extends number = PlaybackSpeed>({ placements, step, totalSteps, playing, speed, onStepChange, onStepForward,
+function TimelineBar<S extends number = PlaybackSpeed>({ placements, step, totalSteps, playing, speed, onStepChange, onStepForward,
   onStepBackward, onGoToStart, onTogglePlaying, onSpeedChange, kind = 'loading', orderedOverride, suggested = false, solid = false,
   speeds, speedLabel, speedText, extra }: TimelineProps<S>) {
   const levels: readonly number[] = speeds ?? PLAYBACK_SPEEDS
@@ -48,6 +49,16 @@ export function Timeline<S extends number = PlaybackSpeed>({ placements, step, t
   }, [])
   const ordered = useMemo(() => orderedOverride ?? [...placements].sort((a, b) => a.step - b.step), [placements, orderedOverride])
   const bins = useMemo(() => timelineBins(ordered, budget), [ordered, budget])
+  // Phần không đổi theo bước của từng ô (màu điểm giao chiếm nhiều nhất, ranh giới điểm giao, chú thích): tính một lần cho mỗi bộ ô,
+  // không sắp xếp và gọi `t()` cho từng ô mỗi bước phát lại
+  const cells = useMemo(() => bins.map((bin, i) => ({
+    start: bin.start,
+    end: bin.end,
+    color: stopColor([...bin.stops].sort((a, b) => b.ratio - a.ratio)[0]!.stop),
+    boundary: i > 0 && bins[i - 1]!.stops.at(-1)?.stop !== bin.stops[0]?.stop,
+    title: bin.stops.map((s) => t('common.stop', { number: s.stop })).join(' / '),
+    mixed: bin.stops.length > 1,
+  })), [bins, t])
   const progress = kind === 'unloading' ? step : ordered.filter((p) => p.step <= step).length
   const currentIndex = kind === 'unloading' ? progress : progress - 1
   const minimum = kind === 'loading' && totalSteps ? 1 : 0
@@ -72,15 +83,13 @@ export function Timeline<S extends number = PlaybackSpeed>({ placements, step, t
         <span>{current ? <>{t('viewer.timeline.current', { stop: current.stop })} · <span className="font-mono text-cyan-200">{current.id}</span></> : t('viewer.timeline.done')}</span>
         <span>{next ? t('viewer.timeline.next', { stop: next.stop }) : ''}</span>
       </div>
-      <div ref={rail} aria-hidden className="relative flex h-6 items-center gap-0.5" data-timeline-bins={bins.length}>
-        {bins.map((bin, i) => {
-          const dominant = [...bin.stops].sort((a, b) => b.ratio - a.ratio)[0]!
-          const active = currentIndex >= bin.start && currentIndex < bin.end
-          const boundary = i > 0 && bins[i - 1]!.stops.at(-1)?.stop !== bin.stops[0]?.stop
-          return <span key={bin.start} data-sequence-cell data-current={active} title={bin.stops.map((s) => t('common.stop', { number: s.stop })).join(' / ')}
+      <div ref={rail} aria-hidden className="relative flex h-6 items-center gap-0.5" data-timeline-bins={cells.length}>
+        {cells.map((cell) => {
+          const active = currentIndex >= cell.start && currentIndex < cell.end
+          return <span key={cell.start} data-sequence-cell data-current={active} title={cell.title}
             className={cn('relative h-5 min-w-0 flex-1 rounded-[3px]', active && 'ring-2 ring-sky-text shadow-[0_0_14px_rgba(255,255,255,.6)]')}
-            style={{ background: stopColor(dominant.stop), opacity: active || bin.end <= progress ? 0.95 : 0.38, marginLeft: boundary ? 3 : 0 }}>
-            {bin.stops.length > 1 ? <span className="absolute inset-x-0.5 bottom-0.5 h-0.5 rounded-xs bg-canvas-1/70" /> : null}
+            style={{ background: cell.color, opacity: active || cell.end <= progress ? 0.95 : 0.38, marginLeft: cell.boundary ? 3 : 0 }}>
+            {cell.mixed ? <span className="absolute inset-x-0.5 bottom-0.5 h-0.5 rounded-xs bg-canvas-1/70" /> : null}
           </span>
         })}
       </div>
@@ -100,3 +109,5 @@ export function Timeline<S extends number = PlaybackSpeed>({ placements, step, t
     </label>
   </div>
 }
+
+export const Timeline = memo(TimelineBar) as typeof TimelineBar

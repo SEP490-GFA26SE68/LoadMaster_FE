@@ -151,11 +151,11 @@ export function CargoInstances({
           <animated.meshBasicMaterial side={BackSide} toneMapped={false} transparent opacity={warningSpring.opacity} />
         </instancedMesh>
       ) : null}
-      {visible(selected) && selected?.id !== current?.id ? <CargoFeedback key={`selected-${selected!.id}`} placement={selected!} role="selected" reducedMotion={reducedMotion} xray={xraySelection} /> : null}
-      {visible(current) ? <CargoFeedback key={`current-${current!.id}`} placement={current!} role="current" reducedMotion={reducedMotion}
+      {visible(selected) && selected?.id !== current?.id ? <CargoFeedback key="feedback-selected" placement={selected!} role="selected" reducedMotion={reducedMotion} xray={xraySelection} /> : null}
+      {visible(current) ? <CargoFeedback key="feedback-current" placement={current!} role="current" reducedMotion={reducedMotion}
         xray={xraySelection || Boolean(semantics?.blockers.length && semantics.inspectionId === current!.id)} /> : null}
-      {visible(next) && next?.id !== selected?.id ? <CargoFeedback key={`next-${next!.id}`} placement={next!} role="next" reducedMotion={reducedMotion} /> : null}
-      {visible(hover) && hover?.id !== selectedId && hover?.id !== current?.id && hover?.id !== next?.id ? <CargoFeedback key={`hover-${hover!.id}`} placement={hover!} role="hover" reducedMotion /> : null}
+      {visible(next) && next?.id !== selected?.id ? <CargoFeedback key="feedback-next" placement={next!} role="next" reducedMotion={reducedMotion} /> : null}
+      {visible(hover) && hover?.id !== selectedId && hover?.id !== current?.id && hover?.id !== next?.id ? <CargoFeedback key="feedback-hover" placement={hover!} role="hover" reducedMotion /> : null}
     </group>
   )
 }

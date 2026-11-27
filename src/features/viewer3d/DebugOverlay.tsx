@@ -35,6 +35,7 @@ export function DebugOverlay({ store, className }: { store: PerfStore; className
       data-frame-time-ms={sample.frameTimeMs ?? ''}
       data-draw-calls={sample.drawCalls}
       data-triangles={sample.triangles}
+      data-shadow-passes={sample.shadowPasses}
       data-placement-count={sample.placementCount}
       data-dpr={sample.dpr}
       data-quality-tier={sample.qualityTier}

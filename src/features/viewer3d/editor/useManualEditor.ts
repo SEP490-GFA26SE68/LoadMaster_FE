@@ -29,11 +29,13 @@ export function useManualEditor(state: LoadPlanViewerState) {
   // Chỉ chế độ Chỉnh sửa đọc kết quả kiểm (EditorPanel): chế độ Xem không kiểm, nên không dựng constraint engine
   const validation = useMemo(() => mode === 'edit' && selected ? inspect(selected) : null, [mode, selected, inspect])
 
-  const setMode = (next: 'view' | 'edit') => {
-    state.stopPlaying()
+  // Ba hàm dưới giữ tham chiếu qua bước phát lại và lần chọn kiện không đổi: thanh trên và HUD (memo) không vẽ lại theo chúng
+  const { stopPlaying } = state
+  const setMode = useCallback((next: 'view' | 'edit') => {
+    stopPlaying()
     preview.publish(null, true)
     setModeState(next)
-  }
+  }, [stopPlaying, preview])
   const commitMove = (id: string, position: PositionCm) => {
     const p = placements.find((item) => item.id === id)
     if (!p || p.pinned || mode !== 'edit') return false
@@ -67,9 +69,10 @@ export function useManualEditor(state: LoadPlanViewerState) {
     if (!selected || preview.getLatest()?.dragging) return
     commitMove(selected.id, snapPosition(selected, selected.position, placements, sceneModel.vehicle).position)
   }
-  const focusSelected = () => {
+  const focusSelected = useCallback(() => {
     if (selected && !preview.getLatest()?.dragging) setFocus((current) => ({ placement: selected, request: (current?.request ?? 0) + 1 }))
-  }
+  }, [selected, preview])
+  const resetFocus = useCallback(() => setFocus(null), [])
   const focusPlacement = useCallback((placement: ScenePlacement) => {
     if (!preview.getLatest()?.dragging) setFocus((current) => ({ placement, request: (current?.request ?? 0) + 1 }))
   }, [preview])
@@ -123,7 +126,7 @@ export function useManualEditor(state: LoadPlanViewerState) {
 
   return {
     mode, setMode, plane, setPlane, nudgeCm, setNudgeCm, snapping, setSnapping, preview,
-    focus, resetFocus: () => setFocus(null), focusSelected, focusPlacement, followPlacement, inspect, commitMove, rotate, nudge, snap, undo, redo, resetPlacement, resetDraft,
+    focus, resetFocus, focusSelected, focusPlacement, followPlacement, inspect, commitMove, rotate, nudge, snap, undo, redo, resetPlacement, resetDraft,
     togglePin, validation, manual,
   }
 }

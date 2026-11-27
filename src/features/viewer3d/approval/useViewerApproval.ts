@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { blockerSummary, deadlineReview } from '@/domain/constraints'
@@ -21,7 +21,7 @@ export function useViewerApproval(model: ViewerSceneModel, state: LoadPlanViewer
   const t = useT()
   const format = useFormat()
   const navigate = useNavigate()
-  const mutation = useApproveRevisionMutation(model.tripId)
+  const { mutate, isPending } = useApproveRevisionMutation(model.tripId)
   const approval = useMemo(() => planApproval(model, state.placements, state.draft), [model, state.placements, state.draft])
   const deadlines = useMemo(() => deadlineReview(model.stops), [model.stops])
 
@@ -37,18 +37,20 @@ export function useViewerApproval(model: ViewerSceneModel, state: LoadPlanViewer
     return reasons.length > 0 ? t('viewer.plan.blockedReason', { reasons: format.list(reasons) }) : null
   }, [model.revision, approval, t, format])
 
-  function confirm(onDone: () => void, { force = false }: { force?: boolean } = {}) {
-    const revision = model.revision
+  const { revision, tripId } = model
+  const confirm = useCallback((onDone: () => void, { force = false }: { force?: boolean } = {}) => {
     if (!revision || !approval?.blockers.canApprove) return
-    mutation.mutate({ revisionId: revision.id, patches: approval.patches, pinned: approval.pinned, force }, {
+    mutate({ revisionId: revision.id, patches: approval.patches, pinned: approval.pinned, force }, {
       onSuccess: (approved) => {
         onDone()
         toast.success(t('viewer.plan.dialog.done'))
-        void navigate(`/chuyen/${model.tripId}/phuong-an?revision=${approved.id}`, { replace: true })
+        void navigate(`/chuyen/${tripId}/phuong-an?revision=${approved.id}`, { replace: true })
       },
       onError: (error) => toast.error(t('viewer.plan.dialog.failed'), { description: dataErrorMessage(error, t) }),
     })
-  }
+  }, [revision, tripId, approval, mutate, t, navigate])
 
-  return { approval, deadlines, blockedReason, confirm, pending: mutation.isPending, canSubmit: Boolean(model.revision) }
+  // Một object giữ nguyên qua bước phát lại: thanh trên và hộp Duyệt (memo) chỉ vẽ lại khi kết quả duyệt đổi
+  return useMemo(() => ({ approval, deadlines, blockedReason, confirm, pending: isPending, canSubmit: Boolean(revision) }),
+    [approval, deadlines, blockedReason, confirm, isPending, revision])
 }

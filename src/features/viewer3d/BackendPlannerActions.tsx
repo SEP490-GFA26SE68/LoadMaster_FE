@@ -1,5 +1,5 @@
 import { Check, CircleAlert, Columns2 } from 'lucide-react'
-import { useId, useState } from 'react'
+import { memo, useId, useState } from 'react'
 import { Link } from 'react-router'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
@@ -23,7 +23,7 @@ export type BackendEditsAction = {
  * từ chối `PLAN_STALE`) — hai trường hợp sau nút mờ kèm lý do ở tooltip và `aria-describedby` —, `null` không có nút (người xem không
  * duyệt được, hoặc chuyến đã sang pha vận hành — thanh khoá nói lý do). Có `edits` thì nút chính là "Duyệt bản chỉnh".
  */
-export function BackendPlannerActions({ tripCode, plan, approve, edits }: {
+export const BackendPlannerActions = memo(function BackendPlannerActions({ tripCode, plan, approve, edits }: {
   tripCode: string
   plan: LoadPlan
   approve: 'ready' | 'draft' | 'stale' | null
@@ -100,4 +100,4 @@ export function BackendPlannerActions({ tripCode, plan, approve, edits }: {
         confirmLabel={label} pending={edits ? edits.pending : mutation.isPending} onConfirm={handleConfirm} />
     </div>
   )
-}
+})

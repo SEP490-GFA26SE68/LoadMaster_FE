@@ -1,5 +1,5 @@
 import { ArrowRight, Clock, SlidersHorizontal, TriangleAlert } from 'lucide-react'
-import { useMemo } from 'react'
+import { memo, useMemo } from 'react'
 import { staleReason, type StaleEdit } from '@/features/trips/trip-detail'
 import { useTripActivityQuery } from '@/features/trips/useTripsQuery'
 import { useFormat, useT, type TFunction } from '@/lib/i18n'
@@ -18,7 +18,7 @@ import type { PlanSource } from './viewer-api'
  * chưa duyệt trong khi kho đọc bản đã duyệt (`Planner3DBanChuaDuyet`). Mọi số lấy từ kho qua nhật ký chuyến; fixture benchmark
  * (không có `source`) chỉ có thanh khoá.
  */
-export function PlannerNotices({ model, source, lock, rerunTo }: {
+export const PlannerNotices = memo(function PlannerNotices({ model, source, lock, rerunTo }: {
   model: ViewerSceneModel
   source?: PlanSource
   lock: PlannerLock | null
@@ -56,7 +56,7 @@ export function PlannerNotices({ model, source, lock, rerunTo }: {
       ) : null}
     </div>
   )
-}
+})
 
 /** Lần sửa làm lỗi thời chỉ kể được cho bản duyệt mới nhất (nhật ký tính từ lúc duyệt bản đó); bản khác chỉ có số kiện. */
 function staleEditOf(trip: Trip, activity: NonNullable<ReturnType<typeof useTripActivityQuery>['data']>, viewedId: string | null): StaleEdit | null {

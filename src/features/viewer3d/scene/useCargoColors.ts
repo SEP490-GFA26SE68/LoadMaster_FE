@@ -36,18 +36,18 @@ export function useCargoColors(
       const old = previous.slots[index]
       const tone = semantics?.appearanceById.get(id)?.tone
       const marked = markZones && p.outOfZone
-      if (reset || old?.id !== id || old.stop !== p.stop || old.packageId !== p.packageId || old.weightKg !== p.weightKg || old.tone !== tone || old.marked !== marked) {
-        const hex = placementColor(p, mode, context)
-        color.set(tone === 'current' ? readToken('--highlight') : hex)
-        if (tone === 'muted') color.multiplyScalar(0.68)
-        opaque.setColorAt(index, color)
-        dim.setColorAt(index, color.set(dimColor(hex)))
-        hull?.setColorAt(index, color.set(tone === 'blocker' ? readToken('--warning') : marked ? readToken('--bg') : outlineColor))
-        opaque.instanceColor?.addUpdateRange(index * 3, 3)
-        dim.instanceColor?.addUpdateRange(index * 3, 3)
-        hull?.instanceColor?.addUpdateRange(index * 3, 3)
-        changed = true
-      }
+      // Slot không đổi giữ nguyên object cũ: bước phát lại chỉ đổi vài slot, không cấp phát lại cả nghìn slot
+      if (!reset && old?.id === id && old.stop === p.stop && old.packageId === p.packageId && old.weightKg === p.weightKg && old.tone === tone && old.marked === marked) return old
+      const hex = placementColor(p, mode, context)
+      color.set(tone === 'current' ? readToken('--highlight') : hex)
+      if (tone === 'muted') color.multiplyScalar(0.68)
+      opaque.setColorAt(index, color)
+      dim.setColorAt(index, color.set(dimColor(hex)))
+      hull?.setColorAt(index, color.set(tone === 'blocker' ? readToken('--warning') : marked ? readToken('--bg') : outlineColor))
+      opaque.instanceColor?.addUpdateRange(index * 3, 3)
+      dim.instanceColor?.addUpdateRange(index * 3, 3)
+      hull?.instanceColor?.addUpdateRange(index * 3, 3)
+      changed = true
       return { id, stop: p.stop, packageId: p.packageId, weightKg: p.weightKg, tone, marked }
     })
     if (changed) {

@@ -4,6 +4,7 @@ import { Link } from 'react-router'
 import { Badge } from '@/components/ui/Badge'
 import type { OptimizationResult } from '@/domain/models'
 import { useFormat, useT } from '@/lib/i18n'
+import { memo } from 'react'
 
 /**
  * Thanh trên của Planner (LM-049, LM-094; V2.3 LM-107). Kính tối cao 56 px — bản mỏng dành riêng cho màn 3D (AGENTS mục 5), từ `xl`
@@ -12,7 +13,7 @@ import { useFormat, useT } from '@/lib/i18n'
  * rồi trạng thái duyệt và hành động (`children`); hẹp hơn thì điều khiển mô phỏng xuống thanh công cụ riêng. Số lấy thẳng từ
  * `result.metrics` của revision; thời gian chạy nằm ở tab Chỉ số của hộp thông tin để hàng này vừa 1.366 px.
  */
-export function ViewerHeader({ tripId, title, revisionId, metrics, placedCount, totalCount, isMockResult, manuallyEdited, candidateLabel, stale = false, lifoOff = false, controls, children }: {
+export const ViewerHeader = memo(function ViewerHeader({ tripId, title, revisionId, metrics, placedCount, totalCount, isMockResult, manuallyEdited, candidateLabel, stale = false, lifoOff = false, controls, children }: {
   tripId: string
   /** Tên tuyến của chuyến; vắng (fixture benchmark) thì tiêu đề là mã chuyến. */
   title?: string
@@ -104,7 +105,7 @@ export function ViewerHeader({ tripId, title, revisionId, metrics, placedCount, 
       </header>
     </div>
   )
-}
+})
 
 function Separator() {
   return <span aria-hidden className="hidden h-7.5 w-px flex-none bg-glass-dark-border xl:block" />

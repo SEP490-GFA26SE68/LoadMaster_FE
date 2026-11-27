@@ -52,8 +52,14 @@ function showYard(page: Page, visible: boolean): Promise<void> {
   }, { url: R3F_DEPS, visible })
 }
 
-/** Draw call của khung nghỉ: cả cảnh, và khi tạm ẩn sân kho — phần chênh là của riêng sân kho. Hiện lại thì số trở về như cũ. */
+/**
+ * Draw call của khung nghỉ: cả cảnh, và khi tạm ẩn sân kho — phần chênh là của riêng sân kho. Hiện lại thì số trở về như cũ. Tier high
+ * chỉ vẽ lại bóng khi vật đổ bóng đổi (`ShadowOnDemand`): khung cuối của chuyện có thể còn lượt bóng, nên đo trên một khung chỉ vẽ lại
+ * (sân kho không đổ bóng) — ba khung đo cùng một loại, đúng chi phí của khung nghỉ.
+ */
 async function restingDrawCalls(page: Page) {
+  await waitDemandIdle(page, 500)
+  await showYard(page, true)
   await waitDemandIdle(page, 500)
   const scene = await lastDrawCalls(page)
   await showYard(page, false)

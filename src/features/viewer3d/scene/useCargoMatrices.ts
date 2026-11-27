@@ -60,6 +60,8 @@ export function useCargoMatrices({
   const previousPositions = useRef<Map<string, { z: number }>>(new Map())
   /** Đổi phương án (layout mới) thì không coi chênh `z` giữa hai phương án là kiện rơi */
   const previousLayout = useRef(layout)
+  /** Placements của lần vẽ trước: không đổi (bước phát lại, chọn kiện) thì không kiện nào rơi và ảnh chụp vị trí vẫn đúng */
+  const previousPlacements = useRef<readonly ScenePlacement[] | null>(null)
 
   useLayoutEffect(() => {
     const opaque = meshes.opaque.current
@@ -81,7 +83,9 @@ export function useCargoMatrices({
     const newSettles = new Map<string, FallingItem>()
     if (layout !== previousLayout.current) previousPositions.current = new Map()
     previousLayout.current = layout
-    if (!reducedMotion && animationQuality !== 'none' && previousPositions.current.size > 0) {
+    const placementsChanged = placements !== previousPlacements.current
+    previousPlacements.current = placements
+    if (placementsChanged && !reducedMotion && animationQuality !== 'none' && previousPositions.current.size > 0) {
       for (const placement of placements) {
         const prev = previousPositions.current.get(placement.id)
         if (placement.id === hiddenId || !prev || placement.position.z >= prev.z - 0.5) continue
@@ -104,7 +108,7 @@ export function useCargoMatrices({
       const marked = markZones && placement.outOfZone
       const hullVisible = visibility === 'opaque' && (outlines || semantic?.tone === 'blocker' || marked)
       const before = cache.current[index]
-      const geometryDiffers = before?.placement.id !== id || !sameGeometry(before?.placement, placement)
+      const geometryDiffers = before?.placement !== placement && (before?.placement.id !== id || !sameGeometry(before?.placement, placement))
       geometryChanged ||= geometryDiffers
       if (recreated || geometryDiffers || before?.visibility !== visibility || before?.hullVisible !== hullVisible || before?.marked !== marked || interruptedId === id) {
         // Nếu item này đang trong settle animation, bắt đầu từ vị trí cao hơn
@@ -114,6 +118,8 @@ export function useCargoMatrices({
         writeCargoMatrix(dim, index, placement, visibility === 'dim', yOffset)
         if (hull) writeCargoMatrix(hull, index, placement, hullVisible, yOffset, hullPadding(placement, markZones))
       }
+      // Slot không đổi giữ nguyên object cũ: bước phát lại chỉ đổi vài slot, không cấp phát lại cả nghìn slot
+      if (before?.placement === placement && before.visibility === visibility && before.hullVisible === hullVisible && before.marked === marked) return before
       return { placement, visibility, hullVisible, marked }
     })
     if (geometryChanged) {
@@ -126,10 +132,12 @@ export function useCargoMatrices({
     }
     cache.current = nextCache
     previousMeshes.current = currentMeshes
-    // Cập nhật snapshot positions sau mỗi render
-    const nextPositions = new Map<string, { z: number }>()
-    for (const p of placements) nextPositions.set(p.id, { z: p.position.z })
-    previousPositions.current = nextPositions
+    // Ảnh chụp vị trí cho lần vẽ sau: chỉ dựng lại khi placements đổi (giữ nguyên thì ảnh chụp cũ vẫn đúng)
+    if (placementsChanged || previousPositions.current.size === 0) {
+      const nextPositions = new Map<string, { z: number }>()
+      for (const p of placements) nextPositions.set(p.id, { z: p.position.z })
+      previousPositions.current = nextPositions
+    }
 
     // Restore the interrupted box before starting another. Scrubs never leave
     // a floating instance, even when 10× playback interrupts the spring.

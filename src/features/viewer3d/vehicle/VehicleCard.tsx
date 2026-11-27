@@ -1,6 +1,6 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { Truck, X } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { memo, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { Button } from '@/components/ui/Button'
 import { VehicleName } from '@/components/VehicleName'
 import type { VehicleConfig } from '@/domain/models'
@@ -28,7 +28,7 @@ function panelPosition(trigger: HTMLElement): CSSProperties {
  * "Đổi xe" chỉ khi `onChangeVehicle` có (chuyến Đã lập kế hoạch, người xem có `trips.edit`): bấm thì bảng đóng, con trỏ về thẻ rồi
  * hộp Đổi xe mở — đóng hộp đó con trỏ lại về thẻ.
  */
-export function VehicleCard({ vehicle, onChangeVehicle }: { vehicle: VehicleConfig; onChangeVehicle?: () => void }) {
+export const VehicleCard = memo(function VehicleCard({ vehicle, onChangeVehicle }: { vehicle: VehicleConfig; onChangeVehicle?: () => void }) {
   const t = useT()
   const format = useFormat()
   const facts = useMemo(() => vehicleFacts(vehicle), [vehicle])
@@ -102,4 +102,4 @@ export function VehicleCard({ vehicle, onChangeVehicle }: { vehicle: VehicleConf
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>
   )
-}
+})

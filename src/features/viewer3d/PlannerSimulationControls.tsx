@@ -3,6 +3,7 @@ import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { CameraSelect, PlannerSelect } from './panels/PlannerSelect'
 import type { SimulationControlsProps } from './panels/WorkspaceToolbar'
+import { memo } from 'react'
 
 /** Radix Select không nhận `value=""`: dòng "Mọi điểm giao" dùng giá trị riêng rồi đổi về `null` (như `SimulationControls`). */
 const ALL_STOPS = 'all'
@@ -12,10 +13,10 @@ const ALL_STOPS = 'all'
  * điểm giao đang tập trung và góc nhìn. Cùng hành vi với `SimulationControls` của thanh công cụ màn hẹp — chỉ khác lớp kính tối;
  * tên truy cập giữ nguyên để test và trình đọc màn hình không phân biệt hai chỗ.
  */
-export function PlannerSimulationControls({ operations, stops, preset, onPreset }: SimulationControlsProps) {
+export const PlannerSimulationControls = memo(function PlannerSimulationControls({ kind: active, onKind, focusStop, onFocusStop, stops, preset, onPreset }: SimulationControlsProps) {
   const t = useT()
   const stopOptions = [
-    ...(operations.kind === 'loading' ? [{ value: ALL_STOPS, label: t('viewer.toolbar.allStops') }] : []),
+    ...(active === 'loading' ? [{ value: ALL_STOPS, label: t('viewer.toolbar.allStops') }] : []),
     ...stops.map((stop) => ({ value: String(stop.number), label: t('common.stopWithName', { number: stop.number, name: stop.name }) })),
   ]
   return (
@@ -26,8 +27,8 @@ export function PlannerSimulationControls({ operations, stops, preset, onPreset 
           <button
             key={kind}
             type="button"
-            aria-pressed={operations.kind === kind}
-            onClick={() => operations.setKind(kind)}
+            aria-pressed={active === kind}
+            onClick={() => onKind(kind)}
             className={cn(
               'h-8.5 rounded-sm px-2.5 text-small 2xl:px-3 font-semibold whitespace-nowrap text-sky-text-2 transition-colors duration-(--dur-fast) ease-standard',
               'hover:text-sky-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300',
@@ -44,11 +45,11 @@ export function PlannerSimulationControls({ operations, stops, preset, onPreset 
         tone="glass"
         label={t('viewer.toolbar.focusStop')}
         className="w-36 min-w-28 xl:h-9.5"
-        value={operations.focusStop === null ? ALL_STOPS : String(operations.focusStop)}
+        value={focusStop === null ? ALL_STOPS : String(focusStop)}
         options={stopOptions}
-        onValueChange={(value) => operations.setFocusStop(value === ALL_STOPS ? null : Number(value))}
+        onValueChange={(value) => onFocusStop(value === ALL_STOPS ? null : Number(value))}
       />
       <CameraSelect tone="glass" icon={Layers} label={t('viewer.toolbar.camera')} preset={preset} onPreset={onPreset} className="xl:h-9.5 xl:w-28 2xl:w-36" />
     </>
   )
-}
+})
