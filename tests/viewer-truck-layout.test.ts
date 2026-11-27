@@ -24,6 +24,12 @@ describe('vehicleClassOf', () => {
     expect(vehicleClassOf(truck(720, 12001))).toBe('heavy')
   })
 
+  test('a small payload makes a van only while the box is short enough to be one', () => {
+    expect(vehicleClassOf(truck(420, 1000))).toBe('van')
+    expect(vehicleClassOf(truck(421, 1000))).toBe('light')
+    expect(vehicleClassOf(truck(520, 1000))).toBe('light')
+  })
+
   test('a short box is a van, a long box or three axles is heavy, whatever the payload', () => {
     expect(vehicleClassOf(truck(300, 3000))).toBe('van')
     expect(vehicleClassOf(truck(900, 3000))).toBe('heavy')

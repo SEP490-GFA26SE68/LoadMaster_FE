@@ -16,6 +16,8 @@ export type VehicleClass = 'van' | 'light' | 'medium' | 'heavy'
  */
 export const VAN_MAX_PAYLOAD_KG = 1200
 export const VAN_MAX_LENGTH_CM = 300
+/** Tải nhỏ mà thùng dài hơn mức này là xe tải nhẹ thùng dài (mũi van kéo thùng 5 m thì không còn giống xe nào), không phải van. */
+export const VAN_PAYLOAD_MAX_LENGTH_CM = 420
 export const LIGHT_MAX_PAYLOAD_KG = 5500
 export const MEDIUM_MAX_PAYLOAD_KG = 12_000
 export const HEAVY_MIN_LENGTH_CM = 900
@@ -38,7 +40,7 @@ export function vehicleClassOf(vehicle: VehicleClassInput): VehicleClass {
     return length <= LIGHT_MAX_LENGTH_CM ? 'light' : length <= MEDIUM_MAX_LENGTH_CM ? 'medium' : 'heavy'
   }
   if (payload > MEDIUM_MAX_PAYLOAD_KG) return 'heavy'
-  if (payload <= VAN_MAX_PAYLOAD_KG || length <= VAN_MAX_LENGTH_CM) return 'van'
+  if (length <= VAN_MAX_LENGTH_CM || (payload <= VAN_MAX_PAYLOAD_KG && length <= VAN_PAYLOAD_MAX_LENGTH_CM)) return 'van'
   return payload <= LIGHT_MAX_PAYLOAD_KG ? 'light' : 'medium'
 }
 
