@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { restingOnIds } from '@/domain/constraints'
 import type { ScenePlacement } from '@/features/viewer3d/scene-input'
+import { useVehicleBodyStyle } from '@/features/vehicle-types/useVehicleTypesQuery'
 import { dataErrorMessage, useT } from '@/lib/i18n'
 import { pendingManualConfirms, type Revision, type Trip } from '@/lib/mock-db'
 import { ConfirmedOverlay } from './ConfirmedOverlay'
@@ -37,6 +38,7 @@ const PositionViewer = lazy(() =>
 export function LoadingSessionView({ trip, plan }: { trip: Trip; plan: Revision }) {
   const t = useT()
   const model = useSessionModel(trip, plan)
+  const body = useVehicleBodyStyle(model.vehicle.id)
   const session = useLoadingSession(trip.id, model.placements, trip.loading)
   const scan = useLoadingScan({ tripId: trip.id, pending: session.pending, onConfirmed: session.celebrate })
   const [damagedTarget, setDamagedTarget] = useState<ScenePlacement | null>(null)
@@ -64,15 +66,12 @@ export function LoadingSessionView({ trip, plan }: { trip: Trip; plan: Revision 
             <PackageInstructionCard placement={current} placements={model.placements} vehicle={model.vehicle} stops={model.stops} zones={model.zones} />
             {/* Khung giữ chỗ nằm đúng ô của khung 3D để lúc tải xong bố cục không nhảy */}
             <div className="order-first min-h-96 lg:order-last lg:min-h-0">
-              <Suspense
-                fallback={
-                  <div role="status" aria-label={t('warehouse.viewerLoading')} className="grid h-full min-h-80 place-items-center rounded-lg bg-canvas-1">
-                    <Spinner tone="light" />
-                  </div>
-                }
-              >
-                <PositionViewer model={model} current={current} leftOutIds={leftOutIds} />
-              </Suspense>
+              {/* Kiểu thân xe đọc xong mới dựng khung 3D: xe không đổi dáng ngay sau khi hiện */}
+              {body.settled ? (
+                <Suspense fallback={<ViewerLoading label={t('warehouse.viewerLoading')} />}>
+                  <PositionViewer model={model} current={current} leftOutIds={leftOutIds} vehicleBodyStyle={body.bodyStyle} />
+                </Suspense>
+              ) : <ViewerLoading label={t('warehouse.viewerLoading')} />}
             </div>
           </>
         ) : (
@@ -122,6 +121,15 @@ export function LoadingSessionView({ trip, plan }: { trip: Trip; plan: Revision 
           pending={scan.pending}
         />
       ) : null}
+    </div>
+  )
+}
+
+/** Giữ chỗ của khung 3D (đúng ô của nó) trong lúc tải chunk Three.js hay đọc kiểu thân xe. */
+function ViewerLoading({ label }: { label: string }) {
+  return (
+    <div role="status" aria-label={label} className="grid h-full min-h-80 place-items-center rounded-lg bg-canvas-1">
+      <Spinner tone="light" />
     </div>
   )
 }

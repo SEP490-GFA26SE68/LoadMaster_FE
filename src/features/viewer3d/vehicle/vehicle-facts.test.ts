@@ -38,6 +38,12 @@ describe('vehicleFacts', () => {
       .toStrictEqual({ status: 'unavailable', count: 2, reason: 'AXLES_COINCIDE' })
   })
 
+  test('a body style declared on the vehicle type is carried along; without one there is no such fact', () => {
+    expect(vehicleFacts(SPEC_TRUCK_6M)).not.toHaveProperty('bodyStyle')
+    expect(vehicleFacts(SPEC_TRUCK_6M, undefined)).not.toHaveProperty('bodyStyle')
+    expect(vehicleFacts(SPEC_TRUCK_6M, 'VAN_MID').bodyStyle).toBe('VAN_MID')
+  })
+
   test('obstacles are counted per type in contract order, types without obstacles left out', () => {
     const [arch] = SPEC_TRUCK_6M.obstacles
     const vehicle = { ...SPEC_TRUCK_6M, obstacles: [

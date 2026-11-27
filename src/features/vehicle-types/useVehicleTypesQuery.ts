@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import type { VehicleTypeInput } from '@/lib/mock-db'
+import type { VehicleBodyStyle } from '@/types/vehicle-body-style'
 import {
   deleteVehicleType,
   fetchVehicleAssignmentRows,
+  fetchVehicleBodyStyle,
   fetchVehicleTypes,
   saveVehicleType,
   setVehicleType,
@@ -11,7 +13,8 @@ import {
 /**
  * Hook Query của loại xe (LM-104). Khoá riêng `['vehicle-types']` — không dưới `['vehicles', id]` để không va mã xe. Xe lấy giới hạn
  * tải trục và độ lệch trọng tâm từ loại đang gắn (FE-5b-01): sửa loại hoặc đổi loại của xe làm xe và phương án của chuyến đổi theo, nên
- * hai lần ghi đó làm mới cả `['vehicles']` và `['trips']`.
+ * hai lần ghi đó làm mới cả `['vehicles']` và `['trips']`. Kiểu thân xe của một xe nằm dưới cùng khoá `['vehicle-types']` nên sửa
+ * loại hay đổi loại của xe làm khung 3D đang mở vẽ lại theo kiểu mới.
  */
 
 const KEY = ['vehicle-types'] as const
@@ -28,6 +31,16 @@ export function useVehicleTypesQuery() {
 /** Mọi xe của đội kèm loại đang gắn — bảng "Gắn loại cho xe". */
 export function useVehicleAssignmentRowsQuery() {
   return useQuery({ queryKey: [...KEY, 'vehicles'], queryFn: fetchVehicleAssignmentRows, staleTime: 0 })
+}
+
+/**
+ * Kiểu thân xe của loại đang gắn với xe đang vẽ — prop `vehicleBodyStyle` của khung 3D; `undefined` khi xe chưa gắn loại hay loại để
+ * tự chọn (khung 3D tự chọn dáng theo kích thước). `settled`: lần đọc đầu đã xong (kể cả lỗi) — màn chờ nó rồi mới dựng khung 3D, để xe
+ * không vẽ dáng tự chọn rồi đổi dáng ngay sau đó.
+ */
+export function useVehicleBodyStyle(vehicleId: string): { bodyStyle: VehicleBodyStyle | undefined; settled: boolean } {
+  const query = useQuery({ queryKey: [...KEY, 'body-style', vehicleId], queryFn: () => fetchVehicleBodyStyle(vehicleId), staleTime: 0 })
+  return { bodyStyle: query.data ?? undefined, settled: !query.isPending }
 }
 
 export function useSaveVehicleTypeMutation() {

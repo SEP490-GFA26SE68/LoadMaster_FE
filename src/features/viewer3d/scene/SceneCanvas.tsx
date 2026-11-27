@@ -33,10 +33,13 @@ import { ContextLossWatch } from './context-loss'
 import { createViewerPointerEvents } from './pointer-events'
 import { ContextLostOverlay } from '../overlays/ContextLostOverlay'
 import { createSceneChannel, SceneChannelContent } from './SceneChannel'
+import type { VehicleBodyStyle } from '@/types/vehicle-body-style'
 
 export type SceneCanvasProps = {
   experience: ExperienceMode
   model: Pick<ViewerSceneModel, 'vehicle' | 'stops' | 'placements'>
+  /** Kiểu thân xe của loại xe đang gắn (chỉ đổi hình xe); vắng là tự chọn theo kích thước. */
+  vehicleBodyStyle?: VehicleBodyStyle
   placements: readonly ScenePlacement[]
   flags: PerformanceFlags
   preset: CameraPreset
@@ -135,7 +138,7 @@ const REST_SAMPLE = { frameTimeMs: null, idle: true } as const
 
 /** Shared renderer; experience wrappers own controls/workflows, not another scene engine. */
 export function SceneCanvas({
-  experience, model, placements, flags, preset, focus, onUserControl, spinning = false, onSpinEnd, selectedId, onSelect, onFocus, warningSignal = 0,
+  experience, model, vehicleBodyStyle, placements, flags, preset, focus, onUserControl, spinning = false, onSpinEnd, selectedId, onSelect, onFocus, warningSignal = 0,
   colorMode = 'diem-giao', sliceCm = model.vehicle.innerLengthCm, step, semantics, hiddenId,
   animateLoading = true, entryMotion = false, decoration = true, xraySelection, centerOfGravity, zones, unloadMotion, onPerfSample, obstaclePicking = true,
   frameVehicle, fitRequest, highlightedObstacleId, onObstacleSelect, specView = false, interactive = true, frameZoom = 1,
@@ -180,21 +183,21 @@ export function SceneCanvas({
   // React bỏ qua cả nhánh khi element không đổi, R3F không đối chiếu lại các mesh, `Line` và `<Html>` của chúng mỗi lần khung 3D vẽ lại
   const { vehicle } = model
   const { decoration: detail, reducedMotion, shadows, vehicleDetail } = flags
-  const container = useMemo(() => <Container vehicle={vehicle} materials={materials} detail={detail} reducedMotion={reducedMotion}
-    doorOpening={specView} edgeOpacity={specView ? 0.6 : undefined} doorsClosed={doorsClosed} />, [vehicle, materials, detail, reducedMotion, specView, doorsClosed])
-  const ground = useMemo(() => decoration && !landing
-    ? <GroundPlane footprint={groundFootprintOf(vehicle)} contact={shadows ? 'soft' : 'full'} /> : null, [decoration, landing, vehicle, shadows])
-  const cab = useMemo(() => decoration
-    ? <TruckCab vehicle={vehicle} materials={materials} shadows={shadows} detail={vehicleDetail} /> : null, [decoration, vehicle, materials, shadows, vehicleDetail])
+  const container = useMemo(() => <Container vehicle={vehicle} bodyStyle={vehicleBodyStyle} materials={materials} detail={detail} reducedMotion={reducedMotion}
+    doorOpening={specView} edgeOpacity={specView ? 0.6 : undefined} doorsClosed={doorsClosed} />, [vehicle, vehicleBodyStyle, materials, detail, reducedMotion, specView, doorsClosed])
+  const ground = useMemo(() => decoration && !landing ? <GroundPlane footprint={groundFootprintOf(vehicle, vehicleBodyStyle)}
+    contact={shadows ? 'soft' : 'full'} /> : null, [decoration, landing, vehicle, vehicleBodyStyle, shadows])
+  const cab = useMemo(() => decoration ? <TruckCab vehicle={vehicle} bodyStyle={vehicleBodyStyle} materials={materials} shadows={shadows}
+    detail={vehicleDetail} /> : null, [decoration, vehicle, vehicleBodyStyle, materials, shadows, vehicleDetail])
   const obstacleParts = useMemo(() => <ObstacleInstances obstacles={vehicle.obstacles} picking={obstaclePicking} onSelect={handleObstacle}
     highlightedId={highlightedObstacleId ?? null} />, [vehicle.obstacles, obstaclePicking, handleObstacle, highlightedObstacleId])
   // Form xe đã có nhãn "Cửa rộng × cao" ngay trên ô cửa; cửa đã đóng (xe rời kho ở trang giới thiệu) thì không còn hướng dỡ để chỉ
   const doorCue = useMemo(() => specView || doorsClosed ? null : <RearDoorCue vehicle={vehicle} />, [specView, doorsClosed, vehicle])
   const zoneParts = useMemo(() => zones?.length
     ? <ZoneStrips zones={zones} vehicle={vehicle} reducedMotion={reducedMotion} labels={zoneLabels} /> : null, [zones, vehicle, reducedMotion, zoneLabels])
-  const cameraRig = useMemo(() => <CameraRig preset={preset} reducedMotion={reducedMotion} vehicle={frameVehicle ?? vehicle} fit fitRequest={fitRequest}
+  const cameraRig = useMemo(() => <CameraRig preset={preset} reducedMotion={reducedMotion} vehicle={frameVehicle ?? vehicle} bodyStyle={vehicleBodyStyle} fit fitRequest={fitRequest}
     specFrame={specView} focus={focus} vehicleDecoration={decoration} zoom={frameZoom} framePoints={framePoints} jumpFirst={landing}
-    onUserControl={onUserControl} spinning={spinning} onSpinEnd={onSpinEnd} />, [preset, reducedMotion, frameVehicle, vehicle, fitRequest, specView,
+    onUserControl={onUserControl} spinning={spinning} onSpinEnd={onSpinEnd} />, [preset, reducedMotion, frameVehicle, vehicle, vehicleBodyStyle, fitRequest, specView,
     focus, decoration, frameZoom, framePoints, landing, onUserControl, spinning, onSpinEnd])
   const otherParts = <>
     {/* Mặt đất + bóng tiếp xúc khi có xe; trang giới thiệu có sân kho riêng */}

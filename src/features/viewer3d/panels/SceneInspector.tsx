@@ -7,6 +7,7 @@ import type { ConstraintIssue } from '@/domain/constraints'
 import type { ScenePlacement } from '@/features/viewer3d/scene-input'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+import type { VehicleBodyStyle } from '@/types/vehicle-body-style'
 import type { LeftTab, LoadPlanViewerState } from '../useLoadPlanViewer'
 import type { OperationsState } from '../operations/useOperations'
 import { MassCard } from '../operations/GravityCards'
@@ -34,6 +35,8 @@ type InspectorProps = {
   tab: InspectorTab | null; onTab: (tab: InspectorTab) => void; onClose: () => void
   /** Khối của tab Danh sách cần cuộn tới (trợ lý của Planner bản máy chủ, `openTab`); vắng thì danh sách mở ở đầu. */
   listSection?: LeftTab
+  /** Kiểu thân xe của loại đang gắn với xe: dòng "Kiểu thân xe" của mục xe dưới 768 px; vắng là dáng tự chọn. */
+  vehicleBodyStyle?: VehicleBodyStyle
 }
 
 /**
@@ -68,7 +71,8 @@ function FloatingColumn({ state, operations, tripId, issues, onEdit, pin, onFocu
   </div>
 }
 
-function InspectorDialog({ state, operations, tripId, colorContext, issues, onEdit, pin, onFocus, onSelect, tab, onTab, onClose, listSection }: InspectorProps) {
+function InspectorDialog({ state, operations, tripId, colorContext, issues, onEdit, pin, onFocus, onSelect, tab, onTab, onClose, listSection,
+  vehicleBodyStyle }: InspectorProps) {
   const t = useT()
   const metrics = state.sceneModel.metrics
   const tabs: { value: InspectorTab; label: string }[] = [
@@ -120,7 +124,7 @@ function InspectorDialog({ state, operations, tripId, colorContext, issues, onEd
             <StopLegend stops={[...state.sceneModel.stops]} colorMode={state.colorMode} colorContext={colorContext} />
             <ObstacleLegend obstacles={state.sceneModel.vehicle.obstacles} />
             {/* Dưới 768 px hàng góc dưới phải không có thẻ xe (không đủ chỗ cạnh thanh kiện): xe của phương án đọc ở đây */}
-            <VehicleSection vehicle={state.sceneModel.vehicle} className="md:hidden" />
+            <VehicleSection vehicle={state.sceneModel.vehicle} bodyStyle={vehicleBodyStyle} className="md:hidden" />
             <SlicePanel sliceCm={state.sliceCm} maxCm={state.sceneModel.vehicle.innerLengthCm} onChange={state.setSliceCm} />
             <p className={MUTED}>{t('viewer.inspector.shortcuts')}</p>
           </div> : null}

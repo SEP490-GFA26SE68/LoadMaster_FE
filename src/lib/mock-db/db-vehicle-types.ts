@@ -1,5 +1,6 @@
 import { gt } from '@/domain/geometry'
 import { DEFAULT_MAX_COG_OFFSET_RATIO, MAX_COG_OFFSET_RATIO_CEILING } from '@/domain/models'
+import { VEHICLE_BODY_STYLES } from '@/types/vehicle-body-style'
 import { nextId, put, type DbContext } from './db-context'
 import type { Review1Db } from './db-api-review1'
 import { MockDbError } from './errors'
@@ -23,7 +24,7 @@ function isPositive(value: number): boolean {
 
 /**
  * Tên không trống, kích thước và tải trọng dương; giới hạn trục để trống hoặc dương; độ lệch trọng tâm trong (0, 0,5], vắng thì mặc
- * định 0,15 (D-79). Chỉ giữ trường của loại xe.
+ * định 0,15 (D-79); kiểu thân xe vắng hoặc là một kiểu đang vẽ được, vắng thì xoá kiểu cũ. Chỉ giữ trường của loại xe.
  */
 function typeFields(input: VehicleTypeInput): TypeFields {
   const name = input.name.trim()
@@ -42,9 +43,13 @@ function typeFields(input: VehicleTypeInput): TypeFields {
   if (!isPositive(maxCogOffsetRatio) || gt(maxCogOffsetRatio, MAX_COG_OFFSET_RATIO_CEILING)) {
     throw new MockDbError('VEHICLE_TYPE_INVALID', { field: 'maxCogOffsetRatio' })
   }
+  const { bodyStyle } = input
+  if (bodyStyle !== undefined && !VEHICLE_BODY_STYLES.includes(bodyStyle)) {
+    throw new MockDbError('VEHICLE_TYPE_INVALID', { field: 'bodyStyle' })
+  }
   return {
     name, cargoLengthCm: input.cargoLengthCm, cargoWidthCm: input.cargoWidthCm, cargoHeightCm: input.cargoHeightCm, payloadKg: input.payloadKg,
-    ...limits, maxCogOffsetRatio,
+    ...limits, maxCogOffsetRatio, ...(bodyStyle === undefined ? {} : { bodyStyle }),
   }
 }
 

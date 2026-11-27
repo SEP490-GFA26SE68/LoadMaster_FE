@@ -24,10 +24,11 @@ export function FloorScale({ length, width, color }: { length: number; width: nu
 /**
  * Door opening is presentation only; no state is written to the domain plan. `width` × `height` là cả ô cửa (hai cánh),
  * `hingeZ` là vị trí bản lề của cánh này theo chiều ngang thùng. `closed` (mặc định tắt) cho cánh quay về 0° — đóng kín mặt sau.
+ * Van hai cánh (`leafColor` màu thân, `hardware` tắt): cánh trơn, không thanh khoá của thùng tải.
  */
-export function ContainerDoor({ length, height, width, hingeZ, side, materials, detail, reducedMotion, closed = false }: {
+export function ContainerDoor({ length, height, width, hingeZ, side, materials, detail, reducedMotion, closed = false, leafColor, hardware: withHardware = true }: {
   length: number; height: number; width: number; hingeZ: number; side: -1 | 1
-  materials: SceneMaterials; detail: boolean; reducedMotion: boolean; closed?: boolean
+  materials: SceneMaterials; detail: boolean; reducedMotion: boolean; closed?: boolean; leafColor?: string; hardware?: boolean
 }) {
   const invalidate = useThree((state) => state.invalidate)
   const spring = useSpring({ from: { angle: side * Math.PI / 2 }, angle: closed ? 0 : side * 110 * Math.PI / 180,
@@ -52,9 +53,9 @@ export function ContainerDoor({ length, height, width, hingeZ, side, materials, 
   return <animated.group position={[length, 0, hingeZ]} rotation-y={spring.angle}>
     <mesh position={[0.015, height / 2, side * width / 4]} castShadow>
       <boxGeometry args={[0.03, height, width / 2]} />
-      <meshStandardMaterial color={materials.wall} roughness={0.82} />
+      <meshStandardMaterial color={leafColor ?? materials.wall} roughness={0.82} />
     </mesh>
-    {detail ? <mesh geometry={hardware}>
+    {detail && withHardware ? <mesh geometry={hardware}>
       <meshStandardMaterial color={materials.metal} roughness={0.5} metalness={0.4} />
     </mesh> : null}
   </animated.group>

@@ -1,5 +1,6 @@
 import { PLAN_OBJECTIVES, type FragilityLevel, type OrientationCode, type PlanObjective } from '@/domain/models'
 import type { DeadlineStatus } from '@/domain/routing'
+import type { VehicleBodyStyle } from '@/types/vehicle-body-style'
 
 /**
  * Kiểu dữ liệu Review 1 (LM-104): nguồn hàng (loại kiện, công ty), lần chạy tối ưu, loại xe và nhãn QR. Đơn vị cm / kg như
@@ -146,6 +147,11 @@ export type VehicleType = {
   rearAxleLimitKg?: number
   /** Độ lệch trọng tâm hàng tối đa so với giữa thùng, tỷ lệ chiều dài / chiều rộng lòng thùng, trong (0, 0,5] (D-79). */
   maxCogOffsetRatio: number
+  /**
+   * Kiểu thân xe: chỉ đổi hình xe minh hoạ ở khung 3D của các xe gắn loại này — không vào phép tính, request tối ưu, luật hay
+   * revision, nên đổi kiểu thân không làm phương án lỗi thời. Vắng là khung 3D tự chọn dáng theo kích thước.
+   */
+  bodyStyle?: VehicleBodyStyle
   createdAt: string
 }
 

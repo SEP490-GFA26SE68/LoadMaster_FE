@@ -1,4 +1,5 @@
 import { startTransition, useCallback } from 'react'
+import type { VehicleBodyStyle } from '@/types/vehicle-body-style'
 import type { ScenePlacement } from './scene-input'
 import type { LoadPlanViewerState } from './useLoadPlanViewer'
 import type { PerformanceFlags } from './usePerformanceFlags'
@@ -13,9 +14,11 @@ import { EditorFloorGrid } from './editor/EditorGuides'
 const UNLOAD_MOTION_MS = 520
 
 /** Planner composes the shared renderer with its one edit proxy. */
-export function LoadPlanViewer({ state, flags, editor, operations, onPerfSample }: {
+export function LoadPlanViewer({ state, flags, editor, operations, onPerfSample, vehicleBodyStyle }: {
   state: LoadPlanViewerState; flags: PerformanceFlags; editor: ManualEditor; operations: OperationsState
   onPerfSample?: (sample: PerfSample) => void
+  /** Kiểu thân của loại đang gắn với xe; vắng thì khung 3D tự chọn dáng theo kích thước. */
+  vehicleBodyStyle?: VehicleBodyStyle
 }) {
   const editing = editor.mode === 'edit'
   const { pauseFollow } = operations
@@ -33,7 +36,7 @@ export function LoadPlanViewer({ state, flags, editor, operations, onPerfSample 
     step={editing ? state.totalSteps : state.step} semantics={editing ? undefined : operations.semantics}
     hiddenId={editing ? state.selectedId : null} obstaclePicking={!editing} animateLoading={!editing && operations.kind === 'loading' && operations.focusStop === null} entryMotion
     centerOfGravity={operations.showMass ? editing ? state.placements : operations.cargo.placements : undefined}
-    zones={operations.showZones ? state.sceneModel.zones : undefined} onPerfSample={onPerfSample}
+    zones={operations.showZones ? state.sceneModel.zones : undefined} onPerfSample={onPerfSample} vehicleBodyStyle={vehicleBodyStyle}
     unloadMotion={!editing && operations.kind === 'unloading' ? { cursor: operations.unload.cursor,
       placement: operations.unload.ordered[operations.unload.cursor - 1], durationMs: UNLOAD_MOTION_MS } : undefined}>
     {editing ? <EditorFloorGrid vehicle={state.sceneModel.vehicle} /> : null}

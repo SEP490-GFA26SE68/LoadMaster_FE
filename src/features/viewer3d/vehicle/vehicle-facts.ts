@@ -1,5 +1,6 @@
 import { axleLoadsOf, type AxleLoadUnavailableReason } from '@/domain/metrics'
 import type { VehicleConfig, VehicleObstacle } from '@/domain/models'
+import type { VehicleBodyStyle } from '@/types/vehicle-body-style'
 
 type ObstacleType = VehicleObstacle['type']
 
@@ -15,6 +16,8 @@ export type VehicleAxleFacts =
 /** Số của bảng thông số xe trong Planner — chỉ những gì `VehicleConfig` khai, không suy thêm. */
 export type VehicleFacts = {
   readonly name: string
+  /** Kiểu thân xe loại xe đã khai; vắng khi dáng do khung 3D tự chọn theo kích thước — thẻ không nói gì về dáng đó. */
+  readonly bodyStyle?: VehicleBodyStyle
   readonly interior: { lengthCm: number; widthCm: number; heightCm: number; volumeCm3: number }
   readonly door: { widthCm: number; heightCm: number }
   /** Khoảng hở quanh kiện khi qua cửa; `null` khi xe khai 0. */
@@ -27,9 +30,10 @@ export type VehicleFacts = {
 
 /**
  * Dựng số cho thẻ xe và bảng thông số xe của Planner. Giới hạn nhóm trục lấy từ chính mô hình tải trục (`axleLoadsOf`, không hàng):
- * `frontAxleLimitKg` / `rearAxleLimitKg` của xe, vắng thì tổng tải tối đa các trục của nhóm.
+ * `frontAxleLimitKg` / `rearAxleLimitKg` của xe, vắng thì tổng tải tối đa các trục của nhóm. `bodyStyle` là kiểu thân của loại đang
+ * gắn với xe (đọc lúc vẽ, ngoài `VehicleConfig`).
  */
-export function vehicleFacts(vehicle: VehicleConfig): VehicleFacts {
+export function vehicleFacts(vehicle: VehicleConfig, bodyStyle?: VehicleBodyStyle): VehicleFacts {
   const count = vehicle.axles?.length ?? 0
   const loads = axleLoadsOf(vehicle, { totalKg: 0 })
   const axles: VehicleAxleFacts = loads.status === 'computed'
@@ -43,6 +47,7 @@ export function vehicleFacts(vehicle: VehicleConfig): VehicleFacts {
   for (const obstacle of vehicle.obstacles) byType.set(obstacle.type, (byType.get(obstacle.type) ?? 0) + 1)
   return {
     name: vehicle.name,
+    ...(bodyStyle === undefined ? {} : { bodyStyle }),
     interior: {
       lengthCm: vehicle.innerLengthCm, widthCm: vehicle.innerWidthCm, heightCm: vehicle.innerHeightCm,
       volumeCm3: vehicle.innerLengthCm * vehicle.innerWidthCm * vehicle.innerHeightCm,

@@ -1,7 +1,9 @@
 import type { VehicleConfig } from '@/domain/models'
 import type { CameraPreset } from '@/features/viewer3d/viewer-types'
+import type { VehicleBodyStyle } from '@/types/vehicle-body-style'
 import { truckLayout, type TruckLayoutInput } from './truck-layout'
 import { containerSize, toScene, type Vec3 } from './units'
+import { liftgateTip } from './van-shape'
 
 /**
  * Đường kích thước của xem trước ở form xe: mọi toạ độ suy thẳng từ số đang nhập (cm → scene qua `toScene`), không có số nào
@@ -73,12 +75,14 @@ export type SpecMarks = {
 /**
  * Những điểm xa nhất mà hình xem trước chạm tới — cabin, mặt đất, đường kích thước, đường gốc của trục, đầu hai cánh cửa đang mở —
  * để camera canh khung vừa khít. Chỉ phụ thuộc dài · rộng · cao lòng thùng và hạng xe (mũi cabin, mặt đất của `truckLayout` khi chưa
- * khai trục): sửa cửa, vật cản hay trục không làm camera canh lại.
+ * khai trục): sửa cửa, vật cản hay trục không làm camera canh lại. Van cửa hất: đầu cửa đang mở thay cho đầu hai cánh.
  */
-export function specFramePoints(vehicle: Pick<TruckLayoutInput, 'innerLengthCm' | 'innerWidthCm' | 'innerHeightCm' | 'maxPayloadKg'>): Vec3[] {
+export function specFramePoints(vehicle: Pick<TruckLayoutInput, 'innerLengthCm' | 'innerWidthCm' | 'innerHeightCm' | 'maxPayloadKg'>,
+  bodyStyle?: VehicleBodyStyle): Vec3[] {
   const { length: L, height: H, width: W } = containerSize(vehicle)
   const { innerLengthCm, innerWidthCm, innerHeightCm, maxPayloadKg } = vehicle
-  const layout = truckLayout({ innerLengthCm, innerWidthCm, innerHeightCm, maxPayloadKg })
+  const layout = truckLayout({ innerLengthCm, innerWidthCm, innerHeightCm, maxPayloadKg }, bodyStyle)
+  const tip = layout.van?.rearDoor === 'liftgate' ? liftgateTip(L, H) : null
   const CAB_FRONT_X = layout.footprint.x[0], GROUND_Y = layout.groundY
   const top = H + DIMENSION_OFFSET + OVERSHOOT
   const marks = GROUND_Y - AXLE_BASELINE_DROP - OVERSHOOT
@@ -87,14 +91,15 @@ export function specFramePoints(vehicle: Pick<TruckLayoutInput, 'innerLengthCm' 
   for (const z of [0, W]) {
     for (const x of [CAB_FRONT_X, L]) points.push([x, GROUND_Y, z], [x, H, z])
     for (const x of [0, L]) points.push([x, top, z])
-    for (const y of [0, H]) points.push([L + leaf * DOOR_SWING_BACK, y, z === 0 ? -leaf * DOOR_SWING_SIDE : W + leaf * DOOR_SWING_SIDE])
+    if (tip) points.push([tip[0], tip[1], z], [L, layout.van!.roofY, z])
+    else for (const y of [0, H]) points.push([L + leaf * DOOR_SWING_BACK, y, z === 0 ? -leaf * DOOR_SWING_SIDE : W + leaf * DOOR_SWING_SIDE])
   }
   for (const y of [0, H]) points.push([0, y, W + DIMENSION_OFFSET + OVERSHOOT])
   for (const x of [CAB_FRONT_X, L]) points.push([x, marks, W + AXLE_SIDE_OFFSET])
   return points
 }
 
-export function vehicleSpecMarks(vehicle: VehicleConfig): SpecMarks {
+export function vehicleSpecMarks(vehicle: VehicleConfig, bodyStyle?: VehicleBodyStyle): SpecMarks {
   const { length: L, height: H, width: W } = containerSize(vehicle)
   const door = doorOpening(vehicle)
   const top = H + DIMENSION_OFFSET
@@ -117,7 +122,7 @@ export function vehicleSpecMarks(vehicle: VehicleConfig): SpecMarks {
   add('door', [L, door.height, z1], [L, 0, z1])
   add('door', [L, 0, z1], [L, 0, z0])
 
-  const { groundY, wheelY } = truckLayout(vehicle)
+  const { groundY, wheelY } = truckLayout(vehicle, bodyStyle)
   const baseline = groundY - AXLE_BASELINE_DROP
   const axleZ = W + AXLE_SIDE_OFFSET
   const declared = [...(vehicle.axles ?? [])].sort((a, b) => a.positionXCm - b.positionXCm)

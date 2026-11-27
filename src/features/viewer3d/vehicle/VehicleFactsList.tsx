@@ -5,8 +5,9 @@ import { MUTED } from '../panels/scene-ui'
 import type { VehicleFacts } from './vehicle-facts'
 
 /**
- * Bảng số của xe trên nền tối đặc (bảng thông số xe của Planner, mục "Xe của chuyến" của hộp Hiển thị trên điện thoại): lòng thùng,
- * cửa sau, khoảng hở, tải trọng, trục, vật cản — chỉ số xe đã khai; số nào không khai thì bỏ dòng hoặc ghi "Chưa khai".
+ * Bảng số của xe trên nền tối đặc (bảng thông số xe của Planner, mục "Xe của chuyến" của hộp Hiển thị trên điện thoại): kiểu thân xe
+ * (chỉ khi loại xe đã khai), lòng thùng, cửa sau, khoảng hở, tải trọng, trục, vật cản — chỉ số xe đã khai; số nào không khai thì bỏ dòng
+ * hoặc ghi "Chưa khai".
  */
 export function VehicleFactsList({ facts, className }: { facts: VehicleFacts; className?: string }) {
   const t = useT()
@@ -15,6 +16,9 @@ export function VehicleFactsList({ facts, className }: { facts: VehicleFacts; cl
   const limit = (kg: number | undefined) => (kg === undefined ? <Muted>{t('viewer.vehicleCard.limitMissing')}</Muted> : format.weight(kg))
   return (
     <dl className={cn('grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 text-body-lg xl:gap-y-1.5 xl:text-small', className)}>
+      {facts.bodyStyle === undefined ? null : (
+        <Row label={t('viewer.vehicleCard.bodyStyle')}><span className="font-sans">{t(`common.vehicleBodyStyles.${facts.bodyStyle}`)}</span></Row>
+      )}
       <Row label={t('viewer.vehicleCard.interior')}>
         {format.dimensions(interior.lengthCm, interior.widthCm, interior.heightCm)} · {format.volumeM3(interior.volumeCm3)}
       </Row>
