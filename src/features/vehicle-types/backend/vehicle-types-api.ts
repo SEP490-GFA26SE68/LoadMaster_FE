@@ -1,5 +1,6 @@
 import { api, apiFetch } from '@/lib/api-client'
 import { fetchAllPages } from '@/lib/api-page'
+import { parseVehicleBodyStyle, type VehicleBodyStyle } from '@/types/vehicle-body-style'
 
 /**
  * Loại xe đọc ghi máy chủ (nhóm `fleet`):
@@ -47,6 +48,8 @@ type VehicleTypeApi = {
   hazardousCapable: boolean
   obstacles: VehicleTypeObstacleApi[]
   vehicleCount: number
+  /** Tên enum kiểu thân xe; `null` là tự chọn theo kích thước, máy chủ cũ không trả. */
+  bodyStyle?: string | null
 }
 type VehicleTypeObstacleApi = {
   id: number
@@ -94,6 +97,8 @@ export type VehicleType = {
   hazardousCapable: boolean
   obstacles: VehicleTypeObstacle[]
   vehicleCount: number
+  /** Kiểu thân xe, chỉ đổi hình xe ở khung 3D; vắng (hay giá trị máy chủ trả mà app không biết) là tự chọn theo kích thước. */
+  bodyStyle?: VehicleBodyStyle
 }
 
 export type VehicleTypeObstacle = {
@@ -119,7 +124,9 @@ function decimalOrNull(value: number | string | null | undefined): number | null
 function mapVehicleType(
   item: VehicleTypeApi,
 ): VehicleType {
+  const bodyStyle = parseVehicleBodyStyle(item.bodyStyle)
   return {
+    ...(bodyStyle === undefined ? {} : { bodyStyle }),
     id: String(item.id),
     name: item.name,
 
@@ -210,8 +217,18 @@ export type VehicleTypeInput = {
 
   hazardousCapable: boolean
   obstacles: VehicleTypeObstacleInput[]
+  /** Vắng là "Tự chọn theo kích thước". */
+  bodyStyle?: VehicleBodyStyle
 }
 
+/**
+ * Kiểu thân xe trong thân request. Thêm mới chỉ gửi kiểu đã chọn. Sửa: máy chủ giữ kiểu đã lưu khi vắng `bodyStyle` (client cũ không
+ * gửi), nên "Tự chọn" phải gửi `clearBodyStyle: true` — không gửi cùng `bodyStyle` (máy chủ từ chối `INVALID_INPUT`).
+ */
+function bodyStyleFields(bodyStyle: VehicleBodyStyle | undefined, editing: boolean) {
+  if (bodyStyle !== undefined) return { bodyStyle }
+  return editing ? { clearBodyStyle: true } : {}
+}
 
 function toCreateVehicleTypeRequest(
   input: VehicleTypeInput,
@@ -294,13 +311,16 @@ export async function fetchVehicleTypes(
   }
 }
 
-/** `id` vắng là loại mới. Sửa gửi lại cả bản ghi: số, cửa, vật cản như đang nhập; vị trí và tải rỗng của trục máy chủ giữ nguyên. */
+/**
+ * `id` vắng là loại mới. Sửa gửi lại cả bản ghi: số, cửa, vật cản như đang nhập; vị trí và tải rỗng của trục máy chủ giữ nguyên. Kiểu thân
+ * xe theo `bodyStyleFields`; máy chủ không coi đổi kiểu thân là đổi xe nên phương án không lỗi thời.
+ */
 // POST /api/vehicle-types · PUT /api/vehicle-types/{id}
 export async function saveVehicleType(
   input: VehicleTypeInput,
   id?: string,
 ): Promise<VehicleType> {
-  const body = toCreateVehicleTypeRequest(input)
+  const body = { ...toCreateVehicleTypeRequest(input), ...bodyStyleFields(input.bodyStyle, id !== undefined) }
   const saved = id === undefined
     ? await api().post<VehicleTypeApi>('/api/vehicle-types', { body })
     : await api().put<VehicleTypeApi>(`/api/vehicle-types/${encodeURIComponent(id)}`, { body })

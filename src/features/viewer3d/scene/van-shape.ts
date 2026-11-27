@@ -1,5 +1,5 @@
 import type { VehicleConfig } from '@/domain/models'
-import type { VehicleBodyStyle } from '@/types/vehicle-body-style'
+import type { VanBodyStyle } from '@/types/vehicle-body-style'
 import { containerSize, toScene } from './units'
 
 /**
@@ -39,7 +39,7 @@ type VanStyleSpec = {
 }
 
 /** Bốn dáng. Mọi số theo bảng A / C của ghi chú tham chiếu. */
-export const VAN_STYLE_SPECS: Record<VehicleBodyStyle, VanStyleSpec> = {
+export const VAN_STYLE_SPECS: Record<VanBodyStyle, VanStyleSpec> = {
   // Suzuki Super Carry Blind Van: 3290 × 1395 × 1780, cơ sở 1840, lòng 1700 × 1270 × 1190, mũi phẳng, cầu trước dưới ghế, cửa sau hất.
   // Bánh 12 inch ≈ Ø 520 (ước), sàn ≈ 1780 − 1190 − nóc; nhô trước ước.
   VAN_MINI_FLAT: {
@@ -96,7 +96,7 @@ export const VAN_MINI_FLAT_MAX_LENGTH_CM = 195
 export const VAN_MINI_FLAT_MAX_PAYLOAD_KG = 600
 
 /** Dáng suy từ lòng thùng và tải trọng: nóc cao hoặc thùng dài là van lớn, rộng / dài vừa là cỡ trung, ngắn hoặc chở dưới 600 kg là mũi phẳng. */
-export function vanStyleOf(vehicle: Pick<VehicleConfig, 'innerLengthCm' | 'innerWidthCm' | 'innerHeightCm' | 'maxPayloadKg'>): VehicleBodyStyle {
+export function vanStyleOf(vehicle: Pick<VehicleConfig, 'innerLengthCm' | 'innerWidthCm' | 'innerHeightCm' | 'maxPayloadKg'>): VanBodyStyle {
   const { innerLengthCm: l, innerWidthCm: w, innerHeightCm: h, maxPayloadKg: kg } = vehicle
   if (l >= VAN_LARGE_MIN_LENGTH_CM || h >= VAN_LARGE_MIN_HEIGHT_CM) return 'VAN_LARGE'
   if (l >= VAN_MID_MIN_LENGTH_CM || w >= VAN_MID_MIN_WIDTH_CM) return 'VAN_MID'
@@ -105,7 +105,7 @@ export function vanStyleOf(vehicle: Pick<VehicleConfig, 'innerLengthCm' | 'inner
 }
 
 export type VanShape = {
-  readonly style: VehicleBodyStyle
+  readonly style: VanBodyStyle
   readonly rearDoor: VanRearDoor
   readonly wheelRadius: number
   readonly tireWidth: number
@@ -166,7 +166,7 @@ function noseOutline(spec: VanStyleSpec, front: number, back: number, roofY: num
  * Dáng của một xe van: `bodyStyle` khai ở loại xe thắng; vắng thì `vanStyleOf`. Trục khai đặt đúng `positionXCm` (cm → m qua `toScene`),
  * mũi dài ra khi cầu trước khai xa hơn mũi của dáng.
  */
-export function vanShapeOf(vehicle: VanShapeInput, bodyStyle?: VehicleBodyStyle): VanShape {
+export function vanShapeOf(vehicle: VanShapeInput, bodyStyle?: VanBodyStyle): VanShape {
   const style = bodyStyle ?? vanStyleOf(vehicle)
   const spec = VAN_STYLE_SPECS[style]
   const { length, width, height } = containerSize(vehicle)

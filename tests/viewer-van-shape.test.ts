@@ -8,14 +8,14 @@ import { vanExterior, vanShell } from '@/features/viewer3d/scene/van-body'
 import { vanDetails, vanSimpleDetails } from '@/features/viewer3d/scene/van-details'
 import { liftgateTip, vanShapeOf, vanStyleOf, type VanShapeInput } from '@/features/viewer3d/scene/van-shape'
 import { doorOpening, vehicleSpecMarks } from '@/features/viewer3d/scene/vehicle-spec-marks'
-import { VEHICLE_BODY_STYLES, type VehicleBodyStyle } from '@/types/vehicle-body-style'
+import { VAN_BODY_STYLES, type VanBodyStyle } from '@/types/vehicle-body-style'
 
 const van = (innerLengthCm: number, innerWidthCm: number, innerHeightCm: number, maxPayloadKg: number, axles?: VehicleAxle[]): VanShapeInput =>
   ({ innerLengthCm, innerWidthCm, innerHeightCm, maxPayloadKg, ...(axles ? { axles } : {}) })
 const axle = (id: string, positionXCm: number): VehicleAxle => ({ id, name: id, positionXCm, emptyLoadKg: 0, maxLoadKg: 0 })
 
 /** Lòng thùng của các xe tham chiếu (ghi chú tham chiếu mục A). */
-const REFERENCE: Record<string, { vehicle: VanShapeInput; style: VehicleBodyStyle }> = {
+const REFERENCE: Record<string, { vehicle: VanShapeInput; style: VanBodyStyle }> = {
   'Suzuki Blind Van': { vehicle: van(170, 127, 119, 580), style: 'VAN_MINI_FLAT' },
   'Kenbo Van 2S': { vehicle: van(217, 127, 121, 945), style: 'VAN_MINI_HOOD' },
   'Towner TF420V': { vehicle: van(233, 150.5, 134, 945), style: 'VAN_MINI_HOOD' },
@@ -24,7 +24,7 @@ const REFERENCE: Record<string, { vehicle: VanShapeInput; style: VehicleBodyStyl
 }
 
 /** Mọi dáng trên vài lòng thùng (nhỏ, tham chiếu, lớn), có và không có trục khai. */
-const CASES = VEHICLE_BODY_STYLES.flatMap((style) => [
+const CASES = VAN_BODY_STYLES.flatMap((style) => [
   van(150, 120, 110, 500), van(253, 176, 134, 1000), van(330, 180, 200, 1200),
   van(253, 176, 134, 1000, [axle('A1', -100), axle('A2', 200)]), van(308, 178, 189, 1200, [axle('A2', 230), axle('A1', -160)]),
 ].map((vehicle) => ({ style, vehicle })))
@@ -46,7 +46,7 @@ describe('vanStyleOf', () => {
   })
 
   test('the rear door is a liftgate on the minis and the HiAce, two swing doors on the Transit', () => {
-    const doors = VEHICLE_BODY_STYLES.map((style) => vanShapeOf(REFERENCE['HiAce LWB']!.vehicle, style).rearDoor)
+    const doors = VAN_BODY_STYLES.map((style) => vanShapeOf(REFERENCE['HiAce LWB']!.vehicle, style).rearDoor)
     expect(doors).toStrictEqual(['liftgate', 'liftgate', 'liftgate', 'swing'])
   })
 })
@@ -85,7 +85,7 @@ describe('vanShapeOf invariants', () => {
   })
 
   test('declared axles are placed exactly at positionXCm, negative ones under the nose', () => {
-    for (const style of VEHICLE_BODY_STYLES) {
+    for (const style of VAN_BODY_STYLES) {
       const shape = vanShapeOf(van(253, 176, 134, 1000, [axle('A2', 230), axle('A1', -100)]), style)
       expect(shape.axles).toStrictEqual([toScene(-100), toScene(230)])
       expect(shape.front).toBeLessThan(-1)
@@ -97,7 +97,7 @@ describe('vanShapeOf invariants', () => {
   })
 
   test('without declared axles the wheels are sensible: two axles, a real wheelbase, the rear wheel inside the box length', () => {
-    for (const style of VEHICLE_BODY_STYLES) {
+    for (const style of VAN_BODY_STYLES) {
       for (const lengthCm of [120, 170, 253, 360]) {
         const shape = vanShapeOf(van(lengthCm, 150, 130, 900), style)
         const [steer, rear] = shape.axles
@@ -128,7 +128,7 @@ describe('van layout and frame key', () => {
   })
 
   test('the van layout takes floor, wheels, nose and axles from the shape', () => {
-    for (const style of VEHICLE_BODY_STYLES) {
+    for (const style of VAN_BODY_STYLES) {
       const vehicle = REFERENCE['HiAce LWB']!.vehicle
       const layout = truckLayout(vehicle, style), shape = layout.van!
       expect(layout.groundY).toBe(shape.groundY)
@@ -148,7 +148,7 @@ describe('van layout and frame key', () => {
     const door = doorOpening(vehicle)
     expect(door.width).toBeCloseTo(1.5, 9)
     expect(door.height).toBeCloseTo(1.2, 9)
-    for (const style of VEHICLE_BODY_STYLES) {
+    for (const style of VAN_BODY_STYLES) {
       const doorSegments = vehicleSpecMarks(vehicle, style).segments.filter((s) => s.role === 'door')
       const zs = doorSegments.flatMap((s) => [s.from[2], s.to[2]]), ys = doorSegments.flatMap((s) => [s.from[1], s.to[1]])
       expect(Math.max(...zs) - Math.min(...zs)).toBeCloseTo(1.5, 9)
@@ -177,7 +177,7 @@ describe('van body geometry keeps the cargo visible', () => {
     for (let i = 0; i < shell.normals.length; i += 3) expect(shell.normals[i]).not.toBe(-1)
   })
 
-  test.each(VEHICLE_BODY_STYLES)('no exterior piece or detail vertex of %s enters the cargo box', (style) => {
+  test.each(VAN_BODY_STYLES)('no exterior piece or detail vertex of %s enters the cargo box', (style) => {
     const vehicle = van(253, 176, 134, 1000)
     const layout = truckLayout(vehicle, style), shape = layout.van!
     const inside = (x: number, y: number, z: number) =>

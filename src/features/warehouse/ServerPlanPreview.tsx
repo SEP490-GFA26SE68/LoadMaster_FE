@@ -24,7 +24,7 @@ export function ServerPlanPreview({ session, selectedId, onSelect }: {
         executionActive: session.executionStatus === 'IN_PROGRESS',
         selectedId: selectedId === null ? null : scene.sceneIdOf.get(selectedId) ?? null,
         confirmedIds, onSelect: (id) => onSelect(id === null ? null : placementIdOf.get(id) ?? null),
-      }} />
+      }} vehicleBodyStyle={scene.vehicleBodyStyle} />
     </Suspense>
   </section>
 }

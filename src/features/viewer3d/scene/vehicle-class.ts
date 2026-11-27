@@ -1,4 +1,5 @@
 import type { VehicleConfig } from '@/domain/models'
+import { chassisNumbersOf, defaultSteerX, TYPICAL_PAYLOAD_KG, type TruckClass } from './truck-chassis-numbers'
 
 /**
  * Hạng xe của **hình minh hoạ** quanh thùng (AGENTS mục 7): suy từ số người dùng đã khai — chiều dài lòng thùng, tải trọng, số trục —
@@ -55,10 +56,11 @@ export type VehicleProfile = {
   readonly dualRear: boolean
   /** Số trục vẽ khi xe không khai trục */
   readonly defaultAxles: 2 | 3
-  /** Cầu trước minh hoạ khi xe không khai trục */
+  /**
+   * Cầu trước minh hoạ khi xe không khai trục — xe tải: theo đầu xe của hạng (`defaultSteerX` của `truck-chassis-numbers.ts`); cầu sau
+   * theo tỉ lệ đuôi xe (`defaultRearX`)
+   */
   readonly defaultSteerX: number
-  /** Cầu sau (giữa cụm cầu nếu có hai cầu) minh hoạ, tính theo chiều dài thùng */
-  readonly defaultRearRatio: number
   readonly tandemSpacing: number
   /** Lưng cabin cách vách trước thùng */
   readonly cabGap: number
@@ -73,25 +75,36 @@ export type VehicleProfile = {
   readonly stackExhaust: boolean
 }
 
+type CabParts = Omit<VehicleProfile, 'floorHeight' | 'wheelRadius' | 'cabTop' | 'defaultSteerX'>
+
+/**
+ * Hạng xe tải: cabin và khung khai ở đây; bánh, sàn, nóc cabin là của cỡ xe thường gặp nhất trong hạng (`truck-chassis-numbers.ts`) —
+ * `truckLayout` thay bằng số theo đúng tải trọng của xe.
+ */
+function truckProfile(vehicleClass: TruckClass, parts: CabParts): VehicleProfile {
+  return {
+    ...parts,
+    ...chassisNumbersOf(vehicleClass, TYPICAL_PAYLOAD_KG[vehicleClass]),
+    defaultSteerX: defaultSteerX(vehicleClass, parts.cabGap, parts.cabLength),
+  }
+}
+
 export const VEHICLE_PROFILES: Record<VehicleClass, VehicleProfile> = {
   van: {
     cab: 'van', floorHeight: 0.62, wheelRadius: 0.3, tireWidth: 0.2, dualRear: false, defaultAxles: 2, defaultSteerX: -1,
-    defaultRearRatio: 0.66, tandemSpacing: 0, cabGap: 0, cabLength: 1.5, cabTop: 1.45, cabMaxWidth: 2,
+    tandemSpacing: 0, cabGap: 0, cabLength: 1.5, cabTop: 1.45, cabMaxWidth: 2,
     railHeight: 0, roofDeflector: false, stackExhaust: false,
   },
-  light: {
-    cab: 'cabover', floorHeight: 1.1, wheelRadius: 0.39, tireWidth: 0.22, dualRear: true, defaultAxles: 2, defaultSteerX: -1,
-    defaultRearRatio: 0.66, tandemSpacing: 0, cabGap: 0.1, cabLength: 1.6, cabTop: 1.2, cabMaxWidth: 1.95,
+  light: truckProfile('light', {
+    cab: 'cabover', tireWidth: 0.22, dualRear: true, defaultAxles: 2, tandemSpacing: 0, cabGap: 0.1, cabLength: 1.6, cabMaxWidth: 1.95,
     railHeight: 0.2, roofDeflector: false, stackExhaust: false,
-  },
-  medium: {
-    cab: 'cabover', floorHeight: 1.2, wheelRadius: 0.46, tireWidth: 0.25, dualRear: true, defaultAxles: 2, defaultSteerX: -1,
-    defaultRearRatio: 0.66, tandemSpacing: 0, cabGap: 0.12, cabLength: 1.78, cabTop: 1.5, cabMaxWidth: 2.25,
+  }),
+  medium: truckProfile('medium', {
+    cab: 'cabover', tireWidth: 0.25, dualRear: true, defaultAxles: 2, tandemSpacing: 0, cabGap: 0.12, cabLength: 1.78, cabMaxWidth: 2.25,
     railHeight: 0.24, roofDeflector: true, stackExhaust: false,
-  },
-  heavy: {
-    cab: 'cabover', floorHeight: 1.35, wheelRadius: 0.52, tireWidth: 0.29, dualRear: true, defaultAxles: 3, defaultSteerX: -1.15,
-    defaultRearRatio: 0.68, tandemSpacing: 1.32, cabGap: 0.32, cabLength: 2.05, cabTop: 1.9, cabMaxWidth: 2.45,
+  }),
+  heavy: truckProfile('heavy', {
+    cab: 'cabover', tireWidth: 0.29, dualRear: true, defaultAxles: 3, tandemSpacing: 1.32, cabGap: 0.32, cabLength: 2.05, cabMaxWidth: 2.45,
     railHeight: 0.28, roofDeflector: true, stackExhaust: true,
-  },
+  }),
 }

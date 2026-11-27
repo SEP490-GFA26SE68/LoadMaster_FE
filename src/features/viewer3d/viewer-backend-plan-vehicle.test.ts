@@ -64,3 +64,25 @@ test('đọc xe của phương án lỗi (xe đã xoá): về lối dự phòng,
   expect(source.planVehicle).toBeNull()
   expect(source.plan?.id).toBe('7')
 })
+
+test('kiểu thân xe đi cùng cấu hình xe đã đọc: xe của phương án khi có, không thì xe hiện tại; giá trị lạ là tự chọn', async () => {
+  const withStyle = (base: object, bodyStyle: unknown) => ({ ...base, bodyStyle })
+  const { calls } = stubBackend({
+    ...routes(1),
+    'GET /api/trips/42/vehicle-config': { body: envelope(withStyle(config(2, 'Xe 8 tấn', 800), 'TRUCK_BOX')) },
+    'GET /api/vehicles/1/config': { body: envelope(withStyle(config(1, 'Xe 3,5 tấn', 520), 'TRUCK_CANVAS')) },
+  })
+  expect((await fetchBackendPlanSource('TRIP-0042')).vehicleBodyStyle).toBe('TRUCK_CANVAS')
+  expect(calls.filter((call) => call.path.endsWith('config'))).toHaveLength(2)
+  vi.unstubAllGlobals()
+
+  stubBackend({ ...routes(2), 'GET /api/trips/42/vehicle-config': { body: envelope(withStyle(config(2, 'Xe 8 tấn', 800), 'TRUCK_REEFER')) } })
+  expect((await fetchBackendPlanSource('TRIP-0042')).vehicleBodyStyle).toBe('TRUCK_REEFER')
+  vi.unstubAllGlobals()
+
+  for (const bodyStyle of ['BUS', null, undefined]) {
+    stubBackend({ ...routes(2), 'GET /api/trips/42/vehicle-config': { body: envelope(withStyle(config(2, 'Xe 8 tấn', 800), bodyStyle)) } })
+    expect((await fetchBackendPlanSource('TRIP-0042')).vehicleBodyStyle).toBeUndefined()
+    vi.unstubAllGlobals()
+  }
+})

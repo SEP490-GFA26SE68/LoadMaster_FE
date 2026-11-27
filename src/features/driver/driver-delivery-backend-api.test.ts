@@ -137,6 +137,22 @@ test('phương án kho đã xếp: khung 3D theo thứ tự dỡ của máy ch�
   expect(driverServerScene({ ...plan, placements: [] })).toBeNull()
 })
 
+test('kiểu thân xe đi trong phương án kho đã xếp và tới khung 3D; giá trị lạ hay máy chủ cũ không trả là tự chọn', async () => {
+  const planWith = (bodyStyle: unknown) => {
+    backendWith({ 'GET /api/driver/trips/1/load-plan': { body: envelope({ ...LOAD_PLAN, bodyStyle }) } })
+    return createDriverBackend().fetchLoadPlan('1')
+  }
+  const styled = await planWith('TRUCK_CANVAS')
+  expect(styled.bodyStyle).toBe('TRUCK_CANVAS')
+  expect(driverServerScene(styled)?.vehicleBodyStyle).toBe('TRUCK_CANVAS')
+  expect(driverServerScene(styled)?.model.vehicle).not.toHaveProperty('bodyStyle')
+  for (const bodyStyle of ['BUS', null, undefined]) {
+    const plan = await planWith(bodyStyle)
+    expect(plan.bodyStyle).toBeUndefined()
+    expect(driverServerScene(plan)?.vehicleBodyStyle).toBeUndefined()
+  }
+})
+
 test('giờ các điểm: đã đến kèm kịp hạn, chưa đến theo GPS rồi theo kế hoạch; điểm đã hoàn tất không có giờ; không MOCK RESULT', async () => {
   backendWith({
     'GET /api/driver/trips/1/stops': {

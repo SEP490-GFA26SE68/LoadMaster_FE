@@ -2,6 +2,7 @@ import { ApiError } from '@/lib/api-client'
 import { isoFromBackend } from '@/lib/backend-time'
 import type { VehicleObstacle } from '@/domain/models'
 import type { BackendObstacle } from '@/features/fleet/fleet-dto'
+import { parseVehicleBodyStyle, type VehicleBodyStyle } from '@/types/vehicle-body-style'
 
 /**
  * DTO của `WarehouseController` và `WarehouseStagingController` backend (`WarehouseTaskResponse`, `StartLoadingResponse`,
@@ -79,6 +80,8 @@ export type StartLoadingDto = {
   readonly doorHeight?: number | null
   /** Tải trọng tối đa của xe (kg) theo loại xe; `null` khi xe chưa gắn loại hoặc loại chưa khai. */
   readonly maxPayloadKg?: number | null
+  /** Kiểu thân xe của loại đang gắn (tên enum); `null` hay vắng (máy chủ cũ) là tự chọn theo kích thước. */
+  readonly bodyStyle?: string | null
   readonly totalPackages: number | null
   /** `IN_PROGRESS` | `COMPLETED` của phiên xếp. */
   readonly status: string | null
@@ -193,6 +196,8 @@ export type ServerLoadingSession = {
   readonly box: ServerCargoBox | null
   /** Tải trọng tối đa của xe (kg); `null` khi máy chủ không trả. */
   readonly maxPayloadKg: number | null
+  /** Kiểu thân của loại đang gắn với xe, chỉ cho hình xe ở khung 3D; vắng hay giá trị lạ là khung tự chọn theo kích thước. */
+  readonly bodyStyle?: VehicleBodyStyle | undefined
   readonly placements: readonly ServerPlacement[]
   /** Kết quả từng kiện theo máy chủ (`CONFIRMED` / `DEVIATION` / `DAMAGED`); kiện chưa xử lý không có mục. */
   readonly outcomes: Readonly<Record<string, PlacementOutcome>>
@@ -328,6 +333,7 @@ export function sessionOf(dto: StartLoadingDto): ServerLoadingSession {
     vehicle: vehicle !== '' ? vehicle : (dto.licensePlate?.trim() ?? ''),
     box: boxOf(dto),
     maxPayloadKg: positive(dto.maxPayloadKg) ? dto.maxPayloadKg : null,
+    bodyStyle: parseVehicleBodyStyle(dto.bodyStyle),
     placements: steps.map((item) => item.placement).toSorted((a, b) => a.sequence - b.sequence),
     outcomes: Object.fromEntries(steps.flatMap(({ status, placement }) => {
       const outcome = status ? OUTCOMES[status] : undefined

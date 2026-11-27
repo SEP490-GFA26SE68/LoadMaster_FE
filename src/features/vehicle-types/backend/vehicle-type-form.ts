@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { roundCm, roundKg } from '@/domain/geometry'
 import { DEFAULT_MAX_COG_OFFSET_RATIO, MAX_COG_OFFSET_RATIO_CEILING } from '@/domain/models'
 import type { MessageKey } from '@/lib/i18n'
+import { BODY_STYLE_AUTO, BODY_STYLE_CHOICES } from '../vehicle-type-form'
 import type {
   VehicleType,
   VehicleTypeInput,
@@ -10,7 +11,8 @@ import type {
  * Form loại xe (LM-104, FE-5b-01). Message của schema là key từ điển: đổi ngôn ngữ thì lỗi đổi theo. Kích thước cm, tải trọng và giới
  * hạn trục kg (D-03), làm tròn tại biên khi lưu. Ô số đọc bằng `valueAsNumber`: ô trống là `NaN` — giới hạn trục để trống nghĩa là
  * loại xe chưa khai. Độ lệch trọng tâm nhập bằng phần trăm, kho giữ tỷ lệ (`maxCogOffsetRatio`). Lệch ngang (`maxCogOffsetRatioY`) và tải
- * trọng sàn (kg/m²) tuỳ chọn: trống là chưa khai, không bao giờ tự điền.
+ * trọng sàn (kg/m²) tuỳ chọn: trống là chưa khai, không bao giờ tự điền. Kiểu thân xe dùng cùng lựa chọn với form kho mẫu
+ * (`BODY_STYLE_CHOICES`): "Tự chọn theo kích thước" là `AUTO`, lưu thành loại xe không có `bodyStyle`.
  */
 export const NAME_MAX = 80
 export const POSITIVE = 'vehicleTypes.form.errors.positive' satisfies MessageKey
@@ -114,7 +116,7 @@ export const vehicleTypeFormSchema = z.object({
   floorLoadCapacityKgM2: optionalPositive,
 
   hazardousCapable: z.boolean(),
-
+  bodyStyle: z.enum(BODY_STYLE_CHOICES),
 
   obstacles: z.array(obstacleSchema),
 })
@@ -202,6 +204,7 @@ export const EMPTY_VEHICLE_TYPE: VehicleTypeFormInput = {
   floorLoadCapacityKgM2: Number.NaN,
 
   hazardousCapable: false,
+  bodyStyle: BODY_STYLE_AUTO,
 
   obstacles: [],
 }
@@ -252,6 +255,7 @@ export function toVehicleTypeForm(
 
     hazardousCapable:
       type.hazardousCapable,
+    bodyStyle: type.bodyStyle ?? BODY_STYLE_AUTO,
 
     obstacles:
       type.obstacles.map(
@@ -357,6 +361,7 @@ export function toVehicleTypeInput(
 
     hazardousCapable:
       values.hazardousCapable,
+    ...(values.bodyStyle === BODY_STYLE_AUTO ? {} : { bodyStyle: values.bodyStyle }),
 
     obstacles:
       values.obstacles.map(

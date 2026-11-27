@@ -2,6 +2,7 @@ import type { VehicleConfig } from '@/domain/models'
 import type { LoadPlan } from '@/features/optimization/load-plans-backend-api'
 import { backendPlacementIds, backendPlanScene, type BackendSceneStop } from '@/features/viewer3d/backend-plan-scene'
 import type { ScenePlacement, ViewerSceneModel } from '@/features/viewer3d/scene-types'
+import type { VehicleBodyStyle } from '@/types/vehicle-body-style'
 
 /** Một kiện kho đã xếp lên xe theo máy chủ (cm, đã áp hướng đặt; vị trí là chỗ thật nếu kho ghi sai lệch). */
 export type LoadedPlacement = {
@@ -37,6 +38,8 @@ export type DriverLoadedPlan = {
     readonly doorHeightCm: number
   } | null
   readonly maxPayloadKg: number | null
+  /** Kiểu thân của loại đang gắn với xe, chỉ cho hình xe ở khung 3D; vắng hay giá trị lạ là khung tự chọn theo kích thước. */
+  readonly bodyStyle?: VehicleBodyStyle | undefined
   readonly stops: readonly { readonly sequence: number; readonly name: string }[]
   readonly placements: readonly LoadedPlacement[]
 }
@@ -45,6 +48,8 @@ export type DriverServerScene = {
   readonly model: ViewerSceneModel
   /** Kiện không còn trên xe (đã dỡ ở các điểm trước hoặc điểm này), theo mã trên khung 3D. */
   readonly doneIds: ReadonlySet<string>
+  /** Kiểu thân xe cho `DriverCargoViewer`; vắng là khung tự chọn dáng. Không vào `model.vehicle`. */
+  readonly vehicleBodyStyle: VehicleBodyStyle | undefined
 }
 
 /**
@@ -98,5 +103,5 @@ export function driverServerScene(plan: DriverLoadedPlan): DriverServerScene | n
     const sceneId = sceneIdOf.get(item.id)
     return item.unloaded && sceneId !== undefined ? [sceneId] : []
   }))
-  return { model, doneIds }
+  return { model, doneIds, vehicleBodyStyle: plan.bodyStyle }
 }

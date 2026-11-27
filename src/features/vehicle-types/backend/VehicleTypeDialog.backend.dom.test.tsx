@@ -78,3 +78,34 @@ test('lệch ngang ngoài khoảng 0–50 % và tải trọng sàn không dươn
   expect(screen.getByText('Nhập số lớn hơn 0.')).toBeInTheDocument()
   expect(onSubmit).not.toHaveBeenCalled()
 })
+
+const bodyStyle = () => screen.getByRole('combobox', { name: 'Kiểu thân xe' })
+
+test('kiểu thân xe: mở sẵn "Tự chọn" (không gửi kiểu), chọn được kiểu xe tải; kiểu đã lưu hiện lại và về "Tự chọn" thì bỏ kiểu', async () => {
+  const onSubmit = renderDialog(TYPE)
+  const user = userEvent.setup()
+
+  expect(bodyStyle()).toHaveTextContent('Tự chọn theo kích thước')
+  expect(screen.getByText(/Chỉ đổi hình xe ở khung 3D/)).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: 'Lưu thay đổi' }))
+  await vi.waitFor(() => expect(onSubmit).toHaveBeenCalledOnce())
+  expect(onSubmit.mock.calls[0]?.[0]).not.toHaveProperty('bodyStyle')
+
+  await user.click(bodyStyle())
+  await user.click(await screen.findByRole('option', { name: 'Xe tải mui bạt' }))
+  await user.click(screen.getByRole('button', { name: 'Lưu thay đổi' }))
+  await vi.waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(2))
+  expect(onSubmit.mock.calls[1]?.[0]).toMatchObject({ name: TYPE.name, bodyStyle: 'TRUCK_CANVAS' })
+})
+
+test('kiểu thân xe đã lưu hiện lại, về "Tự chọn" thì không gửi kiểu nào', async () => {
+  const onSubmit = renderDialog({ ...TYPE, bodyStyle: 'TRUCK_FLATBED' })
+  const user = userEvent.setup()
+
+  expect(bodyStyle()).toHaveTextContent('Xe tải thùng lửng')
+  await user.click(bodyStyle())
+  await user.click(await screen.findByRole('option', { name: 'Tự chọn theo kích thước' }))
+  await user.click(screen.getByRole('button', { name: 'Lưu thay đổi' }))
+  await vi.waitFor(() => expect(onSubmit).toHaveBeenCalledOnce())
+  expect(onSubmit.mock.calls[0]?.[0]).not.toHaveProperty('bodyStyle')
+})

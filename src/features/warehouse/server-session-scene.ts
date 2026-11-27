@@ -2,6 +2,7 @@ import type { VehicleConfig } from '@/domain/models'
 import type { LoadPlan } from '@/features/optimization/load-plans-backend-api'
 import { backendPlacementIds, backendPlanScene, type BackendSceneStop } from '@/features/viewer3d/backend-plan-scene'
 import type { ViewerSceneModel } from '@/features/viewer3d/scene-types'
+import type { VehicleBodyStyle } from '@/types/vehicle-body-style'
 import type { ServerLoadingSession } from './warehouse-server-api'
 import { positionGuide } from './warehouse-position-guide'
 
@@ -9,6 +10,8 @@ export type ServerSessionScene = {
   readonly model: ViewerSceneModel
   /** Mã số placement của máy chủ → mã của kiện trên khung 3D. */
   readonly sceneIdOf: ReadonlyMap<string, string>
+  /** Kiểu thân xe của phiên (`bodyStyle` của máy chủ) cho `PositionViewer`; vắng là khung tự chọn dáng. Không vào `model.vehicle`. */
+  readonly vehicleBodyStyle: VehicleBodyStyle | undefined
 }
 
 /**
@@ -51,5 +54,5 @@ export function serverSessionScene(session: ServerLoadingSession): ServerSession
   }
   const model = backendPlanScene({ tripCode: session.code, plan, vehicle, stops: [...stops.values()] })
   const sceneIdOf = new Map([...backendPlacementIds(plan)].map(([sceneId, placementId]) => [placementId, sceneId]))
-  return { model, sceneIdOf }
+  return { model, sceneIdOf, vehicleBodyStyle: session.bodyStyle }
 }

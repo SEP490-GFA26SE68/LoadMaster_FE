@@ -28,7 +28,7 @@ function renderDialog(type: VehicleTypeEntry) {
 const bodyStyle = () => screen.getByRole('combobox', { name: 'Kiểu thân xe' })
 const save = () => screen.getByRole('button', { name: 'Lưu thay đổi' })
 
-test('the body style starts automatic, lists the four vans, and the chosen one is saved', async () => {
+test('the body style starts automatic, lists the four vans and the four trucks, and the chosen one is saved', async () => {
   const onSubmit = renderDialog(TYPE)
   const user = userEvent.setup()
 
@@ -41,6 +41,7 @@ test('the body style starts automatic, lists the four vans, and the chosen one i
   await user.click(bodyStyle())
   expect((await screen.findAllByRole('option')).map((option) => option.textContent)).toStrictEqual([
     'Tự chọn theo kích thước', 'Van mini mũi bằng', 'Van mini mũi ngắn', 'Van cỡ trung', 'Van cỡ lớn',
+    'Xe tải thùng kín', 'Xe tải mui bạt', 'Xe tải thùng lửng', 'Xe tải thùng đông lạnh',
   ])
   await user.click(screen.getByRole('option', { name: 'Van mini mũi ngắn' }))
   await user.click(save())

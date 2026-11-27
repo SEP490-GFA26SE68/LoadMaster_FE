@@ -113,7 +113,7 @@ describe('truckLayout', () => {
     const layout = truckLayout(LANDING_REQUEST.vehicle)
     expect(layout.vehicleClass).toBe('light')
     expect(layout.groundY).toBeCloseTo(-1.1, 9)
-    expect(layout.exhaust.map((v) => Number(v.toFixed(2)))).toStrictEqual([0.3, -0.62, 2.42])
+    expect(layout.exhaust.map((v) => Number(v.toFixed(2)))).toStrictEqual([0.3, -0.59, 2.42])
     const { truck: box } = DIORAMA
     expect(layout.footprint.x[0]).toBeGreaterThanOrEqual(box.x[0])
     expect(layout.cab.topY).toBeLessThanOrEqual(box.y[1])
@@ -136,5 +136,26 @@ describe('camera framing follows the class', () => {
       expect(Math.min(...corners.map((p) => p[0]))).toBeCloseTo(layout.footprint.x[0], 9)
     }
     expect(Math.min(...vehicleFitCorners(SPEC_TRUCK_6M, false).map((p) => p[1]))).toBe(0)
+  })
+})
+
+describe('body style routing', () => {
+  test('a declared van style forces a van even on truck numbers; a truck style never draws a van', () => {
+    expect(truckLayout(truck(620, 5000), 'VAN_LARGE').vehicleClass).toBe('van')
+    expect(truckLayout(truck(320, 1000), 'TRUCK_CANVAS').vehicleClass).toBe('light')
+    expect(truckLayout(truck(320, 1000), 'TRUCK_CANVAS').van).toBeNull()
+    expect(truckLayout(truck(720, 15000), 'TRUCK_FLATBED').vehicleClass).toBe('heavy')
+  })
+
+  test('the truck body is the declared one, else reefer with a cooling unit, else a box; vans have none', () => {
+    expect(truckLayout(truck(620, 5000), 'TRUCK_FLATBED').body).toBe('TRUCK_FLATBED')
+    expect(truckLayout(truck(620, 5000)).body).toBe('TRUCK_BOX')
+    expect(truckLayout(truck(620, 5000, { obstacles: [cooling] })).body).toBe('TRUCK_REEFER')
+    expect(truckLayout(truck(620, 5000, { obstacles: [cooling] }), 'TRUCK_BOX').body).toBe('TRUCK_BOX')
+    expect(truckLayout(truck(320, 1000)).body).toBeNull()
+  })
+
+  test('changing the truck body re-frames the camera', () => {
+    expect(vehicleFrameKey(truck(620, 5000), 'TRUCK_BOX')).not.toBe(vehicleFrameKey(truck(620, 5000), 'TRUCK_FLATBED'))
   })
 })

@@ -162,6 +162,22 @@ test('khung 3D: dựng từ lòng thùng, tải trọng và chỗ, khối lượ
   expect(serverSessionScene({ ...session, placements: session.placements.map((item) => ({ ...item, stopSequence: null })) })).toBeNull()
 })
 
+test('kiểu thân xe đi trong phiên xếp và tới khung 3D; giá trị lạ hay máy chủ cũ không trả là tự chọn', async () => {
+  const sessionWith = (bodyStyle: unknown) => {
+    stubBackend({ 'GET /api/warehouse/tasks/7': { body: envelope({ ...SESSION, bodyStyle }) } })
+    return createWarehouseBackend().fetchSession('7')
+  }
+  const styled = await sessionWith('VAN_LARGE')
+  expect(styled.bodyStyle).toBe('VAN_LARGE')
+  expect(serverSessionScene(styled)?.vehicleBodyStyle).toBe('VAN_LARGE')
+  expect(serverSessionScene(styled)?.model.vehicle).not.toHaveProperty('bodyStyle')
+  for (const bodyStyle of ['BUS', null, undefined]) {
+    const session = await sessionWith(bodyStyle)
+    expect(session.bodyStyle).toBeUndefined()
+    expect(serverSessionScene(session)?.vehicleBodyStyle).toBeUndefined()
+  }
+})
+
 test.each(['CONFIRMED_ELSEWHERE', 'SUCCESS_WITHOUT_CONFIRMATION'])('confirm %s: GET must prove this placement is confirmed', async (kind) => {
   const { calls } = stubBackend({
     'POST /api/warehouse/placements/101/confirm': kind === 'CONFIRMED_ELSEWHERE'

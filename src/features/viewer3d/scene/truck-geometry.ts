@@ -12,25 +12,49 @@ function merged(parts: BufferGeometry[]) {
   return geometry
 }
 
-/** Đuôi xe: chắn bùn sau cầu cuối, đèn hậu, phản quang, cản sau chống luồn và hai chân đỡ — cao độ theo mặt đất của hạng. */
+/**
+ * Đuôi xe (cao độ theo mặt đất của hạng): tấm chắn bùn cao su sau bánh cuối kèm thanh treo, cụm đèn hậu (vỏ, đèn đỏ, xi-nhan hổ phách,
+ * mắt phản quang tròn), cản sau chống luồn có dải phản quang đỏ / trắng xen kẽ ở mặt sau, khung biển số và chân đỡ cản. Thân có bửng
+ * (`layout.tailgate`): cản và đèn nằm sau chỗ bửng thõng xuống, chân đỡ treo dưới đuôi khung sườn rồi chìa ra sau dưới mép bửng.
+ */
 function addRear(parts: BufferGeometry[], layout: TruckLayout, length: number, width: number, m: SceneMaterials) {
-  const { box } = partAdders(parts)
-  const { wheelY, wheelRadius: r } = layout
+  const { box, cylinder } = partAdders(parts)
+  const { wheelY, wheelRadius: r, groundY, rearBumperY: bumperY } = layout
+  const truck = layout.profile.cab !== 'van', gate = layout.tailgate !== null
   const lastAxle = layout.axles.at(-1)?.x ?? length * 0.7
-  const bumperY = layout.rearBumperY
+  const legTop = layout.frame.y[1]
+  const bumperDepth = gate ? 0.14 : 0.18, bumperX = gate ? length + 0.18 : length + 0.16
+  const lightX = length + 0.12, lightY = gate ? bumperY + 0.17 : Math.max(bumperY + 0.2, -0.2)
+  const guardY = Math.min(-0.02, wheelY + r + 0.05)
   for (const side of [-1, 1]) {
     const z = side < 0 ? 0 : width
-    if (layout.profile.cab !== 'van') {
-      box([0.07, r * 1.1, 0.42], [Math.min(length - 0.05, lastAxle + r * 1.25), wheelY - r * 0.1, z - side * 0.2], m.wheel)
+    if (truck) {
+      const flapX = Math.min(length - 0.06, lastAxle + r * 1.3), flapZ = z - side * 0.36
+      const flapTop = guardY - 0.02, flapBottom = groundY + 0.14
+      if (flapTop - flapBottom > 0.1) {
+        box([0.012, flapTop - flapBottom, 0.5], [flapX, (flapTop + flapBottom) / 2, flapZ], m.wheel)
+        box([0.035, 0.035, 0.56], [flapX - 0.02, flapTop, flapZ], m.chassis)
+      }
     }
-    box([0.06, 0.13, 0.3], [length + 0.12, Math.max(bumperY + 0.2, -0.2), z - side * 0.25], m.tailLight)
-    box([0.02, 0.06, 0.1], [length + 0.15, Math.max(bumperY + 0.32, -0.08), z - side * 0.25], m.marker)
+    const lz = z - side * 0.25
+    box([0.05, 0.16, 0.36], [lightX, lightY, lz], m.chassis)
+    box([0.012, 0.11, 0.15], [lightX + 0.031, lightY, lz + side * 0.08], m.tailLight)
+    box([0.012, 0.11, 0.1], [lightX + 0.031, lightY, lz - side * 0.1], m.marker)
+    cylinder(0.032, 0.012, 'x', [lightX + 0.031, lightY - 0.13, lz], m.tailLight, 12)
   }
-  box([0.18, 0.15, width - 0.3], [length + 0.16, bumperY, width / 2], m.metal)
+  box([bumperDepth, 0.15, width - 0.3], [bumperX, bumperY, width / 2], m.metal)
+  const stripes = Math.max(2, Math.round((width - 0.4) / 0.22)), stripe = (width - 0.4) / stripes
+  for (let i = 0; i < stripes; i++) {
+    box([0.006, 0.07, stripe * 0.92], [bumperX + bumperDepth / 2 + 0.003, bumperY, 0.2 + stripe * (i + 0.5)], i % 2 ? m.light : m.tailLight)
+  }
   // Khung giữ biển số trên cản (biển là tấm riêng `LicensePlate`, chỉ khi tên xe có biển số).
   box([0.08, 0.15, 0.58], [length + 0.155, Math.min(-0.105, bumperY + 0.17), width / 2], m.chassis)
-  const legTop = layout.frame.y[1]
-  if (legTop - bumperY > 0.1) for (const z of [width * 0.3, width * 0.7]) box([0.06, legTop - bumperY, 0.06], [length + 0.1, (legTop + bumperY) / 2, z], m.chassis)
+  if (legTop - bumperY <= 0.1) return
+  const legX = gate ? length - 0.04 : length + 0.1, bumperFront = bumperX - bumperDepth / 2
+  for (const z of [width * 0.3, width * 0.7]) {
+    box([0.06, legTop - bumperY, 0.06], [legX, (legTop + bumperY) / 2, z], m.chassis)
+    if (gate) box([bumperFront - legX + 0.03, 0.05, 0.06], [(legX - 0.03 + bumperFront) / 2, bumperY, z], m.chassis)
+  }
 }
 
 /** Dàn lạnh ngoài vách trước (xe khai vật cản `COOLING_UNIT`): vỏ, mặt quạt tối, hai quạt và khe gió. */

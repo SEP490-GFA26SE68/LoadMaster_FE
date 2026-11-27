@@ -55,6 +55,11 @@ type BackendCargoSpace = {
   readonly rearAxleLimitKg?: Decimal | null
   readonly maxCogOffsetRatio?: Decimal | null
   readonly obstacles?: readonly BackendObstacle[] | null
+  /**
+   * Kiểu thân xe của loại xe (tên enum); `null` hay vắng (máy chủ cũ) là tự chọn theo kích thước. Chỉ đổi hình xe ở khung 3D: đọc bằng
+   * `parseVehicleBodyStyle`, không vào `VehicleConfig`.
+   */
+  readonly bodyStyle?: string | null
 }
 
 /** Một loại xe theo `VehicleTypeResponse` (`GET /api/vehicle-types`). */

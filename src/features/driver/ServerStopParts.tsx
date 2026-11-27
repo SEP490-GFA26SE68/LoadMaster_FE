@@ -26,5 +26,5 @@ export function ServerCargoPosition({ tripId, stopNumber }: { tripId: string; st
   const query = useDriverLoadPlanQuery(tripId)
   const scene = useMemo(() => (query.data ? driverServerScene(query.data) : null), [query.data])
   if (scene === null) return null
-  return <CargoPositionDialog model={scene.model} stopNumber={stopNumber} doneIds={scene.doneIds} />
+  return <CargoPositionDialog model={scene.model} stopNumber={stopNumber} doneIds={scene.doneIds} vehicleBodyStyle={scene.vehicleBodyStyle} />
 }

@@ -21,7 +21,7 @@ export type Puff = {
 }
 
 /** Miệng ống xả (m, hệ của nhóm xe): sườn gần camera, ngay sau cabin, dưới sàn thùng. */
-export const EXHAUST_AT: Vec3 = [0.3, -0.62, 2.42]
+export const EXHAUST_AT: Vec3 = [0.3, -0.59, 2.42]
 
 const BURST_MS = [0, 120, 260, 420, 600] as const
 const TRAIL_COUNT = 7
