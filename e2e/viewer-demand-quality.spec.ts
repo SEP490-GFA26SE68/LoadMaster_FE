@@ -4,7 +4,8 @@ import { drawnFrames, emulateSlowMachine, metrics, waitDemandIdle, waitIdle, typ
 
 type QualityTier = 'low' | 'balanced' | 'high'
 type SampleRecorder = { __viewerSamples?: ViewerMetrics[] }
-const EXPECTED_DPR: Record<QualityTier, string> = { low: '0.5', balanced: '1.5', high: '2' }
+/** DPR lúc nghỉ trên thiết bị 2×: low chạy ở 0,5 nhưng vẽ lại một khung nét `REST_DPR_MAX` (1,5) khi cảnh dừng. */
+const EXPECTED_DPR: Record<QualityTier, string> = { low: '1.5', balanced: '1.5', high: '2' }
 /** Tuỳ chọn khi đo tay (`VIEWER_INITIAL_QUALITY=low`), mặc định balanced như bản `.mjs`. */
 const INITIAL_TIER = (process.env.VIEWER_INITIAL_QUALITY ?? 'balanced') as QualityTier
 
@@ -34,7 +35,7 @@ test('demand rendering publishes FPS while moving, idles afterwards and switches
   // Scene phải yên hẳn trước khi ghi mẫu: FPS ghi được sau đây chỉ có thể đến từ lần kéo camera, không phải từ animation lúc mở màn
   await waitDemandIdle(page)
   await waitIdle(page)
-  expect((await metrics(page)).dpr).toBe(EXPECTED_DPR[INITIAL_TIER])
+  await expect(page.locator('[data-viewer-performance]')).toHaveAttribute('data-dpr', EXPECTED_DPR[INITIAL_TIER])
   report.environment = await page.locator('canvas:not(.maplibregl-canvas)').evaluate((canvas) => {
     const gl = (canvas as HTMLCanvasElement).getContext('webgl2')
     const extension = gl?.getExtension('WEBGL_debug_renderer_info')
@@ -65,7 +66,7 @@ test('demand rendering publishes FPS while moving, idles afterwards and switches
   await page.waitForTimeout(1200)
   expect(await drawnFrames(page), 'camera must settle back to demand idle').toBe(settledFrames)
 
-  for (const [tier, expectedDpr] of [['low', '0.5'], ['high', '2'], ['balanced', '1.5']] as const) {
+  for (const tier of ['low', 'high', 'balanced'] as const) {
     await page.evaluate((quality) => {
       const url = new URL(location.href)
       url.searchParams.set('quality', quality)
@@ -73,9 +74,11 @@ test('demand rendering publishes FPS while moving, idles afterwards and switches
       window.dispatchEvent(new PopStateEvent('popstate'))
     }, tier)
     await page.waitForFunction((quality) => document.querySelector('[data-viewer-performance]')?.getAttribute('data-quality-tier') === quality, tier)
+    await waitDemandIdle(page)
+    // Khung nét của tier low đến sau lần báo nghỉ đầu tiên: chờ overlay công bố đúng DPR lúc nghỉ
+    await expect(page.locator('[data-viewer-performance]')).toHaveAttribute('data-dpr', EXPECTED_DPR[tier])
     await waitIdle(page)
     const sample = await metrics(page)
-    expect(sample.dpr).toBe(expectedDpr)
     expect(sample.placementCount).toBe('1000')
     expect(Number(sample.drawCalls)).toBeLessThan(100)
     report.tiers.push(sample)

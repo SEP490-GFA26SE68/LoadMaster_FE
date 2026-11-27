@@ -87,3 +87,31 @@ export function truckWheel(m: SceneMaterials) {
   parts.forEach((part) => part.dispose())
   return geometry
 }
+
+/**
+ * Xe bản gọn (tier low, `vehicleDetail: 'simple'`): tấm gầm thùng, hai thanh khung sườn và cản trước — đủ nối cabin với bánh, một draw,
+ * vài chục tam giác thay cho hàng chục nghìn của `truckDetails`.
+ */
+export function truckSimpleDetails(length: number, width: number, layout: TruckLayout, m: SceneMaterials) {
+  const { frame } = layout
+  const parts = [
+    tintGeometry(new BoxGeometry(length, 0.04, width).translate(length / 2, -0.04, width / 2), m.skirt),
+    ...frame.railZ.map((z) => tintGeometry(new BoxGeometry(frame.toX - frame.fromX, 0.24, 0.1)
+      .translate((frame.fromX + frame.toX) / 2, -0.27, z), m.chassis)),
+    tintGeometry(new BoxGeometry(0.16, 0.22, width - 0.02).translate(CAB_X - 0.8, 0.39, width / 2), m.metal),
+  ]
+  const geometry = mergeGeometries(parts)!
+  parts.forEach((part) => part.dispose())
+  return geometry
+}
+
+/** Bánh bản gọn: lốp trơn và mâm, một hình học instanced cho mọi bánh. */
+export function truckWheelSimple(m: SceneMaterials) {
+  const parts = [
+    tintGeometry(new CylinderGeometry(0.5, 0.5, 0.3, 16), m.wheel),
+    tintGeometry(new CylinderGeometry(0.3, 0.3, 0.31, 12), m.metal),
+  ]
+  const geometry = mergeGeometries(parts)!
+  parts.forEach((part) => part.dispose())
+  return geometry
+}

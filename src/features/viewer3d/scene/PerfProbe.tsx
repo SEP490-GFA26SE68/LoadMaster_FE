@@ -36,6 +36,8 @@ type Counters = {
   triangles: number
   /** Có khung hình trong quãng ổn định kể từ lần gửi mẫu trước. */
   settling: boolean
+  /** DPR của khung trước: khung đầu sau khi đổi DPR (khung nét lúc nghỉ, về DPR của tier) dựng lại bộ đệm, không tính vào FPS. */
+  lastDpr: number
 }
 
 /**
@@ -48,8 +50,11 @@ export function PerfProbe({
   placementCount,
   qualityTier,
   scene,
+  onRest,
 }: {
   onSample: (sample: PerfSample) => void
+  /** Gọi ở mỗi nhịp lấy mẫu khi cảnh vẫn nghỉ mà không có gì mới để công bố: chính sách chất lượng đếm được quãng nghỉ dài. */
+  onRest?: () => void
   placementCount: number
   qualityTier: QualityTier
   /** Cảnh đang vẽ (model của phương án): đổi tham chiếu là bắt đầu lại quãng ổn định. */
@@ -67,6 +72,7 @@ export function PerfProbe({
     drawCalls: 0,
     triangles: 0,
     settling: true,
+    lastDpr: 0,
   })
   const settleUntil = useRef(0)
   useEffect(() => {
@@ -87,12 +93,14 @@ export function PerfProbe({
       const current = counters.current
       const timestamp = frameStartedAt.current
       const interval = timestamp - current.lastFrameAt
-      // Không tính quãng scene nghỉ giữa hai click là frame chậm.
-      if (current.requestedNextFrame && interval > 0) {
+      const dpr = state.viewport.dpr
+      // Không tính quãng scene nghỉ giữa hai click là frame chậm, cũng không tính khung vừa đổi DPR (dựng lại bộ đệm).
+      if (current.requestedNextFrame && interval > 0 && dpr === current.lastDpr) {
         current.activeIntervals += 1
         current.activeElapsedMs += interval
       }
       if (timestamp < settleUntil.current) current.settling = true
+      current.lastDpr = dpr
       current.renderedFrames += 1
       current.lastFrameAt = timestamp
       current.requestedNextFrame = state.frameloop === 'always' || state.internal.frames > 0
@@ -111,7 +119,10 @@ export function PerfProbe({
       const now = performance.now()
       const idle = isSceneIdle(current.requestedNextFrame, now - current.lastFrameAt, pendingFrames)
       const settling = current.settling || now < settleUntil.current
-      if (publishedFrames === current.renderedFrames && publishedIdle === idle) return
+      if (publishedFrames === current.renderedFrames && publishedIdle === idle) {
+        if (idle) onRest?.()
+        return
+      }
       const frameTimeMs = !idle && current.activeIntervals > 0
         ? current.activeElapsedMs / current.activeIntervals
         : null
@@ -139,7 +150,7 @@ export function PerfProbe({
       window.clearInterval(timer)
       unsubscribe()
     }
-  }, [get, onSample, placementCount, qualityTier])
+  }, [get, onSample, onRest, placementCount, qualityTier])
 
   return null
 }

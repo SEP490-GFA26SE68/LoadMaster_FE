@@ -3,22 +3,26 @@ import { ExtrudeGeometry, InstancedMesh, Object3D, Shape } from 'three'
 import type { VehicleConfig } from '@/domain/models'
 import type { SceneMaterials } from './materials'
 import { containerSize } from './units'
-import { truckDetails, truckWheel } from './truck-geometry'
+import type { VehicleDetail } from '../usePerformanceFlags'
+import { truckDetails, truckSimpleDetails, truckWheel, truckWheelSimple } from './truck-geometry'
 import { CAB_X, truckLayout, WHEEL_RADIUS, WHEEL_Y } from './truck-layout'
 import { useDisposeOnChange } from './useDisposeOnChange'
 
 /**
  * Xe minh hoạ quanh thùng: cabin, chi tiết thân và khung gầm gộp một draw (`truckDetails`), mọi bánh một InstancedMesh.
- * Vị trí trục theo `vehicle.axles` khi có (`truckLayout`), vẫn không phải dữ liệu trục có thẩm quyền và không tính tải trục.
+ * `detail="simple"` (tier low): cùng bốn draw call nhưng chi tiết gộp chỉ còn gầm thùng + khung sườn + cản, bánh trơn — xe vẫn còn
+ * nguyên hình khi máy chậm. Vị trí trục theo `vehicle.axles` khi có (`truckLayout`), vẫn không phải dữ liệu trục có thẩm quyền và
+ * không tính tải trục.
  */
-export function TruckCab({ vehicle, materials, shadows }: {
-  vehicle: VehicleConfig; materials: SceneMaterials; shadows: boolean
+export function TruckCab({ vehicle, materials, shadows, detail: level = 'full' }: {
+  vehicle: VehicleConfig; materials: SceneMaterials; shadows: boolean; detail?: VehicleDetail
 }) {
   const { length: L, width: W } = containerSize(vehicle)
   const wheels = useRef<InstancedMesh>(null)
   const layout = useMemo(() => truckLayout(L, W, vehicle.axles), [L, W, vehicle.axles])
-  const detail = useMemo(() => truckDetails(L, W, layout, materials), [L, W, layout, materials])
-  const wheel = useMemo(() => truckWheel(materials), [materials])
+  const simple = level === 'simple'
+  const detail = useMemo(() => (simple ? truckSimpleDetails : truckDetails)(L, W, layout, materials), [simple, L, W, layout, materials])
+  const wheel = useMemo(() => (simple ? truckWheelSimple : truckWheel)(materials), [simple, materials])
   const body = useMemo(() => {
     const profile = new Shape()
     profile.moveTo(-0.75, 0.35); profile.lineTo(0.75, 0.35)
@@ -36,7 +40,7 @@ export function TruckCab({ vehicle, materials, shadows }: {
     })
     wheels.current.instanceMatrix.needsUpdate = true
     wheels.current.computeBoundingSphere()
-  }, [layout])
+  }, [layout, wheel])
   // Mỗi geometry tự giải phóng khi chính nó đổi: đổi xe làm `detail` (và `body` khi đổi bề rộng) dựng lại mà `wheel` vẫn đang vẽ
   useDisposeOnChange(detail)
   useDisposeOnChange(wheel)
@@ -53,7 +57,7 @@ export function TruckCab({ vehicle, materials, shadows }: {
       <meshStandardMaterial vertexColors roughness={0.56} metalness={0.3} />
     </mesh>
     {/* Số bánh đổi theo cấu hình trục: đổi key để dựng lại InstancedMesh đúng sức chứa. */}
-    <instancedMesh key={layout.wheels.length} name="vehicle-wheels" ref={wheels} args={[wheel, undefined, layout.wheels.length]} castShadow={shadows}>
+    <instancedMesh key={`${layout.wheels.length}:${level}`} name="vehicle-wheels" ref={wheels} args={[wheel, undefined, layout.wheels.length]} castShadow={shadows}>
       <meshStandardMaterial vertexColors roughness={0.78} metalness={0.12} />
     </instancedMesh>
     {shadows ? <mesh rotation={[-Math.PI / 2, 0, 0]} position={[L / 2, WHEEL_Y - WHEEL_RADIUS - 0.01, W / 2]} receiveShadow>

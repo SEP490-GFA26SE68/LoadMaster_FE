@@ -5,6 +5,8 @@ export type QualityTier = 'high' | 'balanced' | 'low'
 export type AnimationQuality = 'full' | 'reduced' | 'none'
 /** `landing`: khung 3D của trang giới thiệu công khai (`LandingStageViewer`) — chỉ xem, không thao tác. */
 export type ExperienceMode = 'planner' | 'warehouse' | 'driver' | 'fleet' | 'landing'
+/** `full`: cabin, bánh có gai / mâm và lớp chi tiết gộp (lưới tản nhiệt, gương, bậc, khung gầm…). `simple`: thân cabin, kính, bánh trơn và khung sườn. */
+export type VehicleDetail = 'full' | 'simple'
 
 /** Hiệu ứng chỉ thay đổi cách vẽ, không được loại bỏ trạng thái nghiệp vụ. */
 export type PerformanceFlags = {
@@ -12,8 +14,12 @@ export type PerformanceFlags = {
   shadows: boolean
   /** Viền tối chung; viền kiện đang chọn luôn được giữ lại. */
   outlines: boolean
-  /** Cabin, bánh xe và mặt đất; vẫn giữ thùng và cửa để định hướng. */
+  /**
+   * Chi tiết phụ: chi tiết thùng (thước sàn, bản lề cửa), bề mặt kiện và cảnh trang trí của trang giới thiệu. Xe (cabin, bánh)
+   * không theo cờ này — xe luôn được vẽ, chỉ đổi mức chi tiết theo `vehicleDetail`.
+   */
   decoration: boolean
+  vehicleDetail: VehicleDetail
   animationQuality: AnimationQuality
   postprocessing: false
   reducedMotion: boolean
@@ -28,6 +34,7 @@ const PROFILES: Record<QualityTier, QualityProfile> = {
     shadows: true,
     outlines: true,
     decoration: true,
+    vehicleDetail: 'full',
     animationQuality: 'full',
     postprocessing: false,
     dpr: [1, 2],
@@ -36,6 +43,7 @@ const PROFILES: Record<QualityTier, QualityProfile> = {
     shadows: false,
     outlines: true,
     decoration: true,
+    vehicleDetail: 'full',
     animationQuality: 'reduced',
     postprocessing: false,
     dpr: [1, 1.5],
@@ -44,9 +52,11 @@ const PROFILES: Record<QualityTier, QualityProfile> = {
     shadows: false,
     outlines: false,
     decoration: false,
+    // Xe bản gọn: thêm vài draw call / vài trăm tam giác, đổi lại không bao giờ "mất xe" khi máy chậm
+    vehicleDetail: 'simple',
     animationQuality: 'none',
     postprocessing: false,
-    // Low prioritizes interaction; DOM labels stay sharp at native resolution.
+    // DPR lúc chuyển động; cảnh nghỉ thì `RestDpr` vẽ lại một khung nét (`restDprOf`). DOM labels stay sharp at native resolution.
     dpr: [0.5, 0.5],
   },
 }
