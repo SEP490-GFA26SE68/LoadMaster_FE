@@ -98,9 +98,6 @@ export const DIORAMA_COLORS = {
 /** Hệ số sáng (nhân trong không gian tuyến tính) của phần quá tối dưới ánh sáng chung của `SceneLighting`: tán cây cyan-800 lẫn vào nền tối. */
 export const DIORAMA_LIFT: Partial<Record<keyof typeof DIORAMA_COLORS, number>> = { canopy: 1.8 }
 
-/** Mặt cắt cabin (x, y) quanh `CAB_X`, như `TruckCab`: khối thay cabin ở tier thấp và ảnh tĩnh dùng chung. */
-export const CAB_PROFILE: Footprint = [[-0.75, 0.35], [0.75, 0.35], [0.75, 2.3], [-0.46, 2.3], [-0.75, 1.35]]
-
 export function prismCorners(footprint: Footprint, bottom: number, top: number): Vec3[] {
   return footprint.flatMap(([x, z]): Vec3[] => [[x, bottom, z], [x, top, z]])
 }

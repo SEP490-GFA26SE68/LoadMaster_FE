@@ -1,66 +1,69 @@
 import { BoxGeometry, CylinderGeometry, type BufferGeometry } from 'three'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
 import type { SceneMaterials } from './materials'
-import { addChassisParts } from './truck-chassis'
+import { addCabDetails } from './truck-cab-details'
+import { addChassisParts, partAdders } from './truck-chassis'
 import { tintGeometry } from './tint-geometry'
-import { CAB_X, type TruckLayout } from './truck-layout'
+import type { TruckLayout } from './truck-layout'
 
-type Point = [number, number, number]
-
-/** Chi tiết cabin, đuôi xe và khung gầm gộp màu theo đỉnh vào một vật liệu/một draw. Không phải hình học trục thật. */
-export function truckDetails(length: number, width: number, layout: TruckLayout, m: SceneMaterials) {
-  const parts: BufferGeometry[] = []
-  const add = (size: Point, position: Point, color: string) => {
-    parts.push(tintGeometry(new BoxGeometry(...size).translate(...position), color))
-  }
-  const cabX = CAB_X
-  const front = cabX - 0.75
-  // Lưới tản nhiệt, cản, đèn, tấm che nắng, khung biển số.
-  add([0.05, 0.35, width - 0.7], [front - 0.01, 0.84, width / 2], m.chassis)
-  for (let i = 0; i < 4; i++) add([0.06, 0.018, width - 0.78], [front - 0.04, 0.71 + i * 0.075, width / 2], m.metal)
-  add([0.16, 0.22, width - 0.02], [front - 0.05, 0.39, width / 2], m.metal)
-  add([0.17, 0.08, width], [front + 0.2, 2.28, width / 2], m.cab)
-  add([0.02, 0.12, 0.38], [front - 0.14, 0.39, width / 2], m.chassis)
-  // Cánh gió nóc cabin, năm đèn cờ nóc và hai cần gạt nước trên kính chắn gió.
-  // Cánh gió: tấm nghiêng về phía sau trên nóc, hai chân đỡ.
-  parts.push(tintGeometry(new BoxGeometry(0.04, 0.8, width - 0.4).rotateZ(-1.28).translate(cabX + 0.2, 2.42, width / 2), m.cab))
-  for (const z of [0.4, width - 0.4]) add([0.12, 0.14, 0.04], [cabX + 0.5, 2.36, z], m.chassis)
-  for (let i = 0; i < 5; i++) add([0.05, 0.035, 0.09], [front + 0.33, 2.34, width * (0.3 + i * 0.1)], m.marker)
-  for (const z of [width * 0.32, width * 0.62]) add([0.015, 0.018, 0.55], [front + 0.03, 1.46, z], m.chassis)
-  for (const side of [-1, 1]) {
-    const z = side < 0 ? 0 : width
-    add([0.045, 0.18, 0.3], [front - 0.04, 0.6, z - side * 0.25], m.light)
-    add([0.045, 0.07, 0.12], [front - 0.04, 0.47, z - side * 0.2], m.marker)
-    // Kính hông, khe cửa, tay nắm, gương, bậc lên xuống, tay vịn và vè bánh trước.
-    add([0.92, 0.63, 0.018], [cabX + 0.12, 1.76, z - side * 0.042], m.windshield)
-    add([0.02, 1.52, 0.02], [cabX + 0.65, 1.27, z - side * 0.04], m.skirt)
-    add([0.2, 0.045, 0.04], [cabX + 0.43, 1.3, z - side * 0.02], m.chassis)
-    add([0.03, 0.7, 0.03], [cabX + 0.7, 1.05, z + side * 0.01], m.metal)
-    add([0.04, 0.04, 0.28], [cabX - 0.35, 1.55, z + side * 0.1], m.metal)
-    add([0.15, 0.35, 0.1], [cabX - 0.35, 1.67, z + side * 0.25], m.chassis)
-    add([0.12, 0.29, 0.015], [cabX - 0.35, 1.67, z + side * 0.305], m.metal)
-    for (let i = 0; i < 2; i++) add([0.5, 0.06, 0.24], [cabX + 0.52, 0.18 - i * 0.19, z - side * 0.01], m.metal)
-    const steer = layout.axles.find((axle) => axle.kind === 'steer')
-    if (steer) {
-      add([1.05, 0.04, 0.4], [steer.x, 0.02, z - side * 0.2], m.chassis)
-      add([0.04, 0.34, 0.4], [steer.x - 0.52, -0.13, z - side * 0.2], m.chassis)
-    }
-    // Chắn bùn sau cùng, đèn hậu và đèn phản quang.
-    const lastAxle = layout.axles.at(-1)?.x ?? length * 0.72 + 1.15
-    add([0.07, 0.54, 0.42], [Math.min(length - 0.05, lastAxle + 0.6), -0.62, z - side * 0.2], m.wheel)
-    add([0.06, 0.13, 0.3], [length + 0.12, -0.18, z - side * 0.25], m.tailLight)
-    add([0.02, 0.06, 0.1], [length + 0.15, -0.06, z - side * 0.25], m.marker)
-  }
-  add([0.18, 0.15, width - 0.3], [length + 0.16, -0.65, width / 2], m.metal)
-  for (const z of [width * 0.3, width * 0.7]) add([0.06, 0.45, 0.06], [length + 0.1, -0.44, z], m.chassis)
-  addChassisParts(parts, layout, length, width, m)
+function merged(parts: BufferGeometry[]) {
   const geometry = mergeGeometries(parts)!
   parts.forEach((part) => part.dispose())
   return geometry
 }
 
+/** Đuôi xe: chắn bùn sau cầu cuối, đèn hậu, phản quang, cản sau chống luồn và hai chân đỡ — cao độ theo mặt đất của hạng. */
+function addRear(parts: BufferGeometry[], layout: TruckLayout, length: number, width: number, m: SceneMaterials) {
+  const { box } = partAdders(parts)
+  const { wheelY, wheelRadius: r } = layout
+  const lastAxle = layout.axles.at(-1)?.x ?? length * 0.7
+  const bumperY = layout.rearBumperY
+  for (const side of [-1, 1]) {
+    const z = side < 0 ? 0 : width
+    if (layout.profile.cab !== 'van') {
+      box([0.07, r * 1.1, 0.42], [Math.min(length - 0.05, lastAxle + r * 1.25), wheelY - r * 0.1, z - side * 0.2], m.wheel)
+    }
+    box([0.06, 0.13, 0.3], [length + 0.12, Math.max(bumperY + 0.2, -0.2), z - side * 0.25], m.tailLight)
+    box([0.02, 0.06, 0.1], [length + 0.15, Math.max(bumperY + 0.32, -0.08), z - side * 0.25], m.marker)
+  }
+  box([0.18, 0.15, width - 0.3], [length + 0.16, bumperY, width / 2], m.metal)
+  // Khung giữ biển số trên cản (biển là tấm riêng `LicensePlate`, chỉ khi tên xe có biển số).
+  box([0.08, 0.15, 0.58], [length + 0.155, Math.min(-0.105, bumperY + 0.17), width / 2], m.chassis)
+  const legTop = layout.frame.y[1]
+  if (legTop - bumperY > 0.1) for (const z of [width * 0.3, width * 0.7]) box([0.06, legTop - bumperY, 0.06], [length + 0.1, (legTop + bumperY) / 2, z], m.chassis)
+}
+
+/** Dàn lạnh ngoài vách trước (xe khai vật cản `COOLING_UNIT`): vỏ, mặt quạt tối, hai quạt và khe gió. */
+function addReefer(parts: BufferGeometry[], layout: TruckLayout, m: SceneMaterials) {
+  if (!layout.reefer) return
+  const { box, cylinder } = partAdders(parts)
+  const { x, y, z } = layout.reefer
+  const cx = (x[0] + x[1]) / 2, cy = (y[0] + y[1]) / 2, cz = (z[0] + z[1]) / 2
+  const sx = x[1] - x[0], sy = y[1] - y[0], sz = z[1] - z[0]
+  box([sx, sy, sz], [cx, cy, cz], m.light)
+  box([0.02, sy * 0.72, sz * 0.86], [x[0] - 0.005, cy, cz], m.chassis)
+  const fan = Math.min(sy * 0.3, sz * 0.18)
+  for (const dz of [-0.24, 0.24]) cylinder(fan, 0.02, 'x', [x[0] - 0.015, cy, cz + sz * dz], m.metal, 20)
+  for (let i = 0; i < 3; i++) box([0.022, 0.012, sz * 0.8], [x[0] - 0.02, y[0] + sy * (0.12 + i * 0.04), cz], m.metal)
+}
+
+/** Chi tiết cabin, đuôi xe, dàn lạnh và khung gầm gộp màu theo đỉnh vào một vật liệu/một draw. Không phải hình học trục thật. */
+export function truckDetails(length: number, width: number, layout: TruckLayout, m: SceneMaterials) {
+  const parts: BufferGeometry[] = []
+  addCabDetails(parts, layout, width, m)
+  addRear(parts, layout, length, width, m)
+  addReefer(parts, layout, m)
+  addChassisParts(parts, layout, length, width, m)
+  return merged(parts)
+}
+
+/** Lốp dựng ở bán kính 0,5 m, rộng 0,3 m rồi co theo cỡ bánh của hạng (trục trụ là y trước khi dựng đứng). */
+const BASE_RADIUS = 0.5, BASE_WIDTH = 0.3
+const sized = (geometry: BufferGeometry, layout: TruckLayout) =>
+  geometry.scale(layout.wheelRadius / BASE_RADIUS, layout.tireWidth / BASE_WIDTH, layout.wheelRadius / BASE_RADIUS)
+
 /** Lốp có gai và hông lốp, mâm có lỗ thông gió, moay-ơ và 10 ốc — một hình học instanced cho mọi bánh. */
-export function truckWheel(m: SceneMaterials) {
+export function truckWheel(layout: TruckLayout, m: SceneMaterials) {
   const parts = [tintGeometry(new CylinderGeometry(0.5, 0.5, 0.3, 32), m.wheel)]
   for (let i = 0; i < 24; i++) {
     const angle = i * Math.PI / 12
@@ -83,35 +86,35 @@ export function truckWheel(m: SceneMaterials) {
         .translate(Math.cos(angle) * 0.1, side * 0.2, Math.sin(angle) * 0.1), m.light))
     }
   }
-  const geometry = mergeGeometries(parts)!
-  parts.forEach((part) => part.dispose())
-  return geometry
+  return sized(merged(parts), layout)
 }
 
 /**
- * Xe bản gọn (tier low, `vehicleDetail: 'simple'`): tấm gầm thùng, hai thanh khung sườn và cản trước — đủ nối cabin với bánh, một draw,
- * vài chục tam giác thay cho hàng chục nghìn của `truckDetails`.
+ * Xe bản gọn (tier low, `vehicleDetail: 'simple'`): tấm gầm thùng, hai thanh khung sườn, cản trước và ga-lăng tối — đủ nối cabin với
+ * bánh theo đúng cao độ của hạng, một draw, vài chục tam giác thay cho hàng chục nghìn của `truckDetails`.
  */
 export function truckSimpleDetails(length: number, width: number, layout: TruckLayout, m: SceneMaterials) {
-  const { frame } = layout
+  const { frame, cab } = layout
+  const [railTop, railBottom] = frame.y
+  const bumperBottom = Math.max(layout.groundY + 0.22, layout.wheelY - layout.wheelRadius * 0.1)
+  const cabW = cab.z[1] - cab.z[0]
   const parts = [
     tintGeometry(new BoxGeometry(length, 0.04, width).translate(length / 2, -0.04, width / 2), m.skirt),
-    ...frame.railZ.map((z) => tintGeometry(new BoxGeometry(frame.toX - frame.fromX, 0.24, 0.1)
-      .translate((frame.fromX + frame.toX) / 2, -0.27, z), m.chassis)),
-    tintGeometry(new BoxGeometry(0.16, 0.22, width - 0.02).translate(CAB_X - 0.8, 0.39, width / 2), m.metal),
+    ...frame.railZ.map((z) => tintGeometry(new BoxGeometry(frame.toX - frame.fromX, railTop - railBottom, 0.1)
+      .translate((frame.fromX + frame.toX) / 2, (railTop + railBottom) / 2, z), m.chassis)),
+    tintGeometry(new BoxGeometry(0.16, cab.bottomY + 0.06 - bumperBottom, cabW)
+      .translate(cab.frontX - 0.04, (cab.bottomY + 0.06 + bumperBottom) / 2, width / 2), m.metal),
+    tintGeometry(new BoxGeometry(0.04, (cab.beltY - cab.bottomY) * 0.38, cabW * 0.6)
+      .translate(cab.frontX - 0.01, cab.bottomY + (cab.beltY - cab.bottomY) * 0.46, width / 2), m.chassis),
   ]
-  const geometry = mergeGeometries(parts)!
-  parts.forEach((part) => part.dispose())
-  return geometry
+  return merged(parts)
 }
 
 /** Bánh bản gọn: lốp trơn và mâm, một hình học instanced cho mọi bánh. */
-export function truckWheelSimple(m: SceneMaterials) {
+export function truckWheelSimple(layout: TruckLayout, m: SceneMaterials) {
   const parts = [
     tintGeometry(new CylinderGeometry(0.5, 0.5, 0.3, 16), m.wheel),
     tintGeometry(new CylinderGeometry(0.3, 0.3, 0.31, 12), m.metal),
   ]
-  const geometry = mergeGeometries(parts)!
-  parts.forEach((part) => part.dispose())
-  return geometry
+  return sized(merged(parts), layout)
 }

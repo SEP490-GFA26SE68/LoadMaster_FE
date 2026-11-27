@@ -1,7 +1,7 @@
 import { SPEC_TRUCK_6M } from '@/domain/fixtures/spec-samples'
 import type { VehicleAxle, VehicleConfig } from '@/domain/models'
 
-/** Trục trước nằm dưới cabin, 100 cm trước vách đầu thùng — đúng chỗ khung gầm 3D vẽ cầu dẫn hướng (`CAB_X` của `truck-layout.ts`). */
+/** Trục trước nằm dưới cabin, 100 cm trước vách đầu thùng — đúng chỗ khung gầm 3D vẽ cầu dẫn hướng (`truckLayout` đặt trục khai báo đúng `positionXCm`). */
 const FRONT_AXLE_X_CM = -100
 
 /**

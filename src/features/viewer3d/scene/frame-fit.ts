@@ -1,4 +1,5 @@
-import type { Vec3 } from './units'
+import { truckLayout, type TruckLayoutInput } from './truck-layout'
+import { containerSize, type Vec3 } from './units'
 
 /**
  * Canh khung một tập điểm ở hướng nhìn cho trước: tìm tâm nhìn và khoảng cách camera để mọi điểm nằm trong khung với lề `margin`.
@@ -119,9 +120,15 @@ export function insetFrame(points: readonly Vec3[], direction: Vec3, view: {
   return { position, target }
 }
 
-/** Khung vừa khít của `CameraRig` (không `framePoints`): lề quanh các góc hộp quanh xe (hệ góc thùng, từ tâm thùng); `decoration` thêm cabin, gầm, bánh. */
+/**
+ * Khung vừa khít của `CameraRig` (không `framePoints`): các góc hộp quanh xe (hệ góc thùng). `decoration` thêm cabin, gầm, bánh theo
+ * hạng của xe (`truckLayout`): mũi cabin, mặt đất, nóc cabin hay dàn lạnh — xe van thấp, ngắn không bị canh như xe tải nặng.
+ */
 export const VEHICLE_FIT_MARGIN = 1.16
-export function vehicleFitCorners([cx, cy, cz]: Readonly<Vec3>, decoration: boolean): Vec3[] {
-  const x0 = decoration ? -1.85 : 0, y0 = decoration ? -1.15 : 0
-  return [x0, cx * 2 + 1.2].flatMap((x) => [y0, cy * 2 + 0.2].flatMap((y) => [-0.45, cz * 2 + 0.45].map((z): Vec3 => [x, y, z])))
+export function vehicleFitCorners(vehicle: TruckLayoutInput, decoration: boolean): Vec3[] {
+  const { length, width, height } = containerSize(vehicle)
+  const layout = decoration ? truckLayout(vehicle) : null
+  const x0 = layout ? layout.footprint.x[0] : 0, y0 = layout ? layout.groundY : 0
+  const top = Math.max(height, layout?.cab.topY ?? 0, layout?.reefer?.y[1] ?? 0) + 0.2
+  return [x0, length + 1.2].flatMap((x) => [y0, top].flatMap((y) => [-0.45, width + 0.45].map((z): Vec3 => [x, y, z])))
 }

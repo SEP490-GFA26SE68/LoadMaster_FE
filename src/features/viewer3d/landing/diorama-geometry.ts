@@ -3,9 +3,9 @@ import type { VehicleConfig } from '@/domain/models'
 import { stopColor } from '@/lib/stops'
 import { readToken } from '@/lib/tokens'
 import { sceneMaterials } from '../scene/materials'
-import { CAB_X, truckLayout, WHEEL_RADIUS, WHEEL_Y } from '../scene/truck-layout'
+import { truckLayout } from '../scene/truck-layout'
 import { containerSize, type Vec3 } from '../scene/units'
-import { CAB_PROFILE, DIORAMA, DIORAMA_COLORS, DIORAMA_LIFT, laneBounds, type Footprint } from './diorama-layout'
+import { DIORAMA, DIORAMA_COLORS, DIORAMA_LIFT, laneBounds, type Footprint } from './diorama-layout'
 
 /**
  * Hình học của sân kho (`DIORAMA`) gộp vào **một** BufferGeometry tô màu theo đỉnh (một draw call, pháp tuyến phẳng); màu là token
@@ -151,12 +151,13 @@ function addTrees(b: Builder, c: Palette) {
 /** Tier thấp không vẽ cabin, bánh, khung gầm (`TruckCab`): khối cùng dáng, cùng màu giữ thùng đứng trên mặt đường thay vì lơ lửng. */
 function addTruckStandIn(b: Builder, vehicle: VehicleConfig) {
   const m = sceneMaterials(), { length: L, width: W } = containerSize(vehicle), chassis = rgb(m.chassis)
-  b.extrudeZ(CAB_PROFILE.map(([x, y]) => [CAB_X + x, y] as const), 0.06, W - 0.06, rgb(m.cab))
-  b.box([CAB_X - 0.85, WHEEL_Y - 0.1, W / 2 - 0.5], [L + 0.1, 0, W / 2 + 0.5], chassis)
-  b.box([CAB_X - 0.8, WHEEL_Y, 0.08], [CAB_X + 0.8, 0.35, W - 0.08], chassis)
-  for (const { x, z } of truckLayout(L, W, vehicle.axles).wheels) {
+  const { cab, wheels, wheelY, wheelRadius: r } = truckLayout(vehicle)
+  b.extrudeZ(cab.profile, cab.z[0] + 0.02, cab.z[1] - 0.02, rgb(m.cab))
+  b.box([cab.frontX + 0.05, wheelY - 0.1, W / 2 - 0.5], [L + 0.1, 0, W / 2 + 0.5], chassis)
+  b.box([cab.frontX + 0.05, wheelY, cab.z[0] + 0.06], [cab.backX, cab.bottomY, cab.z[1] - 0.06], chassis)
+  for (const { x, z } of wheels) {
     const side = z < W / 2 ? -1 : 1
-    const ring = Array.from({ length: 8 }, (_, k): Vec3 => [x + WHEEL_RADIUS * Math.cos(k * Math.PI / 4), WHEEL_Y + WHEEL_RADIUS * Math.sin(k * Math.PI / 4), z + side * 0.15])
+    const ring = Array.from({ length: 8 }, (_, k): Vec3 => [x + r * Math.cos(k * Math.PI / 4), wheelY + r * Math.sin(k * Math.PI / 4), z + side * 0.15])
     b.face(ring, rgb(m.wheel), [0, 0, side])
   }
 }

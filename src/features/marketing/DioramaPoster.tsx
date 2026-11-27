@@ -1,9 +1,9 @@
 import { useMemo } from 'react'
 import {
-  CAB_PROFILE, DIORAMA, DIORAMA_COLORS, DIORAMA_FRAME_POINTS, DIORAMA_LIFT, laneBounds, STAGE_CAMERA, type Footprint, type Range, type StageView,
+  DIORAMA, DIORAMA_COLORS, DIORAMA_FRAME_POINTS, DIORAMA_LIFT, laneBounds, STAGE_CAMERA, type Footprint, type Range, type StageView,
 } from '@/features/viewer3d/landing/diorama-layout'
 import { VEHICLE_FIT_MARGIN, vehicleFitCorners, type Insets } from '@/features/viewer3d/scene/frame-fit'
-import { CAB_X, truckLayout, WHEEL_RADIUS, WHEEL_Y } from '@/features/viewer3d/scene/truck-layout'
+import { truckLayout } from '@/features/viewer3d/scene/truck-layout'
 import { containerSize } from '@/features/viewer3d/scene/units'
 import { alongPoint, projectAlong } from '@/lib/isometric'
 import { stopColor } from '@/lib/stops'
@@ -74,18 +74,18 @@ function posterScene(): Mark[] {
   prism(outer, w.band, paint('band'), null)
   for (const door of w.doors) front(door, [dock.top, w.doorTop], w.z[1], paint('door'))
   // Xe như `TruckCab` và `Container` lúc chuyện bắt đầu: khung gầm, bánh phía gần, bậc lên, cabin, thùng rỗng, cầu dẫn, cửa sau mở 110°
-  const { axles, frame, wheels } = truckLayout(L, W, vehicle.axles)
-  box([frame.fromX, frame.toX], [-0.75, -0.1], frame.railZ, M.chassis)
-  box([CAB_X - 0.8, CAB_X + 0.8], [WHEEL_Y, 0.35], [0.08, W - 0.08], M.chassis)
-  for (const y of [-0.3, -0.52]) front([axles[0]!.x + 0.8, axles[1]!.x - 0.72], [y - 0.035, y + 0.035], W, M.metal)
+  const { axles, frame, wheels, cab, wheelY, wheelRadius: r } = truckLayout(vehicle)
+  const [cz0, cz1] = cab.z, [[, beltY], [glassX]] = cab.windshield
+  box([frame.fromX, frame.toX], [frame.y[1], -0.04], frame.railZ, M.chassis)
+  box([cab.frontX + 0.05, cab.backX], [wheelY, cab.bottomY], [cz0 + 0.06, cz1 - 0.06], M.chassis)
+  for (const y of [wheelY + r * 0.6, wheelY + r * 0.15]) front([axles[0]!.x + r + 0.4, axles.at(-1)!.x - r - 0.3], [y - 0.035, y + 0.035], W, M.metal)
   for (const { x, z } of wheels.filter((wheel) => wheel.z > W / 2).sort((a, b) => a.z - b.z))
-    for (const [r, dz, color] of [[WHEEL_RADIUS, -0.15, M.wheel], [WHEEL_RADIUS, 0.15, M.wheel], [0.32, 0.15, M.metal], [0.14, 0.15, M.chassis]] as const)
-      face(ring(16, 0, (c, s) => [x + r * c, WHEEL_Y + r * s, z + dz]), [0, 0, 1], color)
-  for (const y of [0.18, -0.01]) box([CAB_X + 0.27, CAB_X + 0.77], [y - 0.03, y + 0.03], [W - 0.13, W + 0.11], M.metal)
-  face(CAB_PROFILE.map(([x, y]): P3 => [CAB_X + x, y, W - 0.035]), [0, 0, 1], M.cab)
-  flat([CAB_X - 0.46, CAB_X + 0.75], [0.035, W - 0.035], 2.3, M.cab)
-  front([CAB_X - 0.34, CAB_X + 0.58], [1.445, 2.075], W - 0.03, M.glass)
-  for (let k = 3; k < 8; k++) flat([CAB_X - 0.445, CAB_X - 0.395], [W * k / 10 - 0.045, W * k / 10 + 0.045], 2.3575, M.marker)
+    for (const [rr, dz, color] of [[r, -0.15, M.wheel], [r, 0.15, M.wheel], [r * 0.64, 0.15, M.metal], [r * 0.28, 0.15, M.chassis]] as const)
+      face(ring(16, 0, (c, s) => [x + rr * c, wheelY + rr * s, z + dz]), [0, 0, 1], color)
+  for (const y of [cab.bottomY - 0.12, cab.bottomY - 0.32]) box([cab.backX - 0.55, cab.backX - 0.1], [y - 0.03, y + 0.03], [cz1 - 0.13, cz1 + 0.11], M.metal)
+  face(cab.profile.map(([x, y]): P3 => [x, y, cz1]), [0, 0, 1], M.cab)
+  flat([glassX, cab.backX], [cz0, cz1], cab.topY, M.cab)
+  front([glassX + 0.05, cab.backX - 0.15], [beltY + 0.1, cab.topY - 0.12], cz1 + 0.005, M.glass)
   flat([0, L], [0, W], 0, M.floor)
   marks.push({ lines: Array.from({ length: Math.ceil(W / 0.2) - 1 }, (_, k): P3[] => [[0, 0, 0.2 * (k + 1)], [L, 0, 0.2 * (k + 1)]]) })
   face([[0, 0, 0], [0, 0, W], [0, H, W], [0, H, 0]], [1, 0, 0], M.wall)
@@ -113,7 +113,7 @@ function posterScene(): Mark[] {
  * k = khoảng cách / (khoảng cách − độ sâu) lần quanh tâm nhìn — đúng phối cảnh `STAGE_CAMERA.fov` khi khung nằm ngang. */
 function cameraOf(view: StageView) {
   const overview = view === 'overview', screen = (p: P3) => alongPoint(VIEW, p[0], p[2], p[1]), toward = unit(VIEW), depth = (p: P3) => dot(sub(p, CENTRE), toward)
-  const corners = overview ? DIORAMA_FRAME_POINTS : vehicleFitCorners(CENTRE, true), xs = corners.map((p) => screen(p)[0]), ys = corners.map((p) => screen(p)[1])
+  const corners = overview ? DIORAMA_FRAME_POINTS : vehicleFitCorners(vehicle, true), xs = corners.map((p) => screen(p)[0]), ys = corners.map((p) => screen(p)[1])
   const [margin, zoom, tan] = overview ? [1.06, 1, 0] : [VEHICLE_FIT_MARGIN, STAGE_CAMERA.zoom, Math.tan(STAGE_CAMERA.fov * Math.PI / 360)]
   const [cx, cy] = overview ? [(Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2] : screen(CENTRE)
   const half = (values: number[], c: number) => Math.max(...values.map((v, k) => depth(corners[k]!) * tan + margin * Math.abs(v - c))) / zoom
