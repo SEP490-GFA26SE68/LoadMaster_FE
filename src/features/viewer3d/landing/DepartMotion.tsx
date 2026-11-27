@@ -2,8 +2,7 @@ import { useFrame } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, type RefObject } from 'react'
 import { Object3D, type Group, type InstancedMesh } from 'three'
 import type { VehicleConfig } from '@/domain/models'
-import { truckLayout, WHEEL_RADIUS, WHEEL_Y, type TruckWheel } from '../scene/truck-layout'
-import { containerSize } from '../scene/units'
+import { truckLayout, type TruckLayout } from '../scene/truck-layout'
 import { truckStandInGeometry } from './diorama-geometry'
 import { ExhaustSmoke } from './ExhaustSmoke'
 import type { StorySource } from './story-clock'
@@ -11,17 +10,14 @@ import { departPitch, truckOffset } from './story-timeline'
 
 const dummy = new Object3D()
 const NO_RAYCAST = () => null
-/** Mặt đường dưới bánh xe: trục thân xe chúi quanh điểm chạm đất này. */
-const GROUND_Y = WHEEL_Y - WHEEL_RADIUS
-
 /** Bánh xe (`TruckCab`, InstancedMesh `vehicle-wheels`) lăn đúng quãng xe đã đi: quay `angle` rad quanh trục bánh (z). */
-function spinWheels(group: Group, wheels: readonly TruckWheel[], angle: number) {
+function spinWheels(group: Group, { wheels, wheelY }: TruckLayout, angle: number) {
   const mesh = group.getObjectByName('vehicle-wheels') as InstancedMesh | undefined
   if (!mesh) return
   for (let i = 0; i < Math.min(mesh.count, wheels.length); i++) {
     const { x, z } = wheels[i]!
     // Như `TruckCab`: bánh dựng đứng bằng Rx(π/2), rồi quay quanh trục bánh — thứ tự ZYX cho ma trận Rz · Rx
-    dummy.position.set(x, WHEEL_Y, z)
+    dummy.position.set(x, wheelY, z)
     dummy.rotation.set(Math.PI / 2, 0, angle, 'ZYX')
     dummy.updateMatrix()
     mesh.setMatrixAt(i, dummy.matrix)
@@ -51,12 +47,12 @@ export function DepartMotion({ vehicleRef, story, vehicle, smoke }: {
   vehicle: VehicleConfig
   smoke: boolean
 }) {
-  const { length, width } = containerSize(vehicle)
-  const wheels = useMemo(() => truckLayout(length, width, vehicle.axles).wheels, [length, width, vehicle.axles])
+  // Mặt đường dưới bánh xe (theo hạng của xe): trục thân xe chúi quanh điểm chạm đất này.
+  const layout = useMemo(() => truckLayout(vehicle), [vehicle])
   const pivots = useMemo(() => {
-    const xs = wheels.map((wheel) => wheel.x)
+    const xs = layout.wheels.map((wheel) => wheel.x)
     return { rear: Math.max(...xs), front: Math.min(...xs) }
-  }, [wheels])
+  }, [layout])
   const last = useRef(Number.NaN)
 
   useFrame(() => {
@@ -67,11 +63,11 @@ export function DepartMotion({ vehicleRef, story, vehicle, smoke }: {
     last.current = time
     const distance = truckOffset(time), pitch = departPitch(time)
     // Quay quanh điểm P (hệ của nhóm) rồi tịnh tiến: vị trí = P − R·P − quãng đã lăn theo x
-    const pivotX = pitch < 0 ? pivots.rear : pivots.front
+    const pivotX = pitch < 0 ? pivots.rear : pivots.front, GROUND_Y = layout.groundY
     const cos = Math.cos(pitch), sin = Math.sin(pitch)
     group.rotation.z = pitch
     group.position.set(pivotX - (pivotX * cos - GROUND_Y * sin) - distance, GROUND_Y - (pivotX * sin + GROUND_Y * cos), 0)
-    spinWheels(group, wheels, distance / WHEEL_RADIUS)
+    spinWheels(group, layout, distance / layout.wheelRadius)
   })
 
   return smoke ? <ExhaustSmoke story={story} /> : null

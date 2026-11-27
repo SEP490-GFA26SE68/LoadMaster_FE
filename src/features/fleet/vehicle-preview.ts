@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { eq, gt, lt, roundCm, roundKg } from '@/domain/geometry'
 import { validateVehicle } from '@/domain/constraints'
 import type { VehicleConfig } from '@/domain/models'
+import { vehicleFrameKey } from '@/features/viewer3d/scene/truck-layout'
 import { OBSTACLE_TYPES } from './vehicle-form'
 
 /**
@@ -9,10 +10,10 @@ import { OBSTACLE_TYPES } from './vehicle-form'
  *
  * - `previewVehicle` lấy **phần hình học** của giá trị đang nhập (lòng thùng, cửa, vật cản, vị trí từng trục) và trả `null`
  *   khi phần đó chưa parse được hoặc vi phạm `validateVehicle`. Tên xe, tải trọng, tải trên của vật cản, tên và tải của trục
- *   không có hình nên không chặn hình.
+ *   không có hình nên không chặn hình. Tải trọng hợp lệ vẫn đi theo xe (0 khi trống) vì hạng của hình xe (`vehicleClassOf`) đọc nó.
  * - `previewFacts` đọc hai số không có hình nhưng có trong bảng số dưới mô hình: tải trọng và khoảng hở.
- * - `nextPreview` giữ hình hợp lệ gần nhất; `frame` chỉ đổi tham chiếu khi kích thước lòng thùng đổi, nên sửa vật cản,
- *   cửa hay trục không làm camera canh khung lại.
+ * - `nextPreview` giữ hình hợp lệ gần nhất; `frame` chỉ đổi tham chiếu khi kích thước lòng thùng hoặc hạng của hình xe đổi, nên
+ *   sửa vật cản, cửa hay trục không làm camera canh khung lại.
  */
 
 const cm = () => z.number()
@@ -87,7 +88,9 @@ export function previewVehicle(values: unknown): VehicleConfig | null {
   const blocking = validateVehicle(vehicle).filter(
     (issue) => issue.severity === 'error' && !(issue.field !== undefined && IGNORED_FIELD.test(issue.field)),
   )
-  return blocking.length === 0 ? vehicle : null
+  if (blocking.length > 0) return null
+  const payload = (values as { maxPayloadKg?: unknown }).maxPayloadKg
+  return { ...vehicle, maxPayloadKg: finite(payload) && gt(payload, 0) ? roundKg(payload) : 0 }
 }
 
 /** Số không có hình nhưng có trong bảng số dưới mô hình; `null` khi ô đang trống hoặc chưa hợp lệ. */
@@ -133,12 +136,16 @@ export function sameCargoSpace(a: VehicleConfig, b: VehicleConfig): boolean {
   return eq(a.innerLengthCm, b.innerLengthCm) && eq(a.innerWidthCm, b.innerWidthCm) && eq(a.innerHeightCm, b.innerHeightCm)
 }
 
+/** Khung camera của xem trước: lòng thùng + hạng của hình xe khi chưa khai trục (như `specFramePoints`). */
+const frameKey = ({ innerLengthCm, innerWidthCm, innerHeightCm, maxPayloadKg }: VehicleConfig) =>
+  vehicleFrameKey({ innerLengthCm, innerWidthCm, innerHeightCm, maxPayloadKg })
+
 /** Trạng thái sau một lần debounce. Không có gì đổi thì trả đúng `state` cũ để React bỏ qua render. */
 export function nextPreview(state: PreviewState, candidate: VehicleConfig | null): PreviewState {
   if (candidate === null) return state.pending ? state : { ...state, pending: true }
   const unchanged = state.vehicle !== null && JSON.stringify(state.vehicle) === JSON.stringify(candidate)
   const vehicle = unchanged ? state.vehicle! : candidate
-  const frame = state.frame !== null && sameCargoSpace(state.frame, candidate) ? state.frame : candidate
+  const frame = state.frame !== null && sameCargoSpace(state.frame, candidate) && frameKey(state.frame) === frameKey(candidate) ? state.frame : candidate
   if (vehicle === state.vehicle && frame === state.frame && !state.pending) return state
   return { vehicle, frame, pending: false }
 }

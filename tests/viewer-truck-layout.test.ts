@@ -1,46 +1,133 @@
-import { expect, test } from 'vitest'
-import { truckLayout } from '@/features/viewer3d/scene/truck-layout'
+import { describe, expect, test } from 'vitest'
+import type { VehicleAxle, VehicleObstacle } from '@/domain/models'
+import { SPEC_TRUCK_6M } from '@/domain/fixtures/spec-samples'
+import { vehicleFitCorners } from '@/features/viewer3d/scene/frame-fit'
+import { truckLayout, vehicleFrameKey, type TruckLayoutInput } from '@/features/viewer3d/scene/truck-layout'
+import { vehicleClassOf } from '@/features/viewer3d/scene/vehicle-class'
+import { DIORAMA } from '@/features/viewer3d/landing/diorama-layout'
+import { LANDING_REQUEST } from '@/features/marketing/landing-sample.mock'
 
-const L = 7.2, W = 2.35
+const truck = (innerLengthCm: number, maxPayloadKg: number, extra: Partial<TruckLayoutInput> = {}): TruckLayoutInput =>
+  ({ innerLengthCm, innerWidthCm: 235, innerHeightCm: 240, maxPayloadKg, ...extra })
+const axle = (id: string, positionXCm: number): VehicleAxle => ({ id, name: id, positionXCm, emptyLoadKg: 0, maxLoadKg: 0 })
+const cooling: VehicleObstacle = {
+  id: 'OBS-1', type: 'COOLING_UNIT', xCm: 0, yCm: 40, zCm: 150, lengthCm: 30, widthCm: 150, heightCm: 80, loadBearing: false, maxTopLoadKg: null,
+}
 
-test('without configured axles the truck gets a steer axle under the cab and a dual-wheel tandem at the rear', () => {
-  const layout = truckLayout(L, W)
-  expect(layout.axles.map(({ kind, dual }) => ({ kind, dual }))).toStrictEqual([
-    { kind: 'steer', dual: false },
-    { kind: 'drive', dual: true },
-    { kind: 'drive', dual: true },
-  ])
-  // Vị trí minh hoạ giữ như bản trước: cầu trước dưới cabin, cầu sau ở 72% chiều dài thùng, cách nhau 1,15 m
-  expect(layout.axles[0]!.x).toBe(-1)
-  expect(layout.axles[1]!.x).toBeCloseTo(5.184, 6)
-  expect(layout.axles[2]!.x).toBeCloseTo(6.334, 6)
-  // 2 bánh trước + 4 bánh mỗi trục sau
-  expect(layout.wheels).toHaveLength(10)
+describe('vehicleClassOf', () => {
+  test('payload picks the class, with named thresholds at the boundaries', () => {
+    expect(vehicleClassOf(truck(320, 1200))).toBe('van')
+    expect(vehicleClassOf(truck(320, 1201))).toBe('light')
+    expect(vehicleClassOf(truck(620, 5500))).toBe('light')
+    expect(vehicleClassOf(truck(620, 5501))).toBe('medium')
+    expect(vehicleClassOf(truck(720, 12000))).toBe('medium')
+    expect(vehicleClassOf(truck(720, 12001))).toBe('heavy')
+  })
+
+  test('a short box is a van, a long box or three axles is heavy, whatever the payload', () => {
+    expect(vehicleClassOf(truck(300, 3000))).toBe('van')
+    expect(vehicleClassOf(truck(900, 3000))).toBe('heavy')
+    expect(vehicleClassOf(truck(600, 3000, { axles: [axle('A', -100), axle('B', 400), axle('C', 530)] }))).toBe('heavy')
+  })
+
+  test('without a usable payload the class follows the box length', () => {
+    expect(vehicleClassOf(truck(280, 0))).toBe('van')
+    expect(vehicleClassOf(truck(600, Number.NaN))).toBe('light')
+    expect(vehicleClassOf(truck(720, 0))).toBe('medium')
+    expect(vehicleClassOf(truck(870, -1))).toBe('heavy')
+  })
 })
 
-test('configured axles place wheels at positionXCm from the front wall; the first is the steer axle', () => {
-  const layout = truckLayout(L, W, [
-    { id: 'A2', name: 'Trục sau', positionXCm: 480, emptyLoadKg: 0, maxLoadKg: 0 },
-    { id: 'A1', name: 'Trục trước', positionXCm: -120, emptyLoadKg: 0, maxLoadKg: 0 },
-  ])
-  expect(layout.axles.map(({ x, kind, dual }) => ({ x, kind, dual }))).toStrictEqual([
-    { x: -1.2, kind: 'steer', dual: false },
-    { x: 4.8, kind: 'drive', dual: true },
-  ])
-  expect(layout.wheels).toHaveLength(6)
+describe('truckLayout', () => {
+  const classes = [truck(300, 900), truck(520, 3500), truck(720, 9500), truck(950, 15000)]
+
+  test('the floor rises with the class and the wheels stand on the ground', () => {
+    const layouts = classes.map(truckLayout)
+    expect(layouts.map((l) => l.vehicleClass)).toStrictEqual(['van', 'light', 'medium', 'heavy'])
+    const grounds = layouts.map((l) => l.groundY)
+    expect(grounds).toStrictEqual([...grounds].sort((a, b) => b - a))
+    for (const layout of layouts) expect(layout.wheelY - layout.wheelRadius).toBeCloseTo(layout.groundY, 9)
+  })
+
+  test('default axles per class: two axles up to medium, a rear tandem on heavy', () => {
+    const counts = classes.map((v) => truckLayout(v).axles.map((a) => `${a.kind}${a.dual ? '2' : ''}`))
+    expect(counts).toStrictEqual([['steer', 'drive'], ['steer', 'drive2'], ['steer', 'drive2'], ['steer', 'drive2', 'drive2']])
+    // Tải nhẹ dưới 2,5 tấn: bánh sau đơn
+    expect(truckLayout(truck(450, 1900)).axles[1]!.dual).toBe(false)
+  })
+
+  test('declared axles are drawn exactly at positionXCm, the first one steering', () => {
+    for (const vehicle of classes) {
+      const layout = truckLayout({ ...vehicle, axles: [axle('A2', 480), axle('A1', -100)] })
+      expect(layout.axles.map(({ x, kind }) => ({ x, kind }))).toStrictEqual([{ x: -1, kind: 'steer' }, { x: 4.8, kind: 'drive' }])
+    }
+  })
+
+  test('the cab covers the front wheel, even when the front axle is declared far forward', () => {
+    for (const vehicle of classes) {
+      for (const front of [-100, -160]) {
+        const layout = truckLayout({ ...vehicle, axles: [axle('A1', front), axle('A2', 400)] })
+        const steer = layout.axles[0]!.x
+        expect(layout.cab.frontX).toBeLessThan(steer - layout.wheelRadius)
+        expect(layout.cab.backX).toBeGreaterThan(steer)
+        expect(layout.cab.bottomY).toBeGreaterThan(layout.wheelY + layout.wheelRadius)
+        expect(layout.footprint.x[0]).toBeLessThan(layout.cab.frontX)
+      }
+    }
+  })
+
+  test('every wheel stays inside the footprint and the body width', () => {
+    for (const vehicle of classes) {
+      const layout = truckLayout(vehicle)
+      for (const { x, z } of layout.wheels) {
+        expect(x - layout.wheelRadius).toBeGreaterThan(layout.footprint.x[0])
+        expect(x + layout.wheelRadius).toBeLessThan(layout.footprint.x[1])
+        expect(z).toBeGreaterThan(0)
+        expect(z).toBeLessThan(2.35)
+      }
+    }
+  })
+
+  test('the frame reaches past the rear door and the driveshaft reaches every drive axle', () => {
+    const layout = truckLayout(classes[3]!)
+    expect(layout.frame.toX).toBeGreaterThan(9.5)
+    expect(layout.driveshaft.map((s) => s.toX)).toStrictEqual(layout.axles.filter((a) => a.kind === 'drive').map((a) => a.x))
+  })
+
+  test('a reefer is drawn only when the vehicle declares a COOLING_UNIT', () => {
+    expect(truckLayout(classes[2]!).reefer).toBeNull()
+    const reefer = truckLayout({ ...classes[2]!, obstacles: [cooling] }).reefer
+    expect(reefer).not.toBeNull()
+    expect(reefer!.x[1]).toBeLessThanOrEqual(0)
+    expect(reefer!.y[1]).toBeLessThanOrEqual(2.4)
+  })
+
+  test('the landing truck keeps its ground at the road and its exhaust where the smoke starts', () => {
+    const layout = truckLayout(LANDING_REQUEST.vehicle)
+    expect(layout.vehicleClass).toBe('light')
+    expect(layout.groundY).toBeCloseTo(-1.1, 9)
+    expect(layout.exhaust.map((v) => Number(v.toFixed(2)))).toStrictEqual([0.3, -0.62, 2.42])
+    const { truck: box } = DIORAMA
+    expect(layout.footprint.x[0]).toBeGreaterThanOrEqual(box.x[0])
+    expect(layout.cab.topY).toBeLessThanOrEqual(box.y[1])
+    expect(layout.footprint.z[0]).toBeGreaterThanOrEqual(box.z[0])
+    expect(layout.footprint.z[1]).toBeLessThanOrEqual(box.z[1])
+  })
 })
 
-test('dual wheels sit inside the body width, outer wheel flush with the side and inner wheel next to it', () => {
-  const rear = truckLayout(L, W).wheels.filter((wheel) => wheel.x > 6)
-  const zs = rear.map((wheel) => wheel.z).sort((a, b) => a - b)
-  expect(zs[0]).toBeGreaterThan(0)
-  expect(zs[3]).toBeLessThan(W)
-  expect(zs[1]! - zs[0]!).toBeCloseTo(0.32, 6)
-})
+describe('camera framing follows the class', () => {
+  test('the frame key changes with the class, not with a payload inside the same class', () => {
+    expect(vehicleFrameKey(truck(720, 9000))).toBe(vehicleFrameKey(truck(720, 9500)))
+    expect(vehicleFrameKey(truck(720, 9500))).not.toBe(vehicleFrameKey(truck(720, 15000)))
+  })
 
-test('the frame runs from the front bumper to just past the rear door and the driveshaft reaches every drive axle', () => {
-  const layout = truckLayout(L, W)
-  expect(layout.frame.fromX).toBeLessThan(-1.75)
-  expect(layout.frame.toX).toBeGreaterThan(L)
-  expect(layout.driveshaft.map((segment) => segment.toX)).toStrictEqual(layout.axles.filter((a) => a.kind === 'drive').map((a) => a.x))
+  test('fit corners reach the ground and the cab nose of the class', () => {
+    for (const vehicle of [truck(300, 900), truck(950, 15000), SPEC_TRUCK_6M]) {
+      const layout = truckLayout(vehicle)
+      const corners = vehicleFitCorners(vehicle, true)
+      expect(Math.min(...corners.map((p) => p[1]))).toBeCloseTo(layout.groundY, 9)
+      expect(Math.min(...corners.map((p) => p[0]))).toBeCloseTo(layout.footprint.x[0], 9)
+    }
+    expect(Math.min(...vehicleFitCorners(SPEC_TRUCK_6M, false).map((p) => p[1]))).toBe(0)
+  })
 })
