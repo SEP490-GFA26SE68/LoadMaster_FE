@@ -77,12 +77,12 @@ export function wallRows(height: number, rails: boolean): Row[] {
   return rows
 }
 
-const scale = ([r, g, b]: Rgb, k: number): Rgb => [r * k, g * k, b * k]
+export const scale = ([r, g, b]: Rgb, k: number): Rgb => [r * k, g * k, b * k]
 
 /** Mặt phẳng của một vách: điểm gốc, trục ngang (u), trục cao (v), pháp tuyến vào trong. */
-type Face = { origin: Rgb; u: Rgb; v: Rgb; normal: Rgb }
+export type Face = { origin: Rgb; u: Rgb; v: Rgb; normal: Rgb }
 
-class QuadWriter {
+export class QuadWriter {
   readonly positions: number[] = []
   readonly normals: number[] = []
   readonly colors: number[] = []

@@ -2,6 +2,7 @@ import { useLayoutEffect, useMemo, useRef } from 'react'
 import { ExtrudeGeometry, InstancedMesh, Object3D, Shape } from 'three'
 import type { VehicleConfig } from '@/domain/models'
 import { splitVehicleName } from '@/lib/vehicle-name'
+import type { VehicleBodyStyle } from '@/types/vehicle-body-style'
 import type { SceneMaterials } from './materials'
 import { containerSize } from './units'
 import type { VehicleDetail } from '../usePerformanceFlags'
@@ -9,26 +10,31 @@ import { LicensePlate } from './LicensePlate'
 import { truckDetails, truckSimpleDetails, truckWheel, truckWheelSimple } from './truck-geometry'
 import { truckLayout, type TruckLayout } from './truck-layout'
 import { useDisposeOnChange } from './useDisposeOnChange'
+import { vanDetails, vanSimpleDetails } from './van-details'
 
-/** Thân cabin: đùn mặt cắt cạnh của hạng theo bề rộng cabin, vát mép nhẹ. */
+/**
+ * Thân cabin: đùn mặt cắt cạnh của hạng theo bề rộng cabin, vát mép nhẹ. Van: `bevelOffset` âm để phần giữa nằm đúng mặt cắt (mũi liền
+ * nóc thân, mặt bên trùng mặt ngoài vách) — chỉ hai nắp lùi vào một mép vát.
+ */
 function cabBody({ cab }: TruckLayout) {
   const shape = new Shape()
   cab.profile.forEach(([x, y], i) => (i === 0 ? shape.moveTo(x, y) : shape.lineTo(x, y)))
   shape.closePath()
   const bevel = 0.04
   return new ExtrudeGeometry(shape, { depth: cab.z[1] - cab.z[0] - bevel * 2 - 0.02, bevelEnabled: true, bevelSegments: 1,
-    steps: 1, bevelSize: bevel, bevelThickness: 0.025 }).translate(0, 0, cab.z[0] + bevel + 0.01)
+    steps: 1, bevelSize: bevel, bevelThickness: 0.025, bevelOffset: cab.kind === 'van' ? -bevel : 0 }).translate(0, 0, cab.z[0] + bevel + 0.01)
 }
 
 /** Kính chắn gió: tấm mỏng nằm trên cạnh kính của mặt cắt, nhô ra ngoài thân một chút. */
 function windshieldPose({ cab }: TruckLayout) {
   const [[x0, y0], [x1, y1]] = cab.windshield
   const dx = x1 - x0, dy = y1 - y0, slant = Math.hypot(dx, dy)
-  const out = 0.02
+  const van = cab.kind === 'van'
+  const out = van ? 0.01 : 0.02
   return {
     position: [(x0 + x1) / 2 - (dy / slant) * out, (y0 + y1) / 2 + (dx / slant) * out, (cab.z[0] + cab.z[1]) / 2] as const,
     rotation: [0, 0, -Math.atan2(dx, dy)] as const,
-    size: [0.018, slant * 0.84, cab.z[1] - cab.z[0] - 0.36] as const,
+    size: [0.018, slant * 0.84, cab.z[1] - cab.z[0] - (van ? 0.2 : 0.36)] as const,
   }
 }
 
@@ -37,17 +43,23 @@ function windshieldPose({ cab }: TruckLayout) {
  * thân + khung gầm gộp một draw (`truckDetails`), mọi bánh một InstancedMesh; tên xe có biển số thì thêm tấm biển (một draw, chỉ bản
  * đủ). `detail="simple"` (tier low): cùng bốn draw call, chi tiết gộp chỉ còn gầm thùng + khung sườn + cản, bánh trơn — vẫn đúng tỉ lệ
  * cabin, cỡ bánh, chiều cao sàn của hạng. Vị trí trục theo `vehicle.axles` khi có, vẫn không phải dữ liệu trục có thẩm quyền.
+ *
+ * Van (`bodyStyle` hoặc hạng suy từ số): mũi liền khối của dáng `van-shape.ts`, chi tiết gộp là `vanDetails` (thân dưới có hốc bánh, cản
+ * liền thân, kính cửa trước, đèn hậu dựng đứng, gầm riêng của van) — cùng tên mesh, cùng số draw call với xe tải.
  */
-export function TruckCab({ vehicle, materials, shadows, detail: level = 'full' }: {
-  vehicle: VehicleConfig; materials: SceneMaterials; shadows: boolean; detail?: VehicleDetail
+export function TruckCab({ vehicle, materials, shadows, detail: level = 'full', bodyStyle }: {
+  vehicle: VehicleConfig; materials: SceneMaterials; shadows: boolean; detail?: VehicleDetail; bodyStyle?: VehicleBodyStyle
 }) {
-  const { length: L, width: W } = containerSize(vehicle)
+  const { length: L, width: W, height: H } = containerSize(vehicle)
   const wheels = useRef<InstancedMesh>(null)
   const { innerLengthCm, innerWidthCm, innerHeightCm, maxPayloadKg, axles, obstacles } = vehicle
-  const layout = useMemo(() => truckLayout({ innerLengthCm, innerWidthCm, innerHeightCm, maxPayloadKg, axles, obstacles }),
-    [innerLengthCm, innerWidthCm, innerHeightCm, maxPayloadKg, axles, obstacles])
+  const layout = useMemo(() => truckLayout({ innerLengthCm, innerWidthCm, innerHeightCm, maxPayloadKg, axles, obstacles }, bodyStyle),
+    [innerLengthCm, innerWidthCm, innerHeightCm, maxPayloadKg, axles, obstacles, bodyStyle])
   const simple = level === 'simple'
-  const detail = useMemo(() => (simple ? truckSimpleDetails : truckDetails)(L, W, layout, materials), [simple, L, W, layout, materials])
+  const detail = useMemo(() => {
+    if (layout.van) return simple ? vanSimpleDetails(L, W, layout, materials) : vanDetails(L, W, H, layout, materials)
+    return (simple ? truckSimpleDetails : truckDetails)(L, W, layout, materials)
+  }, [simple, L, W, H, layout, materials])
   const wheel = useMemo(() => (simple ? truckWheelSimple : truckWheel)(layout, materials), [simple, layout, materials])
   const body = useMemo(() => cabBody(layout), [layout])
   const glass = windshieldPose(layout)

@@ -48,7 +48,8 @@ describe('truckLayout', () => {
   const classes = [truck(300, 900), truck(520, 3500), truck(720, 9500), truck(950, 15000)]
 
   test('the floor rises with the class and the wheels stand on the ground', () => {
-    const layouts = classes.map(truckLayout)
+    // truckLayout nhận thêm kiểu thân ở tham số thứ hai: không đưa chỉ số của map vào đó
+    const layouts = classes.map((vehicle) => truckLayout(vehicle))
     expect(layouts.map((l) => l.vehicleClass)).toStrictEqual(['van', 'light', 'medium', 'heavy'])
     const grounds = layouts.map((l) => l.groundY)
     expect(grounds).toStrictEqual([...grounds].sort((a, b) => b - a))

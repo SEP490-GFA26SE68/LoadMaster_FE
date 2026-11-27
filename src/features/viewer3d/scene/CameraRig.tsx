@@ -5,6 +5,7 @@ import { useEffect, useRef, type ComponentRef } from 'react'
 import type { CameraPreset } from '@/features/viewer3d/viewer-types'
 import type { ScenePlacement } from '@/features/viewer3d/scene-input'
 import type { VehicleConfig } from '@/domain/models'
+import type { VehicleBodyStyle } from '@/types/vehicle-body-style'
 import { fitFrame, insetFrame, NO_INSETS, VEHICLE_FIT_MARGIN, vehicleFitCorners, type FramePoints } from './frame-fit'
 import { boxCenter, containerCenter, SCENE_SCALE, type Vec3 } from './units'
 import { specFramePoints } from './vehicle-spec-marks'
@@ -52,9 +53,9 @@ const SMOOTH_TIME = 0.3
  * dựng lại object xe cùng kích thước (đọc lại phương án, đổi sang xe cùng cỡ) không làm camera bay về góc mặc định. Xem trước ở form xe canh theo cả cửa và trục
  * (`specFramePoints`): giữ so theo tham chiếu, nơi gọi đã giữ `frameVehicle` khi chỉ vật cản đổi.
  */
-function frameKeyOf(vehicle: VehicleConfig | undefined, specFrame: boolean): unknown {
+function frameKeyOf(vehicle: VehicleConfig | undefined, specFrame: boolean, bodyStyle: VehicleBodyStyle | undefined): unknown {
   if (!vehicle || specFrame) return vehicle
-  return vehicleFrameKey(vehicle)
+  return vehicleFrameKey(vehicle, bodyStyle)
 }
 
 export function CameraRig({
@@ -62,6 +63,7 @@ export function CameraRig({
   reducedMotion,
   focus,
   vehicle,
+  bodyStyle,
   fit = false,
   fitRequest = 0,
   specFrame = false,
@@ -77,6 +79,8 @@ export function CameraRig({
   reducedMotion: boolean
   focus?: { placement: ScenePlacement; request: number; follow?: boolean } | null
   vehicle?: VehicleConfig
+  /** Kiểu thân của loại xe (`SceneCanvas.vehicleBodyStyle`): khung canh theo đúng dáng xe đang vẽ */
+  bodyStyle?: VehicleBodyStyle
   fit?: boolean
   /** Tăng lên để canh lại khung dù preset và xe không đổi (bấm lại góc đang chọn sau khi tự xoay). */
   fitRequest?: number
@@ -95,7 +99,7 @@ export function CameraRig({
   onSpinEnd?: () => void
 }) {
   const controlsRef = useRef<ComponentRef<typeof CameraControls>>(null)
-  const applied = useRef<{ preset: CameraPreset; vehicle: unknown; request: number; points?: FramePoints } | null>(null)
+  const applied = useRef<{ preset: CameraPreset; vehicle: unknown; style?: VehicleBodyStyle; request: number; points?: FramePoints } | null>(null)
   const size = useThree((state) => state.size)
   const camera = useThree((state) => state.camera)
   const invalidate = useThree((state) => state.invalidate)
@@ -112,9 +116,11 @@ export function CameraRig({
     // Responsive panels can resize the Canvas mid-orbit. Keep the user's pose;
     // only an explicit preset, a new vehicle, new frame points or `fitRequest` requests a fresh framing.
     const previous = applied.current
-    const frameKey = frameKeyOf(vehicle, specFrame)
-    if (previous?.preset === preset && previous.vehicle === frameKey && previous.request === fitRequest && previous.points === framePoints) return
-    applied.current = { preset, vehicle: frameKey, request: fitRequest, points: framePoints }
+    const frameKey = frameKeyOf(vehicle, specFrame, bodyStyle)
+    // Kiểu thân đổi dáng (mũi, cửa sau) dù cùng object xe: camera canh lại
+    if (previous?.preset === preset && previous.vehicle === frameKey && previous.style === bodyStyle && previous.request === fitRequest
+      && previous.points === framePoints) return
+    applied.current = { preset, vehicle: frameKey, style: bodyStyle, request: fitRequest, points: framePoints }
     if (spinRef.current.spin) spinRef.current.onSpinEnd?.()
     beforeFocus.current = null
     const transition = !reducedMotion && !(jumpFirst && !previous)
@@ -132,7 +138,7 @@ export function CameraRig({
     if (fit && specFrame && vehicle && camera instanceof PerspectiveCamera) {
       const center = containerCenter(vehicle)
       const tanHalfV = Math.tan(camera.fov * Math.PI / 360)
-      const points = specFramePoints(vehicle).map((p): Vec3 => [p[0] - center[0], p[1] - center[1], p[2] - center[2]])
+      const points = specFramePoints(vehicle, bodyStyle).map((p): Vec3 => [p[0] - center[0], p[1] - center[1], p[2] - center[2]])
       const { distance, target } = fitFrame(points, [x, y, z], {
         tanHalfH: tanHalfV * size.width / Math.max(1, size.height), tanHalfV, margin: SPEC_FRAME_MARGIN, minDistance: 3,
       })
@@ -152,7 +158,7 @@ export function CameraRig({
       // This keeps a rear-door view readable on phones without fitToBox rotating it.
       let distance = 3
       const point = new Vector3()
-      for (const [px, py, pz] of vehicleFitCorners(vehicle, vehicleDecoration)) {
+      for (const [px, py, pz] of vehicleFitCorners(vehicle, vehicleDecoration, bodyStyle)) {
         const depth = point.set(px - center[0], py - center[1], pz - center[2]).dot(direction)
         distance = Math.max(distance, depth + Math.abs(point.dot(right)) * VEHICLE_FIT_MARGIN / Math.tan(hfov / 2),
           depth + Math.abs(point.dot(up)) * VEHICLE_FIT_MARGIN / Math.tan(vfov / 2))
@@ -161,10 +167,10 @@ export function CameraRig({
       x *= scale; y *= scale; z *= scale
     }
     const below = PRESET_TARGET_BELOW_FLOOR[preset]
-    const targetY = below !== undefined && vehicle ? -containerCenter(vehicle)[1] + truckLayout(vehicle).groundY * below : 0
+    const targetY = below !== undefined && vehicle ? -containerCenter(vehicle)[1] + truckLayout(vehicle, bodyStyle).groundY * below : 0
     void controls.setLookAt(x, y + targetY, z, 0, targetY, 0, transition)
     invalidate()
-  }, [preset, reducedMotion, vehicle, fit, fitRequest, specFrame, vehicleDecoration, zoom, framePoints, jumpFirst, size.width, size.height, camera, invalidate])
+  }, [preset, reducedMotion, vehicle, bodyStyle, fit, fitRequest, specFrame, vehicleDecoration, zoom, framePoints, jumpFirst, size.width, size.height, camera, invalidate])
 
   // Lấy nét theo kích thước lòng thùng, không theo tham chiếu xe: object xe mới cùng kích thước không lấy nét lại
   const innerLengthCm = vehicle?.innerLengthCm, innerWidthCm = vehicle?.innerWidthCm, innerHeightCm = vehicle?.innerHeightCm

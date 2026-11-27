@@ -1,8 +1,12 @@
+import { useMemo } from 'react'
 import type { VehicleConfig } from '@/domain/models'
+import type { VehicleBodyStyle } from '@/types/vehicle-body-style'
 import type { SceneMaterials } from './materials'
 import { containerSize } from './units'
 import { ContainerDoor, FloorScale } from './ContainerDetails'
 import { ContainerStructure } from './ContainerStructure'
+import { truckLayout } from './truck-layout'
+import { VanBody } from './VanBody'
 import { doorOpening as doorOpeningOf } from './vehicle-spec-marks'
 
 /**
@@ -13,6 +17,8 @@ import { doorOpening as doorOpeningOf } from './vehicle-spec-marks'
  *
  * `doorOpening` (xem trước ở form xe): vẽ vách sau với ô cửa đúng `doorWidthCm` × `doorHeightCm` — hai trụ cửa, phần vách
  * trên cửa, hai cánh thu về đúng cỡ ô cửa. Mặc định cánh cửa phủ cả mặt sau, để vách sau không che hàng ở Planner.
+ *
+ * Hạng van (`bodyStyle` khai ở loại xe, hoặc suy từ số): thân liền khối `VanBody` thay thùng sóng tôn — cùng lòng thùng, cùng ô cửa.
  */
 
 const DOOR_THICKNESS = 0.03
@@ -28,8 +34,11 @@ export function Container({
   doorOpening = false,
   edgeOpacity = 0.28,
   doorsClosed = false,
+  bodyStyle,
 }: {
   vehicle: VehicleConfig
+  /** Kiểu thân khai ở loại xe (`SceneCanvas.vehicleBodyStyle`) */
+  bodyStyle?: VehicleBodyStyle
   materials: SceneMaterials
   detail?: boolean
   reducedMotion?: boolean
@@ -41,26 +50,35 @@ export function Container({
 }) {
   const { length: L, height: H, width: W } = containerSize(vehicle)
   const door = doorOpening ? doorOpeningOf(vehicle) : { width: W, height: H, jamb: 0, header: 0 }
+  const { innerLengthCm, innerWidthCm, innerHeightCm, maxPayloadKg, axles } = vehicle
+  const van = useMemo(() => truckLayout({ innerLengthCm, innerWidthCm, innerHeightCm, maxPayloadKg, axles }, bodyStyle).van,
+    [innerLengthCm, innerWidthCm, innerHeightCm, maxPayloadKg, axles, bodyStyle])
+  const frameColor = van ? materials.cab : materials.skirt
 
   return (
     <group>
-      <ContainerStructure box={{ length: L, width: W, height: H }} materials={materials} detail={detail} edgeOpacity={edgeOpacity} />
-      {detail ? <FloorScale length={L} width={W} color={materials.light} /> : null}
+      {van ? <VanBody box={{ length: L, width: W, height: H }} shape={van} materials={materials} detail={detail} reducedMotion={reducedMotion}
+        door={door} doorsClosed={doorsClosed} edgeOpacity={edgeOpacity} /> : <>
+        <ContainerStructure box={{ length: L, width: W, height: H }} materials={materials} detail={detail} edgeOpacity={edgeOpacity} />
+        {detail ? <FloorScale length={L} width={W} color={materials.light} /> : null}
+      </>}
       {/* Vách sau quanh ô cửa: hộp đặc nhìn được từ cả hai phía, vì góc nhìn mặc định nhìn vào mặt này từ bên ngoài */}
       {door.jamb > MIN_FRAME ? [door.jamb / 2, W - door.jamb / 2].map((z) => (
         <mesh key={z} name="door-jamb" position={[L + DOOR_THICKNESS / 2, H / 2, z]} raycast={NO_RAYCAST}>
           <boxGeometry args={[DOOR_THICKNESS, H, door.jamb]} />
-          <meshStandardMaterial color={materials.skirt} roughness={0.85} />
+          <meshStandardMaterial color={frameColor} roughness={0.85} />
         </mesh>
       )) : null}
       {door.header > MIN_FRAME ? (
         <mesh name="door-header" position={[L + DOOR_THICKNESS / 2, door.height + door.header / 2, W / 2]} raycast={NO_RAYCAST}>
           <boxGeometry args={[DOOR_THICKNESS, door.header, door.width]} />
-          <meshStandardMaterial color={materials.skirt} roughness={0.85} />
+          <meshStandardMaterial color={frameColor} roughness={0.85} />
         </mesh>
       ) : null}
-      <ContainerDoor length={L} height={door.height} width={door.width} hingeZ={door.jamb} side={1} materials={materials} detail={detail} reducedMotion={reducedMotion || !detail} closed={doorsClosed} />
-      <ContainerDoor length={L} height={door.height} width={door.width} hingeZ={W - door.jamb} side={-1} materials={materials} detail={detail} reducedMotion={reducedMotion || !detail} closed={doorsClosed} />
+      {van ? null : <>
+        <ContainerDoor length={L} height={door.height} width={door.width} hingeZ={door.jamb} side={1} materials={materials} detail={detail} reducedMotion={reducedMotion || !detail} closed={doorsClosed} />
+        <ContainerDoor length={L} height={door.height} width={door.width} hingeZ={W - door.jamb} side={-1} materials={materials} detail={detail} reducedMotion={reducedMotion || !detail} closed={doorsClosed} />
+      </>}
     </group>
   )
 }

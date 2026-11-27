@@ -1,5 +1,7 @@
+import type { VehicleBodyStyle } from '@/types/vehicle-body-style'
 import { truckLayout, type TruckLayoutInput } from './truck-layout'
 import { containerSize, type Vec3 } from './units'
+import { liftgateTip } from './van-shape'
 
 /**
  * Canh khung một tập điểm ở hướng nhìn cho trước: tìm tâm nhìn và khoảng cách camera để mọi điểm nằm trong khung với lề `margin`.
@@ -122,13 +124,17 @@ export function insetFrame(points: readonly Vec3[], direction: Vec3, view: {
 
 /**
  * Khung vừa khít của `CameraRig` (không `framePoints`): các góc hộp quanh xe (hệ góc thùng). `decoration` thêm cabin, gầm, bánh theo
- * hạng của xe (`truckLayout`): mũi cabin, mặt đất, nóc cabin hay dàn lạnh — xe van thấp, ngắn không bị canh như xe tải nặng.
+ * hạng của xe (`truckLayout`): mũi cabin, mặt đất, nóc cabin hay dàn lạnh — xe van thấp, ngắn không bị canh như xe tải nặng. Thân van
+ * vẽ cả khi không có `decoration` (thân liền thùng): cửa hất đang mở cũng nằm trong khung.
  */
 export const VEHICLE_FIT_MARGIN = 1.16
-export function vehicleFitCorners(vehicle: TruckLayoutInput, decoration: boolean): Vec3[] {
+export function vehicleFitCorners(vehicle: TruckLayoutInput, decoration: boolean, bodyStyle?: VehicleBodyStyle): Vec3[] {
   const { length, width, height } = containerSize(vehicle)
-  const layout = decoration ? truckLayout(vehicle) : null
+  const shape = truckLayout(vehicle, bodyStyle)
+  const layout = decoration ? shape : null
   const x0 = layout ? layout.footprint.x[0] : 0, y0 = layout ? layout.groundY : 0
-  const top = Math.max(height, layout?.cab.topY ?? 0, layout?.reefer?.y[1] ?? 0) + 0.2
-  return [x0, length + 1.2].flatMap((x) => [y0, top].flatMap((y) => [-0.45, width + 0.45].map((z): Vec3 => [x, y, z])))
+  const tip = shape.van?.rearDoor === 'liftgate' ? liftgateTip(length, height) : null
+  const top = Math.max(height, layout?.cab.topY ?? 0, layout?.reefer?.y[1] ?? 0, tip?.[1] ?? 0) + 0.2
+  const x1 = Math.max(length + 1.2, (tip?.[0] ?? 0) + 0.1)
+  return [x0, x1].flatMap((x) => [y0, top].flatMap((y) => [-0.45, width + 0.45].map((z): Vec3 => [x, y, z])))
 }

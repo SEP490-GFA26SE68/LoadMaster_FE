@@ -3,6 +3,7 @@ import { useMemo, type ReactNode } from 'react'
 import { Color } from 'three'
 import type { VehicleConfig } from '@/domain/models'
 import { useFormat, useT } from '@/lib/i18n'
+import type { VehicleBodyStyle } from '@/types/vehicle-body-style'
 import { readToken } from '@/lib/tokens'
 import { cn } from '@/lib/utils'
 import { SceneTag, type SceneTagTone } from './SceneTag'
@@ -21,10 +22,14 @@ const TAG = 'px-1.5 py-0.5 xl:text-micro'
  * nhãn là DOM neo vào điểm giữa đường. Chữ và số tính ở đây rồi mới đưa vào `<Html>` — bên trong `<Html>` không có context của app.
  * `hidden`: nhãn tạm ẩn ở góc nhìn đang chọn (đường vẫn vẽ).
  */
-export function VehicleSpecMarks({ vehicle, hidden = NONE }: { vehicle: VehicleConfig; hidden?: readonly SpecLabel[] }) {
+export function VehicleSpecMarks({ vehicle, hidden = NONE, bodyStyle }: {
+  vehicle: VehicleConfig; hidden?: readonly SpecLabel[]
+  /** Kiểu thân của loại xe: mặt đất và vị trí bánh của đường trục theo đúng dáng đang vẽ */
+  bodyStyle?: VehicleBodyStyle
+}) {
   const t = useT()
   const format = useFormat()
-  const marks = useMemo(() => vehicleSpecMarks(vehicle), [vehicle])
+  const marks = useMemo(() => vehicleSpecMarks(vehicle, bodyStyle), [vehicle, bodyStyle])
   const { points, colors } = useMemo(() => {
     const tint = (role: SpecMarkRole) => new Color(readToken(ROLE_TOKEN[role]) || '#ffffff')
     const byRole: Record<SpecMarkRole, Color> = { dimension: tint('dimension'), door: tint('door'), axle: tint('axle') }
