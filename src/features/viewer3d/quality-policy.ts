@@ -47,8 +47,9 @@ function restTrial(state: QualityPolicy, restSince: number, now: number): Qualit
 
 /**
  * Ignore demand-loop idle/sparse frames and the settle window after a scene change. Separate thresholds + consecutive samples + cooldown.
- * Mẫu nghỉ (kể cả nhịp nghỉ lặp lại khi cảnh đứng yên) cho phép nâng thử một bậc sau quãng nghỉ dài (`restTrial`); lần thử đó gặp
- * `SLOW_RUN` mẫu chậm thì hạ lại ngay, không chờ cooldown, và tính một lần thử hỏng.
+ * Mẫu nghỉ (kể cả nhịp nghỉ lặp lại khi cảnh đứng yên) cho phép nâng thử một bậc sau quãng nghỉ dài (`restTrial`); `FAST_RUN` mẫu
+ * nhanh lúc chuyển động cũng nâng thử một bậc. Lần thử nào gặp `SLOW_RUN` mẫu chậm thì hạ lại ngay, không chờ cooldown, và tính một lần
+ * thử hỏng; bậc đã hỏng `QUALITY_MAX_FAILED_TRIALS` lần thì không lên lại trong phiên, theo lối nào cũng vậy.
  */
 export function observeQuality(state: QualityPolicy, sample: QualityObservation, now: number): QualityPolicy {
   if (sample.idle) {
@@ -60,12 +61,17 @@ export function observeQuality(state: QualityPolicy, sample: QualityObservation,
   const fast = sample.frameTimeMs < FAST_MS ? state.fast + 1 : 0
   const trialFailed = state.trial?.tier === state.tier && slow >= SLOW_RUN
   if (trialFailed || now - state.lastChangeAt >= QUALITY_COOLDOWN_MS) {
-    const tier = slow >= SLOW_RUN ? DOWN[state.tier] : fast >= FAST_RUN ? UP[state.tier] ?? state.tier : state.tier
+    const up = UP[state.tier]
+    const climb = up && (state.failedTrials[up] ?? 0) < QUALITY_MAX_FAILED_TRIALS ? up : null
+    const tier = slow >= SLOW_RUN ? DOWN[state.tier] : fast >= FAST_RUN && climb ? climb : state.tier
     if (tier !== state.tier) {
       const failedTrials = trialFailed
         ? { ...state.failedTrials, [state.tier]: (state.failedTrials[state.tier] ?? 0) + 1 }
         : state.failedTrials
-      return { ...state, tier, slow: 0, fast: 0, lastChangeAt: now, restSince: null, trial: null, failedTrials }
+      // Lên bậc lúc đang chuyển động cũng là một lần thử như sau quãng nghỉ: máy nhanh ở bậc dưới mà chậm ở bậc trên (vsync 60 Hz:
+      // 16,7 ms ↔ 33,3 ms) không đứng chậm cả cooldown ở bậc trên rồi lại lên, lặp mãi suốt một lần phát lại dài.
+      const trial = tier === up ? { tier, samples: 0 } : null
+      return { ...state, tier, slow: 0, fast: 0, lastChangeAt: now, restSince: null, trial, failedTrials }
     }
   }
   const confirmed = state.trial && slow === 0 && state.trial.samples + 1 >= QUALITY_TRIAL_CONFIRM_SAMPLES
