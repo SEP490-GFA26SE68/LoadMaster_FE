@@ -13,6 +13,7 @@ import type { SceneSemantics } from '../operations/scene-semantics'
 import { applyCargoSurface, CARGO_SURFACE_KEY, createCargoSurface } from './cargo-surface'
 import { cargoSurfaceIndex } from './cargo-marks'
 import { CargoFeedback } from './CargoFeedback'
+import type { CargoInterior } from './cargo-entry'
 import { animated, useSpring } from '@react-spring/three'
 
 type Props = {
@@ -35,13 +36,15 @@ type Props = {
   warningSignal?: number
   /** Viền trắng dày quanh kiện nằm ngoài vùng của điểm giao mình (FE-5b-07); giữ cả ở tier `low`, nhường chỗ khi đang xem kiện chắn lối dỡ. */
   zoneMarks?: boolean
+  /** Lòng thùng: có thì bước phát lại ở chất lượng `full` đưa kiện vào từ cửa sau (`cargo-entry.ts`). */
+  entry?: CargoInterior | null
 }
 
 /** Three cargo draws at most: solid, ghost, inverted hull (general outlines, unload blockers and out-of-zone marks share it). One selected outline. */
 export function CargoInstances({
   placements, colorMode, colorContext, sliceCm, step, selectedId, onSelect, onFocus,
   outlines, outlineColor, reducedMotion, animationQuality = 'full', hiddenId, semantics, xraySelection = false, surfaceDetail = false, warningSignal = 0,
-  zoneMarks = false,
+  zoneMarks = false, entry = null,
 }: Props) {
   const opaque = useRef<InstancedMesh>(null)
   const dim = useRef<InstancedMesh>(null)
@@ -73,7 +76,7 @@ export function CargoInstances({
   const markZones = zoneMarks && !semantics?.inspectionId
   const showHull = outlines || Boolean(semantics?.blockers.length) || (markZones && placements.some((p) => p.outOfZone))
 
-  useCargoMatrices({ meshes, layout, placements, step, sliceCm, outlines, reducedMotion, animationQuality, hiddenId, semantics, markZones })
+  useCargoMatrices({ meshes, layout, placements, step, sliceCm, outlines, reducedMotion, animationQuality, hiddenId, semantics, markZones, entry })
   useCargoColors(meshes, layout, colorMode, colorContext, outlineColor, showHull, semantics, markZones)
 
   useEffect(() => () => {

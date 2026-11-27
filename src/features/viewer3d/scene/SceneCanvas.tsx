@@ -49,6 +49,8 @@ export type SceneCanvasProps = {
   semantics?: SceneSemantics
   hiddenId?: string | null
   animateLoading?: boolean
+  /** Bước phát lại xếp hàng đưa kiện vào từ cửa sau theo đường cong (chất lượng `full`); vắng thì kiện rơi ngắn tại chỗ. Planner, phương án mẫu. */
+  entryMotion?: boolean
   /** `false`: không vẽ cabin, bánh (kho, tài xế). Có xe thì xe được vẽ ở mọi tier — tier chỉ đổi mức chi tiết (`vehicleDetail`). */
   decoration?: boolean
   xraySelection?: boolean
@@ -129,7 +131,7 @@ const REST_SAMPLE = { frameTimeMs: null, idle: true } as const
 export function SceneCanvas({
   experience, model, placements, flags, preset, focus, onUserControl, selectedId, onSelect, onFocus, warningSignal = 0,
   colorMode = 'diem-giao', sliceCm = model.vehicle.innerLengthCm, step, semantics, hiddenId,
-  animateLoading = true, decoration = true, xraySelection, centerOfGravity, zones, unloadMotion, onPerfSample, obstaclePicking = true,
+  animateLoading = true, entryMotion = false, decoration = true, xraySelection, centerOfGravity, zones, unloadMotion, onPerfSample, obstaclePicking = true,
   frameVehicle, fitRequest, highlightedObstacleId, onObstacleSelect, specView = false, interactive = true, frameZoom = 1,
   fov = 38, framePoints, zoneLabels = true, vehicleRef, vehicleChildren, doorsClosed = false, children,
 }: SceneCanvasProps) {
@@ -175,7 +177,7 @@ export function SceneCanvas({
       step={step} selectedId={selected?.id ?? null} onSelect={handleSelect} onFocus={onFocus} outlines={flags.outlines} outlineColor={materials.outline}
       reducedMotion={flags.reducedMotion} animationQuality={animateLoading ? flags.animationQuality : 'none'} hiddenId={hiddenId}
       semantics={semantics} warningSignal={warningSignal} xraySelection={xraySelection} surfaceDetail={flags.decoration}
-      zoneMarks={Boolean(zones?.length)} />
+      zoneMarks={Boolean(zones?.length)} entry={entryMotion ? model.vehicle : null} />
     <ObstacleInstances obstacles={model.vehicle.obstacles} picking={obstaclePicking} onSelect={handleObstacle}
       highlightedId={highlightedObstacleId ?? null} />
     {obstacle ? <ObstacleCallout key={obstacle.id} obstacle={obstacle} /> : null}

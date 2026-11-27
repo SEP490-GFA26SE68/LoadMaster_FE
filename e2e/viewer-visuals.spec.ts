@@ -52,7 +52,7 @@ function animationFrames(page: Page, kind: 'loading' | 'unloading'): Promise<Ani
         if (kind === 'loading') {
           (state.scene.getObjectByName('cargo-opaque') as InstancedMesh).getMatrixAt(slot, matrix)
           visible = matrix.elements[0] > 0
-          samples.push({ y: matrix.elements[13], visible })
+          samples.push({ x: matrix.elements[12], y: matrix.elements[13], visible })
         } else {
           const mesh = state.scene.getObjectByName('unloading-motion') as Mesh | undefined
           visible = mesh?.visible ?? false
@@ -66,6 +66,15 @@ function animationFrames(page: Page, kind: 'loading' | 'unloading'): Promise<Ani
     })
     return samples
   }, { url: R3F_DEPS, scene: SOURCE_MODULES.scene, kind, timeoutMs: SCENE_WAIT_MS })
+}
+
+/** Tâm (đơn vị cảnh) của kiện vào ở bước 2 của seed — chỗ nó phải đứng khi bước phát lại xong. */
+function stepTwoSlot(page: Page): Promise<{ x: number; y: number }> {
+  return page.evaluate(async (scene) => {
+    const { seedScene } = (await import(scene)) as typeof import('@/test/scene')
+    const p = (await seedScene()).placements.find((placement) => placement.step === 2)!
+    return { x: (p.position.x + p.lengthCm / 2) * 0.01, y: (p.position.z + p.heightCm / 2) * 0.01 }
+  }, SOURCE_MODULES.scene)
 }
 
 /** `smoothTime` của camera-controls: `CameraRig` đặt lại theo cờ giảm chuyển động, cùng lần commit với mọi thứ khác trong scene. */
@@ -97,6 +106,13 @@ test('truck details, loading spring, unloading fade and reduced motion all retur
   await settle(page)
   const load = await animationFrames(page, 'loading'), drop = load.filter((p) => p.visible)
   expect(range(drop.map((p) => p.y!)), 'loading spring updates the active instance').toBeGreaterThan(0.15)
+  // Kiện vào từ cửa sau (x lớn) theo đường cong, chạy dần về chỗ, không bao giờ thấp hơn chỗ đặt; xong thì đứng đúng chỗ
+  const landed = drop.at(-1)!, slot = await stepTwoSlot(page)
+  expect(landed.x!, 'loading box ends exactly in its slot (x)').toBeCloseTo(slot.x, 5)
+  expect(landed.y!, 'loading box ends exactly in its slot (y)').toBeCloseTo(slot.y, 5)
+  expect(drop[0]!.x! - landed.x!, 'loading box enters from the rear door').toBeGreaterThan(0.5)
+  expect(drop.every((p, i) => i === 0 || p.x! <= drop[i - 1]!.x! + 1e-6), 'loading box only moves toward its slot').toBe(true)
+  expect(drop.every((p) => p.y! >= landed.y! - 1e-6), 'loading box never dips below its slot').toBe(true)
   await settle(page)
   // "Dỡ hàng" đưa camera về cửa sau: đích camera đổi là scene đã nhận chế độ dỡ
   await renderCameraChange(page, () => button(page, 'Dỡ hàng').click()); await settle(page)

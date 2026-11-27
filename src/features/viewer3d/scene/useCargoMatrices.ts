@@ -1,11 +1,13 @@
-import { easings, useSpring } from '@react-spring/three'
+import { useSpring } from '@react-spring/three'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useLayoutEffect, useRef, type RefObject } from 'react'
 import { DynamicDrawUsage, type InstancedMesh } from 'three'
 import { freeFallDropM } from '@/domain/handling'
 import type { ScenePlacement } from '@/features/viewer3d/scene-input'
 import type { AnimationQuality } from '../usePerformanceFlags'
-import { cargoBounds, DROP_HEIGHT, HULL_PADDING, writeCargoMatrix, ZONE_MARK_PADDING } from './cargo-buffers'
+import { cargoBounds, HULL_PADDING, writeCargoMatrix, ZONE_MARK_PADDING } from './cargo-buffers'
+import type { CargoInterior } from './cargo-entry'
+import { REDUCED_DROP_HEIGHT, stepMotionConfig, stepMotionFor, stepMotionOffset, type StepMotion } from './cargo-step-motion'
 import { toScene } from './units'
 import { cargoVisibility, sameGeometry, type InstanceLayout } from './instance-layout'
 import type { SceneSemantics } from '../operations/scene-semantics'
@@ -16,8 +18,6 @@ export type CargoMeshes = {
   hull: RefObject<InstancedMesh | null>
 }
 type CachedSlot = { placement: ScenePlacement; visibility: ReturnType<typeof cargoVisibility>; hullVisible: boolean; marked: boolean }
-const DROP_DURATION_MS = 500
-const REDUCED_DROP_HEIGHT = 0.16
 
 /** Vỏ viền của kiện nằm ngoài vùng điểm giao dày hơn viền chung. */
 function hullPadding(placement: ScenePlacement, markZones: boolean): number {
@@ -29,7 +29,7 @@ type FallingItem = { id: string; height: number }
 
 /** Keep high frequency spring writes outside React. Only changed GPU slots upload. */
 export function useCargoMatrices({
-  meshes, layout, placements, step, sliceCm, outlines, reducedMotion, animationQuality, hiddenId, semantics, markZones = false,
+  meshes, layout, placements, step, sliceCm, outlines, reducedMotion, animationQuality, hiddenId, semantics, markZones = false, entry = null,
 }: {
   meshes: CargoMeshes
   layout: InstanceLayout
@@ -43,12 +43,15 @@ export function useCargoMatrices({
   semantics?: SceneSemantics
   /** Giữ viền của kiện nằm ngoài vùng điểm giao kể cả khi viền chung tắt (tier `low`). */
   markZones?: boolean
+  /** Lòng thùng: có thì bước phát lại ở chất lượng `full` đưa kiện vào từ cửa sau (`cargo-entry.ts`); vắng thì rơi ngắn tại chỗ. */
+  entry?: CargoInterior | null
 }) {
   const invalidate = useThree((state) => state.invalidate)
   const cache = useRef<CachedSlot[]>([])
   const previousMeshes = useRef<Array<InstancedMesh | null>>([])
   const previousStep = useRef(step)
-  const animation = useRef<{ id: string; height: number } | null>(null)
+  const animation = useRef<StepMotion | null>(null)
+  const previousEntry = useRef(entry)
   /** Kiện rơi theo trọng lực khi chỉnh tay và mốc buông (`performance.now()`), đặt lại mỗi lần vẽ */
   const falling = useRef<{ items: Map<string, FallingItem>; startedAt: number }>({ items: new Map(), startedAt: 0 })
   /** Drop spring: dùng cho 1 item mới (playback step forward) */
@@ -70,7 +73,8 @@ export function useCargoMatrices({
     api.stop()
     api.set({ t: 1 })
     const placementCountChanged = cache.current.length !== placements.length
-    let geometryChanged = recreated || placementCountChanged
+    let geometryChanged = recreated || placementCountChanged || entry !== previousEntry.current
+    previousEntry.current = entry
 
     // Kiện rơi theo trọng lực khi chỉnh tay (LM-108): `z` giảm so với lần vẽ trước thì rơi từ chỗ cũ xuống chỗ mới. Kiện đang kéo
     // (`hiddenId`, proxy thay nó) đã hiện đúng chỗ nên không rơi lại; đổi phương án thì không phải rơi. Reduced motion: đặt thẳng.
@@ -113,7 +117,7 @@ export function useCargoMatrices({
       return { placement, visibility, hullVisible, marked }
     })
     if (geometryChanged) {
-      const bounds = cargoBounds(placements)
+      const bounds = cargoBounds(placements, entry)
       for (const mesh of currentMeshes) {
         if (!mesh) continue
         mesh.boundingSphere = bounds
@@ -128,27 +132,25 @@ export function useCargoMatrices({
     previousPositions.current = nextPositions
 
     // Restore the interrupted box before starting another. Scrubs never leave
-    // a floating instance, even when 4× playback interrupts a 500ms spring.
+    // a floating instance, even when 10× playback interrupts the spring.
     if (step === previousStep.current + 1 && !reducedMotion && animationQuality !== 'none') {
       const placement = placements.find((p) => p.step === step)
       if (placement && placement.id !== hiddenId && (!semantics || semantics.appearanceById.get(placement.id)?.visibility === 'opaque')) {
-        const height = animationQuality === 'full' ? DROP_HEIGHT : REDUCED_DROP_HEIGHT
-        animation.current = { id: placement.id, height }
+        const motion = stepMotionFor(placement.id, animationQuality, entry)
+        animation.current = motion
         const index = layout.placementIdToInstance.get(placement.id)!
         const beyond = cargoVisibility(placement, step, sliceCm) === 'dim'
-        writeCargoMatrix(beyond ? dim : opaque, index, placement, true, height)
-        if (hull && !beyond && outlines) writeCargoMatrix(hull, index, placement, true, height, hullPadding(placement, markZones))
+        const [dx, dy] = stepMotionOffset(motion, placement, 0)
+        writeCargoMatrix(beyond ? dim : opaque, index, placement, true, dy, 0, dx)
+        if (hull && !beyond && outlines) writeCargoMatrix(hull, index, placement, true, dy, hullPadding(placement, markZones), dx)
         invalidate()
-        void api.start({
-          from: { t: 0 }, to: { t: 1 },
-          config: { duration: DROP_DURATION_MS, easing: easings.easeOutCubic },
-        })
+        void api.start({ from: { t: 0 }, to: { t: 1 }, config: stepMotionConfig(motion) })
       }
     }
 
     previousStep.current = step
     invalidate()
-  }, [meshes, layout, placements, step, sliceCm, outlines, reducedMotion, animationQuality, hiddenId, semantics, markZones, api, invalidate])
+  }, [meshes, layout, placements, step, sliceCm, outlines, reducedMotion, animationQuality, hiddenId, semantics, markZones, entry, api, invalidate])
 
   useFrame(() => {
     const opaque = meshes.opaque.current
@@ -165,11 +167,11 @@ export function useCargoMatrices({
       if (!placement || index === undefined) {
         animation.current = null
       } else {
-        const offset = (1 - t) * active.height
+        const [dx, dy] = stepMotionOffset(active, placement, t)
         const beyond = cargoVisibility(placement, step, sliceCm) === 'dim'
-        writeCargoMatrix(beyond ? dim : opaque, index, placement, true, offset)
+        writeCargoMatrix(beyond ? dim : opaque, index, placement, true, dy, 0, dx)
         if (meshes.hull.current && !beyond && outlines) {
-          writeCargoMatrix(meshes.hull.current, index, placement, true, offset, hullPadding(placement, markZones))
+          writeCargoMatrix(meshes.hull.current, index, placement, true, dy, hullPadding(placement, markZones), dx)
         }
         if (t >= 1) animation.current = null
         else needsInvalidate = true
