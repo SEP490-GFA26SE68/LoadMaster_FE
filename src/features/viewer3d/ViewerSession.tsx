@@ -2,6 +2,7 @@ import { lazy, Suspense, useCallback, useMemo, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router'
 import { useCan } from '@/features/auth/useCan'
 import { tripStatus, type TripPhase } from '@/lib/mock-db'
+import type { VehicleBodyStyle } from '@/types/vehicle-body-style'
 import { plannerAccess } from './approval/planner-access'
 import { useViewerApproval } from './approval/useViewerApproval'
 import { createColorContext } from './colors'
@@ -38,12 +39,18 @@ const LoadPlanViewer = lazy(() => import('./LoadPlanViewer').then((module) => ({
  * timeline và Duyệt. Hành động chính duy nhất: nút Duyệt ("Duyệt phương án" / "Duyệt bản chỉnh"), vắng khi bản đã duyệt chưa có
  * chỉnh sửa. `phase` của chuyến (D-45): từ `loading` trở đi phương án đã chốt — không Chỉnh sửa, không Duyệt; fixture benchmark
  * không có chuyến trong kho nên coi như đang lập kế hoạch.
- * Phím tắt: Space phát/dừng, ←/→ lùi/tiến một bước, Home về đầu (`usePlannerSessionControls`).
+ * Phím tắt: Space phát/dừng, ←/→ lùi/tiến một bước, Home về đầu (`usePlannerSessionControls`). `vehicleBodyStyle`: kiểu thân của loại
+ * đang gắn với xe (đọc lúc vẽ, không thuộc snapshot) — dáng xe ở khung 3D và dòng "Kiểu thân xe" của thẻ xe.
  *
  * Bước phát lại và chọn kiện vẽ lại phiên này, nhưng mọi phần không đổi theo chúng (thanh trên, thông báo, thanh công cụ, phần tĩnh của
  * HUD, hộp Duyệt) bọc `memo` và nhận props giữ tham chiếu: hàm qua `useCallback` / `useMemo`, phần tử truyền làm prop qua `useMemo`.
  */
-export function ViewerSession({ model: plan, phase, source }: { model: ViewerSceneModel; phase?: TripPhase; source?: PlanSource }) {
+export function ViewerSession({ model: plan, phase, source, vehicleBodyStyle }: {
+  model: ViewerSceneModel
+  phase?: TripPhase
+  source?: PlanSource
+  vehicleBodyStyle?: VehicleBodyStyle
+}) {
   const params = useParams()
   const [searchParams] = useSearchParams()
   const tripId = params.tripId ?? plan.tripId
@@ -128,12 +135,13 @@ export function ViewerSession({ model: plan, phase, source }: { model: ViewerSce
       <div className={`relative flex min-h-0 flex-1 ${editor.mode === 'edit' ? 'flex-col xl:flex-row' : ''}`}>
         <div className="relative min-h-48 min-w-0 flex-1 overflow-hidden bg-canvas-1">
           <Suspense fallback={<ViewerSkeleton packageCount={plan.placements.length} stopCount={plan.stops.length} />}>
-            <LoadPlanViewer state={state} flags={flags} editor={editor} operations={operations} onPerfSample={showPerf ? perfStore.publish : undefined} />
+            <LoadPlanViewer state={state} flags={flags} editor={editor} operations={operations} vehicleBodyStyle={vehicleBodyStyle}
+              onPerfSample={showPerf ? perfStore.publish : undefined} />
           </Suspense>
 
           {editor.mode === 'view' ? <SceneHud state={state} operations={operations} onInspect={setInspectorTab}
             onChangeVehicle={canChangeVehicle ? vehicleDialog.open : undefined} onRerunPinned={handleRerunPinned}
-            onResetFocus={handleResetFocus} onFocus={handleFocus} onEdit={handleEdit} spin={spin} /> : null}
+            onResetFocus={handleResetFocus} onFocus={handleFocus} onEdit={handleEdit} spin={spin} vehicleBodyStyle={vehicleBodyStyle} /> : null}
           {debugOverlay}
           {editor.mode === 'edit' && state.selected ? <EditorGestureHud placement={state.selected} editor={editor} /> : null}
         </div>
@@ -141,7 +149,7 @@ export function ViewerSession({ model: plan, phase, source }: { model: ViewerSce
         {editor.mode === 'edit' ? <EditorPanel state={state} editor={editor} /> :
           <SceneInspector state={state} operations={operations} tripId={tripId} colorContext={colorContext} issues={planIssues}
             onEdit={handleEdit} onFocus={editor.focusSelected} onSelect={handleSelect}
-            tab={inspectorTab} onTab={setInspectorTab} onClose={handleCloseInspector} />}
+            tab={inspectorTab} onTab={setInspectorTab} onClose={handleCloseInspector} vehicleBodyStyle={vehicleBodyStyle} />}
       </div>
 
       {editor.mode === 'view' ? <PlannerTimeline state={state} operations={operations} /> : null}

@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router'
 import { Button } from '@/components/ui/Button'
 import { useFormat, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+import type { VehicleBodyStyle } from '@/types/vehicle-body-style'
 import type { CameraPreset, PlaybackSpeed } from '@/features/viewer3d/viewer-types'
 import { adaptResult, type ScenePlacement, type ViewerSceneModel } from '@/features/viewer3d/scene-input'
 import { SceneCanvas } from './scene/SceneCanvas'
@@ -22,10 +23,11 @@ const PRESETS = [['cua-sau', 'rear'], ['tren', 'top'], ['goc-cheo', 'diagonal'],
 /**
  * Khung 3D "Xem vị trí hàng" của tài xế (LM-061): scene cm của revision đã duyệt (LM-030), mô phỏng dỡ theo `unloadingOrder` của
  * kết quả, LIFO từ domain — `LIFO_BLOCKED` dừng mô phỏng và tô kiện chắn. Không có editor, không đánh dấu đã giao.
- * `?debug&packages=N` thay scene bằng fixture benchmark cm.
+ * `?debug&packages=N` thay scene bằng fixture benchmark cm. `vehicleBodyStyle`: kiểu thân của loại đang gắn với xe (kho mẫu); fixture
+ * benchmark là xe khác nên bỏ qua nó.
  */
-export function DriverCargoViewer({ model: source, stopNumber, doneIds }: {
-  model: ViewerSceneModel; stopNumber: number; doneIds: ReadonlySet<string>
+export function DriverCargoViewer({ model: source, stopNumber, doneIds, vehicleBodyStyle }: {
+  model: ViewerSceneModel; stopNumber: number; doneIds: ReadonlySet<string>; vehicleBodyStyle?: VehicleBodyStyle
 }) {
   const t = useT()
   const format = useFormat()
@@ -70,7 +72,8 @@ export function DriverCargoViewer({ model: source, stopNumber, doneIds }: {
       <SceneCanvas experience="driver" model={model} placements={model.placements} flags={flags} preset={preset} focus={focus}
         selectedId={selected?.id ?? null} onSelect={setSelectedId} step={0} semantics={semantics} animateLoading={false}
         decoration={false} onFocus={handleFocus} warningSignal={unload.warning} onPerfSample={search.has('debug') ? perf.publish : undefined}
-        unloadMotion={{ cursor: unload.cursor, placement: unload.ordered[unload.cursor - 1], durationMs: 520 / speed }} />
+        unloadMotion={{ cursor: unload.cursor, placement: unload.ordered[unload.cursor - 1], durationMs: 520 / speed }}
+        vehicleBodyStyle={count ? undefined : vehicleBodyStyle} />
       {search.has('debug') ? <DebugOverlay store={perf} className="top-2 bottom-auto left-2 translate-x-0" /> : null}
     </div>
     <div className="max-h-[30dvh] shrink-0 overflow-y-auto border-t border-border-dark bg-panel-dark p-3">

@@ -1,6 +1,7 @@
 import { expect, test } from 'vitest'
 import type { VehicleType } from '@/lib/mock-db'
 import {
+  BODY_STYLE_AUTO,
   EMPTY_VEHICLE_TYPE,
   percentToRatio,
   ratioToPercent,
@@ -65,8 +66,21 @@ test('a stored type fills the form: missing axle limits are blank inputs, the ra
   }
   expect(toVehicleTypeForm(type)).toStrictEqual({
     name: 'Xe tải 9,5 tấn thùng 7,2 m', cargoLengthCm: 720, cargoWidthCm: 235, cargoHeightCm: 240, payloadKg: 9500,
-    frontAxleLimitKg: Number.NaN, rearAxleLimitKg: 9200, maxCogOffsetPercent: 15,
+    frontAxleLimitKg: Number.NaN, rearAxleLimitKg: 9200, maxCogOffsetPercent: 15, bodyStyle: BODY_STYLE_AUTO,
   })
+  expect(toVehicleTypeForm({ ...type, bodyStyle: 'VAN_MID' }).bodyStyle).toBe('VAN_MID')
+})
+
+test('the body style starts automatic and stays out of the store input until a style is chosen', () => {
+  expect(EMPTY_VEHICLE_TYPE.bodyStyle).toBe(BODY_STYLE_AUTO)
+  expect(toVehicleTypeInput(vehicleTypeFormSchema.parse(VALID))).not.toHaveProperty('bodyStyle')
+  expect(toVehicleTypeInput(vehicleTypeFormSchema.parse({ ...VALID, bodyStyle: 'VAN_MINI_HOOD' }))).toMatchObject({ bodyStyle: 'VAN_MINI_HOOD' })
+})
+
+test('the body style accepts only automatic or a style the 3D view draws', () => {
+  const unknown = { ...VALID, bodyStyle: 'BOX_TRUCK' } as unknown as VehicleTypeFormInput
+  expect(errors(unknown)).toHaveLength(1)
+  expect(errors(unknown)[0]).toMatch(/^bodyStyle:/)
 })
 
 test('percent and ratio convert without floating-point residue', () => {

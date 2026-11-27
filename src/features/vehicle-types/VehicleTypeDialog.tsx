@@ -5,10 +5,13 @@ import { useForm } from 'react-hook-form'
 import { Button } from '@/components/ui/Button'
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader } from '@/components/ui/Dialog'
 import { Input } from '@/components/ui/Input'
+import { SelectField } from '@/components/ui/SelectField'
 import { useFormat, useT } from '@/lib/i18n'
 import type { VehicleTypeInput } from '@/lib/mock-db'
 import type { VehicleTypeEntry } from './vehicle-types-api'
 import {
+  BODY_STYLE_AUTO,
+  BODY_STYLE_CHOICES,
   COG_RANGE,
   EMPTY_VEHICLE_TYPE,
   MAX_COG_OFFSET_PERCENT,
@@ -34,8 +37,8 @@ const AXLE_LIMITS = [
 
 /**
  * Thêm / sửa loại xe (LM-104, FE-5b-01): tên, dài × rộng × cao lòng thùng (cm), tải trọng (kg), giới hạn tải trục trước / sau (kg, để
- * trống nếu chưa khai) và độ lệch trọng tâm tối đa (%). `type` vắng là thêm mới. Lỗi hiện tại ô; kho kiểm lại và trả
- * `VEHICLE_TYPE_INVALID` nếu sai, màn hiện lỗi đó qua toast.
+ * trống nếu chưa khai), độ lệch trọng tâm tối đa (%) và kiểu thân xe (chỉ đổi hình xe ở khung 3D). `type` vắng là thêm mới. Lỗi
+ * hiện tại ô; kho kiểm lại và trả `VEHICLE_TYPE_INVALID` nếu sai, màn hiện lỗi đó qua toast.
  */
 export function VehicleTypeDialog({ open, onOpenChange, type, pending, onSubmit }: {
   open: boolean
@@ -57,6 +60,10 @@ export function VehicleTypeDialog({ open, onOpenChange, type, pending, onSubmit 
   const nameError = errors.name?.message === 'vehicleTypes.form.errors.nameTooLong'
     ? t('vehicleTypes.form.errors.nameTooLong', { max: NAME_MAX })
     : errors.name ? t('vehicleTypes.form.errors.nameRequired') : undefined
+  const bodyStyleOptions = BODY_STYLE_CHOICES.map((choice) => ({
+    value: choice,
+    label: choice === BODY_STYLE_AUTO ? t('vehicleTypes.form.bodyStyleAuto') : t(`common.vehicleBodyStyles.${choice}`),
+  }))
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -114,6 +121,14 @@ export function VehicleTypeDialog({ open, onOpenChange, type, pending, onSubmit 
               />
             </div>
             <p className="-mt-2 text-fine text-ink-3">{t('vehicleTypes.form.maxCogOffsetHint')}</p>
+            <SelectField
+              control={form.control}
+              name="bodyStyle"
+              label={t('vehicleTypes.form.bodyStyle')}
+              options={bodyStyleOptions}
+              hint={t('vehicleTypes.form.bodyStyleHint')}
+              className="max-w-80"
+            />
           </div>
           <DialogFooter>
             <DialogClose asChild>

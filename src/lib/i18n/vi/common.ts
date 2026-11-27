@@ -31,6 +31,13 @@ export const common = {
   arrivalStatuses: { onTime: 'Đến kịp hạn', late: 'Đến trễ hạn' },
   /** Loại hàng của kiện (`HandlingClass`, D-69, FE-3b-04): một nguồn cho kho kiện, nhãn, yêu cầu giao và nhật ký. */
   handlingClasses: { STANDARD: 'Thường', FRAGILE: 'Dễ vỡ', REFRIGERATED: 'Hàng lạnh', HAZARDOUS: 'Nguy hiểm', HIGH_VALUE: 'Giá trị cao' },
+  /** Kiểu thân xe của loại xe (`VehicleBodyStyle`): ô chọn của form loại xe và thẻ xe của Planner. Chỉ đổi hình ở khung 3D. */
+  vehicleBodyStyles: {
+    VAN_MINI_FLAT: 'Van mini mũi bằng',
+    VAN_MINI_HOOD: 'Van mini mũi ngắn',
+    VAN_MID: 'Van cỡ trung',
+    VAN_LARGE: 'Van cỡ lớn',
+  },
   /** Trạng thái kiện của kho kiện (`PackageStatus`, D-70, FE-3b-01), key trùng mã của kho. */
   packageStatuses: {
     IMPORTED: 'Đã nhập',

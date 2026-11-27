@@ -441,6 +441,7 @@ export const viewer = {
     obstacles: 'Vật cản',
     noObstacles: 'Không có',
     obstacleCount: '{type} × {count}',
+    bodyStyle: 'Kiểu thân xe',
   },
   /** HUD trên khung 3D của Planner. */
   hud: {

@@ -2050,8 +2050,18 @@ có ba trường cùng tên, **ngoài type Spec** (khai ở `spec-contract.test.
 gắn lúc đọc** (`listVehicles`, `getVehicle` → `withTypeLimits`, `vehicle-limits.ts`), nên request tối ưu và revision chụp đúng giới hạn lúc
 chạy; xe chưa gắn loại không có trường nào — tải trục so với `axles[].maxLoadKg`, trọng tâm dùng `DEFAULT_MAX_COG_OFFSET_RATIO`. Sửa giới hạn
 của loại, hoặc gắn / gỡ loại làm **giới hạn hiệu lực** của xe đổi (`sameLimits`), làm phương án của chuyến đang lập kế hoạch với xe đó lỗi thời,
-như khi sửa xe. Loại kiện (`PackageType`) có `maxStackWeightKg`, `rotationAllowed`, `fragile` — hình chiếu của `maxTopLoadKg` / `stackable`,
-`allowedOrientations`, `fragilityLevel`, kho ghi lại mỗi lần lưu (`backendLimitsOf`); chiều backend → Spec là `specFieldsOf`
+như khi sửa xe. **Kiểu thân xe** `VehicleType.bodyStyle?` (`VEHICLE_BODY_STYLES` ở `types/vehicle-body-style.ts`: bốn kiểu van — form chỉ liệt kê
+kiểu khung 3D đang vẽ được; nhãn `common.vehicleBodyStyles`) **chỉ đổi hình xe ở khung 3D**: kho kiểm giá trị (`VEHICLE_TYPE_INVALID`
+`{ field: 'bodyStyle' }`), vắng là xoá; không ghép vào xe, không vào request tối ưu hay revision, `sameLimits` không xét nên đổi kiểu không
+làm phương án nào lỗi thời. Form loại xe kho mẫu có ô chọn "Kiểu thân xe" mở ở "Tự chọn theo kích thước" (giá trị canh `AUTO` của
+`vehicle-type-form.ts`, không gửi kiểu nào); form máy chủ chưa có ô (máy chủ chưa có trường). Khung 3D đọc kiểu **lúc vẽ**, theo loại đang
+gắn với chính xe đang vẽ: `fetchVehicleBodyStyle(mã xe)` (`vehicle-types-api.ts`, ghép `listVehicleTypes` với `listVehicleTypeAssignments` —
+mọi vai trò công ty đọc được) → `useVehicleBodyStyle` (khoá `['vehicle-types', 'body-style', mã xe]`, dưới `['vehicle-types']` nên lưu hay
+gắn loại xe làm khung đang mở vẽ lại) → prop `vehicleBodyStyle` của `SceneCanvas`; Planner và phiên xếp ở kho chờ lần đọc đầu rồi mới dựng
+khung 3D (`settled`) để xe không đổi dáng ngay sau khi hiện; tài xế đọc khi mở màn điểm giao (khung chỉ dựng khi bấm "Xem vị trí hàng"). Nối máy chủ (nhóm `fleet`, và mọi
+màn của máy chủ) là `undefined` — khung tự chọn dáng; form xe kho mẫu không có ô loại xe nên xem trước cũng `undefined`; trang giới thiệu
+không truyền. Thẻ xe của Planner có dòng "Kiểu thân xe" chỉ khi loại xe đã khai (`vehicleFacts(xe, kiểu)`).
+Loại kiện (`PackageType`) có `maxStackWeightKg`, `rotationAllowed`, `fragile` — hình chiếu của `maxTopLoadKg` / `stackable`, `allowedOrientations`, `fragilityLevel`, kho ghi lại mỗi lần lưu (`backendLimitsOf`); chiều backend → Spec là `specFieldsOf`
 (`package-type-limits.ts`). Form loại kiện có công tắc "Cho phép xoay kiện": bật khi còn hơn một hướng đặt, tắt đưa hướng đặt về riêng `LWH`.
 
 **Ngưỡng ràng buộc** (FE-5b-04, D-79). Trọng tâm hàng (`checkCenterOfGravity`): lệch ngang `COG_LATERAL` và lệch dọc `COG_LONGITUDINAL` (kèm

@@ -2,6 +2,7 @@ import { ScanLine, TriangleAlert } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { PackageVerify } from '@/components/PackageVerify'
 import { Button } from '@/components/ui/Button'
+import { useVehicleBodyStyle } from '@/features/vehicle-types/useVehicleTypesQuery'
 import { adaptResult } from '@/features/viewer3d/scene-input'
 import { useT } from '@/lib/i18n'
 import { leftOutIds, type Revision, type Trip } from '@/lib/mock-db'
@@ -47,6 +48,7 @@ export function DeliveryStopView({ trip, plan }: { trip: Trip; plan: Revision })
   // Dựng lại chỉ khi phương án hoặc điểm giao đổi; mỗi lần đánh dấu dỡ chỉ đổi `trip.delivery`
   const model = useMemo(() => adaptResult({ trip: { id, stops: tripStops, inputVersion }, revision: plan }), [id, tripStops, inputVersion, plan])
   const stops = useMemo(() => stopDeliveries(tripStops, model), [tripStops, model])
+  const { bodyStyle: vehicleBodyStyle } = useVehicleBodyStyle(model.vehicle.id)
   const view = deliveryView(trip, stops)
   const actions = useDeliveryStop(trip.id, view)
   const scan = useUnloadScan(trip.id, view, stops)
@@ -82,7 +84,7 @@ export function DeliveryStopView({ trip, plan }: { trip: Trip; plan: Revision })
               {t('driver.scan.open')}
             </Button>
           ) : null}
-          <CargoPositionDialog model={model} stopNumber={view.stop.number} doneIds={offVehicle} />
+          <CargoPositionDialog model={model} stopNumber={view.stop.number} doneIds={offVehicle} vehicleBodyStyle={vehicleBodyStyle} />
           {arrived && view.items.length > 0 ? (
             <Button variant="secondary" size="touch" onClick={() => setIssueOpen(true)}>
               <TriangleAlert strokeWidth={2} />
