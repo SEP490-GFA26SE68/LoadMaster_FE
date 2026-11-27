@@ -1,9 +1,9 @@
 import { animated, easings, useSpring } from '@react-spring/three'
 import { useThree } from '@react-three/fiber'
-import { useEffect, useMemo } from 'react'
-import { BoxGeometry } from 'three'
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
+import { useMemo } from 'react'
+import { DOOR_LEAF, doorHardware, type DoorVariant } from './door-hardware'
 import type { SceneMaterials } from './materials'
+import { useDisposeOnChange } from './useDisposeOnChange'
 
 export function FloorScale({ length, width, color }: { length: number; width: number; color: string }) {
   const positions = useMemo(() => {
@@ -24,39 +24,29 @@ export function FloorScale({ length, width, color }: { length: number; width: nu
 /**
  * Door opening is presentation only; no state is written to the domain plan. `width` × `height` là cả ô cửa (hai cánh),
  * `hingeZ` là vị trí bản lề của cánh này theo chiều ngang thùng. `closed` (mặc định tắt) cho cánh quay về 0° — đóng kín mặt sau.
- * Van hai cánh (`leafColor` màu thân, `hardware` tắt): cánh trơn, không thanh khoá của thùng tải.
+ * Van hai cánh (`leafColor` màu thân, `hardware` tắt): cánh trơn, không thanh khoá của thùng tải. `variant` `reefer` (thân đông lạnh):
+ * cánh cách nhiệt dày 6 cm màu trắng, gioăng tối quanh mép, bốn bản lề (`doorHardware`).
  */
-export function ContainerDoor({ length, height, width, hingeZ, side, materials, detail, reducedMotion, closed = false, leafColor, hardware: withHardware = true }: {
+export function ContainerDoor({ length, height, width, hingeZ, side, materials, detail, reducedMotion, closed = false, leafColor, hardware: withHardware = true, variant = 'box' }: {
   length: number; height: number; width: number; hingeZ: number; side: -1 | 1
   materials: SceneMaterials; detail: boolean; reducedMotion: boolean; closed?: boolean; leafColor?: string; hardware?: boolean
+  variant?: DoorVariant
 }) {
   const invalidate = useThree((state) => state.invalidate)
   const spring = useSpring({ from: { angle: side * Math.PI / 2 }, angle: closed ? 0 : side * 110 * Math.PI / 180,
     immediate: reducedMotion, config: { duration: 500, easing: easings.easeOutCubic }, onChange: () => invalidate() })
-  const hardware = useMemo(() => {
-    const pieces: BoxGeometry[] = []
-    const add = (x: number, y: number, z: number, sx: number, sy: number, sz: number) => {
-      pieces.push(new BoxGeometry(sx, sy, sz).translate(x, y, z * side))
-    }
-    for (const z of [0.04, width / 2 - 0.04]) add(0.035, height / 2, z, 0.025, height, 0.05)
-    for (const y of [0.04, height - 0.04]) add(0.035, y, width / 4, 0.025, 0.05, width / 2)
-    for (const z of [width * 0.14, width * 0.36]) {
-      add(0.06, height / 2, z, 0.04, height - 0.2, 0.025)
-      add(0.09, height * 0.42, z + 0.07, 0.035, 0.035, 0.18)
-    }
-    for (const y of [height * 0.15, height * 0.5, height * 0.85]) add(0.045, y, 0.035, 0.065, 0.12, 0.14)
-    const geometry = mergeGeometries(pieces)!
-    pieces.forEach((p) => p.dispose())
-    return geometry
-  }, [height, width, side])
-  useEffect(() => () => hardware.dispose(), [hardware])
+  const showHardware = detail && withHardware
+  const hardware = useMemo(() => showHardware ? doorHardware(height, width, side, variant, materials) : null,
+    [showHardware, height, width, side, variant, materials])
+  useDisposeOnChange(hardware)
+  const thickness = DOOR_LEAF[variant]
   return <animated.group position={[length, 0, hingeZ]} rotation-y={spring.angle}>
-    <mesh position={[0.015, height / 2, side * width / 4]} castShadow>
-      <boxGeometry args={[0.03, height, width / 2]} />
-      <meshStandardMaterial color={leafColor ?? materials.wall} roughness={0.82} />
+    <mesh position={[thickness / 2, height / 2, side * width / 4]} castShadow>
+      <boxGeometry args={[thickness, height, width / 2]} />
+      <meshStandardMaterial color={leafColor ?? (variant === 'reefer' ? materials.insulated : materials.wall)} roughness={0.82} />
     </mesh>
-    {detail && withHardware ? <mesh geometry={hardware}>
-      <meshStandardMaterial color={materials.metal} roughness={0.5} metalness={0.4} />
+    {hardware ? <mesh geometry={hardware}>
+      <meshStandardMaterial vertexColors roughness={0.5} metalness={0.4} />
     </mesh> : null}
   </animated.group>
 }

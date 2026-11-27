@@ -153,15 +153,16 @@ export function roofBeamCenters(length: number): number[] {
 }
 
 /**
- * Hộp đặc của khung thùng. Gờ hai bên và ngưỡng cửa có ở mọi tier (như bản trước); `detail` thêm trụ góc trước, xà dọc nóc, xà ngang
- * nóc trước / sau và đà nóc ngang — tất cả nằm ngoài lòng thùng (x ≤ 0, y ≥ H, z ≤ 0 hoặc z ≥ W) nên không chạm kiện nào.
+ * Hộp đặc của khung thùng. Gờ hai bên và ngưỡng cửa có ở mọi tier; `detail` thêm trụ góc trước, xà dọc nóc, xà ngang
+ * nóc trước / sau và đà nóc ngang — tất cả nằm ngoài lòng thùng (x ≤ 0, y ≤ 0, y ≥ H, z ≤ 0 hoặc z ≥ W) nên không chạm kiện nào.
  */
 export function containerFrame({ length: L, width: W, height: H }: ContainerBox, detail: boolean): FramePiece[] {
-  const t = SKIRT_THICKNESS / 2, m = FRAME_MEMBER
+  const t = SKIRT_THICKNESS, m = FRAME_MEMBER
+  // Gờ bám mặt ngoài hai vách, ngưỡng cửa ngay dưới mép sàn sau: không mảnh nào lấn vào lòng thùng
   const pieces = [
-    piece([0, 0, -t], [L, SKIRT_HEIGHT, t], 'skirt'),
-    piece([0, 0, W - t], [L, SKIRT_HEIGHT, W + t], 'skirt'),
-    piece([L - t, 0, 0], [L + t, 0.06, W], 'skirt'),
+    piece([0, 0, -t], [L, SKIRT_HEIGHT, 0], 'skirt'),
+    piece([0, 0, W], [L, SKIRT_HEIGHT, W + t], 'skirt'),
+    piece([L - t, -0.06, 0], [L + t, 0, W], 'skirt'),
   ]
   if (!detail) return pieces
   pieces.push(

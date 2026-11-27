@@ -22,6 +22,10 @@ export type SceneMaterials = {
   /** Biển số đuôi xe: nền trắng, chữ đen như biển thật */
   plate: string
   plateInk: string
+  /** Bạt mui của thân mui bạt: sắc cyan sẫm của `--info`, đọc được trên nền 3D tối */
+  tarp: string
+  /** Vách cách nhiệt trắng của thân đông lạnh */
+  insulated: string
 }
 
 function derive(token: `--${string}`, fallback: string, factor: number): string {
@@ -52,5 +56,7 @@ export function sceneMaterials(lift = 1): SceneMaterials {
     marker: readToken('--warning') || '#d97706',
     plate: `#${bg.getHexString()}`,
     plateInk: readToken('--text') || '#0e1c21',
+    tarp: derive('--info', '#006f81', 0.72 * lift),
+    insulated: derive('--bg', '#ffffff', 0.8),
   }
 }
