@@ -1377,10 +1377,11 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
 - **Dáng xe van liền khối** (đợt 5; `scene/van-shape.ts`, thuần, có test `tests/viewer-van-shape.test.ts`). Bốn dáng tham số theo xe
   tham chiếu, số nguồn ghi ở chú thích: `VAN_MINI_FLAT` (mũi phẳng, Suzuki Blind Van), `VAN_MINI_HOOD` (mũi ngắn, Towner / Kenbo), `VAN_MID`
   (HiAce LWB), `VAN_LARGE` (Transit). Kiểu thân khai ở loại xe (`VehicleBodyStyle`, `src/types/vehicle-body-style.ts`; `SceneCanvas`
-  nhận qua `vehicleBodyStyle`) **luôn thắng**: luôn là van, đúng dáng đó, kể cả xe nặng. Vắng thì hạng suy từ số như cũ, và van chọn dáng bằng
+  nhận qua `vehicleBodyStyle`) **luôn thắng**: kiểu van (`VAN_*`) luôn là van, đúng dáng đó, kể cả xe nặng; kiểu xe tải (`TRUCK_*`) giữ hạng
+  suy từ số, xe số nhỏ như van thì vẽ thành tải nhẹ (`truckLayout(…).body`, mục "Chi tiết xe" ở trên). Vắng thì hạng suy từ số như cũ, và van chọn dáng bằng
   `vanStyleOf` (ngưỡng đặt tên ở đầu file: dài ≥ 280 cm hoặc cao ≥ 150 cm là van lớn; dài ≥ 245 cm hoặc rộng ≥ 165 cm là cỡ trung; dài
   dưới 195 cm hoặc chở ≤ 600 kg là mũi phẳng; còn lại mũi ngắn). `truckLayout(vehicle, bodyStyle?)` lấy mũi, cỡ bánh, sàn, trục minh hoạ của
-  van từ dáng; `vehicleFrameKey` mang tên dáng để camera canh lại khi đổi dáng; xe tải không đổi gì. Lòng thùng luôn đúng số đang khai —
+  van từ dáng; `vehicleFrameKey` mang tên dáng van hoặc thân xe tải để camera canh lại khi đổi kiểu. Lòng thùng luôn đúng số đang khai —
   dáng chỉ đổi phần quanh nó; bánh luôn nằm dưới sàn (domain không khai hốc bánh), nên HiAce và Transit vẽ cao hơn xe thật vài tấc, lệch có chủ
   ý. Thân là **vỏ liền khối màu thân**: vỏ trong (`vanShell`: sàn, vách trước, hai vách, trần) là mặt đơn pháp tuyến hướng vào — vách gần
   camera tự biến mất nên kiện luôn thấy được ở mọi góc nhìn (Góc chéo, Bên hông, Cửa sau, Trên); vỏ ngoài (`vanExterior`) bo nóc, không đi
