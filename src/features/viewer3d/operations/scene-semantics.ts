@@ -34,8 +34,10 @@ export type OperationsInput = {
 /** Shared semantic state for planner/warehouse/driver, with no Three.js or role-specific branches. */
 export function deriveSceneSemantics(placements: readonly ScenePlacement[], input: OperationsInput): SceneSemantics {
   const currentId = input.kind === 'loading' ? placements.find((p) => p.step === input.step)?.id ?? null : input.currentId ?? null
-  const nextId = input.kind === 'loading'
-    ? [...placements].filter((p) => p.step > input.step).sort((a, b) => a.step - b.step)[0]?.id ?? null : input.nextId ?? null
+  // Kiện kế tiếp: bước nhỏ nhất sau bước đang xem (trùng bước thì kiện đứng trước) — một lượt quét, không chép và sắp cả nghìn kiện mỗi bước
+  let next: ScenePlacement | undefined
+  if (input.kind === 'loading') for (const p of placements) if (p.step > input.step && (!next || p.step < next.step)) next = p
+  const nextId = input.kind === 'loading' ? next?.id ?? null : input.nextId ?? null
   const massPlacements = placements.filter((p) => !input.unloadedIds?.has(p.id) &&
     (input.focusStop != null ? p.stop >= input.focusStop : input.kind === 'loading' ? p.step <= input.step : true))
   const appearanceById = new Map<string, CargoAppearance>()
