@@ -250,9 +250,10 @@ test('changing the vehicle from the Planner and from trip detail offers only rea
   await login(PLANNER, 'dispatcher')
   await page.locator('canvas:not(.maplibregl-canvas)').waitFor()
   await expect(page.getByRole('alert').filter({ hasText: 'Kết quả đã lỗi thời' })).toHaveCount(0)
-  // Nút phụ ở góc khung 3D, không nằm trên thanh trên (hàng điều khiển không còn chỗ, `planner-compact`)
+  // Thẻ xe ở góc khung 3D, không nằm trên thanh trên (hàng điều khiển không còn chỗ, `planner-compact`); "Đổi xe" ở chân bảng thông số xe
   await expect(page.locator('header').first().getByRole('button', { name: 'Đổi xe', exact: true })).toHaveCount(0)
-  await page.getByRole('button', { name: 'Đổi xe', exact: true }).click()
+  await page.getByRole('button', { name: /^Xe của chuyến: Hyundai HD210/ }).click()
+  await page.getByRole('dialog', { name: 'Xe của chuyến', exact: true }).getByRole('button', { name: 'Đổi xe', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: `Đổi xe của chuyến ${TRIP_ID}` })
   await expect(dialog).toContainText('Hàng của chuyến: 132 kiện · 5.844 kg · 16,6 m³')
   // Xe thiếu tải, xe đang chạy chuyến và xe bảo dưỡng bị khoá kèm lý do ngay tại dòng

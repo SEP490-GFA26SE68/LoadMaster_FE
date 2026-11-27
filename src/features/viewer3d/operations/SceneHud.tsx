@@ -1,5 +1,5 @@
 import { useMemo, type ReactNode } from 'react'
-import { AlertTriangle, Focus, Maximize, Pencil, Settings2, SkipForward, Truck, Undo2 } from 'lucide-react'
+import { AlertTriangle, Focus, Maximize, Pencil, Settings2, SkipForward, Undo2 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useFormat, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
@@ -7,6 +7,7 @@ import type { LoadPlanViewerState } from '../useLoadPlanViewer'
 import type { OperationsState } from './useOperations'
 import { MassCard } from './GravityCards'
 import { PinnedRerun } from './PinnedRerun'
+import { VehicleCard } from '../vehicle/VehicleCard'
 import type { InspectorTab } from '../panels/WorkspaceToolbar'
 import { DARK_SCOPE, GLASS_PANEL, GLASS_PRESSED, MUTED, StopMark } from '../panels/scene-ui'
 import type { ScenePlacement } from '@/features/viewer3d/scene-input'
@@ -17,14 +18,16 @@ const HUD_BUTTON = cn('pointer-events-auto h-14 px-3 text-body-lg xl:h-8 xl:px-2
  * Bối cảnh ở mép khung 3D (V2.3 `.legend`): điểm giao theo thứ tự dỡ với số kiện, bước đang mô phỏng, theo bước / xem toàn xe /
  * quay lại kiện cần dỡ và lối dỡ bị che kín. Thông tin không gian nằm trên chính kiện (nhãn neo). Thẻ kiện đang chọn và panel
  * dỡ hàng nổi bên phải nằm ở `SceneInspector` (cần lỗi ràng buộc của phương án). Dưới 1.280 px bỏ danh sách điểm giao và dùng
- * thanh kiện gọn ở góc dưới trái. Góc dưới phải: "Đổi xe" (FE-5b-08, D-80 — nút phụ, từ 768 px; thanh trên của Planner không còn chỗ
- * cho nó ở 1.536–1.760 px) cạnh "Chi tiết / Hiển thị". Cùng hàng, bên trái hai nút đó: nhãn kiện đã ghim và "Chạy lại giữ ghim" khi phương án có kiện ghim (FE-BL-02) — hàng này nằm dưới cột
- * nổi bên phải nên không bị nó che. Planner bản máy chủ đặt thêm nút "Trợ lý AI" (`assistant`) ngay trước "Chi tiết / Hiển thị".
+ * thanh kiện gọn ở góc dưới trái. Góc dưới phải: thẻ xe (`VehicleCard`, từ 768 px — xe của phương án đang xem, `sceneModel.vehicle`,
+ * cho mọi người xem được Planner; bấm mở bảng thông số xe, chân bảng có nút phụ "Đổi xe" khi `onChangeVehicle` có — FE-5b-08, D-80;
+ * thanh trên của Planner không còn chỗ cho xe ở 1.536–1.760 px) cạnh "Chi tiết / Hiển thị". Cùng hàng, bên trái hai thứ đó: nhãn kiện
+ * đã ghim và "Chạy lại giữ ghim" khi phương án có kiện ghim (FE-BL-02) — hàng này nằm dưới cột nổi bên phải nên không bị nó che.
+ * Planner bản máy chủ đặt thêm nút "Trợ lý AI" (`assistant`) ngay trước "Chi tiết / Hiển thị". HUD chỉ có ở chế độ Xem.
  */
 export function SceneHud({ state, operations, onInspect, onFocus, onEdit, onResetFocus, onChangeVehicle, onRerunPinned, rerunBlockedReason, assistant }: {
   state: LoadPlanViewerState; operations: OperationsState; onInspect: (tab: InspectorTab) => void
   onFocus: (p?: ScenePlacement) => void; onEdit?: () => void; onResetFocus?: () => void
-  /** Mở hộp thoại Đổi xe; vắng khi chuyến không ở trạng thái Đã lập kế hoạch hoặc người xem không sửa được chuyến. */
+  /** Mở hộp thoại Đổi xe (nút ở chân bảng thông số xe); vắng khi chuyến không ở trạng thái Đã lập kế hoạch hoặc người xem không sửa được chuyến. */
   onChangeVehicle?: () => void
   /** Mở Thiết lập tối ưu để chạy lại giữ kiện đã ghim (FE-BL-02); vắng khi người xem không chạy tối ưu được hoặc chuyến đã sang pha vận hành. */
   onRerunPinned?: () => void
@@ -48,7 +51,7 @@ export function SceneHud({ state, operations, onInspect, onFocus, onEdit, onRese
   const t = useT()
   const unloading = operations.kind === 'unloading'
   const kind = t(!unloading ? 'viewer.operations.loading' : operations.unload.fromResult ? 'viewer.operations.unloading' : 'viewer.operations.suggestedUnloading')
-  return <div className={cn('pointer-events-none absolute inset-0 flex flex-col justify-between p-3', DARK_SCOPE)}>
+  return <div data-scene-hud className={cn('pointer-events-none absolute inset-0 flex flex-col justify-between p-3', DARK_SCOPE)}>
     <div className="flex items-start justify-between gap-3">
       <section aria-label={t('viewer.hud.stopsTitle')}
         className={cn('min-w-0 max-w-80 p-3 text-body-lg xl:w-74 xl:p-3.5 xl:text-body', GLASS_PANEL)}>
@@ -94,20 +97,16 @@ export function SceneHud({ state, operations, onInspect, onFocus, onEdit, onRese
     </div>
     <div className="flex items-end justify-between gap-2">
       {/* Thanh kiện gọn: tablet và điện thoại; từ 1.280 px lúc xếp hàng thẻ kiện nổi bên phải thay nó, lúc dỡ hàng vẫn giữ (kiện chắn đang xem) */}
-      <div className={cn('pointer-events-auto flex max-w-full items-center gap-1 p-1', !unloading && 'xl:hidden', GLASS_PANEL)}>
+      <div data-hud-package-bar className={cn('pointer-events-auto flex max-w-full items-center gap-1 p-1', !unloading && 'xl:hidden', GLASS_PANEL)}>
         <Button variant="skyGhost" aria-label={t('viewer.hud.selectPackage')} className="h-14 min-w-0 px-2 text-body-lg xl:h-10 xl:text-body" onClick={() => onInspect('package')}>
           <span className="max-w-32 truncate font-mono xl:max-w-48">{state.selected?.id ?? t('viewer.hud.selectPackage')}</span>
         </Button>
         <Button variant="skyGhost" className="size-14 p-0 xl:size-10" aria-label={t('viewer.hud.focus')} disabled={!state.selected} onClick={() => onFocus()}><Focus strokeWidth={1.5} /></Button>
         {onEdit ? <Button variant="skyGhost" className="size-14 p-0 xl:size-10" aria-label={t('viewer.hud.edit')} disabled={!state.selected} onClick={onEdit}><Pencil strokeWidth={1.5} /></Button> : null}
       </div>
-      <div className="ml-auto flex shrink-0 items-end gap-2">
+      <div data-hud-corner className="ml-auto flex shrink-0 items-end gap-2">
         {onRerunPinned ? <PinnedRerun count={pinnedCount} unsaved={pinsUnsaved} blockedReason={rerunBlockedReason} onRerun={onRerunPinned} /> : null}
-        {onChangeVehicle ? (
-          <Button variant="glass" className="pointer-events-auto hidden size-14 shrink-0 p-0 glass-dark md:flex xl:h-10 xl:w-auto xl:px-3.5" aria-label={t('viewer.plan.changeVehicle')} onClick={onChangeVehicle}>
-            <Truck strokeWidth={1.5} /><span className="hidden xl:inline">{t('viewer.plan.changeVehicle')}</span>
-          </Button>
-        ) : null}
+        <VehicleCard vehicle={state.sceneModel.vehicle} onChangeVehicle={onChangeVehicle} />
         {assistant}
         <Button variant="glass" className="pointer-events-auto size-14 shrink-0 p-0 glass-dark xl:h-10 xl:w-auto xl:px-3.5" aria-label={t('viewer.hud.detailsLabel')} onClick={() => onInspect('operations')}>
           <Settings2 strokeWidth={1.5} /><span className="hidden xl:inline">{t('viewer.hud.detailsLabel')}</span>

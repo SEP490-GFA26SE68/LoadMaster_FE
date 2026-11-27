@@ -16,6 +16,7 @@ import { PlanMetricsPanel } from './PlanMetricsPanel'
 import { SlicePanel } from '../overlays/SlicePanel'
 import { StopLegend } from '../overlays/StopLegend'
 import { ObstacleLegend } from '../overlays/ObstacleLegend'
+import { VehicleSection } from '../vehicle/VehicleSection'
 import { COLOR_MODES } from '../viewer-options'
 import type { ColorContext } from '../colors'
 import type { InspectorTab } from './WorkspaceToolbar'
@@ -51,7 +52,7 @@ export function SceneInspector(props: InspectorProps) {
 function FloatingColumn({ state, operations, tripId, issues, onEdit, pin, onFocus, onSelect, onTab }: InspectorProps) {
   const selected = state.selected
   const editBlocker = onEdit ? (p: ScenePlacement) => { state.select(p.id); onEdit() } : undefined
-  return <div className={cn('pointer-events-none absolute top-3 right-3 bottom-16 z-10 hidden w-83 flex-col gap-3 xl:flex', DARK_SCOPE)}>
+  return <div data-scene-inspector className={cn('pointer-events-none absolute top-3 right-3 bottom-16 z-10 hidden w-83 flex-col gap-3 xl:flex', DARK_SCOPE)}>
     <MassCard operations={operations} vehicle={state.sceneModel.vehicle} />
     {operations.kind === 'loading' ? (
       <SelectedPackagePanel className={cn('pointer-events-auto', GLASS_PANEL)} placement={selected} placements={state.placements}
@@ -115,6 +116,8 @@ function InspectorDialog({ state, operations, tripId, colorContext, issues, onEd
               value={state.colorMode} onChange={state.setColorMode} className="flex-col" itemClassName="xl:min-h-9" />
             <StopLegend stops={[...state.sceneModel.stops]} colorMode={state.colorMode} colorContext={colorContext} />
             <ObstacleLegend obstacles={state.sceneModel.vehicle.obstacles} />
+            {/* Dưới 768 px hàng góc dưới phải không có thẻ xe (không đủ chỗ cạnh thanh kiện): xe của phương án đọc ở đây */}
+            <VehicleSection vehicle={state.sceneModel.vehicle} className="md:hidden" />
             <SlicePanel sliceCm={state.sliceCm} maxCm={state.sceneModel.vehicle.innerLengthCm} onChange={state.setSliceCm} />
             <p className={MUTED}>{t('viewer.inspector.shortcuts')}</p>
           </div> : null}

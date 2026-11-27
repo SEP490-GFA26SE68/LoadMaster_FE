@@ -965,7 +965,7 @@ thêm bản đã duyệt ở 1.680 px và bản đã duyệt có chỉnh tay ở
 chạy nhiều phương án thì khối tiêu đề có nhãn **một chữ cái** A · B · C cạnh MOCK RESULT (tên đầy đủ "Phương án C" ở `title` và cho trình đọc màn
 hình — nhãn có chữ không vừa 1.366 px; FE-5b-06), và nút So sánh mở `/chuyen/:id/so-sanh?lan-chay=<mã lần chạy>`; revision khác vẫn mở ma trận mọi
 revision (`fetchPlanApproval` trả `candidate`). Bản đã chỉnh tay không kèm chữ cái — nhãn "Đã chỉnh tay" nói thay, hai nhãn cùng lúc không vừa 1.536
-px — nhưng nút So sánh vẫn mở lần chạy đó. Nút "Đổi xe" **không** nằm trên hàng này mà ở góc dưới phải khung 3D (mục 7 "Operations", FE-5b-08).
+px — nhưng nút So sánh vẫn mở lần chạy đó. Xe của chuyến và nút "Đổi xe" **không** nằm trên hàng này mà ở thẻ xe góc dưới phải khung 3D (mục 7 "Operations", FE-5b-08).
 Thanh thông báo (lỗi thời, khoá theo pha, bản chưa duyệt, chỉ xem) nằm trong luồng trang giữa thanh trên và khung 3D (`PlannerNotices`), không
 nổi đè lên cảnh. Panel trong khung 3D dùng kính tối; bề mặt đọc lâu (hộp Chi tiết / Hiển thị, thẻ kiện đang chọn) nền tối đặc. Nhãn neo trên
 kiện là thẻ tối hai dòng (vai trò · điểm giao / mã kiện) dựng bằng DOM/SVG, nền đặc 85 % thay `backdrop-filter` vì chúng di chuyển mỗi khung hình.
@@ -1374,11 +1374,20 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
   liệt kê điểm, giờ đến dự kiến, hạn, kèm MOCK RESULT vì giờ đến là của mock tối ưu tuyến) — "Vẫn duyệt" mới gửi Duyệt kèm `force`,
   "Quay lại" về bước xem xét; mỗi lần mở hộp thoại bắt đầu lại từ bước xem xét. Chuyến chưa tối ưu tuyến thì hộp duyệt không nói gì về
   hạn. Kho kiểm lại tất cả (mục 9): giao diện bị bỏ qua thì Duyệt vẫn bị từ chối; kho từ chối thì toast kèm câu của kho.
-- **Đổi xe ở Planner** (FE-5b-08, D-80). Nút phụ "Đổi xe" nằm ở **góc dưới phải khung 3D** cạnh "Chi tiết / Hiển
-  thị" (`SceneHud`, từ 768 px; dưới 1.280 px chỉ icon), **không** nằm trên thanh trên: ở 1.536–1.760 px hàng điều khiển không còn chỗ
-  cho thêm một nút. Chỉ hiện ở chế độ Xem, khi chuyến Đã lập kế hoạch và người xem
-  có `trips.edit`. Mở cùng hộp thoại `trips/ChangeVehicleDialog` với Chi tiết chuyến (mục 9); đổi xong phương án đang xem thành lỗi
-  thời ngay và thanh lỗi thời ghi "đã sửa Xe (giờ · ngày · người)". Đổi xe không bao giờ là nút chính.
+- **Thẻ xe và Đổi xe ở Planner** (FE-5b-08, D-80). Xe của phương án đang xem (`sceneModel.vehicle`; Planner máy chủ: `planVehicle ??
+  source.vehicle`) là **thẻ xe** ở **góc dưới phải khung 3D**, giữa "Chạy lại giữ ghim" và "Chi tiết / Hiển thị" (`viewer3d/vehicle/VehicleCard`,
+  trong `SceneHud` — chỉ ở chế độ Xem), cho **mọi người xem được Planner**, cả quản lý công ty chỉ đọc và chuyến ở mọi pha; **không** nằm trên
+  thanh trên: ở 1.536–1.760 px hàng điều khiển không còn chỗ. Từ 1.280 px thẻ là nút kính tối: icon xe + tên xe (`VehicleName`, cắt bằng
+  bề rộng tối đa, tên đủ ở `title`) + dòng mono "dài × rộng × cao cm · tải trọng kg"; 768 → 1.279 px chỉ icon, `aria-label` "Xe của chuyến:
+  <tên>"; dưới 768 px không có thẻ — cùng bảng số là mục "Xe của chuyến" của hộp Hiển thị (`VehicleSection`). Bấm thẻ mở **bảng thông số xe**:
+  Dialog Radix không modal neo phía trên thẻ, nền tối đặc (`--panel-dark`, viền `--border-dark`, không kính), Esc / bấm ra ngoài đóng, con
+  trỏ về thẻ, `aria-expanded` trên thẻ. Bảng chỉ có số xe đã khai (`vehicleFacts`, thuần): lòng thùng + m³, cửa sau, khoảng hở (khi > 0), tải
+  trọng tối đa, số trục và giới hạn nhóm trước / sau (`axleLoadsOf` không hàng — giới hạn của loại xe, vắng thì tổng tải tối đa các trục;
+  không khai giới hạn thì "Chưa khai"; không khai trục thì "Chưa khai trục"), vật cản đếm theo loại. Chân bảng có nút phụ "Đổi xe" chỉ khi
+  chuyến Đã lập kế hoạch và người xem có `trips.edit` (người khác không thấy nút, không câu lý do): bảng đóng, hộp `trips/ChangeVehicleDialog`
+  — cùng hộp với Chi tiết chuyến (mục 9) — mở, đóng hộp đó con trỏ về thẻ (`ChangeVehicleHost` nhớ chỗ con trỏ lúc mở). Đổi xong phương án
+  đang xem thành lỗi thời ngay và thanh lỗi thời ghi "đã sửa Xe (giờ · ngày · người)". Đổi xe không bao giờ là nút chính.
+  `e2e/planner-vehicle-card.spec.ts` đo hàng góc ở 768 → 1.536 px, vi / en, có và không có kiện ghim.
 - **Trợ lý AI ở Planner** (chỉ Planner bản máy chủ, nhóm `assistant` nối máy chủ — mục 1 "Trợ lý"). Nút kính "Trợ lý AI" ở cùng hàng góc
   dưới phải khung 3D, ngay trước "Chi tiết / Hiển thị" (slot `assistant` của `SceneHud`; từ 768 px, dưới 1.280 px chỉ ảnh Lumo), không trên
   thanh trên 56 px; chế độ Chỉnh sửa ẩn hàng đó nên không có nút. Khung chat đứng trên hàng nút, từ 1.280 px bên trái cột nổi (thẻ kiện

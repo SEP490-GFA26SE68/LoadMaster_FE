@@ -210,6 +210,13 @@ test('the company manager reads trips and plans without any write action; the ap
       await expect(page.getByRole('button', { name, exact: true }), `${route}: ${name}`).toHaveCount(0)
     }
   }
+  // Thẻ xe vẫn có cho người chỉ đọc: bảng thông số xe mở được, chân bảng không có "Đổi xe"
+  await page.getByRole('button', { name: /^Xe của chuyến: / }).click()
+  const vehiclePanel = page.getByRole('dialog', { name: 'Xe của chuyến', exact: true })
+  await expect(vehiclePanel).toContainText('Tải trọng tối đa')
+  await expect(vehiclePanel.getByRole('button', { name: 'Đổi xe', exact: true })).toHaveCount(0)
+  await page.keyboard.press('Escape')
+  await expect(vehiclePanel).toHaveCount(0)
 
   await navigateInApp(page, `/chuyen/${SEED_TRIP}/toi-uu`)
   await expect(page.getByRole('heading', { name: 'Không có quyền truy cập', exact: true })).toBeVisible()
