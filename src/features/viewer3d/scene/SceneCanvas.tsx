@@ -40,6 +40,9 @@ export type SceneCanvasProps = {
   preset: CameraPreset
   focus?: { placement: ScenePlacement; request: number; follow?: boolean } | null
   onUserControl?: () => void
+  /** Planner: camera đang "Xoay một vòng" (`CameraRig`); `onSpinEnd` khi quay xong hoặc bị dừng (người dùng tự điều khiển, Esc). */
+  spinning?: boolean
+  onSpinEnd?: () => void
   selectedId: string | null
   onSelect: (id: string | null) => void
   onFocus?: (p: ScenePlacement) => void
@@ -128,7 +131,7 @@ const REST_SAMPLE = { frameTimeMs: null, idle: true } as const
 
 /** Shared renderer; experience wrappers own controls/workflows, not another scene engine. */
 export function SceneCanvas({
-  experience, model, placements, flags, preset, focus, onUserControl, selectedId, onSelect, onFocus, warningSignal = 0,
+  experience, model, placements, flags, preset, focus, onUserControl, spinning = false, onSpinEnd, selectedId, onSelect, onFocus, warningSignal = 0,
   colorMode = 'diem-giao', sliceCm = model.vehicle.innerLengthCm, step, semantics, hiddenId,
   animateLoading = true, decoration = true, xraySelection, centerOfGravity, zones, unloadMotion, onPerfSample, obstaclePicking = true,
   frameVehicle, fitRequest, highlightedObstacleId, onObstacleSelect, specView = false, interactive = true, frameZoom = 1,
@@ -196,7 +199,8 @@ export function SceneCanvas({
     onPointerMissed={() => handleSelect(null)} style={interactive ? CANVAS_STYLE : STATIC_CANVAS_STYLE}>
     <SceneLighting shadows={flags.shadows} />
     <CameraRig preset={preset} reducedMotion={flags.reducedMotion} vehicle={frameVehicle ?? model.vehicle} fit fitRequest={fitRequest} specFrame={specView} focus={focus}
-      vehicleDecoration={decoration} zoom={frameZoom} framePoints={framePoints} jumpFirst={landing} onUserControl={onUserControl} />
+      vehicleDecoration={decoration} zoom={frameZoom} framePoints={framePoints} jumpFirst={landing} onUserControl={onUserControl}
+      spinning={spinning} onSpinEnd={onSpinEnd} />
     {/* Trang giới thiệu có kịch bản xe riêng (nhóm `vehicleRef`, DepartMotion): không đổi cỡ mượt, cây cảnh giữ như trước */}
     {landing ? <group position={[-cx, -cy, -cz]}>
       {vehicleRef ? <group ref={vehicleRef} name="vehicle-motion">{container}{otherParts}</group> : <>{container}{otherParts}</>}

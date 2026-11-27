@@ -9,6 +9,7 @@ import { fitFrame, insetFrame, NO_INSETS, VEHICLE_FIT_MARGIN, vehicleFitCorners,
 import { boxCenter, containerCenter, SCENE_SCALE, type Vec3 } from './units'
 import { specFramePoints } from './vehicle-spec-marks'
 import { truckLayout, vehicleFrameKey } from './truck-layout'
+import { useOrbitSpin } from './useOrbitSpin'
 
 /**
  * Điều khiển camera bằng camera-controls (qua drei). Gốc thế giới là tâm
@@ -69,6 +70,8 @@ export function CameraRig({
   framePoints,
   jumpFirst = false,
   onUserControl,
+  spinning = false,
+  onSpinEnd,
 }: {
   preset: CameraPreset
   reducedMotion: boolean
@@ -87,6 +90,9 @@ export function CameraRig({
   /** Lần canh đầu tiên đặt thẳng camera, không bay từ vị trí khởi tạo của canvas (trang giới thiệu hiện khung qua hình poster). */
   jumpFirst?: boolean
   onUserControl?: () => void
+  /** "Xoay một vòng" (Planner): quay đúng một vòng quanh tâm nhìn rồi gọi `onSpinEnd`; người dùng tự điều khiển, Esc, đổi góc nhìn cũng dừng và gọi nó. */
+  spinning?: boolean
+  onSpinEnd?: () => void
 }) {
   const controlsRef = useRef<ComponentRef<typeof CameraControls>>(null)
   const applied = useRef<{ preset: CameraPreset; vehicle: unknown; request: number; points?: FramePoints } | null>(null)
@@ -94,6 +100,11 @@ export function CameraRig({
   const camera = useThree((state) => state.camera)
   const invalidate = useThree((state) => state.invalidate)
   const beforeFocus = useRef<{ position: Vector3; target: Vector3 } | null>(null)
+  const spin = !reducedMotion && spinning
+  useOrbitSpin(controlsRef, spin, onSpinEnd)
+  // Đọc trong effect canh khung và phím Esc: đổi góc nhìn / xe, hay Esc, thì thôi quay
+  const spinRef = useRef({ spin, onSpinEnd })
+  useEffect(() => { spinRef.current = { spin, onSpinEnd } }, [spin, onSpinEnd])
 
   useEffect(() => {
     const controls = controlsRef.current
@@ -104,6 +115,7 @@ export function CameraRig({
     const frameKey = frameKeyOf(vehicle, specFrame)
     if (previous?.preset === preset && previous.vehicle === frameKey && previous.request === fitRequest && previous.points === framePoints) return
     applied.current = { preset, vehicle: frameKey, request: fitRequest, points: framePoints }
+    if (spinRef.current.spin) spinRef.current.onSpinEnd?.()
     beforeFocus.current = null
     const transition = !reducedMotion && !(jumpFirst && !previous)
     let [x, y, z] = (specFrame ? SPEC_PRESET_POSITIONS[preset] : undefined) ?? PRESET_POSITIONS[preset]
@@ -181,6 +193,7 @@ export function CameraRig({
   useEffect(() => {
     function handleKey(event: KeyboardEvent) {
       const controls = controlsRef.current, saved = beforeFocus.current
+      if (event.key === 'Escape' && spinRef.current.spin) { spinRef.current.onSpinEnd?.(); return }
       if (event.key !== 'Escape' || !controls?.enabled || !saved || (event.target instanceof Element && event.target.closest('[role="dialog"]'))) return
       beforeFocus.current = null
       onUserControl?.()
@@ -191,11 +204,16 @@ export function CameraRig({
     return () => window.removeEventListener('keydown', handleKey)
   }, [onUserControl, reducedMotion, invalidate])
 
+  function handleControlStart() {
+    if (spinRef.current.spin) spinRef.current.onSpinEnd?.()
+    onUserControl?.()
+  }
+
   return (
     <CameraControls
       ref={controlsRef}
       makeDefault
-      onControlStart={onUserControl}
+      onControlStart={handleControlStart}
       smoothTime={reducedMotion ? 0.05 : SMOOTH_TIME}
       minDistance={3}
       maxDistance={80}

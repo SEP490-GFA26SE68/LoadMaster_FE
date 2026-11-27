@@ -21,7 +21,12 @@ export function useLoadPlanViewer(
   const totalSteps = Math.max(0, ...sceneModel.placements.map((p) => p.step))
   const initialSelected = initialSelectedId ? sceneModel.placementById.get(initialSelectedId) : undefined
 
-  const [cameraPreset, setCameraPreset] = useState<CameraPreset>('goc-cheo')
+  const [cameraPreset, setPreset] = useState<CameraPreset>('goc-cheo')
+  // "Xoay một vòng": camera tự quay đúng một vòng rồi dừng (`CameraRig`); đổi góc nhìn thì thôi quay
+  const [spinning, setSpinning] = useState(false)
+  const setCameraPreset = useCallback((preset: CameraPreset) => { setSpinning(false); setPreset(preset) }, [])
+  const stopSpin = useCallback(() => setSpinning(false), [])
+  const toggleSpin = useCallback(() => setSpinning((on) => !on), [])
   const [colorMode, setColorMode] = useState<ColorMode>('diem-giao')
   // Lát cắt nhớ kèm chiều dài lòng thùng lúc đặt: đổi xe (cùng phương án, phiên không dựng lại) thì về trọn thùng mới — suy lúc vẽ, không effect
   const innerLengthCm = sceneModel.vehicle.innerLengthCm
@@ -123,6 +128,9 @@ export function useLoadPlanViewer(
     totalSteps,
     cameraPreset,
     setCameraPreset,
+    spinning,
+    stopSpin,
+    toggleSpin,
     colorMode,
     setColorMode,
     sliceCm,
