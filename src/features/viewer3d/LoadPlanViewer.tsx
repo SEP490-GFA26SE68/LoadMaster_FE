@@ -27,7 +27,7 @@ export function LoadPlanViewer({ state, flags, editor, operations, onPerfSample 
     warningSignal={operations.unload.warning}
     colorMode={state.colorMode} sliceCm={editing ? state.sceneModel.vehicle.innerLengthCm : state.sliceCm}
     step={editing ? state.totalSteps : state.step} semantics={editing ? undefined : operations.semantics}
-    hiddenId={editing ? state.selectedId : null} obstaclePicking={!editing} animateLoading={!editing && operations.kind === 'loading' && operations.focusStop === null}
+    hiddenId={editing ? state.selectedId : null} obstaclePicking={!editing} animateLoading={!editing && operations.kind === 'loading' && operations.focusStop === null} entryMotion
     centerOfGravity={operations.showMass ? editing ? state.placements : operations.cargo.placements : undefined}
     zones={operations.showZones ? state.sceneModel.zones : undefined} onPerfSample={onPerfSample}
     unloadMotion={!editing && operations.kind === 'unloading' ? { cursor: operations.unload.cursor,
