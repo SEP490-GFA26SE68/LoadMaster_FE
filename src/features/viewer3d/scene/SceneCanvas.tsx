@@ -33,10 +33,13 @@ import { ContextLossWatch } from './context-loss'
 import { createViewerPointerEvents } from './pointer-events'
 import { ContextLostOverlay } from '../overlays/ContextLostOverlay'
 import { createSceneChannel, SceneChannelContent } from './SceneChannel'
+import type { VehicleBodyStyle } from '@/types/vehicle-body-style'
 
 export type SceneCanvasProps = {
   experience: ExperienceMode
   model: Pick<ViewerSceneModel, 'vehicle' | 'stops' | 'placements'>
+  /** Kiểu thân xe của loại xe đang gắn (chỉ đổi hình xe); vắng là tự chọn theo kích thước. */
+  vehicleBodyStyle?: VehicleBodyStyle
   placements: readonly ScenePlacement[]
   flags: PerformanceFlags
   preset: CameraPreset
