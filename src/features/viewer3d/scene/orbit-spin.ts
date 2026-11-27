@@ -3,10 +3,10 @@
  * khung hình với thời gian của khung đó rồi xoay camera đúng `step` (rad).
  */
 
-/** Một vòng mất chừng này ở tốc độ khung hình bình thường; máy chậm mất lâu hơn vì mỗi khung bị kẹp ở `ORBIT_SPIN_MAX_DT`. */
+/** Một vòng mất chừng này; máy chạy dưới 4 khung hình mỗi giây mất lâu hơn vì mỗi khung bị kẹp ở `ORBIT_SPIN_MAX_DT`. */
 export const ORBIT_SPIN_MS = 9_000
-/** Khung hình dài hơn (tab ẩn, máy chậm, GC) chỉ tính chừng này giây: camera không nhảy một đoạn lớn. */
-export const ORBIT_SPIN_MAX_DT = 0.1
+/** Khung hình dài hơn (tab ẩn, GC) chỉ tính chừng này giây: mỗi khung quay tối đa 10°, và máy chạy từ 4 khung hình mỗi giây vẫn xong một vòng đúng giờ. */
+export const ORBIT_SPIN_MAX_DT = 0.25
 
 const TURN = Math.PI * 2
 
