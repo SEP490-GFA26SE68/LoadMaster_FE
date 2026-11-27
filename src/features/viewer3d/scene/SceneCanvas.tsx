@@ -30,6 +30,7 @@ import { RestDpr } from './RestDpr'
 import { containerCenter } from './units'
 import type { FramePoints } from './frame-fit'
 import { ContextLossWatch } from './context-loss'
+import { createViewerPointerEvents } from './pointer-events'
 import { ContextLostOverlay } from '../overlays/ContextLostOverlay'
 
 export type SceneCanvasProps = {
@@ -196,7 +197,7 @@ export function SceneCanvas({
     {vehicleChildren}
   </>
   return <><Canvas key={canvasKey} data-experience={experience} frameloop="demand" dpr={flags.dpr} resize={interactive ? undefined : NO_SCROLL_RESIZE}
-    shadows={flags.shadows ? 'percentage' : false} flat
+    shadows={flags.shadows ? 'percentage' : false} flat events={createViewerPointerEvents}
     gl={GL_OPTIONS} camera={camera}
     onPointerMissed={() => handleSelect(null)} style={interactive ? CANVAS_STYLE : STATIC_CANVAS_STYLE}>
     <SceneLighting shadows={flags.shadows} />
