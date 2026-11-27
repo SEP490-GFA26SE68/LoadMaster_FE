@@ -1,5 +1,5 @@
 import { useMemo, type ReactNode } from 'react'
-import { AlertTriangle, Focus, Maximize, Pencil, Settings2, SkipForward, Undo2 } from 'lucide-react'
+import { AlertTriangle, Focus, Maximize, Pencil, Rotate3d, Settings2, SkipForward, Undo2 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useFormat, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
@@ -22,9 +22,11 @@ const HUD_BUTTON = cn('pointer-events-auto h-14 px-3 text-body-lg xl:h-8 xl:px-2
  * cho mọi người xem được Planner; bấm mở bảng thông số xe, chân bảng có nút phụ "Đổi xe" khi `onChangeVehicle` có — FE-5b-08, D-80;
  * thanh trên của Planner không còn chỗ cho xe ở 1.536–1.760 px) cạnh "Chi tiết / Hiển thị". Cùng hàng, bên trái hai thứ đó: nhãn kiện
  * đã ghim và "Chạy lại giữ ghim" khi phương án có kiện ghim (FE-BL-02) — hàng này nằm dưới cột nổi bên phải nên không bị nó che.
- * Planner bản máy chủ đặt thêm nút "Trợ lý AI" (`assistant`) ngay trước "Chi tiết / Hiển thị". HUD chỉ có ở chế độ Xem.
+ * Planner bản máy chủ đặt thêm nút "Trợ lý AI" (`assistant`) ngay trước "Chi tiết / Hiển thị". Nút công tắc "Xoay một vòng" (`spin`,
+ * `aria-pressed`) đứng ngay trước "Chi tiết / Hiển thị": camera quay đúng một vòng rồi dừng; nơi gọi không truyền khi người xem chọn
+ * giảm chuyển động. HUD chỉ có ở chế độ Xem.
  */
-export function SceneHud({ state, operations, onInspect, onFocus, onEdit, onResetFocus, onChangeVehicle, onRerunPinned, rerunBlockedReason, assistant }: {
+export function SceneHud({ state, operations, onInspect, onFocus, onEdit, onResetFocus, onChangeVehicle, onRerunPinned, rerunBlockedReason, assistant, spin }: {
   state: LoadPlanViewerState; operations: OperationsState; onInspect: (tab: InspectorTab) => void
   onFocus: (p?: ScenePlacement) => void; onEdit?: () => void; onResetFocus?: () => void
   /** Mở hộp thoại Đổi xe (nút ở chân bảng thông số xe); vắng khi chuyến không ở trạng thái Đã lập kế hoạch hoặc người xem không sửa được chuyến. */
@@ -35,6 +37,8 @@ export function SceneHud({ state, operations, onInspect, onFocus, onEdit, onRese
   rerunBlockedReason?: string
   /** Nút "Trợ lý AI" (Planner bản máy chủ khi nhóm `assistant` nối máy chủ), đứng trước "Chi tiết / Hiển thị". */
   assistant?: ReactNode
+  /** "Xoay một vòng" (công tắc); vắng là không có nút (giảm chuyển động). */
+  spin?: { active: boolean; onToggle: () => void }
 }) {
   const p = operations.current, stopNumber = operations.focusStop ?? p?.stop
   const stops = state.sceneModel.stops
@@ -108,6 +112,10 @@ export function SceneHud({ state, operations, onInspect, onFocus, onEdit, onRese
         {onRerunPinned ? <PinnedRerun count={pinnedCount} unsaved={pinsUnsaved} blockedReason={rerunBlockedReason} onRerun={onRerunPinned} /> : null}
         <VehicleCard vehicle={state.sceneModel.vehicle} onChangeVehicle={onChangeVehicle} />
         {assistant}
+        {spin ? <Button variant="glass" className={cn('pointer-events-auto size-14 shrink-0 p-0 glass-dark xl:h-10 xl:w-auto xl:px-3.5', GLASS_PRESSED)} aria-pressed={spin.active}
+          aria-label={t(spin.active ? 'viewer.hud.stopSpin' : 'viewer.hud.spin')} onClick={spin.onToggle}>
+          <Rotate3d strokeWidth={1.5} /><span className="hidden xl:inline">{t(spin.active ? 'viewer.hud.stopSpin' : 'viewer.hud.spin')}</span>
+        </Button> : null}
         <Button variant="glass" className="pointer-events-auto size-14 shrink-0 p-0 glass-dark xl:h-10 xl:w-auto xl:px-3.5" aria-label={t('viewer.hud.detailsLabel')} onClick={() => onInspect('operations')}>
           <Settings2 strokeWidth={1.5} /><span className="hidden xl:inline">{t('viewer.hud.detailsLabel')}</span>
         </Button>

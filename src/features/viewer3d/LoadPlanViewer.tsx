@@ -23,7 +23,7 @@ export function LoadPlanViewer({ state, flags, editor, operations, onPerfSample 
   const handleFocus = useCallback((p: ScenePlacement) => { pauseFollow(); focusPlacement(p) }, [pauseFollow, focusPlacement])
   return <SceneCanvas experience="planner" model={state.sceneModel} placements={state.placements} flags={flags}
     preset={state.cameraPreset} focus={editor.focus} selectedId={state.selectedId} onSelect={state.select}
-    onUserControl={pauseFollow} onFocus={handleFocus}
+    onUserControl={pauseFollow} onFocus={handleFocus} spinning={state.spinning && !editing} onSpinEnd={state.stopSpin}
     warningSignal={operations.unload.warning}
     colorMode={state.colorMode} sliceCm={editing ? state.sceneModel.vehicle.innerLengthCm : state.sliceCm}
     step={editing ? state.totalSteps : state.step} semantics={editing ? undefined : operations.semantics}

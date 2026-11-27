@@ -185,7 +185,7 @@ function BackendPlannerSession({ tripCode, source }: { tripCode: string; source:
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [togglePlaying, stepForward, stepBackward, goToStart, editor.mode])
 
-  function handleModeChange(mode: 'view' | 'edit') { operations.stop(); setFollow('off'); editor.setMode(mode) }
+  function handleModeChange(mode: 'view' | 'edit') { operations.stop(); setFollow('off'); state.stopSpin(); editor.setMode(mode) }
 
   const editing = editor.mode === 'edit'
   usePlannerAssistant({ tripCode, planId: plan.id, state, operations, editing, onOpenPackages: () => setInspectorTab('packages') })
@@ -222,6 +222,7 @@ function BackendPlannerSession({ tripCode, source }: { tripCode: string; source:
             onRerunPinned={canRerun ? () => void navigate(keepPinsPath) : undefined} rerunBlockedReason={pinBlocked}
             onResetFocus={editor.focus ? () => { setFollow('off'); editor.resetFocus() } : undefined}
             onFocus={(p) => { operations.pauseFollow(); if (p) editor.focusPlacement(p); else editor.focusSelected() }} onEdit={handleEdit}
+            spin={flags.reducedMotion ? undefined : { active: state.spinning, onToggle: state.toggleSpin }}
             assistant={<PlannerAssistant />} />}
           {showPerf ? <DebugOverlay store={perfStore} /> : null}
           {editing && state.selected ? <EditorGestureHud placement={state.selected} editor={editor} /> : null}
