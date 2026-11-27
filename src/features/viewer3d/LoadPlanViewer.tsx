@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { startTransition, useCallback } from 'react'
 import type { ScenePlacement } from './scene-input'
 import type { LoadPlanViewerState } from './useLoadPlanViewer'
 import type { PerformanceFlags } from './usePerformanceFlags'
@@ -21,8 +21,12 @@ export function LoadPlanViewer({ state, flags, editor, operations, onPerfSample 
   const { pauseFollow } = operations
   const { focusPlacement } = editor
   const handleFocus = useCallback((p: ScenePlacement) => { pauseFollow(); focusPlacement(p) }, [pauseFollow, focusPlacement])
+  // Chế độ Xem: bấm chọn kiện trên khung vẽ lại trong một transition, để lượt bấm (dò tia) không gánh cả phần vẽ thẻ kiện và cảnh.
+  // Chế độ Chỉnh sửa giữ chọn ngay: tay kéo và proxy của kiện mới chọn phải có trước cú kéo kế tiếp
+  const { select } = state
+  const handleSelect = useCallback((id: string | null) => startTransition(() => select(id)), [select])
   return <SceneCanvas experience="planner" model={state.sceneModel} placements={state.placements} flags={flags}
-    preset={state.cameraPreset} focus={editor.focus} selectedId={state.selectedId} onSelect={state.select}
+    preset={state.cameraPreset} focus={editor.focus} selectedId={state.selectedId} onSelect={editing ? select : handleSelect}
     onUserControl={pauseFollow} onFocus={handleFocus} spinning={state.spinning && !editing} onSpinEnd={state.stopSpin}
     warningSignal={operations.unload.warning}
     colorMode={state.colorMode} sliceCm={editing ? state.sceneModel.vehicle.innerLengthCm : state.sliceCm}

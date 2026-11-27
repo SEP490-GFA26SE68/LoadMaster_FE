@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react'
+import { startTransition, useCallback, useEffect, useMemo } from 'react'
 import type { ManualEditor } from './editor/useManualEditor'
 import type { OperationsState } from './operations/useOperations'
 import type { SimulationControlsProps } from './panels/WorkspaceToolbar'
@@ -39,10 +39,12 @@ export function usePlannerSessionControls(state: LoadPlanViewerState, operations
       // Không cướp phím khi người dùng đang gõ trong ô nhập, hộp thoại hoặc danh sách của Select đang mở (Space chọn dòng).
       const target = event.target instanceof HTMLElement ? event.target : null
       if (target?.closest('input, textarea, select, button, a, [contenteditable="true"], [role="dialog"], [role="listbox"]')) return
-      if (event.key === ' ') { event.preventDefault(); togglePlaying() }
-      else if (event.key === 'ArrowRight') stepForward()
-      else if (event.key === 'ArrowLeft') stepBackward()
-      else if (event.key === 'Home') goToStart()
+      // Bước mới vẽ trong một transition: lượt xử lý phím chỉ ghi state, phần vẽ chạy ở tác vụ sau (cắt nhỏ được), giữ phím thì
+      // chỉ bước cuối được vẽ
+      if (event.key === ' ') { event.preventDefault(); startTransition(togglePlaying) }
+      else if (event.key === 'ArrowRight') startTransition(stepForward)
+      else if (event.key === 'ArrowLeft') startTransition(stepBackward)
+      else if (event.key === 'Home') startTransition(goToStart)
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)

@@ -1,5 +1,5 @@
 import { Canvas } from '@react-three/fiber'
-import { useCallback, useMemo, useState, type ReactNode, type Ref } from 'react'
+import { useCallback, useLayoutEffect, useMemo, useState, type ReactNode, type Ref } from 'react'
 import type { Group } from 'three'
 import type { CameraPreset, ColorMode } from '@/features/viewer3d/viewer-types'
 import type { ScenePlacement } from '@/features/viewer3d/scene-input'
@@ -31,6 +31,7 @@ import { containerCenter } from './units'
 import type { FramePoints } from './frame-fit'
 import { ContextLossWatch } from './context-loss'
 import { ContextLostOverlay } from '../overlays/ContextLostOverlay'
+import { createSceneChannel, SceneChannelContent } from './SceneChannel'
 
 export type SceneCanvasProps = {
   experience: ExperienceMode
@@ -166,6 +167,8 @@ export function SceneCanvas({
     onPerfSample?.(sample)
   }, [onPerformanceSample, onPerfSample])
   const handleRest = useCallback(() => onPerformanceSample(REST_SAMPLE), [onPerformanceSample])
+  const handleMissed = useCallback(() => handleSelect(null), [handleSelect])
+  const [channel] = useState(createSceneChannel)
   // Mất ngữ cảnh WebGL: lớp phủ có câu + nút dựng lại khung; ngữ cảnh tự về cũng dựng lại canvas (three không nạp lại hết bộ đệm)
   const [contextLost, setContextLost] = useState(false)
   const [canvasKey, setCanvasKey] = useState(0)
@@ -211,10 +214,9 @@ export function SceneCanvas({
       vehicle={model.vehicle} quality={flags.animationQuality} reducedMotion={flags.reducedMotion} /> : null}
     {vehicleChildren}
   </>
-  return <><Canvas key={canvasKey} data-experience={experience} frameloop="demand" dpr={flags.dpr} resize={interactive ? undefined : NO_SCROLL_RESIZE}
-    shadows={flags.shadows ? 'percentage' : false} flat
-    gl={GL_OPTIONS} camera={camera}
-    onPointerMissed={() => handleSelect(null)} style={interactive ? CANVAS_STYLE : STATIC_CANVAS_STYLE}>
+  // Cây cảnh đi qua kênh (`SceneChannel`): phần tử `<Canvas>` chỉ đổi theo thiết lập của khung, không theo bước phát lại hay kiện
+  // đang chọn — R3F không cấu hình lại root (và không `setSize`) mỗi lần khung 3D vẽ lại
+  const scene = <>
     <SceneLighting shadows={flags.shadows} />
     {cameraRig}
     {/* Trang giới thiệu có kịch bản xe riêng (nhóm `vehicleRef`, DepartMotion): không đổi cỡ mượt, cây cảnh giữ như trước */}
@@ -228,7 +230,15 @@ export function SceneCanvas({
     <RestDpr range={flags.dpr} />
     <PerfProbe onSample={handleSample} onRest={handleRest} placementCount={placements.length} qualityTier={flags.tier} scene={model} />
     <ContextLossWatch onLost={handleContextLost} onRestored={handleReloadCanvas} />
-  </Canvas>
+  </>
+  useLayoutEffect(() => { channel.set(scene) })
+  const canvas = useMemo(() => <Canvas key={canvasKey} data-experience={experience} frameloop="demand" dpr={flags.dpr} resize={interactive ? undefined : NO_SCROLL_RESIZE}
+    shadows={flags.shadows ? 'percentage' : false} flat
+    gl={GL_OPTIONS} camera={camera}
+    onPointerMissed={handleMissed} style={interactive ? CANVAS_STYLE : STATIC_CANVAS_STYLE}>
+    <SceneChannelContent channel={channel} />
+  </Canvas>, [canvasKey, experience, flags.dpr, interactive, flags.shadows, camera, handleMissed, channel])
+  return <>{canvas}
   {contextLost ? <ContextLostOverlay onReload={handleReloadCanvas} /> : null}
   <ObstacleDescriptions obstacles={model.vehicle.obstacles} />
   {centerOfGravity ? <CargoMassDescription placements={centerOfGravity} vehicle={model.vehicle} /> : null}

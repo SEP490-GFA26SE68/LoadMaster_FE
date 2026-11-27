@@ -43,7 +43,8 @@ test('loading, unloading advisories, blockers and approval wording on 1,000 pack
   await waitCameraSettled(page)
   const point = await instancePoint(page, 999)
   await page.mouse.click(point.x, point.y)
-  expect(await selectedPlacementId(page)).toBe('BENCH-01000-01')
+  // Chọn kiện trên khung ở chế độ Xem vẽ lại trong một transition: thẻ kiện đổi ở tác vụ sau lượt bấm
+  await expect.poll(() => selectedPlacementId(page)).toBe('BENCH-01000-01')
   await openInspector(page, 'display')
   await button(page, 'Hiện trọng tâm hàng (G)').click(); await settle(page)
   await closeInspector(page)
