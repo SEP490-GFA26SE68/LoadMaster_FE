@@ -425,6 +425,8 @@ export const viewer = {
     focus: 'Focus on package',
     edit: 'Edit package',
     detailsLabel: 'Details / Display',
+    spin: 'Orbit once',
+    stopSpin: 'Stop orbiting',
   },
   editor: {
     modeLabel: 'Plan mode',

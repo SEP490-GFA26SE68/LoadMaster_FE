@@ -458,6 +458,9 @@ export const viewer = {
     focus: 'Tập trung vào kiện',
     edit: 'Chỉnh sửa kiện',
     detailsLabel: 'Chi tiết / Hiển thị',
+    /** Nút công tắc ở góc dưới phải khung 3D: camera quay đúng một vòng rồi dừng */
+    spin: 'Xoay một vòng',
+    stopSpin: 'Dừng xoay',
   },
   /** Chỉnh sửa thủ công (LM-034, LM-035). */
   editor: {

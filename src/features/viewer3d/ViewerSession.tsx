@@ -99,7 +99,7 @@ export function ViewerSession({ model: plan, phase, source }: { model: ViewerSce
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [togglePlaying, stepForward, stepBackward, goToStart, editor.mode])
 
-  function handleModeChange(mode: 'view' | 'edit') { operations.stop(); operations.setFollow('off'); editor.setMode(mode) }
+  function handleModeChange(mode: 'view' | 'edit') { operations.stop(); operations.setFollow('off'); state.stopSpin(); editor.setMode(mode) }
   /** Từ hộp thoại Duyệt (đã tự đóng): về chế độ Xem và mở mô phỏng dỡ hàng để xem kiện chắn lối (V2.3 Planner3DTatLIFO). */
   function handleShowUnloading() { if (editor.mode === 'edit') handleModeChange('view'); operations.setKind('unloading') }
 
@@ -136,7 +136,8 @@ export function ViewerSession({ model: plan, phase, source }: { model: ViewerSce
           {editor.mode === 'view' ? <SceneHud state={state} operations={operations} onInspect={setInspectorTab}
             onChangeVehicle={canChangeVehicle ? vehicleDialog.open : undefined} onRerunPinned={handleRerunPinned}
             onResetFocus={editor.focus ? () => { operations.setFollow('off'); editor.resetFocus() } : undefined}
-            onFocus={(p) => { operations.pauseFollow(); if (p) editor.focusPlacement(p); else editor.focusSelected() }} onEdit={handleEdit} /> : null}
+            onFocus={(p) => { operations.pauseFollow(); if (p) editor.focusPlacement(p); else editor.focusSelected() }} onEdit={handleEdit}
+            spin={flags.reducedMotion ? undefined : { active: state.spinning, onToggle: state.toggleSpin }} /> : null}
           {showPerf ? <DebugOverlay store={perfStore} /> : null}
           {editor.mode === 'edit' && state.selected ? <EditorGestureHud placement={state.selected} editor={editor} /> : null}
         </div>

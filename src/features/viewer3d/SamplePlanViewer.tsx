@@ -79,7 +79,7 @@ export default function SamplePlanViewer({ request, result, stopNames, mode, sto
       <div role="img" aria-label={label} className="relative min-h-0 flex-1">
         <SceneCanvas experience="landing" model={model} placements={model.placements} flags={flags} preset={view} focus={focus}
           selectedId={selectedId} onSelect={setSelectedId} onFocus={handleFocus} step={unloading ? 0 : controls.step}
-          semantics={semantics} animateLoading={!unloading} warningSignal={unload.warning} zones={model.zones} zoneLabels={view === 'tren'}
+          semantics={semantics} animateLoading={!unloading} entryMotion warningSignal={unload.warning} zones={model.zones} zoneLabels={view === 'tren'}
           onPerfSample={search.has('debug') ? perf.publish : undefined}
           unloadMotion={unloading ? { cursor: unload.cursor, placement: unload.ordered[unload.cursor - 1], durationMs: 520 / playback.speed } : undefined}>
           <FirstFrame onFrame={onReady} />
