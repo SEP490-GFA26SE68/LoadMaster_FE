@@ -25,7 +25,7 @@ export type SceneSnapshot = {
 }
 /** Thuộc tính `data-*` của DebugOverlay (`?debug`), giữ nguyên chuỗi như DOM trả về. */
 export type ViewerMetrics = Record<
-  'fps' | 'frameTimeMs' | 'drawCalls' | 'triangles' | 'placementCount' | 'dpr' | 'qualityTier' | 'renderedFrames' | 'idle',
+  'fps' | 'frameTimeMs' | 'drawCalls' | 'triangles' | 'shadowPasses' | 'placementCount' | 'dpr' | 'qualityTier' | 'renderedFrames' | 'idle',
   string
 >
 export type VisibleCargo = { 'cargo-opaque': number; 'cargo-dim': number; 'cargo-hull'?: number }

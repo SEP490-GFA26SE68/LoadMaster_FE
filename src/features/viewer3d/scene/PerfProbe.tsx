@@ -2,14 +2,21 @@ import { addAfterEffect, useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useRef } from 'react'
 import type { QualityTier } from '../usePerformanceFlags'
 import { isSceneIdle } from './perf-idle'
+import { shadowPassOf } from './ShadowOnDemand'
 
 export type PerfSample = {
   /** Chỉ đo chuỗi frame liên tục; null khi scene nghỉ hoặc chưa đủ mẫu. */
   fps: number | null
   /** Khoảng cách giữa các frame, không phải GPU timer query. */
   frameTimeMs: number | null
+  /**
+   * Chi phí của khung vừa vẽ **kể cả lượt bóng**: tier có bóng chỉ vẽ lại shadow map khi vật đổ bóng đổi (`ShadowOnDemand`), khung dùng
+   * lại bản đồ bóng cũ vẫn cộng chi phí của lượt bóng gần nhất — số không nhảy theo khung và vẫn là khung đắt nhất cho trần draw call.
+   */
   drawCalls: number
   triangles: number
+  /** Số lần shadow map đã vẽ lại từ khi bật bóng; 0 khi tier không có bóng. */
+  shadowPasses: number
   placementCount: number
   dpr: number
   qualityTier: QualityTier
@@ -34,6 +41,7 @@ type Counters = {
   activeElapsedMs: number
   drawCalls: number
   triangles: number
+  shadowPasses: number
   /** Có khung hình trong quãng ổn định kể từ lần gửi mẫu trước. */
   settling: boolean
   /** DPR của khung trước: khung đầu sau khi đổi DPR (khung nét lúc nghỉ, về DPR của tier) dựng lại bộ đệm, không tính vào FPS. */
@@ -75,6 +83,7 @@ export function PerfProbe({
     lastDpr: 0,
   })
   const settleUntil = useRef(0)
+    shadowPasses: 0,
   useEffect(() => {
     settleUntil.current = performance.now() + SETTLE_MS
     counters.current.settling = true
@@ -104,8 +113,12 @@ export function PerfProbe({
       current.renderedFrames += 1
       current.lastFrameAt = timestamp
       current.requestedNextFrame = state.frameloop === 'always' || state.internal.frames > 0
-      current.drawCalls = state.gl.info.render.calls
-      current.triangles = state.gl.info.render.triangles
+      const { calls, triangles, frame } = state.gl.info.render
+      const shadow = shadowPassOf(state.gl)
+      const reused = shadow && shadow.frame !== frame ? shadow : null
+      current.drawCalls = calls + (reused?.calls ?? 0)
+      current.triangles = triangles + (reused?.triangles ?? 0)
+      current.shadowPasses = shadow?.passes ?? 0
     })
 
     let publishedFrames = -1
@@ -154,3 +167,4 @@ export function PerfProbe({
 
   return null
 }
+        shadowPasses: current.shadowPasses,
