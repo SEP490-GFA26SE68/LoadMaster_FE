@@ -6,6 +6,7 @@ import { VehicleName } from '@/components/VehicleName'
 import type { VehicleConfig } from '@/domain/models'
 import { useFormat, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+import type { VehicleBodyStyle } from '@/types/vehicle-body-style'
 import { DARK_SCOPE, MUTED } from '../panels/scene-ui'
 import { vehicleFacts } from './vehicle-facts'
 import { VehicleFactsList } from './VehicleFactsList'
@@ -26,12 +27,17 @@ function panelPosition(trigger: HTMLElement): CSSProperties {
  * (tên ở `aria-label`); dưới 768 px không có thẻ — mục "Xe của chuyến" nằm trong hộp Hiển thị. Bấm thẻ mở bảng thông số xe: Dialog Radix
  * không modal neo phía trên thẻ, nền tối đặc (bề mặt đọc, không kính); Esc / bấm ra ngoài đóng, con trỏ về thẻ. Chân bảng có nút phụ
  * "Đổi xe" chỉ khi `onChangeVehicle` có (chuyến Đã lập kế hoạch, người xem có `trips.edit`): bấm thì bảng đóng, con trỏ về thẻ rồi
- * hộp Đổi xe mở — đóng hộp đó con trỏ lại về thẻ.
+ * hộp Đổi xe mở — đóng hộp đó con trỏ lại về thẻ. `bodyStyle`: kiểu thân của loại đang gắn với xe — bảng có dòng "Kiểu thân xe" chỉ
+ * khi có.
  */
-export const VehicleCard = memo(function VehicleCard({ vehicle, onChangeVehicle }: { vehicle: VehicleConfig; onChangeVehicle?: () => void }) {
+export const VehicleCard = memo(function VehicleCard({ vehicle, bodyStyle, onChangeVehicle }: {
+  vehicle: VehicleConfig
+  bodyStyle?: VehicleBodyStyle
+  onChangeVehicle?: () => void
+}) {
   const t = useT()
   const format = useFormat()
-  const facts = useMemo(() => vehicleFacts(vehicle), [vehicle])
+  const facts = useMemo(() => vehicleFacts(vehicle, bodyStyle), [vehicle, bodyStyle])
   const [open, setOpen] = useState(false)
   const [position, setPosition] = useState<CSSProperties>({})
   const triggerRef = useRef<HTMLButtonElement>(null)

@@ -7,7 +7,7 @@ import { heightOf, MOCK_DB, navigateInApp } from './spec-flow-helpers'
  * LM-104, luồng 5 (Execute; FE-6-05, FE-6-06): kho đã soạn đủ thì xếp theo thứ tự, mỗi kiện phải đối chiếu bằng mã trên nhãn (đúng
  * kiện thì sang bước sau, sai kiện hoặc sai thứ tự thì nói rõ và không ghi; hộp đối chiếu ba mức từ FE-6-03 — máy chạy test không có
  * BarcodeDetector nên đi mức gõ mã), xếp xong; tài xế xuất phát, bấm Đã đến rồi đối chiếu khi dỡ (kiện của điểm khác được
- * giải thích); báo cáo chuyến TRIP-007 và bản in; danh mục loại xe (thêm, sửa, gắn xe,
+ * giải thích); báo cáo chuyến TRIP-007 và bản in; danh mục loại xe (thêm, sửa kèm kiểu thân xe, gắn xe,
  * xoá bị chặn khi còn xe, xoá). Kho dữ liệu nằm trong bộ nhớ trang: chỉ bấm trong app, không tải lại trang giữa chừng.
  */
 test.use({ collectConsoleErrors: true })
@@ -244,6 +244,12 @@ test('vehicle types: add, edit, assign to a vehicle (delete blocked while in use
   await frontLimit.fill('1800')
   await dialog.getByRole('spinbutton', { name: 'Giới hạn trục sau', exact: true }).fill('3200')
   await cogOffset.fill('12.5')
+  // Kiểu thân xe: mặc định tự chọn theo kích thước, chỉ đổi hình xe ở khung 3D
+  const bodyStyle = dialog.getByRole('combobox', { name: 'Kiểu thân xe', exact: true })
+  await expect(bodyStyle).toHaveText('Tự chọn theo kích thước')
+  await bodyStyle.click()
+  await page.getByRole('option', { name: 'Van cỡ trung', exact: true }).click()
+  await expect(bodyStyle).toHaveText('Van cỡ trung')
   await dialog.getByRole('button', { name: 'Lưu thay đổi', exact: true }).click()
   await expect(dialog).toBeHidden()
   await expect(row).toContainText('2.400 kg')
@@ -269,6 +275,11 @@ test('vehicle types: add, edit, assign to a vehicle (delete blocked while in use
     const found = (await getMockDb().listVehicles()).find((item) => item.name === name)
     return [found?.frontAxleLimitKg, found?.rearAxleLimitKg, found?.maxCogOffsetRatio]
   }, { db: MOCK_DB, name: vehicle })).toStrictEqual([1800, 3200, 0.125])
+  // Kiểu thân nằm ở loại xe, không thành giới hạn của xe
+  expect(await page.evaluate(async ({ db }) => {
+    const { getMockDb } = (await import(db)) as typeof import('@/lib/mock-db')
+    return (await getMockDb().getVehicleType('VT-008')).bodyStyle
+  }, { db: MOCK_DB })).toBe('VAN_MID')
   await row.getByRole('button', { name: 'Thao tác với Xe tải 2,5 tấn thùng 4,3 m' }).click()
   await expect(page.getByRole('menuitem', { name: /^Xoá/ })).toHaveAttribute('aria-disabled', 'true')
   await page.keyboard.press('Escape')

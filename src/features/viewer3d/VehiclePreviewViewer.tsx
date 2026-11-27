@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router'
 import type { VehicleConfig } from '@/domain/models'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+import type { VehicleBodyStyle } from '@/types/vehicle-body-style'
 import type { ScenePlacement } from './scene-input'
 import { DARK_SCOPE, GlassSegmented } from './panels/scene-ui'
 import { ObstacleCallout } from './scene/ObstacleCallout'
@@ -27,13 +28,15 @@ const PREVIEW_PRESETS: readonly CameraPreset[] = ['goc-cheo', 'ben-hong', 'cua-s
  * (`VehicleSpecMarks`) và nhãn của vật cản đang làm nổi. Camera chỉ canh lại theo `frameVehicle` hoặc khi người dùng bấm một góc nhìn.
  * Nút chọn góc nhìn vẽ vào `toolbarHost` — một hàng của form nằm ngoài khung hình, để không che nhãn kích thước ở mép trên.
  * `fleet` lazy-load component này; phần theo dõi form, debounce và kiểm hợp lệ nằm ở `fleet/VehiclePreview.tsx`.
+ * `vehicleBodyStyle`: kiểu thân của loại xe đang chọn ở form (form nào có ô loại xe); vắng thì dáng tự chọn theo kích thước.
  */
-export function VehiclePreviewViewer({ vehicle, frameVehicle, toolbarHost, highlightedObstacleId, onObstacleSelect }: {
+export function VehiclePreviewViewer({ vehicle, frameVehicle, toolbarHost, highlightedObstacleId, onObstacleSelect, vehicleBodyStyle }: {
   vehicle: VehicleConfig
   frameVehicle: VehicleConfig
   toolbarHost: HTMLElement | null
   highlightedObstacleId: string | null
   onObstacleSelect: (id: string | null) => void
+  vehicleBodyStyle?: VehicleBodyStyle
 }) {
   const t = useT()
   const [search] = useSearchParams()
@@ -52,7 +55,7 @@ export function VehiclePreviewViewer({ vehicle, frameVehicle, toolbarHost, highl
   return <>
     <SceneCanvas experience="fleet" model={model} placements={NO_PLACEMENTS} flags={flags} preset={view.preset} fitRequest={view.request}
       selectedId={null} onSelect={noop} step={0} animateLoading={false} specView onUserControl={handleUserControl}
-      frameVehicle={frameVehicle} highlightedObstacleId={highlightedObstacleId} onObstacleSelect={onObstacleSelect}>
+      frameVehicle={frameVehicle} highlightedObstacleId={highlightedObstacleId} onObstacleSelect={onObstacleSelect} vehicleBodyStyle={vehicleBodyStyle}>
       <VehicleSpecMarks vehicle={vehicle} hidden={hidden} />
       {highlighted ? <ObstacleCallout key={highlighted.id} obstacle={highlighted} /> : null}
     </SceneCanvas>

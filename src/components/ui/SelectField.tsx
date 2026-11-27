@@ -15,9 +15,10 @@ export type SelectOption = { value: string; label: string; disabled?: boolean }
 
 /**
  * Select nối vào react-hook-form. Radix Select không phải input gốc nên phải
- * đi qua Controller thay vì register (AGENTS.md mục 9: mọi form dùng RHF).
+ * đi qua Controller thay vì register (AGENTS.md mục 9: mọi form dùng RHF). `TTransformed`: form có schema biến đổi giá trị lúc gửi
+ * (`useForm<Input, unknown, Output>`) vẫn truyền thẳng `form.control`.
  */
-export function SelectField<TValues extends FieldValues>({
+export function SelectField<TValues extends FieldValues, TContext = unknown, TTransformed = TValues>({
   control,
   name,
   label,
@@ -28,7 +29,7 @@ export function SelectField<TValues extends FieldValues>({
   className,
   disabled = false,
 }: {
-  control: Control<TValues>
+  control: Control<TValues, TContext, TTransformed>
   name: FieldPath<TValues>
   label: ReactNode
   options: readonly SelectOption[]

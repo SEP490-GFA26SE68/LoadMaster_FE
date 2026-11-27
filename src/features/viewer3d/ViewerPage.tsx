@@ -3,6 +3,7 @@ import { Link, useParams, useSearchParams } from 'react-router'
 import { EmptyState } from '@/components/EmptyState'
 import { Button } from '@/components/ui/Button'
 import { TRIPS_CAPABILITIES } from '@/features/trips/trips-capabilities'
+import { useVehicleBodyStyle } from '@/features/vehicle-types/useVehicleTypesQuery'
 import { useT } from '@/lib/i18n'
 import { benchmarkCountFromSearch, benchmarkStopCountFromSearch, createBenchmarkInput, type BenchmarkCount, type BenchmarkStopCount } from './benchmark.mock'
 import { benchmarkObstacleCountFromSearch, withBenchmarkObstacles, type BenchmarkObstacleCount } from './benchmark-obstacles.mock'
@@ -71,5 +72,11 @@ function ResultSession() {
 /** Pha chuyến đọc lại mỗi lần kho trả chuyến (kho bắt đầu xếp là khoá ngay), không thuộc snapshot của revision. */
 function LoadedResult({ source }: { source: PlanSource }) {
   const model = useMemo(() => adaptResult(source), [source])
-  return <ViewerSession model={model} phase={source.trip.phase} source={source} />
+  // Kiểu thân xe đọc theo loại đang gắn với xe lúc này, không theo revision: đổi kiểu ở loại xe là Planner vẽ lại ngay. Chờ lần đọc
+  // đầu để khung 3D không dựng xe theo dáng tự chọn rồi đổi dáng ngay sau đó.
+  const body = useVehicleBodyStyle(model.vehicle.id)
+  if (!body.settled) {
+    return <div className="relative h-dvh bg-canvas-1"><ViewerSkeleton packageCount={model.placements.length} stopCount={model.stops.length} /></div>
+  }
+  return <ViewerSession model={model} phase={source.trip.phase} source={source} vehicleBodyStyle={body.bodyStyle} />
 }

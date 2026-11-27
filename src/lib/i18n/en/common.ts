@@ -25,6 +25,12 @@ export const common = {
   deadlineStatuses: { OK: 'On time', AT_RISK: 'Tight', MISSED: 'Expected late' },
   arrivalStatuses: { onTime: 'Arrived on time', late: 'Arrived late' },
   handlingClasses: { STANDARD: 'Standard', FRAGILE: 'Fragile', REFRIGERATED: 'Refrigerated', HAZARDOUS: 'Hazardous', HIGH_VALUE: 'High value' },
+  vehicleBodyStyles: {
+    VAN_MINI_FLAT: 'Mini van, flat nose',
+    VAN_MINI_HOOD: 'Mini van, short nose',
+    VAN_MID: 'Mid-size van',
+    VAN_LARGE: 'Large van',
+  },
   packageStatuses: {
     IMPORTED: 'Imported',
     ASSIGNED: 'Assigned to trip',

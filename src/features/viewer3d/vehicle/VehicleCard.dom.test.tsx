@@ -4,6 +4,7 @@ import { expect, test, vi } from 'vitest'
 import type { VehicleConfig } from '@/domain/models'
 import { SPEC_TRUCK_6M } from '@/domain/fixtures/spec-samples'
 import { I18nProvider } from '@/lib/i18n'
+import type { VehicleBodyStyle } from '@/types/vehicle-body-style'
 import { VehicleCard } from './VehicleCard'
 import { VehicleSection } from './VehicleSection'
 
@@ -17,8 +18,8 @@ const HD210: VehicleConfig = {
   ],
 }
 
-function renderCard(vehicle: VehicleConfig, onChangeVehicle?: () => void) {
-  render(<I18nProvider><VehicleCard vehicle={vehicle} onChangeVehicle={onChangeVehicle} /></I18nProvider>)
+function renderCard(vehicle: VehicleConfig, onChangeVehicle?: () => void, bodyStyle?: VehicleBodyStyle) {
+  render(<I18nProvider><VehicleCard vehicle={vehicle} bodyStyle={bodyStyle} onChangeVehicle={onChangeVehicle} /></I18nProvider>)
   return { user: userEvent.setup(), card: screen.getByRole('button', { name: `Xe của chuyến: ${vehicle.name}` }) }
 }
 
@@ -75,4 +76,20 @@ test('the inspector section for narrow screens shows the same figures', () => {
   const section = within(screen.getByRole('region', { name: 'Xe của chuyến' }))
   expect(screen.getByRole('region', { name: 'Xe của chuyến' })).toHaveTextContent('Hyundai HD210 · 60C-446.32')
   expect(section.getByText('8.240 kg')).toBeInTheDocument()
+})
+
+test('a body style declared on the vehicle type is the first row; a shape chosen from the size says nothing', async () => {
+  const { user, card } = renderCard(HD210, undefined, 'VAN_MINI_FLAT')
+  await user.click(card)
+  const panel = within(screen.getByRole('dialog', { name: 'Xe của chuyến' }))
+  const [first] = panel.getAllByRole('term')
+  expect(`${first?.textContent}: ${first?.nextElementSibling?.textContent}`).toBe('Kiểu thân xe: Van mini mũi bằng')
+})
+
+test('the inspector section shows the declared body style, and no row without one', () => {
+  const { unmount } = render(<I18nProvider><VehicleSection vehicle={HD210} bodyStyle='VAN_LARGE' /></I18nProvider>)
+  expect(within(screen.getByRole('region', { name: 'Xe của chuyến' })).getByText('Van cỡ lớn')).toBeInTheDocument()
+  unmount()
+  render(<I18nProvider><VehicleSection vehicle={HD210} /></I18nProvider>)
+  expect(within(screen.getByRole('region', { name: 'Xe của chuyến' })).queryByText('Kiểu thân xe')).toBeNull()
 })

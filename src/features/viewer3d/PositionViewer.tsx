@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { Button } from '@/components/ui/Button'
 import { useT } from '@/lib/i18n'
+import type { VehicleBodyStyle } from '@/types/vehicle-body-style'
 import type { CameraPreset } from '@/features/viewer3d/viewer-types'
 import type { ScenePlacement, ViewerSceneModel } from '@/features/viewer3d/scene-input'
 import { deriveSceneSemantics } from './operations/scene-semantics'
@@ -16,12 +17,14 @@ import { createPerfStore, DebugOverlay } from './DebugOverlay'
  * `model` là scene cm của revision đã duyệt (`adaptResult`, LM-060); bước theo `loadingOrder`.
  * `leftOutIds`: kiện hỏng lúc xếp, bị bỏ lại kho (FE-6-05) — không có trên xe dù đã qua bước của nó, nên vẽ như kiện đã gỡ (ẩn theo ID, không
  * tính trọng tâm), cùng cách khung 3D của tài xế bỏ kiện thiếu; không thêm mesh hay draw call.
+ * `vehicleBodyStyle`: kiểu thân của loại đang gắn với xe (kho mẫu); vắng thì khung 3D tự chọn dáng theo kích thước.
  */
-export function PositionViewer({ model, current, leftOutIds, preview }: {
+export function PositionViewer({ model, current, leftOutIds, preview, vehicleBodyStyle }: {
   model: ViewerSceneModel
   current?: Pick<ScenePlacement, 'id' | 'step' | 'stop'> | undefined
   preview?: { executionActive?: boolean; selectedId: string | null; confirmedIds: ReadonlySet<string>; onSelect: (id: string | null) => void } | undefined
   leftOutIds?: ReadonlySet<string>
+  vehicleBodyStyle?: VehicleBodyStyle
 }) {
   const t = useT()
   const [preset, setPreset] = useState<CameraPreset>('goc-cheo')
@@ -39,7 +42,7 @@ export function PositionViewer({ model, current, leftOutIds, preview }: {
   return <div className="relative h-full min-h-80 overflow-hidden rounded-lg bg-canvas-1">
     <SceneCanvas experience="warehouse" model={model} placements={model.placements} flags={flags} preset={preset}
       selectedId={selectedId} onSelect={preview?.onSelect ?? (() => {})} step={preview || !current ? Math.max(0, ...model.placements.map((p) => p.step)) : current.step} semantics={semantics}
-      decoration={false} xraySelection onPerfSample={search.has('debug') ? perf.publish : undefined} />
+      decoration={false} xraySelection onPerfSample={search.has('debug') ? perf.publish : undefined} vehicleBodyStyle={vehicleBodyStyle} />
     {/* Panel và nút nổi trên khung 3D là bề mặt tối ĐẶC (V2.3 đợt 6, không kính — chưa đo ở thiết bị kho) */}
     <div className="pointer-events-none absolute inset-x-3 top-3 flex flex-col gap-1 rounded-lg border border-border-dark bg-panel-dark p-3 text-body-lg text-bg">
       {preview || !current ? <span className="font-medium">{t(preview?.executionActive ? 'serverWarehouse.guide.executionGuide' : 'serverWarehouse.guide.readOnly')}</span> : <>

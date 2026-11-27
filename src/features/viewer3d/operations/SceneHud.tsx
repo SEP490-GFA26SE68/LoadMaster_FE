@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button'
 import type { VehicleConfig } from '@/domain/models'
 import { useFormat, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+import type { VehicleBodyStyle } from '@/types/vehicle-body-style'
 import type { LoadPlanViewerState } from '../useLoadPlanViewer'
 import type { OperationsState } from './useOperations'
 import { MassCard } from './GravityCards'
@@ -30,7 +31,8 @@ const HUD_BUTTON = cn('pointer-events-auto h-14 px-3 text-body-lg xl:h-8 xl:px-2
  * Bốn phần (điểm giao, thẻ G, thanh kiện, góc dưới phải) bọc `memo` và chỉ nhận đúng thứ chúng đọc: bước phát lại chỉ vẽ lại phần có
  * số đổi, chọn kiện chỉ vẽ lại thanh kiện. Nơi gọi giữ tham chiếu cho các hàm và cho `spin`, `assistant`.
  */
-export function SceneHud({ state, operations, onInspect, onFocus, onEdit, onResetFocus, onChangeVehicle, onRerunPinned, rerunBlockedReason, assistant, spin }: {
+export function SceneHud({ state, operations, onInspect, onFocus, onEdit, onResetFocus, onChangeVehicle, onRerunPinned, rerunBlockedReason, assistant, spin,
+  vehicleBodyStyle }: {
   state: LoadPlanViewerState; operations: OperationsState; onInspect: (tab: InspectorTab) => void
   onFocus: (p?: ScenePlacement) => void; onEdit?: () => void; onResetFocus?: () => void
   /** Mở hộp thoại Đổi xe (nút ở chân bảng thông số xe); vắng khi chuyến không ở trạng thái Đã lập kế hoạch hoặc người xem không sửa được chuyến. */
@@ -43,6 +45,8 @@ export function SceneHud({ state, operations, onInspect, onFocus, onEdit, onRese
   assistant?: ReactNode
   /** "Xoay một vòng" (công tắc); vắng là không có nút (giảm chuyển động). */
   spin?: { active: boolean; onToggle: () => void }
+  /** Kiểu thân xe của loại đang gắn với xe: dòng "Kiểu thân xe" của thẻ xe; vắng là dáng tự chọn, thẻ không nói gì. */
+  vehicleBodyStyle?: VehicleBodyStyle
 }) {
   const p = operations.current, stopNumber = operations.focusStop ?? p?.stop
   const counts = useMemo(() => {
@@ -68,7 +72,7 @@ export function SceneHud({ state, operations, onInspect, onFocus, onEdit, onRese
     <div className="flex items-end justify-between gap-2">
       <HudPackageBar selectedId={state.selected?.id ?? null} unloading={unloading} onInspect={onInspect} onFocus={onFocus} onEdit={onEdit} />
       <HudCorner pinnedCount={pinnedCount} pinsUnsaved={pinsUnsaved} rerunBlockedReason={rerunBlockedReason} onRerunPinned={onRerunPinned}
-        vehicle={vehicle} onChangeVehicle={onChangeVehicle} assistant={assistant} spin={spin} onInspect={onInspect} />
+        vehicle={vehicle} bodyStyle={vehicleBodyStyle} onChangeVehicle={onChangeVehicle} assistant={assistant} spin={spin} onInspect={onInspect} />
     </div>
   </div>
 }
@@ -139,15 +143,16 @@ const HudPackageBar = memo(function HudPackageBar({ selectedId, unloading, onIns
 })
 
 /** Góc dưới phải: kiện đã ghim + chạy lại, thẻ xe, trợ lý, xoay một vòng, "Chi tiết / Hiển thị". */
-const HudCorner = memo(function HudCorner({ pinnedCount, pinsUnsaved, rerunBlockedReason, onRerunPinned, vehicle, onChangeVehicle, assistant, spin, onInspect }: {
+const HudCorner = memo(function HudCorner({ pinnedCount, pinsUnsaved, rerunBlockedReason, onRerunPinned, vehicle, bodyStyle, onChangeVehicle, assistant, spin,
+  onInspect }: {
   pinnedCount: number; pinsUnsaved: boolean; rerunBlockedReason?: string; onRerunPinned?: () => void
-  vehicle: VehicleConfig; onChangeVehicle?: () => void; assistant?: ReactNode
+  vehicle: VehicleConfig; bodyStyle?: VehicleBodyStyle; onChangeVehicle?: () => void; assistant?: ReactNode
   spin?: { active: boolean; onToggle: () => void }; onInspect: (tab: InspectorTab) => void
 }) {
   const t = useT()
   return <div data-hud-corner className="ml-auto flex shrink-0 items-end gap-2">
     {onRerunPinned ? <PinnedRerun count={pinnedCount} unsaved={pinsUnsaved} blockedReason={rerunBlockedReason} onRerun={onRerunPinned} /> : null}
-    <VehicleCard vehicle={vehicle} onChangeVehicle={onChangeVehicle} />
+    <VehicleCard vehicle={vehicle} bodyStyle={bodyStyle} onChangeVehicle={onChangeVehicle} />
     {assistant}
     {spin ? <Button variant="glass" className={cn('pointer-events-auto size-14 shrink-0 p-0 glass-dark xl:h-10 xl:w-auto xl:px-3.5', GLASS_PRESSED)} aria-pressed={spin.active}
       aria-label={t(spin.active ? 'viewer.hud.stopSpin' : 'viewer.hud.spin')} onClick={spin.onToggle}>

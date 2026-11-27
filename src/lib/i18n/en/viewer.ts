@@ -409,6 +409,7 @@ export const viewer = {
     obstacles: 'Obstacles',
     noObstacles: 'None',
     obstacleCount: '{type} × {count}',
+    bodyStyle: 'Body style',
   },
   hud: {
     stopsTitle: 'Stops · unloading order',

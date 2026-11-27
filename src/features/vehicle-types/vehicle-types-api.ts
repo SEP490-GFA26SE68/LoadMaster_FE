@@ -1,10 +1,19 @@
+import { usesBackend } from '@/lib/backend-config'
 import { compareText } from '@/lib/list-filter'
 import { getMockDb, type VehicleType, type VehicleTypeAssignment, type VehicleTypeInput } from '@/lib/mock-db'
+import type { VehicleBodyStyle } from '@/types/vehicle-body-style'
 
 /**
  * Lớp dữ liệu loại xe của kho mẫu (LM-104). Xe gắn loại tuỳ chọn, lưu ngoài `VehicleConfig` (D-04). Nhóm `fleet` nối backend thì màn
  * là bản của `./backend` (đọc ghi máy chủ qua `backend/vehicle-types-api.ts`), không đi qua file này.
+ *
+ * | Hàm | Endpoint |
+ * |---|---|
+ * | `fetchVehicleBodyStyle` | chưa có ở BE |
  */
+
+/** Máy chủ chưa có trường kiểu thân xe: loại xe của máy chủ không bao giờ có kiểu thân. */
+const FLEET_ON_BACKEND = usesBackend('fleet')
 
 export type VehicleRef = { readonly id: string; readonly name: string }
 
@@ -53,4 +62,18 @@ export function deleteVehicleType(id: string): Promise<void> {
 
 export function setVehicleType(vehicleId: string, vehicleTypeId: string | null): Promise<VehicleTypeAssignment | null> {
   return getMockDb().setVehicleType(vehicleId, vehicleTypeId)
+}
+
+/**
+ * Kiểu thân xe của loại đang gắn với xe `vehicleId`, đọc lúc vẽ (không chụp vào revision): đổi kiểu ở loại xe là khung 3D của
+ * Planner, kho, tài xế thấy ngay. `null` khi xe chưa gắn loại, loại để tự chọn, xe không thuộc công ty của phiên, hoặc đội xe nối máy
+ * chủ. Kho lọc theo công ty; mọi vai trò công ty đọc được hai danh sách này.
+ */
+// chưa có ở BE
+export async function fetchVehicleBodyStyle(vehicleId: string): Promise<VehicleBodyStyle | null> {
+  if (FLEET_ON_BACKEND) return null
+  const db = getMockDb()
+  const [types, assignments] = await Promise.all([db.listVehicleTypes(), db.listVehicleTypeAssignments()])
+  const typeId = assignments.find((item) => item.vehicleId === vehicleId)?.vehicleTypeId
+  return types.find((type) => type.id === typeId)?.bodyStyle ?? null
 }
