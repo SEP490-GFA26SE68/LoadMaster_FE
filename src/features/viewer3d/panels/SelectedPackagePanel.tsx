@@ -1,5 +1,5 @@
 import { AlertCircle, CheckCircle2, Focus, Pencil, Pin, PinOff, X } from 'lucide-react'
-import { useId, type ReactNode } from 'react'
+import { memo, useId, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { Button } from '@/components/ui/Button'
 import type { ConstraintIssue } from '@/domain/constraints'
@@ -46,7 +46,7 @@ export type SelectedPackageProps = {
  * trí —, "Vì sao đặt ở đây" khi dịch vụ tối ưu của máy chủ ghi lý do đặt (`PlacementWhySection`), và lỗi ràng buộc của riêng
  * kiện. Dùng hai nơi: nổi bên phải khung 3D từ 1.280 px và trong tab Kiện của hộp thông tin.
  */
-export function SelectedPackagePanel({ placement, onClose, onPick, className, ...props }: SelectedPackageProps) {
+export const SelectedPackagePanel = memo(function SelectedPackagePanel({ placement, onClose, onPick, className, ...props }: SelectedPackageProps) {
   const t = useT()
   return (
     <aside aria-label={t('viewer.selected.label')} className={cn('flex min-h-0 flex-col text-body-lg xl:text-body', className)}>
@@ -58,7 +58,7 @@ export function SelectedPackagePanel({ placement, onClose, onPick, className, ..
       )}
     </aside>
   )
-}
+})
 
 function PackageDetails({ placement, placements, orientationRules, totalSteps, stops, zones = [], tripId, issues = [], onClose, onPick, onEdit, pin, onFocus }:
   Omit<SelectedPackageProps, 'placement' | 'className'> & { placement: ScenePlacement }) {

@@ -1,5 +1,5 @@
 import { SlidersHorizontal, TriangleAlert } from 'lucide-react'
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useCallback, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 import { EmptyState } from '@/components/EmptyState'
@@ -32,6 +32,7 @@ import { PlannerTimeline } from './PlannerTimeline'
 import { useApproveBackendEditsMutation, useBackendPlanQuery, useTogglePinMutation } from './useBackendPlanQuery'
 import { useLoadPlanViewer } from './useLoadPlanViewer'
 import { usePerformanceFlags } from './usePerformanceFlags'
+import { usePlannerSessionControls } from './usePlannerSessionControls'
 import type { BackendPlanSource } from './viewer-backend-api'
 import { ViewerHeader } from './ViewerHeader'
 import { debugQualityTier } from './viewer-options'
@@ -43,6 +44,8 @@ const LoadPlanViewer = lazy(() => import('./LoadPlanViewer').then((module) => ({
 const STATUS_LOCK: Readonly<Record<TripStatus, PlannerLock | null>> = {
   DRAFT: null, PLANNED: null, LOADING: 'loading', IN_TRANSIT: 'delivering', DELIVERED: 'completed', CANCELLED: 'cancelled',
 }
+/** Danh sách lỗi rỗng dùng chung: thẻ kiện (memo) không vẽ lại chỉ vì một mảng rỗng mới */
+const NO_ISSUES: readonly never[] = []
 
 /** Planner khi nhóm `trips` nối backend: phương án `?revision=<mã phương án>`, không có thì phương án đã duyệt, không nữa thì mới nhất. */
 export function BackendResultSession() {
@@ -94,7 +97,7 @@ export function BackendResultSession() {
  * từ chối `TRIP_LOCKED`); pha vận hành khoá cả Planner. Phương án lỗi thời (máy chủ `stale`: đổi xe, đổi kiện của chuyến) có thanh cảnh báo,
  * không chỉnh tay, không Duyệt. Kết quả của máy chủ không mang MOCK RESULT. Quản lý công ty xem chỉ đọc (thiếu `plans.approve`). Phím tắt
  * như Planner của kho mẫu. Nhóm `assistant` nối máy chủ: nút "Trợ lý AI" ở góc dưới phải khung 3D, câu trả lời điều khiển được khung 3D
- * (`usePlannerAssistant`).
+ * (`usePlannerAssistant`). Như phiên kho mẫu, phần không đổi theo bước phát lại và lần chọn kiện nhận props giữ tham chiếu (`memo`).
  */
 function BackendPlannerSession({ tripCode, source }: { tripCode: string; source: BackendPlanSource & { plan: NonNullable<BackendPlanSource['plan']> } }) {
   const [searchParams] = useSearchParams()
@@ -116,6 +119,8 @@ function BackendPlannerSession({ tripCode, source }: { tripCode: string; source:
   const state = useLoadPlanViewer(model, { initialSelectedId: model.placements[0]?.id })
   const editor = useManualEditor(state)
   const operations = useOperations(state)
+  const { handleModeChange, handleResetFocus, handleFocus, handleSelect, simulation, spin } =
+    usePlannerSessionControls(state, operations, editor, { stops: model.stops, reducedMotion: flags.reducedMotion })
   const colorContext = useMemo(() => createColorContext(model), [model])
   const perfStore = useMemo(() => createPerfStore(), [])
   const [inspectorTab, setInspectorTab] = useState<InspectorTab | null>(null)
@@ -132,32 +137,32 @@ function BackendPlannerSession({ tripCode, source }: { tripCode: string; source:
   const keepPinsPath = `/chuyen/${encodeURIComponent(tripCode)}/toi-uu?giu-ghim=${encodeURIComponent(plan.id)}`
   // Chỉnh tay và Duyệt bản chỉnh: chuyến Đã lập kế hoạch, phương án chưa lỗi thời (máy chủ: `PLAN_TRIP_NOT_PLANNED`, `PLAN_STALE`)
   const editable = pinnable && !stale
-  const handleEdit = editable ? () => handleModeChange('edit') : undefined
+  const handleEdit = useMemo(() => editable ? () => handleModeChange('edit') : undefined, [editable, handleModeChange])
   const canChangeVehicle = phaseLock === null && source.status === 'PLANNED' && can('trips.edit')
   // State mở của hộp Đổi xe nằm ở chính hộp thoại: mở / đóng không vẽ lại phiên và khung 3D
   const vehicleDialog = useDialogOpener()
-  const pinMutation = useTogglePinMutation(tripCode, plan.id)
-  const editsMutation = useApproveBackendEditsMutation(plan.id)
+  const { mutate: togglePin, isPending: pinPending } = useTogglePinMutation(tripCode, plan.id)
+  const { mutate: approveEdits, isPending: editsPending } = useApproveBackendEditsMutation(plan.id)
   const placementIds = useMemo(() => backendPlacementIds(plan), [plan])
   // Lỗi có sẵn của phương án: tính lười, chỉ khi bản chỉnh đã dời / xoay kiện — chế độ Xem không dựng constraint engine nào
   const baseline = useMemo(() => { let keys: ReadonlySet<string> | undefined; return () => (keys ??= baselineErrorKeys(model)) }, [model])
   const editApproval = useMemo(() => editable ? backendEditApproval(model, state.placements, state.draft, placementIds, baseline) : null,
     [editable, model, state.placements, state.draft, placementIds, baseline])
-  const pin = pinnable || pinBlocked !== undefined ? {
-    pending: pinMutation.isPending,
+  const pin = useMemo(() => pinnable || pinBlocked !== undefined ? {
+    pending: pinPending,
     disabledReason: pinBlocked,
     onToggle: (placement: { id: string; pinned: boolean }) => {
       const placementId = placementIds.get(placement.id)
-      if (!pinnable || placementId === undefined || pinMutation.isPending) return
-      pinMutation.mutate({ placementId, pinned: !placement.pinned }, { onError: (error) => toast.error(dataErrorMessage(error, t)) })
+      if (!pinnable || placementId === undefined || pinPending) return
+      togglePin({ placementId, pinned: !placement.pinned }, { onError: (error) => toast.error(dataErrorMessage(error, t)) })
     },
-  } : undefined
+  } : undefined, [pinnable, pinBlocked, pinPending, placementIds, togglePin, t])
 
-  const edits = editApproval?.hasEdits ? {
+  const edits = useMemo(() => editApproval?.hasEdits ? {
     blockedReason: editApproval.errors.length > 0 ? t('serverPlans.planner.editsBlocked', { count: editApproval.errors.length }) : null,
-    pending: editsMutation.isPending,
+    pending: editsPending,
     onConfirm: (done: () => void) => {
-      editsMutation.mutate({ edits: editApproval.edits, pinnedPlacementIds: editApproval.pinnedPlacementIds }, {
+      approveEdits({ edits: editApproval.edits, pinnedPlacementIds: editApproval.pinnedPlacementIds }, {
         onSuccess: (approved) => {
           done()
           toast.success(t('serverPlans.planner.approvedEdits'))
@@ -166,51 +171,42 @@ function BackendPlannerSession({ tripCode, source }: { tripCode: string; source:
         onError: (error) => toast.error(dataErrorMessage(error, t)),
       })
     },
-  } : undefined
-
-  const { togglePlaying, stepForward, stepBackward, goToStart, follow, current, setFollow } = operations
-  const { followPlacement } = editor
-  useEffect(() => { if (follow === 'on' && current && editor.mode === 'view') followPlacement(current) }, [follow, current, editor.mode, followPlacement])
-  useEffect(() => {
-    if (editor.mode === 'edit') return
-    function handleKeyDown(event: KeyboardEvent) {
-      const target = event.target instanceof HTMLElement ? event.target : null
-      if (target?.closest('input, textarea, select, button, a, [contenteditable="true"], [role="dialog"], [role="listbox"]')) return
-      if (event.key === ' ') { event.preventDefault(); togglePlaying() }
-      else if (event.key === 'ArrowRight') stepForward()
-      else if (event.key === 'ArrowLeft') stepBackward()
-      else if (event.key === 'Home') goToStart()
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [togglePlaying, stepForward, stepBackward, goToStart, editor.mode])
-
-  function handleModeChange(mode: 'view' | 'edit') { operations.stop(); setFollow('off'); state.stopSpin(); editor.setMode(mode) }
+  } : undefined, [editApproval, editsPending, approveEdits, t, navigate, tripCode])
 
   const editing = editor.mode === 'edit'
   usePlannerAssistant({ tripCode, planId: plan.id, state, operations, editing, onOpenPackages: () => setInspectorTab('packages') })
   const poseEdits = (editApproval?.edits.length ?? 0) > 0
   const rerunTo = stale && can('optimization.run') && phaseLock === null ? `/chuyen/${encodeURIComponent(tripCode)}/toi-uu` : undefined
-  const simulation = { operations, stops: model.stops, preset: state.cameraPreset, onPreset: state.setCameraPreset }
+  const handleRerunPinned = useMemo(() => canRerun ? () => void navigate(keepPinsPath) : undefined, [canRerun, navigate, keepPinsPath])
+  const handleCloseInspector = useCallback(() => setInspectorTab(null), [])
+  // Phần tử truyền làm prop cho phần bọc `memo` (thanh trên, HUD) giữ nguyên qua bước phát lại
+  const controls = useMemo(() => editing ? undefined : <PlannerSimulationControls {...simulation} />, [editing, simulation])
+  const actions = useMemo(() => <BackendPlannerActions tripCode={tripCode} plan={plan} approve={approve} edits={edits} />, [tripCode, plan, approve, edits])
+  const assistant = useMemo(() => <PlannerAssistant />, [])
+  const debugOverlay = useMemo(() => showPerf ? <DebugOverlay store={perfStore} /> : null, [showPerf, perfStore])
+  const approved = plan.approved
+  const notices = useMemo(() => (
+    <div className="flex flex-none flex-col items-start gap-2 px-2 pt-2 empty:hidden xl:px-3.5 xl:pt-2.5">
+      <PlannerLockNotice lock={lock} />
+      {stale ? (
+        <PlannerNoticeBar role="alert" data-planner-stale tone="warning" icon={TriangleAlert} title={t('viewer.plan.staleBanner')}
+          detail={staleDetail}
+          action={rerunTo ? <PlannerNoticeLink tone="warning" to={rerunTo} icon={SlidersHorizontal}>{t('viewer.plan.rerun')}</PlannerNoticeLink> : null} />
+      ) : null}
+      {approve === 'draft' && !approved ? (
+        <PlannerNoticeBar role="status" tone="warning" icon={TriangleAlert} title={t('serverPlans.planner.draftReason')} />
+      ) : null}
+    </div>
+  ), [lock, stale, staleDetail, rerunTo, approve, approved, t])
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-canvas-1">
       <ViewerHeader tripId={tripCode} title={source.tripName} revisionId={model.revision?.id ?? null} stale={stale} metrics={model.metrics}
         placedCount={model.placements.length} totalCount={model.placements.length + model.unplaced.length} isMockResult={false}
         manuallyEdited={!poseEdits && plan.manuallyEdited} candidateLabel={plan.manuallyEdited ? undefined : plan.label ?? undefined}
-        controls={editing ? undefined : <PlannerSimulationControls {...simulation} />}>
-        <BackendPlannerActions tripCode={tripCode} plan={plan} approve={approve} edits={edits} />
+        controls={controls}>
+        {actions}
       </ViewerHeader>
-      <div className="flex flex-none flex-col items-start gap-2 px-2 pt-2 empty:hidden xl:px-3.5 xl:pt-2.5">
-        <PlannerLockNotice lock={lock} />
-        {stale ? (
-          <PlannerNoticeBar role="alert" data-planner-stale tone="warning" icon={TriangleAlert} title={t('viewer.plan.staleBanner')}
-            detail={staleDetail}
-            action={rerunTo ? <PlannerNoticeLink tone="warning" to={rerunTo} icon={SlidersHorizontal}>{t('viewer.plan.rerun')}</PlannerNoticeLink> : null} />
-        ) : null}
-        {approve === 'draft' && !plan.approved ? (
-          <PlannerNoticeBar role="status" tone="warning" icon={TriangleAlert} title={t('serverPlans.planner.draftReason')} />
-        ) : null}
-      </div>
+      {notices}
       {editing ? <EditorToolbar state={state} editor={editor} onModeChange={handleModeChange} /> : <WorkspaceToolbar {...simulation} onEdit={handleEdit} />}
       <div className={`relative flex min-h-0 flex-1 ${editing ? 'flex-col xl:flex-row' : ''}`}>
         <div className="relative min-h-48 min-w-0 flex-1 overflow-hidden bg-canvas-1">
@@ -219,18 +215,15 @@ function BackendPlannerSession({ tripCode, source }: { tripCode: string; source:
           </Suspense>
           {editing ? null : <SceneHud state={state} operations={operations} onInspect={setInspectorTab}
             onChangeVehicle={canChangeVehicle ? vehicleDialog.open : undefined}
-            onRerunPinned={canRerun ? () => void navigate(keepPinsPath) : undefined} rerunBlockedReason={pinBlocked}
-            onResetFocus={editor.focus ? () => { setFollow('off'); editor.resetFocus() } : undefined}
-            onFocus={(p) => { operations.pauseFollow(); if (p) editor.focusPlacement(p); else editor.focusSelected() }} onEdit={handleEdit}
-            spin={flags.reducedMotion ? undefined : { active: state.spinning, onToggle: state.toggleSpin }}
-            assistant={<PlannerAssistant />} />}
-          {showPerf ? <DebugOverlay store={perfStore} /> : null}
+            onRerunPinned={handleRerunPinned} rerunBlockedReason={pinBlocked}
+            onResetFocus={handleResetFocus} onFocus={handleFocus} onEdit={handleEdit} spin={spin} assistant={assistant} />}
+          {debugOverlay}
           {editing && state.selected ? <EditorGestureHud placement={state.selected} editor={editor} /> : null}
         </div>
         {editing ? <EditorPanel state={state} editor={editor} /> : (
-          <SceneInspector state={state} operations={operations} tripId={tripCode} colorContext={colorContext} issues={editApproval?.errors ?? []} pin={pin}
-            onEdit={handleEdit} onFocus={editor.focusSelected} onSelect={(p) => { state.select(p.id); operations.pauseFollow(); editor.focusPlacement(p) }}
-            tab={inspectorTab} onTab={setInspectorTab} onClose={() => setInspectorTab(null)} listSection={state.leftTab} />
+          <SceneInspector state={state} operations={operations} tripId={tripCode} colorContext={colorContext} issues={editApproval?.errors ?? NO_ISSUES} pin={pin}
+            onEdit={handleEdit} onFocus={editor.focusSelected} onSelect={handleSelect}
+            tab={inspectorTab} onTab={setInspectorTab} onClose={handleCloseInspector} listSection={state.leftTab} />
         )}
       </div>
       {editing ? null : <PlannerTimeline state={state} operations={operations} />}

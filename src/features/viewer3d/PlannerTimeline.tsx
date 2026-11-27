@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useT } from '@/lib/i18n'
 import type { OperationsState } from './operations/useOperations'
 import { PlaybackEstimate } from './operations/PlaybackEstimate'
@@ -14,6 +14,10 @@ export function PlannerTimeline({ state, operations }: { state: LoadPlanViewerSt
   const t = useT()
   const unloading = operations.kind === 'unloading'
   const scaleText = useCallback((scale: TimeScale) => t('plannerPhysics.speed.option', { scale }), [t])
+  // Tổng thời gian thật không đổi theo bước: phần tử giữ nguyên nên bước phát lại không vẽ lại nó
+  const { kind } = operations
+  const { timing, timeScale } = state
+  const extra = useMemo(() => <PlaybackEstimate kind={kind} timing={timing} timeScale={timeScale} />, [kind, timing, timeScale])
   return <Timeline<TimeScale>
     placements={state.placements}
     kind={operations.kind}
@@ -32,6 +36,6 @@ export function PlannerTimeline({ state, operations }: { state: LoadPlanViewerSt
     onStepBackward={operations.stepBackward}
     onGoToStart={operations.goToStart}
     onTogglePlaying={operations.togglePlaying}
-    extra={<PlaybackEstimate kind={operations.kind} timing={state.timing} timeScale={state.timeScale} />}
+    extra={extra}
   />
 }

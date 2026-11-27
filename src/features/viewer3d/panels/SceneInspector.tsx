@@ -1,4 +1,5 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog'
+import { useCallback } from 'react'
 import { X } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Dialog, DialogDescription, DialogTitle } from '@/components/ui/Dialog'
@@ -52,13 +53,15 @@ export function SceneInspector(props: InspectorProps) {
 function FloatingColumn({ state, operations, tripId, issues, onEdit, pin, onFocus, onSelect, onTab }: InspectorProps) {
   const selected = state.selected
   const editBlocker = onEdit ? (p: ScenePlacement) => { state.select(p.id); onEdit() } : undefined
+  // Tham chiếu giữ nguyên qua bước phát lại: thẻ kiện (memo) không vẽ lại khi kiện đang chọn không đổi
+  const handlePick = useCallback(() => onTab('package'), [onTab])
   return <div data-scene-inspector className={cn('pointer-events-none absolute top-3 right-3 bottom-16 z-10 hidden w-83 flex-col gap-3 xl:flex', DARK_SCOPE)}>
-    <MassCard operations={operations} vehicle={state.sceneModel.vehicle} />
+    <MassCard cargo={operations.cargo} showMass={operations.showMass} vehicle={state.sceneModel.vehicle} />
     {operations.kind === 'loading' ? (
       <SelectedPackagePanel className={cn('pointer-events-auto', GLASS_PANEL)} placement={selected} placements={state.placements}
         totalSteps={state.totalSteps} stops={state.sceneModel.stops} zones={state.sceneModel.zones} tripId={tripId} issues={issues}
         orientationRules={selected ? state.sceneModel.orientationRulesById.get(selected.id) : undefined}
-        onPick={() => onTab('package')} onEdit={onEdit} pin={pin} onFocus={onFocus} />
+        onPick={handlePick} onEdit={onEdit} pin={pin} onFocus={onFocus} />
     ) : (
       <div className="pointer-events-auto flex min-h-0"><UnloadingPanel state={state} operations={operations} onSelect={onSelect} onEdit={editBlocker} /></div>
     )}

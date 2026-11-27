@@ -1,5 +1,5 @@
 import { Check, CircleAlert, Columns2, Pencil } from 'lucide-react'
-import { useId } from 'react'
+import { memo, useId } from 'react'
 import { Link } from 'react-router'
 import { Button } from '@/components/ui/Button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/Tooltip'
@@ -13,7 +13,7 @@ import type { PlannerAccess } from '../approval/planner-access'
  * Duyệt nằm trong tooltip và mô tả của nút, không chen chữ đỏ vào thanh (U-5); hộp thoại Duyệt liệt kê đủ.
  * `approvedBy` đổi nhãn thành "Duyệt bởi … lúc" khi kho biết người duyệt (LM-104).
  */
-export function PlannerActions({ tripId, access, blockedReason, onApprove, onEdit, approvedBy = null, compareRunId }: {
+export const PlannerActions = memo(function PlannerActions({ tripId, access, blockedReason, onApprove, onEdit, approvedBy = null, compareRunId }: {
   tripId: string
   access: PlannerAccess
   blockedReason: string | null
@@ -38,7 +38,7 @@ export function PlannerActions({ tripId, access, blockedReason, onApprove, onEdi
       {access.approve ? <ApproveButton draft={access.approve === 'draft'} blockedReason={blockedReason} onClick={onApprove} /> : null}
     </div>
   )
-}
+})
 
 function ApprovedAt({ at, by }: { at: string; by: string | null }) {
   const t = useT()

@@ -18,7 +18,7 @@ export function useLoadPlanViewer(
   { initialSelectedId }: { initialSelectedId?: string } = {},
 ) {
   // ViewerPage keys each session by snapshot. No draft is carried to another plan.
-  const totalSteps = Math.max(0, ...sceneModel.placements.map((p) => p.step))
+  const totalSteps = useMemo(() => Math.max(0, ...sceneModel.placements.map((p) => p.step)), [sceneModel.placements])
   const initialSelected = initialSelectedId ? sceneModel.placementById.get(initialSelectedId) : undefined
 
   const [cameraPreset, setPreset] = useState<CameraPreset>('goc-cheo')

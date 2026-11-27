@@ -1,5 +1,5 @@
 import { Crosshair } from 'lucide-react'
-import { useMemo } from 'react'
+import { memo, useMemo } from 'react'
 import type { VehicleConfig } from '@/domain/models'
 import { useFormat, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
@@ -7,7 +7,6 @@ import { IndicatorCard } from '../overlays/IndicatorCard'
 import { GLASS_PANEL, MUTED } from '../panels/scene-ui'
 import type { CargoAtStep } from './cargo-at-step'
 import { cargoCenterOfMass } from './operations-model'
-import type { OperationsState } from './useOperations'
 
 /** Ba số của G theo chữ: cách vách trước (X), lệch ngang so với giữa thùng (|Y − W/2|), cao trên sàn (Z). */
 function useGravityLines(cargo: CargoAtStep, vehicle: VehicleConfig) {
@@ -44,16 +43,25 @@ export function GravityPanel({ cargo, vehicle }: { cargo: CargoAtStep; vehicle: 
   </IndicatorCard>
 }
 
-/** Thẻ G nổi góc khung 3D khi bật lớp "Hiện trọng tâm hàng (G)": kính tối, cùng số với `GravityPanel`. */
-export function MassCard({ operations, vehicle, className }: { operations: OperationsState; vehicle: VehicleConfig; className?: string }) {
+/**
+ * Thẻ G nổi góc khung 3D khi bật lớp "Hiện trọng tâm hàng (G)": kính tối, cùng số với `GravityPanel`. Bọc `memo` và chỉ nhận hàng ở bước
+ * đang xem: chọn kiện không vẽ lại thẻ; lớp đang tắt thì không tính trọng tâm.
+ */
+export const MassCard = memo(function MassCard({ cargo, showMass, vehicle, className }: {
+  cargo: CargoAtStep; showMass: boolean; vehicle: VehicleConfig; className?: string
+}) {
+  return showMass ? <MassCardBody cargo={cargo} vehicle={vehicle} className={className} /> : null
+})
+
+function MassCardBody({ cargo, vehicle, className }: { cargo: CargoAtStep; vehicle: VehicleConfig; className?: string }) {
   const t = useT()
-  const lines = useGravityLines(operations.cargo, vehicle)
-  if (!operations.showMass || !lines) return null
+  const lines = useGravityLines(cargo, vehicle)
+  if (!lines) return null
   return <section aria-label={t('plannerPhysics.gravity.title')} data-mass-hud className={cn('pointer-events-auto flex items-start gap-2.5 px-4 py-3 text-body xl:text-small', GLASS_PANEL, className)}>
     <span aria-hidden className="grid size-7.5 flex-none place-items-center rounded-md bg-cog-marker/15 text-cog-marker"><Crosshair className="size-4.5" strokeWidth={1.5} /></span>
     <div className="flex min-w-0 flex-col">
       <span className="font-semibold text-sky-text">{t('plannerPhysics.gravity.title')}</span>
-      {operations.cargo.at ? <span className={MUTED}><AtStep cargo={operations.cargo} /></span> : null}
+      {cargo.at ? <span className={MUTED}><AtStep cargo={cargo} /></span> : null}
       {lines.map((line) => <span key={line} className="font-mono tabular-nums">{line}</span>)}
     </div>
   </section>
