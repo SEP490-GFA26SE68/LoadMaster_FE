@@ -102,7 +102,7 @@ export default function LandingStageViewer({ request, result, stopNames, view, t
       <SceneCanvas experience="landing" model={model} placements={model.placements} flags={flags} preset={view === 'zones' ? 'tren' : 'goc-cheo'}
         selectedId={null} onSelect={noop} step={step} semantics={semantics} zones={zonesOn ? model.zones : undefined} zoneLabels={view === 'zones'}
         interactive={false} fov={STAGE_CAMERA.fov} framePoints={framePoints} frameZoom={view === 'overview' ? 1 : STAGE_CAMERA.zoom} fitRequest={fitRequest}
-        vehicleRef={vehicleRef} doorsClosed={doorsClosed} vehicleChildren={flags.decoration ? null : <TruckStandIn vehicle={model.vehicle} />}>
+        decoration={flags.decoration} vehicleRef={vehicleRef} doorsClosed={doorsClosed} vehicleChildren={flags.decoration ? null : <TruckStandIn vehicle={model.vehicle} />}>
         <FirstFrame onFrame={onReady} />
         <ContextWatch onLost={onFail} />
         <StoryFrames story={story} />

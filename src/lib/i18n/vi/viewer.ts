@@ -49,7 +49,7 @@ export const viewer = {
       errors: { one: '{count} lỗi ràng buộc', other: '{count} lỗi ràng buộc' },
     },
     blockedStale: 'Chưa duyệt được: kết quả lỗi thời.',
-    /** Nút phụ "Đổi xe" ở góc dưới phải khung 3D của Planner (FE-5b-08), cạnh "Chi tiết / Hiển thị". */
+    /** Nút phụ "Đổi xe" ở chân bảng thông số xe — thẻ xe ở góc dưới phải khung 3D của Planner mở bảng đó (FE-5b-08). */
     changeVehicle: 'Đổi xe',
     metricsTab: 'Chỉ số',
     metrics: {
@@ -421,6 +421,26 @@ export const viewer = {
     rerunHint: 'Tối ưu lại: kiện đã ghim giữ nguyên chỗ, các kiện còn lại được xếp quanh chúng.',
     unsaved: 'Duyệt bản chỉnh để lưu ghim trước khi chạy lại.',
     tag: 'Đã ghim',
+  },
+  /** Thẻ xe ở góc dưới phải khung 3D của Planner và bảng thông số xe nó mở; dưới 768 px là mục "Xe của chuyến" của hộp Hiển thị. */
+  vehicleCard: {
+    label: 'Xe của chuyến: {name}',
+    title: 'Xe của chuyến',
+    close: 'Đóng thông số xe',
+    description: 'Thông số của xe mà phương án này xếp hàng vào.',
+    interior: 'Lòng thùng',
+    door: 'Cửa sau',
+    clearance: 'Khoảng hở',
+    payload: 'Tải trọng tối đa',
+    axles: 'Trục',
+    axleCount: { one: '{count} trục', other: '{count} trục' },
+    axlesMissing: 'Chưa khai trục',
+    frontLimit: 'Giới hạn trục trước',
+    rearLimit: 'Giới hạn trục sau',
+    limitMissing: 'Chưa khai',
+    obstacles: 'Vật cản',
+    noObstacles: 'Không có',
+    obstacleCount: '{type} × {count}',
   },
   /** HUD trên khung 3D của Planner. */
   hud: {

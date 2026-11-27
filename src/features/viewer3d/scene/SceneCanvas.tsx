@@ -23,6 +23,7 @@ import { TruckCab } from './TruckCab'
 import { sceneMaterials } from './materials'
 import { SceneLighting } from './SceneLighting'
 import { PerfProbe, type PerfSample } from './PerfProbe'
+import { RestDpr } from './RestDpr'
 import { containerCenter } from './units'
 import type { FramePoints } from './frame-fit'
 import { ContextLossWatch } from './context-loss'
@@ -46,6 +47,7 @@ export type SceneCanvasProps = {
   semantics?: SceneSemantics
   hiddenId?: string | null
   animateLoading?: boolean
+  /** `false`: không vẽ cabin, bánh (kho, tài xế). Có xe thì xe được vẽ ở mọi tier — tier chỉ đổi mức chi tiết (`vehicleDetail`). */
   decoration?: boolean
   xraySelection?: boolean
   /**
@@ -118,6 +120,8 @@ const CAMERA_POSITION: [number, number, number] = [8.5, 5.2, 7]
 
 /** Độ sáng thêm của thùng ở xem trước form xe (`sceneMaterials`). */
 const SPEC_VIEW_LIFT = 2.2
+/** Nhịp nghỉ của `PerfProbe` khi cảnh đứng yên: chính sách chất lượng đếm quãng nghỉ để nâng thử tier. */
+const REST_SAMPLE = { frameTimeMs: null, idle: true } as const
 
 /** Shared renderer; experience wrappers own controls/workflows, not another scene engine. */
 export function SceneCanvas({
@@ -153,6 +157,7 @@ export function SceneCanvas({
     onPerformanceSample(sample)
     onPerfSample?.(sample)
   }, [onPerformanceSample, onPerfSample])
+  const handleRest = useCallback(() => onPerformanceSample(REST_SAMPLE), [onPerformanceSample])
   // Mất ngữ cảnh WebGL: lớp phủ có câu + nút dựng lại khung; ngữ cảnh tự về cũng dựng lại canvas (three không nạp lại hết bộ đệm)
   const [contextLost, setContextLost] = useState(false)
   const [canvasKey, setCanvasKey] = useState(0)
@@ -161,7 +166,7 @@ export function SceneCanvas({
   const vehicleParts = <>
     <Container vehicle={model.vehicle} materials={materials} detail={flags.decoration} reducedMotion={flags.reducedMotion}
       doorOpening={specView} edgeOpacity={specView ? 0.6 : undefined} doorsClosed={doorsClosed} />
-    {decoration && flags.decoration ? <TruckCab vehicle={model.vehicle} materials={materials} shadows={flags.shadows} /> : null}
+    {decoration ? <TruckCab vehicle={model.vehicle} materials={materials} shadows={flags.shadows} detail={flags.vehicleDetail} /> : null}
     <CargoInstances placements={placements} colorMode={colorMode} colorContext={colorContext} sliceCm={sliceCm}
       step={step} selectedId={selected?.id ?? null} onSelect={handleSelect} onFocus={onFocus} outlines={flags.outlines} outlineColor={materials.outline}
       reducedMotion={flags.reducedMotion} animationQuality={animateLoading ? flags.animationQuality : 'none'} hiddenId={hiddenId}
@@ -185,12 +190,13 @@ export function SceneCanvas({
     onPointerMissed={() => handleSelect(null)} style={interactive ? CANVAS_STYLE : STATIC_CANVAS_STYLE}>
     <SceneLighting shadows={flags.shadows} />
     <CameraRig preset={preset} reducedMotion={flags.reducedMotion} vehicle={frameVehicle ?? model.vehicle} fit fitRequest={fitRequest} specFrame={specView} focus={focus}
-      vehicleDecoration={decoration && flags.decoration} zoom={frameZoom} framePoints={framePoints} jumpFirst={experience === 'landing'} onUserControl={onUserControl} />
+      vehicleDecoration={decoration} zoom={frameZoom} framePoints={framePoints} jumpFirst={experience === 'landing'} onUserControl={onUserControl} />
     <group position={[-cx, -cy, -cz]}>
       {vehicleRef ? <group ref={vehicleRef} name="vehicle-motion">{vehicleParts}</group> : vehicleParts}
       {children}
     </group>
-    <PerfProbe onSample={handleSample} placementCount={placements.length} qualityTier={flags.tier} scene={model} />
+    <RestDpr range={flags.dpr} />
+    <PerfProbe onSample={handleSample} onRest={handleRest} placementCount={placements.length} qualityTier={flags.tier} scene={model} />
     <ContextLossWatch onLost={handleContextLost} onRestored={handleReloadCanvas} />
   </Canvas>
   {contextLost ? <ContextLostOverlay onReload={handleReloadCanvas} /> : null}
