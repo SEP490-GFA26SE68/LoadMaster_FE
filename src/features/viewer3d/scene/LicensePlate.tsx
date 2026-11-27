@@ -3,6 +3,7 @@ import { CanvasTexture, SRGBColorSpace } from 'three'
 import type { SceneMaterials } from './materials'
 import type { TruckLayout } from './truck-layout'
 import { useDisposeOnChange } from './useDisposeOnChange'
+import { VAN_BUMPER_OUT } from './van-details'
 
 /** Biển dài một hàng của xe tải (520 × 110 mm), ảnh 2 px mỗi mm cho chữ còn nét khi phóng gần. */
 const PLATE_W = 0.52, PLATE_H = 0.11
@@ -35,7 +36,7 @@ function plateTexture(text: string, m: SceneMaterials) {
 }
 
 /**
- * Biển số ở đuôi xe, dưới cửa sau (trên cản sau, giữa hai chân đỡ): chỉ khi tên xe theo quy ước "Tên · biển số" (`splitVehicleName`),
+ * Biển số ở đuôi xe, dưới cửa sau (trên cản sau, giữa hai chân đỡ; van: dán giữa mặt cản sau liền thân): chỉ khi tên xe theo quy ước "Tên · biển số" (`splitVehicleName`),
  * một tấm phẳng, một draw call, chỉ ở `vehicleDetail: 'full'`. Không có biển số thì không vẽ gì.
  */
 export function LicensePlate({ plate, layout, length, width, materials }: {
@@ -44,8 +45,9 @@ export function LicensePlate({ plate, layout, length, width, materials }: {
   const texture = useMemo(() => plateTexture(plate, materials), [plate, materials])
   useDisposeOnChange(texture)
   if (!texture) return null
-  const y = Math.min(-PLATE_H / 2 - 0.05, layout.rearBumperY + 0.17)
-  return <mesh name="vehicle-plate" position={[length + 0.2, y, width / 2]} rotation={[0, Math.PI / 2, 0]}>
+  const y = layout.van ? layout.rearBumperY + 0.02 : Math.min(-PLATE_H / 2 - 0.05, layout.rearBumperY + 0.17)
+  const x = layout.van ? length + VAN_BUMPER_OUT + 0.004 : length + 0.2
+  return <mesh name="vehicle-plate" position={[x, y, width / 2]} rotation={[0, Math.PI / 2, 0]}>
     <planeGeometry args={[PLATE_W, PLATE_H]} />
     <meshStandardMaterial map={texture} roughness={0.55} metalness={0.05} />
   </mesh>

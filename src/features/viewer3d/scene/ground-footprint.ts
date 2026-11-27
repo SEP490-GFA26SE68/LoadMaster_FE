@@ -1,4 +1,5 @@
 import type { VehicleConfig } from '@/domain/models'
+import type { VehicleBodyStyle } from '@/types/vehicle-body-style'
 import { truckLayout } from './truck-layout'
 import type { GroundFootprint } from './ground-plane'
 
@@ -10,8 +11,8 @@ const MIRROR_ALLOWANCE = 0.25
  * `groundY` theo chiều cao sàn của hạng xe, `footprint` từ mũi cản trước tới qua cản sau — nên mặt đất và bóng tiếp xúc đi theo
  * đúng chiếc xe đang vẽ (van thấp, tải nặng cao).
  */
-export function groundFootprintOf(vehicle: VehicleConfig): GroundFootprint {
-  const { groundY, footprint } = truckLayout(vehicle)
+export function groundFootprintOf(vehicle: VehicleConfig, bodyStyle?: VehicleBodyStyle): GroundFootprint {
+  const { groundY, footprint } = truckLayout(vehicle, bodyStyle)
   const [z0, z1] = footprint.z
   return {
     groundY,
