@@ -37,10 +37,10 @@ export const createQualityPolicy = (tier: QualityTier): QualityPolicy => ({
   tier, slow: 0, fast: 0, lastChangeAt: -Infinity, restSince: null, trial: null, failedTrials: {},
 })
 
-/** Nâng thử sau quãng nghỉ dài: chỉ khi đã qua cooldown, còn bậc trên và bậc đó chưa hỏng quá số lần cho phép. */
+/** Nâng thử sau quãng nghỉ dài: chỉ khi đã qua cooldown, còn bậc trên, bậc đó chưa hỏng quá số lần cho phép và lần thử trước đã được chuyển động xác nhận (nghỉ lâu không leo liền hai bậc). */
 function restTrial(state: QualityPolicy, restSince: number, now: number): QualityPolicy | null {
   const up = UP[state.tier]
-  if (!up || now - restSince < QUALITY_REST_RETRY_MS || now - state.lastChangeAt < QUALITY_COOLDOWN_MS) return null
+  if (!up || state.trial || now - restSince < QUALITY_REST_RETRY_MS || now - state.lastChangeAt < QUALITY_COOLDOWN_MS) return null
   if ((state.failedTrials[up] ?? 0) >= QUALITY_MAX_FAILED_TRIALS) return null
   return { ...state, tier: up, slow: 0, fast: 0, lastChangeAt: now, restSince: now, trial: { tier: up, samples: 0 } }
 }

@@ -65,10 +65,17 @@ test('a retry that survives is confirmed; a later slow run is a normal downgrade
   expect(q.failedTrials.balanced ?? 0).toBe(0)
 })
 
-test('the retry climbs one tier per rest and stops at high', () => {
+test('the retry climbs one tier at a time: the next one waits until motion has confirmed the last', () => {
   let q = slow(createQualityPolicy('balanced'), 0)
-  q = rest(q, q.lastChangeAt + 500, q.lastChangeAt + 2 * QUALITY_COOLDOWN_MS + 500)
-  expect(q.tier).toBe('high')
+  // Nghỉ rất lâu vẫn chỉ lên một bậc: bậc vừa thử chưa có mẫu chuyển động nào chứng minh
+  q = rest(q, q.lastChangeAt + 500, q.lastChangeAt + 3 * QUALITY_COOLDOWN_MS)
+  expect(q).toMatchObject({ tier: 'balanced', trial: { tier: 'balanced' } })
+  // Chuyển động không chậm đủ lâu thì bậc đó đứng được; quãng nghỉ dài kế tiếp mới thử bậc trên, rồi dừng ở high
+  let at = q.lastChangeAt + 3 * QUALITY_COOLDOWN_MS + 500
+  for (let i = 0; i < 8; i++, at += 500) q = observeQuality(q, { frameTimeMs: 22, idle: false }, at)
+  expect(q).toMatchObject({ tier: 'balanced', trial: null })
+  q = rest(q, at, at + QUALITY_COOLDOWN_MS)
+  expect(q).toMatchObject({ tier: 'high', trial: { tier: 'high' } })
   q = rest(q, q.lastChangeAt + 500, q.lastChangeAt + 3 * QUALITY_COOLDOWN_MS)
   expect(q.tier).toBe('high')
 })
