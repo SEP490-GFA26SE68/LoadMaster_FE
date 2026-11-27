@@ -8,8 +8,7 @@ import type { SceneMaterials } from './materials'
 export function FloorScale({ length, width, color }: { length: number; width: number; color: string }) {
   const positions = useMemo(() => {
     const values: number[] = []
-    // A light floor pattern plus actual one-metre station marks, one draw call.
-    for (let z = 0.2; z < width; z += 0.2) values.push(0, 0.003, z, length, 0.003, z)
+    // Thước sàn: vạch mỗi 25 cm sát hai vách, vạch dài ở từng mét — một draw call. Vân ván sàn nằm ở màu đỉnh của vỏ thùng.
     for (let x = 0; x <= length; x += 0.25) {
       const tick = Number.isInteger(x) ? 0.16 : 0.07
       values.push(x, 0.005, 0, x, 0.005, tick, x, 0.005, width, x, 0.005, width - tick)

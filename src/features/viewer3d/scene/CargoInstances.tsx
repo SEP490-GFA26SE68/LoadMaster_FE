@@ -10,7 +10,8 @@ import { useCargoMatrices } from './useCargoMatrices'
 import type { AnimationQuality } from '../usePerformanceFlags'
 import { useCargoColors } from './useCargoColors'
 import type { SceneSemantics } from '../operations/scene-semantics'
-import { applyCargoSurface, createCargoSurface } from './cargo-surface'
+import { applyCargoSurface, CARGO_SURFACE_KEY, createCargoSurface } from './cargo-surface'
+import { cargoSurfaceIndex } from './cargo-marks'
 import { CargoFeedback } from './CargoFeedback'
 import { animated, useSpring } from '@react-spring/three'
 
@@ -57,7 +58,7 @@ export function CargoInstances({
   const geometry = useMemo(() => new BoxGeometry(1, 1, 1), [])
   useLayoutEffect(() => {
     geometry.setAttribute('packageSurface', new InstancedBufferAttribute(new Float32Array(layout.instanceToPlacementId.map((id) =>
-      ({ carton: 0, pallet: 1, crate: 2 })[layout.placementById.get(id)!.packaging])), 1))
+      cargoSurfaceIndex(layout.placementById.get(id)!))), 1))
   }, [geometry, layout])
   const surface = useMemo(() => surfaceDetail ? createCargoSurface() : null, [surfaceDetail])
   useEffect(() => () => surface?.dispose(), [surface])
@@ -116,7 +117,7 @@ export function CargoInstances({
         onPointerOver={handleOver}
         onPointerOut={handleOut}
       >
-        {surfaceDetail ? <meshStandardMaterial map={surface} onBeforeCompile={applyCargoSurface} customProgramCacheKey={() => 'cargo-surface-atlas-v1'} roughness={0.86} metalness={0.02} /> : <meshLambertMaterial />}
+        {surfaceDetail ? <meshStandardMaterial map={surface} onBeforeCompile={applyCargoSurface} customProgramCacheKey={() => CARGO_SURFACE_KEY} roughness={0.86} metalness={0.02} /> : <meshLambertMaterial />}
       </instancedMesh>
       <instancedMesh
         name="cargo-dim"

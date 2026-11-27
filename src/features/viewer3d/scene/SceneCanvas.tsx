@@ -20,6 +20,8 @@ import { ObstacleCallout } from './ObstacleCallout'
 import { ObstacleDescriptions } from '../overlays/ObstacleLegend'
 import { Container } from './Container'
 import { TruckCab } from './TruckCab'
+import { GroundPlane } from './GroundPlane'
+import { groundFootprintOf } from './ground-footprint'
 import { sceneMaterials } from './materials'
 import { SceneLighting } from './SceneLighting'
 import { PerfProbe, type PerfSample } from './PerfProbe'
@@ -166,6 +168,8 @@ export function SceneCanvas({
   const vehicleParts = <>
     <Container vehicle={model.vehicle} materials={materials} detail={flags.decoration} reducedMotion={flags.reducedMotion}
       doorOpening={specView} edgeOpacity={specView ? 0.6 : undefined} doorsClosed={doorsClosed} />
+    {/* Mặt đất + bóng tiếp xúc khi có xe; trang giới thiệu có sân kho riêng */}
+    {decoration && experience !== 'landing' ? <GroundPlane footprint={groundFootprintOf(model.vehicle)} contact={flags.shadows ? 'soft' : 'full'} /> : null}
     {decoration ? <TruckCab vehicle={model.vehicle} materials={materials} shadows={flags.shadows} detail={flags.vehicleDetail} /> : null}
     <CargoInstances placements={placements} colorMode={colorMode} colorContext={colorContext} sliceCm={sliceCm}
       step={step} selectedId={selected?.id ?? null} onSelect={handleSelect} onFocus={onFocus} outlines={flags.outlines} outlineColor={materials.outline}
