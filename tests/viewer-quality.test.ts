@@ -2,6 +2,7 @@ import { expect, test } from 'vitest'
 import {
   createQualityPolicy, observeQuality, QUALITY_COOLDOWN_MS, QUALITY_MAX_FAILED_TRIALS, QUALITY_REST_RETRY_MS, type QualityPolicy,
 } from '@/features/viewer3d/quality-policy'
+import type { QualityTier } from '@/features/viewer3d/usePerformanceFlags'
 import { motionDprOf, nextDprPhase, REST_DPR_MAX, restDprOf, targetDprOf } from '@/features/viewer3d/scene/rest-dpr'
 
 const IDLE = { frameTimeMs: null, idle: true } as const
@@ -99,4 +100,52 @@ test('only a continuous frame sequence leaves the sharp resting state', () => {
   expect(nextDprPhase('moving', { kind: 'frame', requestsNext: false })).toBe('moving')
   expect(targetDprOf('resting', [0.5, 0.5], 2)).toBe(1.5)
   expect(targetDprOf('moving', [0.5, 0.5], 2)).toBe(0.5)
+})
+
+/**
+ * Chuyển động liên tục (phát lại, xoay lâu) trên một máy có thời gian khung cố định theo tier: mẫu mỗi 500 ms, 2 s đầu sau mỗi lần đổi
+ * tier là mẫu `settling` như `PerfProbe` (`SETTLE_MS`). Trả thời gian đứng ở từng tier và số lần đổi tier.
+ */
+function simulateMotion(start: QualityTier, frameMs: Record<QualityTier, number>, durationMs: number) {
+  let q = createQualityPolicy(start)
+  let settleUntil = 2000
+  const timeAt: Record<QualityTier, number> = { high: 0, balanced: 0, low: 0 }
+  let switches = 0
+  for (let t = 500; t <= durationMs; t += 500) {
+    timeAt[q.tier] += 500
+    const before = q.tier
+    q = observeQuality(q, { frameTimeMs: frameMs[q.tier], idle: false, settling: t < settleUntil }, t)
+    if (q.tier !== before) { switches += 1; settleUntil = t + 2000 }
+  }
+  return { q, timeAt, switches }
+}
+
+test('on a 60 Hz screen, a machine holding 60 fps at balanced but 30 fps at high does not swing back to high every cooldown', () => {
+  // vsync 60 Hz: khung 16,7 ms ở balanced (nhanh), rơi xuống 33,3 ms ở high (chậm)
+  const { q, timeAt, switches } = simulateMotion('high', { high: 1000 / 30, balanced: 1000 / 60, low: 1000 / 60 }, 180_000)
+  expect(q.tier).toBe('balanced')
+  // Mỗi lần thử lại high hỏng ngay sau quãng ổn định + SLOW_RUN mẫu chậm, tối đa QUALITY_MAX_FAILED_TRIALS lần
+  expect(q.failedTrials.high).toBe(QUALITY_MAX_FAILED_TRIALS)
+  expect(switches).toBe(1 + 2 * QUALITY_MAX_FAILED_TRIALS)
+  expect(timeAt.high, 'seconds spent at 30 fps').toBeLessThanOrEqual(3500 + QUALITY_MAX_FAILED_TRIALS * 4000)
+})
+
+test('a climb during motion that holds up is confirmed like a rest retry', () => {
+  // Máy vừa được cắm sạc: balanced và high đều nhanh — lên high, đứng được, không tính là thử hỏng
+  const { q, switches } = simulateMotion('balanced', { high: 12, balanced: 8, low: 8 }, 60_000)
+  expect(q).toMatchObject({ tier: 'high', trial: null })
+  expect(switches).toBe(1)
+  expect(q.failedTrials.high ?? 0).toBe(0)
+})
+
+test('thresholds are absolute frame times: 60, 144 and 165 Hz screens holding their refresh rate keep high', () => {
+  for (const hz of [60, 144, 165]) {
+    const refresh = simulateMotion('high', { high: 1000 / hz, balanced: 1000 / hz, low: 1000 / hz }, 60_000)
+    expect(refresh.q.tier, `${hz} Hz`).toBe('high')
+    expect(refresh.switches, `${hz} Hz`).toBe(0)
+    // Nửa tần số quét (72 / 82 fps ở 144 / 165 Hz) vẫn là nhanh; chỉ dưới ~36 fps mới là chậm
+    if (hz === 60) continue // 30 fps ở 60 Hz là chậm thật
+    const half = simulateMotion('high', { high: 2000 / hz, balanced: 2000 / hz, low: 2000 / hz }, 60_000)
+    expect(half.q.tier, `${hz} Hz at half rate`).toBe('high')
+  }
 })

@@ -2,14 +2,21 @@ import { addAfterEffect, useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useRef } from 'react'
 import type { QualityTier } from '../usePerformanceFlags'
 import { isSceneIdle } from './perf-idle'
+import { shadowPassOf } from './ShadowOnDemand'
 
 export type PerfSample = {
   /** Chỉ đo chuỗi frame liên tục; null khi scene nghỉ hoặc chưa đủ mẫu. */
   fps: number | null
   /** Khoảng cách giữa các frame, không phải GPU timer query. */
   frameTimeMs: number | null
+  /**
+   * Chi phí của khung vừa vẽ **kể cả lượt bóng**: tier có bóng chỉ vẽ lại shadow map khi vật đổ bóng đổi (`ShadowOnDemand`), khung dùng
+   * lại bản đồ bóng cũ vẫn cộng chi phí của lượt bóng gần nhất — số không nhảy theo khung và vẫn là khung đắt nhất cho trần draw call.
+   */
   drawCalls: number
   triangles: number
+  /** Số lần shadow map đã vẽ lại từ khi bật bóng; 0 khi tier không có bóng. */
+  shadowPasses: number
   placementCount: number
   dpr: number
   qualityTier: QualityTier
@@ -34,11 +41,16 @@ type Counters = {
   activeElapsedMs: number
   drawCalls: number
   triangles: number
+  shadowPasses: number
   /** Có khung hình trong quãng ổn định kể từ lần gửi mẫu trước. */
   settling: boolean
   /** DPR của khung trước: khung đầu sau khi đổi DPR (khung nét lúc nghỉ, về DPR của tier) dựng lại bộ đệm, không tính vào FPS. */
   lastDpr: number
+  /** Tab vừa ẩn hoặc vừa hiện lại: khoảng tới khung trước là thời gian tab ẩn, không phải thời gian vẽ. */
+  resumed: boolean
 }
+
+const tabHidden = () => document.visibilityState === 'hidden'
 
 /**
  * Debug thuần quan sát: không invalidate và không thêm frame vào demand loop.
@@ -71,14 +83,31 @@ export function PerfProbe({
     activeElapsedMs: 0,
     drawCalls: 0,
     triangles: 0,
+    shadowPasses: 0,
     settling: true,
     lastDpr: 0,
+    resumed: false,
   })
   const settleUntil = useRef(0)
   useEffect(() => {
     settleUntil.current = performance.now() + SETTLE_MS
     counters.current.settling = true
   }, [scene, qualityTier])
+
+  // Tab ẩn thì trình duyệt ngưng (hoặc thưa) khung hình: bỏ mẫu đang tích, không đếm khoảng hở, hiện lại thì bắt đầu quãng ổn định
+  useEffect(() => {
+    const handleVisibility = () => {
+      const current = counters.current
+      current.activeIntervals = 0
+      current.activeElapsedMs = 0
+      current.resumed = true
+      if (tabHidden()) return
+      settleUntil.current = performance.now() + SETTLE_MS
+      current.settling = true
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
+  }, [])
 
   useFrame(() => {
     frameStartedAt.current = performance.now()
@@ -94,25 +123,31 @@ export function PerfProbe({
       const timestamp = frameStartedAt.current
       const interval = timestamp - current.lastFrameAt
       const dpr = state.viewport.dpr
-      // Không tính quãng scene nghỉ giữa hai click là frame chậm, cũng không tính khung vừa đổi DPR (dựng lại bộ đệm).
-      if (current.requestedNextFrame && interval > 0 && dpr === current.lastDpr) {
+      const hidden = tabHidden()
+      // Không tính quãng scene nghỉ giữa hai click là frame chậm, cũng không tính khung vừa đổi DPR (dựng lại bộ đệm) hay quãng tab ẩn.
+      if (current.requestedNextFrame && interval > 0 && dpr === current.lastDpr && !hidden && !current.resumed) {
         current.activeIntervals += 1
         current.activeElapsedMs += interval
       }
       if (timestamp < settleUntil.current) current.settling = true
       current.lastDpr = dpr
+      current.resumed = hidden
       current.renderedFrames += 1
       current.lastFrameAt = timestamp
       current.requestedNextFrame = state.frameloop === 'always' || state.internal.frames > 0
-      current.drawCalls = state.gl.info.render.calls
-      current.triangles = state.gl.info.render.triangles
+      const { calls, triangles, frame } = state.gl.info.render
+      const shadow = shadowPassOf(state.gl)
+      const reused = shadow && shadow.frame !== frame ? shadow : null
+      current.drawCalls = calls + (reused?.calls ?? 0)
+      current.triangles = triangles + (reused?.triangles ?? 0)
+      current.shadowPasses = shadow?.passes ?? 0
     })
 
     let publishedFrames = -1
     let publishedIdle = false
     const timer = window.setInterval(() => {
       const current = counters.current
-      if (current.renderedFrames === 0) return
+      if (current.renderedFrames === 0 || tabHidden()) return
       // `requestedNextFrame` chốt lúc frame cuối ghi xong; frame được xin sau đó (react-spring, con trỏ, effect) chỉ thấy ở đây
       const state = get()
       const pendingFrames = state.frameloop === 'always' ? 1 : state.internal.frames
@@ -132,6 +167,7 @@ export function PerfProbe({
         frameTimeMs,
         drawCalls: current.drawCalls,
         triangles: current.triangles,
+        shadowPasses: current.shadowPasses,
         placementCount,
         dpr: state.gl.getPixelRatio(),
         qualityTier,
