@@ -1,6 +1,7 @@
 import type { DeadlineStatus } from '@/domain/routing'
 import { isoFromBackend } from '@/lib/backend-time'
 import { LOCATION_SOURCES } from '@/lib/mock-db'
+import { parseVehicleBodyStyle } from '@/types/vehicle-body-style'
 import type { DriverLoadedPlan, LoadedPlacement } from './driver-server-scene'
 import type { ServerTripStop, ServerTripStops } from './server-stop-timing'
 
@@ -21,6 +22,8 @@ export type DriverLoadPlanDto = {
   readonly doorWidth: number | null
   readonly doorHeight: number | null
   readonly maxPayloadKg: number | null
+  /** Kiểu thân xe của loại đang gắn (tên enum); `null` hay vắng (máy chủ cũ) là tự chọn theo kích thước. */
+  readonly bodyStyle?: string | null
   readonly stops: readonly { readonly stopId: number | null; readonly stopSequence: number | null; readonly stopName: string | null }[] | null
   readonly placements: readonly {
     readonly placementId: number | null
@@ -75,6 +78,7 @@ export function loadedPlanOf(dto: DriverLoadPlanDto): DriverLoadedPlan {
     vehicleName: dto.licensePlate ?? '',
     box,
     maxPayloadKg: dto.maxPayloadKg,
+    bodyStyle: parseVehicleBodyStyle(dto.bodyStyle),
     stops: (dto.stops ?? []).flatMap((stop) => (stop.stopSequence === null ? [] : [{ sequence: stop.stopSequence, name: stop.stopName ?? '' }])),
     placements: (dto.placements ?? []).flatMap(placementOf),
   }

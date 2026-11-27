@@ -59,3 +59,26 @@ test('lệch trọng tâm ngang và tải trọng sàn: gửi khi có, null khi 
   expect(created).toMatchObject({ maxCogOffsetRatioY: 0.125, floorLoadCapacityKgM2: 1500 })
   expect(updated).toMatchObject({ maxCogOffsetRatioY: null, floorLoadCapacityKgM2: null })
 })
+
+test('kiểu thân xe: thêm gửi kiểu đã chọn, sửa về "Tự chọn" gửi clearBodyStyle; giá trị lạ hay máy chủ cũ đọc là tự chọn', async () => {
+  const { calls } = stubBackend({
+    'POST /api/vehicle-types': { body: envelope({ ...SAVED, bodyStyle: 'TRUCK_REEFER' }) },
+    'PUT /api/vehicle-types/7': { body: envelope({ ...SAVED, bodyStyle: 'BUS' }) },
+    'PUT /api/vehicle-types/8': { body: envelope({ ...SAVED, id: 8, bodyStyle: 'VAN_MID' }) },
+  })
+  const created = await saveVehicleType({ ...INPUT, bodyStyle: 'TRUCK_REEFER' })
+  const cleared = await saveVehicleType(INPUT, '7')
+  await saveVehicleType({ ...INPUT, bodyStyle: 'VAN_MID' }, '8')
+  await saveVehicleType(INPUT)
+
+  expect(calls[0]?.body).toMatchObject({ bodyStyle: 'TRUCK_REEFER' })
+  expect(calls[0]?.body).not.toHaveProperty('clearBodyStyle')
+  expect(calls[1]?.body).toMatchObject({ clearBodyStyle: true })
+  expect(calls[1]?.body).not.toHaveProperty('bodyStyle')
+  expect(calls[2]?.body).toMatchObject({ bodyStyle: 'VAN_MID' })
+  expect(calls[2]?.body).not.toHaveProperty('clearBodyStyle')
+  expect(calls[3]?.body).not.toHaveProperty('bodyStyle')
+  expect(calls[3]?.body).not.toHaveProperty('clearBodyStyle')
+  expect(created.bodyStyle).toBe('TRUCK_REEFER')
+  expect(cleared).not.toHaveProperty('bodyStyle')
+})

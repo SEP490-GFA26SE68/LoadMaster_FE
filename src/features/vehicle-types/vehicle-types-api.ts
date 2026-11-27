@@ -9,10 +9,13 @@ import type { VehicleBodyStyle } from '@/types/vehicle-body-style'
  *
  * | Hàm | Endpoint |
  * |---|---|
- * | `fetchVehicleBodyStyle` | chưa có ở BE |
+ * | `fetchVehicleBodyStyle` | chỉ kho mẫu |
  */
 
-/** Máy chủ chưa có trường kiểu thân xe: loại xe của máy chủ không bao giờ có kiểu thân. */
+/**
+ * Đội xe nối máy chủ thì loại xe không nằm ở kho mẫu: Planner, kho, tài xế bản máy chủ đọc `bodyStyle` ngay trong cấu hình xe, phiên xếp,
+ * phương án của tài xế, không đi qua hàm này.
+ */
 const FLEET_ON_BACKEND = usesBackend('fleet')
 
 export type VehicleRef = { readonly id: string; readonly name: string }
@@ -69,7 +72,7 @@ export function setVehicleType(vehicleId: string, vehicleTypeId: string | null):
  * Planner, kho, tài xế thấy ngay. `null` khi xe chưa gắn loại, loại để tự chọn, xe không thuộc công ty của phiên, hoặc đội xe nối máy
  * chủ. Kho lọc theo công ty; mọi vai trò công ty đọc được hai danh sách này.
  */
-// chưa có ở BE
+// chỉ kho mẫu
 export async function fetchVehicleBodyStyle(vehicleId: string): Promise<VehicleBodyStyle | null> {
   if (FLEET_ON_BACKEND) return null
   const db = getMockDb()

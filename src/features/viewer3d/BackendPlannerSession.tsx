@@ -106,7 +106,7 @@ function BackendPlannerSession({ tripCode, source }: { tripCode: string; source:
   const can = useCan()
   const navigate = useNavigate()
   // Query giữ nguyên tham chiếu khi dữ liệu đọc lại không đổi (structural sharing): scene chỉ dựng lại khi máy chủ trả khác đi
-  const { plan, planVehicle, stops } = source
+  const { plan, planVehicle, stops, vehicleBodyStyle } = source
   // Phương án tính cho xe trước khi đổi xe: máy chủ biết xe đó thì vẽ trong chính xe đó; không biết thì không đặt kiện nào vào thùng xe
   // hiện tại khi chúng không vừa (`planShownOn`)
   const vehicle = planVehicle ?? source.vehicle
@@ -211,19 +211,20 @@ function BackendPlannerSession({ tripCode, source }: { tripCode: string; source:
       <div className={`relative flex min-h-0 flex-1 ${editing ? 'flex-col xl:flex-row' : ''}`}>
         <div className="relative min-h-48 min-w-0 flex-1 overflow-hidden bg-canvas-1">
           <Suspense fallback={<ViewerSkeleton packageCount={model.placements.length} stopCount={model.stops.length} />}>
-            <LoadPlanViewer state={state} flags={flags} editor={editor} operations={operations} onPerfSample={showPerf ? perfStore.publish : undefined} />
+            <LoadPlanViewer state={state} flags={flags} editor={editor} operations={operations} onPerfSample={showPerf ? perfStore.publish : undefined}
+              vehicleBodyStyle={vehicleBodyStyle} />
           </Suspense>
           {editing ? null : <SceneHud state={state} operations={operations} onInspect={setInspectorTab}
             onChangeVehicle={canChangeVehicle ? vehicleDialog.open : undefined}
             onRerunPinned={handleRerunPinned} rerunBlockedReason={pinBlocked}
-            onResetFocus={handleResetFocus} onFocus={handleFocus} onEdit={handleEdit} spin={spin} assistant={assistant} />}
+            onResetFocus={handleResetFocus} onFocus={handleFocus} onEdit={handleEdit} spin={spin} assistant={assistant} vehicleBodyStyle={vehicleBodyStyle} />}
           {debugOverlay}
           {editing && state.selected ? <EditorGestureHud placement={state.selected} editor={editor} /> : null}
         </div>
         {editing ? <EditorPanel state={state} editor={editor} /> : (
           <SceneInspector state={state} operations={operations} tripId={tripCode} colorContext={colorContext} issues={editApproval?.errors ?? NO_ISSUES} pin={pin}
             onEdit={handleEdit} onFocus={editor.focusSelected} onSelect={handleSelect}
-            tab={inspectorTab} onTab={setInspectorTab} onClose={handleCloseInspector} listSection={state.leftTab} />
+            tab={inspectorTab} onTab={setInspectorTab} onClose={handleCloseInspector} listSection={state.leftTab} vehicleBodyStyle={vehicleBodyStyle} />
         )}
       </div>
       {editing ? null : <PlannerTimeline state={state} operations={operations} />}

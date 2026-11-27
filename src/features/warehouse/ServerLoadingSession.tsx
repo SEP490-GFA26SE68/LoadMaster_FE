@@ -202,7 +202,8 @@ function SessionView({ tripId, session }: { tripId: string; session: Session }) 
                   </div>
                 }
               >
-                <PositionViewer model={scene.model} current={{ id: sceneId, step: current.sequence, stop: current.stopSequence ?? 0 }} />
+                <PositionViewer model={scene.model} current={{ id: sceneId, step: current.sequence, stop: current.stopSequence ?? 0 }}
+                  vehicleBodyStyle={scene.vehicleBodyStyle} />
               </Suspense>
             </section>
           ) : null}

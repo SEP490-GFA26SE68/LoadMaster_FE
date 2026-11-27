@@ -16,6 +16,7 @@ import { fetchTripLoadPlans } from '@/features/optimization/load-plans-backend-a
 import { fetchBackendTripDetail, resolveBackendTripId, type TripDetailApiResponse } from '@/features/trips/trips-api'
 import { api } from '@/lib/api-client'
 import { isoFromBackend } from '@/lib/backend-time'
+import { parseVehicleBodyStyle, type VehicleBodyStyle } from '@/types/vehicle-body-style'
 import type { BackendSceneStop } from './backend-plan-scene'
 
 export type BackendPlanSource = {
@@ -30,6 +31,11 @@ export type BackendPlanSource = {
    * xe, máy chủ không biết xe của phương án, hoặc đọc xe đó không được — Planner dùng lối dự phòng `planShownOn`.
    */
   readonly planVehicle: VehicleConfig | null
+  /**
+   * Kiểu thân của loại đang gắn với xe Planner vẽ (`planVehicle` khi có, không thì xe hiện tại), đọc trong chính cấu hình xe của máy chủ;
+   * vắng là khung 3D tự chọn dáng theo kích thước. Chỉ đổi hình xe: không vào `vehicle`, request tối ưu hay luật lỗi thời.
+   */
+  readonly vehicleBodyStyle: VehicleBodyStyle | undefined
   readonly stops: readonly BackendSceneStop[]
   /** Phương án đang xem; `null` khi chuyến chưa có phương án nào (hoặc mã trên URL không thuộc chuyến). */
   readonly plan: LoadPlan | null
@@ -50,12 +56,14 @@ export async function fetchBackendPlanSource(tripCode: string, planId?: string):
   const wanted = planId ?? plans.approvedPlanId
   const plan = (wanted === null ? undefined : plans.plans.find((item) => item.id === wanted)) ?? (planId ? undefined : plans.plans.at(-1))
   const vehicle = configVehicleOf(config)
+  const planConfig = plan ? await planVehicleConfigOf(plan, vehicle) : null
   return {
     tripId,
     tripName: detail.trip.tripName,
     status: detail.trip.status,
     vehicle,
-    planVehicle: plan ? await planVehicleOf(plan, vehicle) : null,
+    planVehicle: planConfig ? configVehicleOf(planConfig) : null,
+    vehicleBodyStyle: parseVehicleBodyStyle((planConfig ?? config).bodyStyle),
     stops: detail.stops.map((stop) => ({
       id: String(stop.id),
       sequence: stop.stopSequence,
@@ -67,11 +75,11 @@ export async function fetchBackendPlanSource(tripCode: string, planId?: string):
   }
 }
 
-/** Xe của phương án khi khác xe hiện tại; đọc lỗi (xe đã xoá, mất quyền, mạng) thì `null` để Planner dùng lối dự phòng. */
-async function planVehicleOf(plan: LoadPlan, current: VehicleConfig): Promise<VehicleConfig | null> {
+/** Cấu hình xe của phương án khi khác xe hiện tại; đọc lỗi (xe đã xoá, mất quyền, mạng) thì `null` để Planner dùng lối dự phòng. */
+async function planVehicleConfigOf(plan: LoadPlan, current: VehicleConfig): Promise<BackendVehicleConfig | null> {
   if (!plan.vehicleId || plan.vehicleId === current.id) return null
   try {
-    return configVehicleOf(await api().get<BackendVehicleConfig>(`/api/vehicles/${encodeURIComponent(plan.vehicleId)}/config`))
+    return await api().get<BackendVehicleConfig>(`/api/vehicles/${encodeURIComponent(plan.vehicleId)}/config`)
   } catch {
     return null
   }

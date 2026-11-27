@@ -4,7 +4,9 @@ import { useEffect } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader } from '@/components/ui/Dialog'
 import { Input } from '@/components/ui/Input'
+import { SelectField } from '@/components/ui/SelectField'
 import { useT, type MessageKey } from '@/lib/i18n'
+import { parseVehicleBodyStyle } from '@/types/vehicle-body-style'
 import {
   useFieldArray,
   useForm,
@@ -24,6 +26,7 @@ import type {
   VehicleTypeInput,
 } from './vehicle-types-api'
 import { VehiclePhysicalLimitsFields } from './VehiclePhysicalLimitsFields'
+import { BODY_STYLE_AUTO, BODY_STYLE_CHOICES } from '../vehicle-type-form'
 import {
   CANNOT_CLEAR,
   clearedPhysicalLimits,
@@ -149,6 +152,11 @@ export function VehicleTypeDialog({ open, onOpenChange, type, pending, onSubmit 
   const nameError = errors.name?.message === 'vehicleTypes.form.errors.nameTooLong'
     ? t('vehicleTypes.form.errors.nameTooLong', { max: NAME_MAX })
     : errors.name ? t('vehicleTypes.form.errors.nameRequired') : undefined
+  // Cùng lựa chọn và nhãn với form kho mẫu; kiểu đang chọn vẽ ngay ở xem trước 3D
+  const bodyStyleOptions = BODY_STYLE_CHOICES.map((choice) => ({
+    value: choice,
+    label: choice === BODY_STYLE_AUTO ? t('vehicleTypes.form.bodyStyleAuto') : t(`common.vehicleBodyStyles.${choice}`),
+  }))
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -267,6 +275,14 @@ export function VehicleTypeDialog({ open, onOpenChange, type, pending, onSubmit 
                   {t('vehicleTypes.form.hazardousCapable')}
                 </span>
               </label>
+              <SelectField
+                control={form.control}
+                name="bodyStyle"
+                label={t('vehicleTypes.form.bodyStyle')}
+                options={bodyStyleOptions}
+                hint={t('vehicleTypes.form.bodyStyleHint')}
+                className="max-w-80"
+              />
               <div className="border-t border-border pt-4">
 
                 <div className="mb-3 flex items-center justify-between">
@@ -494,6 +510,7 @@ export function VehicleTypeDialog({ open, onOpenChange, type, pending, onSubmit 
                           toolbarHost={toolbarHost}
                           highlightedObstacleId={highlightedObstacleId}
                           onObstacleSelect={setHighlightedObstacleId}
+                          vehicleBodyStyle={parseVehicleBodyStyle(values.bodyStyle)}
                         />
                       </Suspense>
                     ) : (

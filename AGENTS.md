@@ -1679,7 +1679,7 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   `ServerStopEta`, danh sách điểm của thẻ chuyến Đang vận chuyển / Xếp xong `ServerMyTripStops`) đọc `GET /api/driver/trips/{id}/stops`
   (`serverStopTiming`: đã đến → giờ đến thật, kịp / trễ hạn; chưa đến → giờ đến theo GPS, không có GPS thì giờ kế hoạch), đọc lại theo
   `refreshMs`, **không** MOCK RESULT. "Xem vị trí hàng" vẽ phương án kho đã xếp `GET /api/driver/trips/{id}/load-plan` (`driverServerScene`: thứ
-  tự dỡ của máy chủ, kiện đã dỡ mờ như đã gỡ); thiếu lòng thùng, kiện thiếu điểm giao hay chưa có phương án đã xếp (`NO_LOADED_PLAN`) thì
+  tự dỡ của máy chủ, kiện đã dỡ mờ như đã gỡ; kiểu thân xe là `bodyStyle` của chính phương án đó); thiếu lòng thùng, kiện thiếu điểm giao hay chưa có phương án đã xếp (`NO_LOADED_PLAN`) thì
   không có nút. Hoàn tất điểm không đọc lại phương án đó (kiện trên xe chỉ đổi khi dỡ; chuyến vừa giao xong thì máy chủ không còn trả nó). "Sự cố trên đường" của cả chuyến: hàng đầu của tờ "Thêm" (`StopMoreActions`), `ReportExceptionDialog touch serverRecorded` gửi
   `POST /api/driver/trips/{id}/exceptions` theo mã số chuyến (tiêu đề ghi mã chuyến; 400 là chuyến không còn đang vận chuyển). Điều phối viên
   duyệt / từ chối xác nhận tay ở thẻ `ManualConfirmCard server` của Chi tiết chuyến máy chủ và của Giám sát (`manual-confirm-backend-api.ts`:
@@ -1738,7 +1738,8 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   `runAlgorithm`); tên đọc được ở `server-algorithms.ts` (nhánh `serverPlans.algorithms`, mã lạ hiện nguyên mã, không "(mock)") và chỉ hiện
   ở thẻ lần chạy + từng thẻ của So sánh, bảng lần chạy (`showAlgorithms`) và hộp chạy của Thiết lập tối ưu. Planner dựng scene từ `GET /api/trips/{id}/load-plans` (`backend-plan-scene.ts`, không MOCK RESULT,
   số máy chủ không trả thì bỏ: tải trục tính ở FE, thời gian chạy của bản chỉnh tay, kích thước kiện chưa xếp khi máy chủ không
-  trả; mức hạn từng điểm đọc `plannedArrival` của tuyến máy chủ, không MOCK RESULT) và Duyệt bằng
+  trả; mức hạn từng điểm đọc `plannedArrival` của tuyến máy chủ, không MOCK RESULT; kiểu thân xe là `bodyStyle` của cấu hình xe đã đọc — xe
+  của phương án khi khác xe hiện tại, không gọi thêm) và Duyệt bằng
   `POST /api/load-plans/{id}/approve` (điều phối viên, chuyến Đã lập kế hoạch). Phương án máy chủ đánh dấu `stale` (đổi xe, đưa / gỡ yêu cầu
   giao) có thanh lỗi thời, nút Duyệt mờ kèm lý do, không chỉnh tay; máy chủ từ chối `PLAN_STALE`. Phương án mang xe của lần chạy
   (`vehicleId`): khác xe hiện tại của chuyến (đã đổi xe) thì Planner đọc `GET /api/vehicles/{id}/config` và vẽ phương án trong chính xe đó,
@@ -1856,7 +1857,7 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   và không manual pending, giữ Trip LOADING cho Driver xuất phát. Đọc/chọn kiện 3D không gửi confirm. Điều phối viên quyết báo thiếu ở thẻ "Kiện kho báo thiếu" của Chi tiết chuyến máy chủ (`MissingPackagesCard server`,
   `shortage-backend-api.ts`: `GET /api/trips/{id}/staging-shortages`, `POST …/{shortageId}/resolve` — tìm tiếp, hoặc bỏ kiện: chuyến về Đã lập kế
   hoạch, phương án lỗi thời) và duyệt / từ chối xác nhận tay của kho ở cùng thẻ `ManualConfirmCard` với tài xế (`step` `STAGING` / `LOADING`).
-  Khung 3D vị trí kiện dựng từ phiên (`server-session-scene.ts`), chỉ khi có lòng thùng và mọi kiện có điểm giao; khối lượng kiện
+  Khung 3D vị trí kiện dựng từ phiên (`server-session-scene.ts`; kiểu thân xe là `bodyStyle` của phiên), chỉ khi có lòng thùng và mọi kiện có điểm giao; khối lượng kiện
   (`placements[].weightKg`) và tải trọng xe (`maxPayloadKg`) vào khung, thẻ kiện cần xếp hiện khối lượng như kho mẫu (không có tổng tải; máy chủ
   không trả thì bỏ dòng). Chuông `variant="touch"` chỉ khi `notifications` nối (`WAREHOUSE_CAPABILITIES.notifications`).
 - **Chuông thông báo** (`notifications`; `notifications-api.ts`, DTO ở `notifications-dto.ts`, dòng ở `server-notifications.ts`): máy chủ dựng
@@ -1901,7 +1902,9 @@ App nối backend **từng phần**, mặc định vẫn chạy hoàn toàn trê
   đọc xe máy chủ qua `fetchVehicleRefs`. Trục trước / sau chỉ có khi cấu hình trả đủ vị trí và tải rỗng; loại chưa khai cửa thì cửa là mặt
   cắt lòng thùng (`doorUnknown`). Form loại xe máy chủ có hai ô tuỳ chọn (`VehiclePhysicalLimitsFields`): lệch trọng tâm ngang tối đa
   (`maxCogOffsetRatioY`, nhập %, trong (0, 50]) và tải trọng sàn (`floorLoadCapacityKgM2`, kg/m²); để trống là chưa khai, không tự điền; máy
-  chủ bỏ qua `null` khi sửa nên xoá giá trị đã lưu bị chặn kèm lý do (`clearedPhysicalLimits`).
+  chủ bỏ qua `null` khi sửa nên xoá giá trị đã lưu bị chặn kèm lý do (`clearedPhysicalLimits`). Ô "Kiểu thân xe" như form kho mẫu: loại xe
+  đọc ghi `bodyStyle` (tên enum; lạ hay vắng là tự chọn, `parseVehicleBodyStyle`); máy chủ giữ kiểu đã lưu khi vắng nên sửa về "Tự chọn" gửi
+  `clearBodyStyle: true`; kiểu lạ là 400 `VEHICLE_BODY_STYLE_INVALID`; đổi kiểu không làm phương án nào lỗi thời.
 
 ### Lớp dữ liệu
 
@@ -2072,12 +2075,13 @@ như khi sửa xe. **Kiểu thân xe** `VehicleType.bodyStyle?` (`VEHICLE_BODY_S
 kiểu khung 3D đang vẽ được; nhãn `common.vehicleBodyStyles`) **chỉ đổi hình xe ở khung 3D**: kho kiểm giá trị (`VEHICLE_TYPE_INVALID`
 `{ field: 'bodyStyle' }`), vắng là xoá; không ghép vào xe, không vào request tối ưu hay revision, `sameLimits` không xét nên đổi kiểu không
 làm phương án nào lỗi thời. Form loại xe kho mẫu có ô chọn "Kiểu thân xe" mở ở "Tự chọn theo kích thước" (giá trị canh `AUTO` của
-`vehicle-type-form.ts`, không gửi kiểu nào); form máy chủ chưa có ô (máy chủ chưa có trường). Khung 3D đọc kiểu **lúc vẽ**, theo loại đang
+`vehicle-type-form.ts`, không gửi kiểu nào); form máy chủ có cùng ô (mục 9 "Đội xe, loại xe"). Khung 3D đọc kiểu **lúc vẽ**, theo loại đang
 gắn với chính xe đang vẽ: `fetchVehicleBodyStyle(mã xe)` (`vehicle-types-api.ts`, ghép `listVehicleTypes` với `listVehicleTypeAssignments` —
 mọi vai trò công ty đọc được) → `useVehicleBodyStyle` (khoá `['vehicle-types', 'body-style', mã xe]`, dưới `['vehicle-types']` nên lưu hay
 gắn loại xe làm khung đang mở vẽ lại) → prop `vehicleBodyStyle` của `SceneCanvas`; Planner và phiên xếp ở kho chờ lần đọc đầu rồi mới dựng
-khung 3D (`settled`) để xe không đổi dáng ngay sau khi hiện; tài xế đọc khi mở màn điểm giao (khung chỉ dựng khi bấm "Xem vị trí hàng"). Nối máy chủ (nhóm `fleet`, và mọi
-màn của máy chủ) là `undefined` — khung tự chọn dáng; form xe kho mẫu không có ô loại xe nên xem trước cũng `undefined`; trang giới thiệu
+khung 3D (`settled`) để xe không đổi dáng ngay sau khi hiện; tài xế đọc khi mở màn điểm giao (khung chỉ dựng khi bấm "Xem vị trí hàng"). Màn của máy chủ không
+qua hàm đó (`fetchVehicleBodyStyle` trả `null` khi nhóm `fleet` nối): Planner, kho, tài xế đọc `bodyStyle` ngay trong cấu hình xe, phiên
+xếp, phương án của tài xế (mục 9), vắng là khung tự chọn dáng; form xe kho mẫu không có ô loại xe nên xem trước cũng `undefined`; trang giới thiệu
 không truyền. Thẻ xe của Planner có dòng "Kiểu thân xe" chỉ khi loại xe đã khai (`vehicleFacts(xe, kiểu)`).
 Loại kiện (`PackageType`) có `maxStackWeightKg`, `rotationAllowed`, `fragile` — hình chiếu của `maxTopLoadKg` / `stackable`, `allowedOrientations`, `fragilityLevel`, kho ghi lại mỗi lần lưu (`backendLimitsOf`); chiều backend → Spec là `specFieldsOf`
 (`package-type-limits.ts`). Form loại kiện có công tắc "Cho phép xoay kiện": bật khi còn hơn một hướng đặt, tắt đưa hướng đặt về riêng `LWH`.
