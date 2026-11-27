@@ -37,6 +37,10 @@ export const common = {
     VAN_MINI_HOOD: 'Van mini mũi ngắn',
     VAN_MID: 'Van cỡ trung',
     VAN_LARGE: 'Van cỡ lớn',
+    TRUCK_BOX: 'Xe tải thùng kín',
+    TRUCK_CANVAS: 'Xe tải mui bạt',
+    TRUCK_FLATBED: 'Xe tải thùng lửng',
+    TRUCK_REEFER: 'Xe tải thùng đông lạnh',
   },
   /** Trạng thái kiện của kho kiện (`PackageStatus`, D-70, FE-3b-01), key trùng mã của kho. */
   packageStatuses: {

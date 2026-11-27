@@ -30,6 +30,10 @@ export const common = {
     VAN_MINI_HOOD: 'Mini van, short nose',
     VAN_MID: 'Mid-size van',
     VAN_LARGE: 'Large van',
+    TRUCK_BOX: 'Box truck',
+    TRUCK_CANVAS: 'Canvas-top truck',
+    TRUCK_FLATBED: 'Drop-side flatbed truck',
+    TRUCK_REEFER: 'Refrigerated truck',
   },
   packageStatuses: {
     IMPORTED: 'Imported',

@@ -1,5 +1,5 @@
 import type { VehicleConfig } from '@/domain/models'
-import type { VehicleBodyStyle } from '@/types/vehicle-body-style'
+import { isTruckBodyStyle, isVanBodyStyle, type TruckBodyStyle, type VehicleBodyStyle } from '@/types/vehicle-body-style'
 import { containerSize, toScene } from './units'
 import { vanShapeOf, type VanShape } from './van-shape'
 import { LIGHT_DUAL_MIN_PAYLOAD_KG, VEHICLE_PROFILES, vehicleClassOf, type VehicleClass, type VehicleProfile } from './vehicle-class'
@@ -60,6 +60,11 @@ export type TruckLayout = {
   readonly reefer: { readonly x: Range; readonly y: Range; readonly z: Range } | null
   /** Dáng van liền khối (`van-shape.ts`) khi hạng là van; `null` với xe tải */
   readonly van: VanShape | null
+  /**
+   * Kiểu thân của xe tải (`null` với van): kiểu khai ở loại xe, vắng thì thùng đông lạnh khi xe khai vật cản `COOLING_UNIT`, không
+   * thì thùng kín. Chỉ đổi hình — lòng thùng, ô cửa và mọi số vẫn theo `VehicleConfig`.
+   */
+  readonly body: TruckBodyStyle | null
 }
 
 export type TruckLayoutInput = Pick<VehicleConfig, 'innerLengthCm' | 'innerWidthCm' | 'innerHeightCm' | 'maxPayloadKg'>
@@ -103,8 +108,8 @@ function axlePositions(vehicle: TruckLayoutInput, p: VehicleProfile, length: num
 
 /**
  * Bố cục xe **minh hoạ** (không phải hình học trục có thẩm quyền, AGENTS mục 7) theo hạng `vehicleClassOf`: cabin, cỡ bánh, chiều cao
- * sàn, khung sườn. Van lấy mũi, cỡ bánh, sàn, trục minh hoạ từ dáng `vanShapeOf`; `bodyStyle` (kiểu thân khai ở loại xe) chọn dáng
- * và luôn là van, vắng thì hạng và dáng suy từ số. Trục lấy `vehicle.axles` khi có khai báo (`positionXCm` tính từ vách trước, âm là dưới cabin) — hạng chỉ đổi hình,
+ * sàn, khung sườn. Van lấy mũi, cỡ bánh, sàn, trục minh hoạ từ dáng `vanShapeOf`. `bodyStyle` (kiểu thân khai ở loại xe): kiểu van
+ * chọn dáng van; kiểu xe tải giữ hạng suy từ số (lòng thùng cỡ van thì vẽ hạng tải nhẹ) và chọn thân `body`; vắng thì suy từ số. Trục lấy `vehicle.axles` khi có khai báo (`positionXCm` tính từ vách trước, âm là dưới cabin) — hạng chỉ đổi hình,
  * không dời trục khai; không có thì vẽ số trục mặc định của hạng. Trục đầu tiên theo x là cầu dẫn hướng bánh đơn, các trục sau là cầu
  * chủ động (bánh đôi trừ van và tải nhẹ dưới `LIGHT_DUAL_MIN_PAYLOAD_KG`). Cabin dài ra khi cầu trước khai xa hơn mũi của hạng.
  *
@@ -114,9 +119,10 @@ function axlePositions(vehicle: TruckLayoutInput, p: VehicleProfile, length: num
  */
 export function truckLayout(vehicle: TruckLayoutInput, bodyStyle?: VehicleBodyStyle): TruckLayout {
   const { length, width, height } = containerSize(vehicle)
-  // Kiểu thân khai ở loại xe (cả bốn kiểu đều là van) thắng hạng suy từ số
-  const vehicleClass = bodyStyle ? 'van' : vehicleClassOf(vehicle)
-  const van = vehicleClass === 'van' ? vanShapeOf(vehicle, bodyStyle) : null
+  // Kiểu van khai ở loại xe thắng hạng suy từ số; kiểu xe tải giữ hạng suy từ số nhưng không bao giờ là van
+  const derived = vehicleClassOf(vehicle)
+  const vehicleClass: VehicleClass = isVanBodyStyle(bodyStyle) ? 'van' : isTruckBodyStyle(bodyStyle) && derived === 'van' ? 'light' : derived
+  const van = vehicleClass === 'van' ? vanShapeOf(vehicle, isVanBodyStyle(bodyStyle) ? bodyStyle : undefined) : null
   const p = van ? { ...VEHICLE_PROFILES.van, floorHeight: van.floorHeight, wheelRadius: van.wheelRadius, tireWidth: van.tireWidth,
     cabLength: van.back - van.front, cabTop: van.roofY } : VEHICLE_PROFILES[vehicleClass]
   const groundY = -p.floorHeight, wheelRadius = p.wheelRadius, wheelY = groundY + wheelRadius, tire = p.tireWidth
@@ -145,6 +151,7 @@ export function truckLayout(vehicle: TruckLayoutInput, bodyStyle?: VehicleBodySt
   const railHalf = Math.max(0.2, Math.min(0.45, width / 2 - innerTyre - 0.08))
   const railH = p.railHeight || 0.1
   const cooling = vehicle.obstacles?.some((obstacle) => obstacle.type === 'COOLING_UNIT') ?? false
+  const body: TruckBodyStyle | null = van ? null : isTruckBodyStyle(bodyStyle) ? bodyStyle : cooling ? 'TRUCK_REEFER' : 'TRUCK_BOX'
   const reeferTop = height - 0.06, reeferBottom = Math.max(cab.topY + 0.08, reeferTop - 0.6)
   const reeferWidth = Math.min(width - 0.3, 1.6)
 
@@ -175,6 +182,7 @@ export function truckLayout(vehicle: TruckLayoutInput, bodyStyle?: VehicleBodySt
       ? { x: [-0.3, -0.02], y: [reeferBottom, reeferTop], z: [(width - reeferWidth) / 2, (width + reeferWidth) / 2] }
       : null,
     van,
+    body,
   }
 }
 
@@ -184,6 +192,6 @@ export function truckLayout(vehicle: TruckLayoutInput, bodyStyle?: VehicleBodySt
  */
 export function vehicleFrameKey(vehicle: TruckLayoutInput, bodyStyle?: VehicleBodyStyle): string {
   const layout = truckLayout(vehicle, bodyStyle)
-  const shape = layout.van ? `:${layout.van.style}` : ''
+  const shape = layout.van ? `:${layout.van.style}` : `:${layout.body}`
   return `${vehicle.innerLengthCm}x${vehicle.innerWidthCm}x${vehicle.innerHeightCm}:${layout.vehicleClass}${shape}:${layout.cab.frontX.toFixed(2)}`
 }
