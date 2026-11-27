@@ -20,6 +20,7 @@ import { ObstacleCallout } from './ObstacleCallout'
 import { ObstacleDescriptions } from '../overlays/ObstacleLegend'
 import { Container } from './Container'
 import { TruckCab } from './TruckCab'
+import { VehicleFrame } from './VehicleFrame'
 import { GroundPlane } from './GroundPlane'
 import { groundFootprintOf } from './ground-footprint'
 import { sceneMaterials } from './materials'
@@ -165,11 +166,12 @@ export function SceneCanvas({
   const [canvasKey, setCanvasKey] = useState(0)
   const handleContextLost = useCallback(() => setContextLost(true), [])
   const handleReloadCanvas = useCallback(() => { setContextLost(false); setCanvasKey((key) => key + 1) }, [])
-  const vehicleParts = <>
-    <Container vehicle={model.vehicle} materials={materials} detail={flags.decoration} reducedMotion={flags.reducedMotion}
-      doorOpening={specView} edgeOpacity={specView ? 0.6 : undefined} doorsClosed={doorsClosed} />
+  const container = <Container vehicle={model.vehicle} materials={materials} detail={flags.decoration} reducedMotion={flags.reducedMotion}
+    doorOpening={specView} edgeOpacity={specView ? 0.6 : undefined} doorsClosed={doorsClosed} />
+  const landing = experience === 'landing'
+  const otherParts = <>
     {/* Mặt đất + bóng tiếp xúc khi có xe; trang giới thiệu có sân kho riêng */}
-    {decoration && experience !== 'landing' ? <GroundPlane footprint={groundFootprintOf(model.vehicle)} contact={flags.shadows ? 'soft' : 'full'} /> : null}
+    {decoration && !landing ? <GroundPlane footprint={groundFootprintOf(model.vehicle)} contact={flags.shadows ? 'soft' : 'full'} /> : null}
     {decoration ? <TruckCab vehicle={model.vehicle} materials={materials} shadows={flags.shadows} detail={flags.vehicleDetail} /> : null}
     <CargoInstances placements={placements} colorMode={colorMode} colorContext={colorContext} sliceCm={sliceCm}
       step={step} selectedId={selected?.id ?? null} onSelect={handleSelect} onFocus={onFocus} outlines={flags.outlines} outlineColor={materials.outline}
@@ -194,11 +196,15 @@ export function SceneCanvas({
     onPointerMissed={() => handleSelect(null)} style={interactive ? CANVAS_STYLE : STATIC_CANVAS_STYLE}>
     <SceneLighting shadows={flags.shadows} />
     <CameraRig preset={preset} reducedMotion={flags.reducedMotion} vehicle={frameVehicle ?? model.vehicle} fit fitRequest={fitRequest} specFrame={specView} focus={focus}
-      vehicleDecoration={decoration} zoom={frameZoom} framePoints={framePoints} jumpFirst={experience === 'landing'} onUserControl={onUserControl} />
-    <group position={[-cx, -cy, -cz]}>
-      {vehicleRef ? <group ref={vehicleRef} name="vehicle-motion">{vehicleParts}</group> : vehicleParts}
+      vehicleDecoration={decoration} zoom={frameZoom} framePoints={framePoints} jumpFirst={landing} onUserControl={onUserControl} />
+    {/* Trang giới thiệu có kịch bản xe riêng (nhóm `vehicleRef`, DepartMotion): không đổi cỡ mượt, cây cảnh giữ như trước */}
+    {landing ? <group position={[-cx, -cy, -cz]}>
+      {vehicleRef ? <group ref={vehicleRef} name="vehicle-motion">{container}{otherParts}</group> : <>{container}{otherParts}</>}
       {children}
-    </group>
+    </group> : <VehicleFrame vehicle={model.vehicle} animate={!flags.reducedMotion && flags.animationQuality !== 'none'} container={container}>
+      {otherParts}
+      {children}
+    </VehicleFrame>}
     <RestDpr range={flags.dpr} />
     <PerfProbe onSample={handleSample} onRest={handleRest} placementCount={placements.length} qualityTier={flags.tier} scene={model} />
     <ContextLossWatch onLost={handleContextLost} onRestored={handleReloadCanvas} />

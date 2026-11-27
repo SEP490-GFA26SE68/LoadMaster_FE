@@ -1282,6 +1282,7 @@ kết quả tối ưu; không có nguồn thì **bỏ hẳn phần đó**, khôn
 - Panel điều khiển nổi trên Canvas là React thường đặt đè bằng CSS, không dùng `<Html>` của drei trừ khi cần neo theo vật thể 3D. Lớp phủ phải `pointer-events-none`, chỉ bật lại trên đúng nhóm nút, nếu không nó nuốt thao tác kéo xoay. Nội dung `<Html>` của drei chạy ở **một React root riêng, không có context của app**: gọi `useT` / `useFormat` (hay component dùng chúng, như `StopMark`) bên trong là lỗi "useT phải nằm trong `<I18nProvider>`" lúc chạy — test DOM không thấy vì jsdom không dựng Canvas. Tính chữ và số ở component ngoài rồi truyền vào (`RearDoorCue`, `ZoneStrips`; FE-5b-07). Vật liệu trong suốt `DoubleSide` của three vẽ **hai lượt** (hai draw call): mặt phẳng phủ sàn đặt `forceSinglePass`.
 - Canvas phải có `touch-action: none` (đã đặt toàn cục trong `index.css`). Thiếu nó thì trên máy tính bảng kéo ngón tay sẽ cuộn trang thay vì xoay mô hình — lỗi chỉ lộ khi chạm tay, dùng chuột không thấy.
 - Ba lưu ý về camera: `fitToBox` của camera-controls **xoay camera** về nhìn thẳng mặt gần nhất nên làm mất góc chéo — dùng phép chiếu các góc bao theo preset và tỉ lệ khung; bounding sphere theo chiều dài làm góc cửa sau trên phone quá nhỏ. Resize panel giữ góc người dùng đang xoay. Vách thùng dùng mặt đơn pháp tuyến hướng vào trong để vách gần camera tự biến mất. Thùng là ba lớp, mỗi lớp một draw call ở mọi tier (`scene/ContainerStructure`, hình học thuần `container-structure.ts`): vỏ trong (sàn + ba vách mặt đơn, gân, trụ góc, ray chằng hàng và ván sàn tô bằng màu đỉnh — biến mất cùng vách gần; tier low là bốn mặt phẳng), khung ngoài (gờ, ngưỡng cửa; `decoration` thêm trụ góc trước, xà và đà nóc mảnh — không nóc đặc, không mặt trong suốt lớn) và 12 cạnh lòng thùng (`LineSegments`); không chi tiết nào nhô vào lòng thùng. `PCFSoftShadowMap` đã bị gỡ khỏi three r186, dùng `shadows="percentage"`.
+- **Đổi cỡ lòng thùng** (Planner, kho, tài xế, form xe — không phải khung 3D trang giới thiệu): `scene/VehicleFrame` bọc cảnh; kích thước lòng thùng đổi khi màn đã vẽ (đổi xe, gõ số ở form xe) thì riêng thùng (`Container`) co giãn từ cỡ cũ sang cỡ mới trong 500 ms (decelerate) bằng scale + dời tâm, ghi thẳng vào ma trận qua spring rồi `invalidate` — không dựng lại hình học mỗi khung, không thêm draw call, kết thúc đúng scale 1. Cabin, bánh, sàn, kiện, vật cản, dải vùng, đường kích thước và nhãn DOM nhảy ngay sang hình mới (kể cả khi đổi sang xe khác hạng) và đi theo phần dời tâm. Lần vẽ đầu, giảm chuyển động, tier không có animation, hoặc cỡ đổi quá 5 lần thì nhảy thẳng (hàm thuần `scene/vehicle-resize.ts`).
 
 ### Foundation engine
 
@@ -1446,6 +1447,7 @@ chỉ đi tới máy chủ của mình qua `api-client`).
 | Modal mở | 220ms | standard |
 | Kéo thả sắp xếp | 200ms | standard |
 | Chuyển góc camera 3D | 500ms | decelerate |
+| Thùng đổi cỡ khi đổi xe | 500ms | decelerate |
 | Một bước phát lại xếp hàng | 400–700ms | decelerate |
 
 Ở Planner, **khoảng chờ giữa hai bước** đi theo thời gian thật ước tính ÷ hệ số (mục 7 "Operations"), không theo bảng này; hình của mỗi
