@@ -1,5 +1,7 @@
 import type { VehicleConfig } from '@/domain/models'
 import { isTruckBodyStyle, isVanBodyStyle, type TruckBodyStyle, type VehicleBodyStyle } from '@/types/vehicle-body-style'
+import { boardHeight, hasTailgate } from './body-pieces'
+import { chassisNumbersOf, defaultRearX, FRONT_BUMPER_OUT, type TruckClass } from './truck-chassis-numbers'
 import { containerSize, toScene } from './units'
 import { vanShapeOf, type VanShape } from './van-shape'
 import { LIGHT_DUAL_MIN_PAYLOAD_KG, VEHICLE_PROFILES, vehicleClassOf, type VehicleClass, type VehicleProfile } from './vehicle-class'
@@ -65,6 +67,11 @@ export type TruckLayout = {
    * thì thùng kín. Chỉ đổi hình — lòng thùng, ô cửa và mọi số vẫn theo `VehicleConfig`.
    */
   readonly body: TruckBodyStyle | null
+  /**
+   * Thân có bửng sau hạ xuống (mui bạt, lửng): chiều cao lớn nhất của bửng (`boardHeight`). Bửng mở treo dưới mép sàn sau, nên khung
+   * sườn dừng ở đuôi sàn, cản sau hạ xuống dưới mép bửng và đèn hậu, biển số lùi ra sau nó. `null` với thân có cửa cánh và van.
+   */
+  readonly tailgate: number | null
 }
 
 export type TruckLayoutInput = Pick<VehicleConfig, 'innerLengthCm' | 'innerWidthCm' | 'innerHeightCm' | 'maxPayloadKg'>
@@ -97,10 +104,10 @@ function vanCab(van: VanShape, width: number): TruckCabShape {
   }
 }
 
-function axlePositions(vehicle: TruckLayoutInput, p: VehicleProfile, length: number): number[] {
+function axlePositions(vehicle: TruckLayoutInput, vehicleClass: TruckClass, p: VehicleProfile, length: number): number[] {
   if (vehicle.axles?.length) return vehicle.axles.map((axle) => toScene(axle.positionXCm)).sort((a, b) => a - b)
-  // Cầu sau minh hoạ: bánh không lòi ra sau cửa thùng
-  const rear = Math.min(length * p.defaultRearRatio, length - p.wheelRadius - p.tandemSpacing / 2 - 0.15)
+  // Cầu sau minh hoạ theo tỉ lệ đuôi xe của hạng; bánh không lòi ra sau cửa thùng
+  const rear = Math.min(defaultRearX(vehicleClass, length, p.defaultSteerX), length - p.wheelRadius - p.tandemSpacing / 2 - 0.15)
   return p.defaultAxles === 3
     ? [p.defaultSteerX, rear - p.tandemSpacing / 2, rear + p.tandemSpacing / 2]
     : [p.defaultSteerX, rear]
@@ -123,10 +130,11 @@ export function truckLayout(vehicle: TruckLayoutInput, bodyStyle?: VehicleBodySt
   const derived = vehicleClassOf(vehicle)
   const vehicleClass: VehicleClass = isVanBodyStyle(bodyStyle) ? 'van' : isTruckBodyStyle(bodyStyle) && derived === 'van' ? 'light' : derived
   const van = vehicleClass === 'van' ? vanShapeOf(vehicle, isVanBodyStyle(bodyStyle) ? bodyStyle : undefined) : null
-  const p = van ? { ...VEHICLE_PROFILES.van, floorHeight: van.floorHeight, wheelRadius: van.wheelRadius, tireWidth: van.tireWidth,
-    cabLength: van.back - van.front, cabTop: van.roofY } : VEHICLE_PROFILES[vehicleClass]
+  // Xe tải: bánh, sàn và nóc cabin theo tải trọng trong hạng (số xe thật, `truck-chassis-numbers.ts`)
+  const p: VehicleProfile = van ? { ...VEHICLE_PROFILES.van, floorHeight: van.floorHeight, wheelRadius: van.wheelRadius, tireWidth: van.tireWidth,
+    cabLength: van.back - van.front, cabTop: van.roofY } : { ...VEHICLE_PROFILES[vehicleClass], ...chassisNumbersOf(vehicleClass as TruckClass, vehicle.maxPayloadKg) }
   const groundY = -p.floorHeight, wheelRadius = p.wheelRadius, wheelY = groundY + wheelRadius, tire = p.tireWidth
-  const positions = van ? [...van.axles] : axlePositions(vehicle, p, length)
+  const positions = van ? [...van.axles] : axlePositions(vehicle, vehicleClass as TruckClass, p, length)
   const dualRear = p.dualRear && !(vehicleClass === 'light' && vehicle.maxPayloadKg > 0 && vehicle.maxPayloadKg < LIGHT_DUAL_MIN_PAYLOAD_KG)
   const axles: TruckAxle[] = positions.map((x, i) => ({ x, kind: i === 0 ? 'steer' : 'drive', dual: i > 0 && dualRear }))
 
@@ -152,6 +160,11 @@ export function truckLayout(vehicle: TruckLayoutInput, bodyStyle?: VehicleBodySt
   const railH = p.railHeight || 0.1
   const cooling = vehicle.obstacles?.some((obstacle) => obstacle.type === 'COOLING_UNIT') ?? false
   const body: TruckBodyStyle | null = van ? null : isTruckBodyStyle(bodyStyle) ? bodyStyle : cooling ? 'TRUCK_REEFER' : 'TRUCK_BOX'
+  const tailgate = hasTailgate(body) ? boardHeight(height) : null
+  const bumperY = groundY + Math.min(0.5, p.floorHeight * 0.42)
+  // Bửng mở treo tới −tailgate: cản sau nằm dưới mép bửng, vẫn cách đất ít nhất 0,34 m
+  const rearBumperY = van ? (van.rearBumper[0] + van.rearBumper[1]) / 2
+    : tailgate === null ? bumperY : Math.max(groundY + 0.34, Math.min(bumperY, -tailgate - 0.09))
   const reeferTop = height - 0.06, reeferBottom = Math.max(cab.topY + 0.08, reeferTop - 0.6)
   const reeferWidth = Math.min(width - 0.3, 1.6)
 
@@ -162,17 +175,18 @@ export function truckLayout(vehicle: TruckLayoutInput, bodyStyle?: VehicleBodySt
     // Van: gương nhỏ, cản liền thân — hình chiếu sát thân hơn xe tải
     footprint: van
       ? { x: [cab.frontX - 0.12, length + 0.3], z: [-van.wall - 0.16, width + van.wall + 0.16] }
-      : { x: [cab.frontX - 0.1, length + 0.25], z: [Math.min(0, cab.z[0]) - 0.3, Math.max(width, cab.z[1]) + 0.3] },
+      : { x: [cab.frontX - FRONT_BUMPER_OUT, length + 0.25 + (tailgate === null ? 0 : 0.03)], z: [Math.min(0, cab.z[0]) - 0.3, Math.max(width, cab.z[1]) + 0.3] },
     boxTopY: height,
     wheelY,
-    rearBumperY: van ? (van.rearBumper[0] + van.rearBumper[1]) / 2 : groundY + Math.min(0.5, p.floorHeight * 0.42),
+    rearBumperY,
     wheelRadius,
     tireWidth: tire,
     cab,
     axles,
     wheels,
     frame: {
-      fromX: Math.min(cab.frontX + 0.05, positions[0]! - 0.9), toX: length + 0.12,
+      // Bửng mở treo ngay sau mép sàn: khung sườn dừng ở đuôi sàn
+      fromX: Math.min(cab.frontX + 0.05, positions[0]! - 0.9), toX: length + (tailgate === null ? 0.12 : 0.02),
       railZ: [width / 2 - railHalf, width / 2 + railHalf], y: [RAIL_TOP, RAIL_TOP - railH],
     },
     driveshaft,
@@ -183,6 +197,7 @@ export function truckLayout(vehicle: TruckLayoutInput, bodyStyle?: VehicleBodySt
       : null,
     van,
     body,
+    tailgate,
   }
 }
 

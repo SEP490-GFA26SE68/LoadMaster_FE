@@ -5,7 +5,11 @@ import { Button } from '@/components/ui/Button'
 import { TRIPS_CAPABILITIES } from '@/features/trips/trips-capabilities'
 import { useVehicleBodyStyle } from '@/features/vehicle-types/useVehicleTypesQuery'
 import { useT } from '@/lib/i18n'
-import { benchmarkCountFromSearch, benchmarkStopCountFromSearch, createBenchmarkInput, type BenchmarkCount, type BenchmarkStopCount } from './benchmark.mock'
+import type { TruckBodyStyle } from '@/types/vehicle-body-style'
+import {
+  benchmarkBodyStyleFromSearch, benchmarkCountFromSearch, benchmarkStopCountFromSearch, createBenchmarkInput, type BenchmarkCount,
+  type BenchmarkStopCount,
+} from './benchmark.mock'
 import { benchmarkObstacleCountFromSearch, withBenchmarkObstacles, type BenchmarkObstacleCount } from './benchmark-obstacles.mock'
 import { BackendResultSession } from './BackendPlannerSession'
 import { PlannerErrorBoundary } from './PlannerErrorBoundary'
@@ -25,20 +29,28 @@ export function ViewerPage() {
   const count = benchmarkCountFromSearch(searchParams.toString())
   const obstacles = benchmarkObstacleCountFromSearch(searchParams.toString()) ?? 0
   const stops = benchmarkStopCountFromSearch(searchParams.toString())
+  const body = benchmarkBodyStyleFromSearch(searchParams.toString())
   const { tripId = '' } = useParams()
   // Lỗi lúc vẽ chỉ làm hỏng phiên đang xem: đổi chuyến hay phương án (`?revision=`) là thử vẽ lại
   return <PlannerErrorBoundary key={`${tripId}:${searchParams.get('revision') ?? ''}`} tripId={tripId}>
-    {count ? <BenchmarkSession count={count} obstacles={obstacles} stops={stops} /> : TRIPS_CAPABILITIES.backend ? <BackendResultSession /> : <ResultSession />}
+    {count
+      ? <BenchmarkSession count={count} obstacles={obstacles} stops={stops} body={body} />
+      : TRIPS_CAPABILITIES.backend ? <BackendResultSession /> : <ResultSession />}
   </PlannerErrorBoundary>
 }
 
-/** `?debug&packages=N[&obstacles=0|1|20][&stops=1|4|8]`: fixture renderer, không đọc kho; `stops` thêm vùng theo điểm giao (FE-5b-07). */
-function BenchmarkSession({ count, obstacles, stops }: { count: BenchmarkCount; obstacles: BenchmarkObstacleCount; stops?: BenchmarkStopCount }) {
+/**
+ * `?debug&packages=N[&obstacles=0|1|20][&stops=1|4|8][&body=TRUCK_…]`: fixture renderer, không đọc kho; `stops` thêm vùng theo điểm
+ * giao (FE-5b-07), `body` vẽ xe với kiểu thân xe tải đó.
+ */
+function BenchmarkSession({ count, obstacles, stops, body }: {
+  count: BenchmarkCount; obstacles: BenchmarkObstacleCount; stops?: BenchmarkStopCount; body?: TruckBodyStyle
+}) {
   const model = useMemo(() => {
     const input = withBenchmarkObstacles(createBenchmarkInput(count, stops), obstacles)
     return adaptResult({ trip: input.trip, revision: input })
   }, [count, obstacles, stops])
-  return <ViewerSession key={`${model.tripId}:${obstacles}`} model={model} />
+  return <ViewerSession key={`${model.tripId}:${obstacles}`} model={model} vehicleBodyStyle={body} />
 }
 
 /** Phương án đã lưu của chuyến: revision đã duyệt mới nhất, hoặc `?revision=<jobId>`. */

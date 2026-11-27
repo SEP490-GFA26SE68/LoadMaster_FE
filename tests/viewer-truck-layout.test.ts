@@ -113,7 +113,7 @@ describe('truckLayout', () => {
     const layout = truckLayout(LANDING_REQUEST.vehicle)
     expect(layout.vehicleClass).toBe('light')
     expect(layout.groundY).toBeCloseTo(-1.1, 9)
-    expect(layout.exhaust.map((v) => Number(v.toFixed(2)))).toStrictEqual([0.3, -0.62, 2.42])
+    expect(layout.exhaust.map((v) => Number(v.toFixed(2)))).toStrictEqual([0.3, -0.59, 2.42])
     const { truck: box } = DIORAMA
     expect(layout.footprint.x[0]).toBeGreaterThanOrEqual(box.x[0])
     expect(layout.cab.topY).toBeLessThanOrEqual(box.y[1])

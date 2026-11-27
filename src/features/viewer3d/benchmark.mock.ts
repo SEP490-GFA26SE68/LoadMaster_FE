@@ -3,6 +3,7 @@ import { computeMetrics } from '@/domain/metrics'
 import type { CargoPackage, OptimizationRequest, OptimizationResult, PackagePlacement, VehicleConfig } from '@/domain/models'
 import { stopVolumes, stopZones, zonePlacements } from '@/domain/zones'
 import type { DeliveryStop } from '@/lib/mock-db'
+import { isTruckBodyStyle, parseVehicleBodyStyle, type TruckBodyStyle } from '@/types/vehicle-body-style'
 
 export const BENCHMARK_COUNTS = [132, 300, 500, 1000] as const
 export type BenchmarkCount = (typeof BENCHMARK_COUNTS)[number]
@@ -29,6 +30,17 @@ export function benchmarkStopCountFromSearch(search: string): BenchmarkStopCount
   if (!params.has('debug') || !params.has('stops')) return undefined
   const count = Number(params.get('stops'))
   return BENCHMARK_STOP_COUNTS.find((allowed) => allowed === count)
+}
+
+/**
+ * `?debug&packages=N&body=TRUCK_BOX|TRUCK_CANVAS|TRUCK_FLATBED|TRUCK_REEFER`: vẽ xe của fixture với kiểu thân đó, để đo draw call của
+ * từng thân. Chỉ đổi hình xe minh hoạ (prop `vehicleBodyStyle`), không vào request hay kết quả.
+ */
+export function benchmarkBodyStyleFromSearch(search: string): TruckBodyStyle | undefined {
+  const params = new URLSearchParams(search)
+  if (!params.has('debug')) return undefined
+  const body = parseVehicleBodyStyle(params.get('body'))
+  return isTruckBodyStyle(body) ? body : undefined
 }
 const SIZES = [[0.86, 0.84, 0.8], [0.7, 0.94, 0.9], [0.92, 0.75, 0.72]] as const
 

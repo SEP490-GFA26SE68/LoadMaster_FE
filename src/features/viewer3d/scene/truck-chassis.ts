@@ -97,13 +97,15 @@ export function addChassisParts(parts: BufferGeometry[], layout: TruckLayout, le
 
   // Bình nhiên liệu ngoài khung sườn trái, ắc quy bên phải, bình hơi giữa khung (xe có phanh hơi), bầu giảm thanh và ống xả.
   const [leftRail, rightRail] = frame.railZ
-  const tankR = Math.min(0.25, Math.max(0.08, (drop + r * 0.5) / 2))
+  // Bình theo cỡ bánh: xe 1,9 t chừng 0,7 m (100 L), tải nặng tới 1,3 m (400 L)
+  const tankR = Math.min(0.27, Math.max(0.1, (drop + r * 0.5) / 2))
+  const tankLength = van ? 0.6 : Math.min(1.3, Math.max(0.7, r * 1.8))
   const tankY = railBottom - tankR + 0.02
   const fuelX = Math.max(cab.backX + 0.9, length * 0.2)
   const tankZ = Math.max(tankR + 0.04, leftRail - tankR - 0.15)
-  cylinder(tankR, van ? 0.6 : 1.1, 'x', [fuelX, tankY, tankZ], m.metal, 20)
+  cylinder(tankR, tankLength, 'x', [fuelX, tankY, tankZ], m.metal, 20)
   if (!van) {
-    for (const dx of [-0.35, 0.35]) box([0.04, tankR * 2.08, tankR * 2.08], [fuelX + dx, tankY, tankZ], m.chassis)
+    for (const dx of [-1, 1]) box([0.04, tankR * 2.08, tankR * 2.08], [fuelX + dx * (tankLength / 2 - 0.15), tankY, tankZ], m.chassis)
     const batteryZ = Math.min(width - 0.2, rightRail + 0.36)
     box([0.6, tankR * 1.4, 0.38], [fuelX, railBottom - tankR * 0.7, batteryZ], m.chassis)
     box([0.62, 0.04, 0.4], [fuelX, railBottom + 0.01, batteryZ], m.metal)
@@ -132,9 +134,11 @@ export function addChassisParts(parts: BufferGeometry[], layout: TruckLayout, le
   const steer = axles.find((axle) => axle.kind === 'steer')
   const guardFrom = Math.max(cab.backX + 0.05, (steer?.x ?? cab.frontX) + r * 1.6), guardTo = first - 0.1
   if (guardTo <= guardFrom) return
-  const rails = [wheelY + r * 0.6, wheelY + r * 0.15]
+  // Thanh chắn hông: mép dưới cách đất chừng 0,45 m, mép trên dưới sàn thùng; khe hở lớn thì thêm thanh giữa
+  const top = Math.min(-0.2, layout.groundY + profile.floorHeight * 0.75), bottom = layout.groundY + 0.45
+  const rails = top - bottom > 0.4 ? [top, (top + bottom) / 2, bottom] : [top, bottom]
   for (const z of [0.02, width - 0.02]) {
     for (const y of rails) box([guardTo - guardFrom, 0.07, 0.04], [(guardFrom + guardTo) / 2, y, z], m.metal)
-    for (let x = guardFrom + 0.05; x <= guardTo; x += 1.2) box([0.05, rails[0]! - rails[1]!, 0.04], [x, (rails[0]! + rails[1]!) / 2, z], m.chassis)
+    for (let x = guardFrom + 0.05; x <= guardTo; x += 1.2) box([0.05, top - bottom, 0.04], [x, (top + bottom) / 2, z], m.chassis)
   }
 }
