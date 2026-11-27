@@ -1,6 +1,6 @@
 import type { VehicleConfig } from '@/domain/models'
 import type { CameraPreset } from '@/features/viewer3d/viewer-types'
-import { WHEEL_RADIUS, WHEEL_Y } from './truck-layout'
+import { truckLayout, type TruckLayoutInput } from './truck-layout'
 import { containerSize, toScene, type Vec3 } from './units'
 
 /**
@@ -19,9 +19,6 @@ const AXLE_SIDE_OFFSET = 0.12
 /** Hai trục gần nhau hơn chừng này (cầu đôi) thì nhãn của trục sau xuống tầng dưới để không đè nhau (m scene). */
 const AXLE_LABEL_SPACING = 2.4
 
-/** Mũi cabin và mặt đất của mô hình xe minh hoạ, tính từ vách trước và sàn thùng (m scene). */
-const CAB_FRONT_X = -1.85
-const GROUND_Y = WHEEL_Y - WHEEL_RADIUS
 /** Cánh cửa sau mở 110°: đầu cánh lệch khỏi bản lề chừng này lần bề rộng cánh, về phía sau và sang ngang. */
 const DOOR_SWING_BACK = 0.94
 const DOOR_SWING_SIDE = 0.34
@@ -75,10 +72,14 @@ export type SpecMarks = {
 
 /**
  * Những điểm xa nhất mà hình xem trước chạm tới — cabin, mặt đất, đường kích thước, đường gốc của trục, đầu hai cánh cửa đang mở —
- * để camera canh khung vừa khít. Chỉ phụ thuộc dài · rộng · cao lòng thùng: sửa cửa, vật cản hay trục không làm camera canh lại.
+ * để camera canh khung vừa khít. Chỉ phụ thuộc dài · rộng · cao lòng thùng và hạng xe (mũi cabin, mặt đất của `truckLayout` khi chưa
+ * khai trục): sửa cửa, vật cản hay trục không làm camera canh lại.
  */
-export function specFramePoints(vehicle: Pick<VehicleConfig, 'innerLengthCm' | 'innerWidthCm' | 'innerHeightCm'>): Vec3[] {
+export function specFramePoints(vehicle: Pick<TruckLayoutInput, 'innerLengthCm' | 'innerWidthCm' | 'innerHeightCm' | 'maxPayloadKg'>): Vec3[] {
   const { length: L, height: H, width: W } = containerSize(vehicle)
+  const { innerLengthCm, innerWidthCm, innerHeightCm, maxPayloadKg } = vehicle
+  const layout = truckLayout({ innerLengthCm, innerWidthCm, innerHeightCm, maxPayloadKg })
+  const CAB_FRONT_X = layout.footprint.x[0], GROUND_Y = layout.groundY
   const top = H + DIMENSION_OFFSET + OVERSHOOT
   const marks = GROUND_Y - AXLE_BASELINE_DROP - OVERSHOOT
   const leaf = W / 2
@@ -116,14 +117,15 @@ export function vehicleSpecMarks(vehicle: VehicleConfig): SpecMarks {
   add('door', [L, door.height, z1], [L, 0, z1])
   add('door', [L, 0, z1], [L, 0, z0])
 
-  const baseline = GROUND_Y - AXLE_BASELINE_DROP
+  const { groundY, wheelY } = truckLayout(vehicle)
+  const baseline = groundY - AXLE_BASELINE_DROP
   const axleZ = W + AXLE_SIDE_OFFSET
   const declared = [...(vehicle.axles ?? [])].sort((a, b) => a.positionXCm - b.positionXCm)
   const axles: SpecMarks['axles'][number][] = []
   for (const axle of declared) {
     const x = toScene(axle.positionXCm)
     const previous = axles.at(-1)
-    add('axle', [x, WHEEL_Y, axleZ], [x, baseline - OVERSHOOT, axleZ])
+    add('axle', [x, wheelY, axleZ], [x, baseline - OVERSHOOT, axleZ])
     axles.push({
       id: axle.id,
       positionXCm: axle.positionXCm,

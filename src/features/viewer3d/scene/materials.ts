@@ -19,6 +19,9 @@ export type SceneMaterials = {
   tailLight: string
   /** Đèn cờ, đèn phản quang hông */
   marker: string
+  /** Biển số đuôi xe: nền trắng, chữ đen như biển thật */
+  plate: string
+  plateInk: string
 }
 
 function derive(token: `--${string}`, fallback: string, factor: number): string {
@@ -47,5 +50,7 @@ export function sceneMaterials(lift = 1): SceneMaterials {
     light: `#${bg.getHexString()}`,
     tailLight: readToken('--danger'),
     marker: readToken('--warning') || '#d97706',
+    plate: `#${bg.getHexString()}`,
+    plateInk: readToken('--text') || '#0e1c21',
   }
 }

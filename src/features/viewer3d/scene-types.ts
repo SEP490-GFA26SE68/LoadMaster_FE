@@ -35,6 +35,8 @@ export type ScenePlacement = {
   readonly fragilityLevel: FragilityLevel
   /** `fragilityLevel = HIGH` */
   readonly fragile: boolean
+  /** Kiện phải giữ chiều đứng (`keepUpright` của kiện gốc); vắng là không. Chỉ để vẽ dấu trên bề mặt kiện (`cargo-marks.ts`). */
+  readonly keepUpright?: boolean
   readonly stackable: boolean
   readonly pinned: boolean
   /** Tỷ lệ đỡ đáy và mã cảnh báo do engine tính trên kết quả (Spec 7.6, LM-049); fixture không qua engine: 1 và rỗng. */

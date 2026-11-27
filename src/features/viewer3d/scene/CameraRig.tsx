@@ -8,6 +8,7 @@ import type { VehicleConfig } from '@/domain/models'
 import { fitFrame, insetFrame, NO_INSETS, VEHICLE_FIT_MARGIN, vehicleFitCorners, type FramePoints } from './frame-fit'
 import { boxCenter, containerCenter, SCENE_SCALE, type Vec3 } from './units'
 import { specFramePoints } from './vehicle-spec-marks'
+import { truckLayout, vehicleFrameKey } from './truck-layout'
 
 /**
  * Điều khiển camera bằng camera-controls (qua drei). Gốc thế giới là tâm
@@ -33,8 +34,8 @@ const PRESET_POSITIONS: Record<CameraPreset, Vec3> = {
 /** Xem trước ở form xe: góc "Trên" nhìn thẳng xuống, trục dọc xe nằm ngang màn hình. */
 const SPEC_PRESET_POSITIONS: Partial<Record<CameraPreset, Vec3>> = { tren: [0, 11, 0.001] }
 
-/** Khoảng hạ tâm nhìn so với tâm thùng, tính từ sàn thùng (m): góc gầm xe nhìn vào khung sườn, không vào giữa thùng. */
-const PRESET_TARGET_BELOW_FLOOR: Partial<Record<CameraPreset, number>> = { 'gam-xe': 0.5 }
+/** Tâm nhìn hạ dưới sàn thùng, theo phần khoảng sàn → mặt đất của hạng xe: góc gầm xe nhìn vào khung sườn, không vào giữa thùng. */
+const PRESET_TARGET_BELOW_FLOOR: Partial<Record<CameraPreset, number>> = { 'gam-xe': 0.45 }
 
 /** Cho phép xoay xuống dưới gầm; chừa một chút để không lật qua cực dưới. */
 const MAX_POLAR_ANGLE = Math.PI - 0.12
@@ -46,13 +47,13 @@ const SPEC_FRAME_MARGIN = 1.08
 const SMOOTH_TIME = 0.3
 
 /**
- * Khoá canh khung của xe. Khung chỉ phụ thuộc kích thước lòng thùng (`containerCenter`), nên nơi gọi dựng lại object xe cùng kích thước
- * (đọc lại phương án, đổi sang xe cùng cỡ) không làm camera bay về góc mặc định. Xem trước ở form xe canh theo cả cửa và trục
+ * Khoá canh khung của xe. Khung chỉ phụ thuộc kích thước lòng thùng và hạng xe (`vehicleFrameKey`: mũi cabin, mặt đất), nên nơi gọi
+ * dựng lại object xe cùng kích thước (đọc lại phương án, đổi sang xe cùng cỡ) không làm camera bay về góc mặc định. Xem trước ở form xe canh theo cả cửa và trục
  * (`specFramePoints`): giữ so theo tham chiếu, nơi gọi đã giữ `frameVehicle` khi chỉ vật cản đổi.
  */
 function frameKeyOf(vehicle: VehicleConfig | undefined, specFrame: boolean): unknown {
   if (!vehicle || specFrame) return vehicle
-  return `${vehicle.innerLengthCm}x${vehicle.innerWidthCm}x${vehicle.innerHeightCm}`
+  return vehicleFrameKey(vehicle)
 }
 
 export function CameraRig({
@@ -139,7 +140,7 @@ export function CameraRig({
       // This keeps a rear-door view readable on phones without fitToBox rotating it.
       let distance = 3
       const point = new Vector3()
-      for (const [px, py, pz] of vehicleFitCorners(center, vehicleDecoration)) {
+      for (const [px, py, pz] of vehicleFitCorners(vehicle, vehicleDecoration)) {
         const depth = point.set(px - center[0], py - center[1], pz - center[2]).dot(direction)
         distance = Math.max(distance, depth + Math.abs(point.dot(right)) * VEHICLE_FIT_MARGIN / Math.tan(hfov / 2),
           depth + Math.abs(point.dot(up)) * VEHICLE_FIT_MARGIN / Math.tan(vfov / 2))
@@ -148,7 +149,7 @@ export function CameraRig({
       x *= scale; y *= scale; z *= scale
     }
     const below = PRESET_TARGET_BELOW_FLOOR[preset]
-    const targetY = below !== undefined && vehicle ? -containerCenter(vehicle)[1] - below : 0
+    const targetY = below !== undefined && vehicle ? -containerCenter(vehicle)[1] + truckLayout(vehicle).groundY * below : 0
     void controls.setLookAt(x, y + targetY, z, 0, targetY, 0, transition)
     invalidate()
   }, [preset, reducedMotion, vehicle, fit, fitRequest, specFrame, vehicleDecoration, zoom, framePoints, jumpFirst, size.width, size.height, camera, invalidate])
