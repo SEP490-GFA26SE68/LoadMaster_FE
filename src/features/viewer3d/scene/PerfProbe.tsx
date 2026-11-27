@@ -46,7 +46,11 @@ type Counters = {
   settling: boolean
   /** DPR của khung trước: khung đầu sau khi đổi DPR (khung nét lúc nghỉ, về DPR của tier) dựng lại bộ đệm, không tính vào FPS. */
   lastDpr: number
+  /** Tab vừa ẩn hoặc vừa hiện lại: khoảng tới khung trước là thời gian tab ẩn, không phải thời gian vẽ. */
+  resumed: boolean
 }
+
+const tabHidden = () => document.visibilityState === 'hidden'
 
 /**
  * Debug thuần quan sát: không invalidate và không thêm frame vào demand loop.
@@ -79,15 +83,31 @@ export function PerfProbe({
     activeElapsedMs: 0,
     drawCalls: 0,
     triangles: 0,
+    shadowPasses: 0,
     settling: true,
     lastDpr: 0,
+    resumed: false,
   })
   const settleUntil = useRef(0)
-    shadowPasses: 0,
   useEffect(() => {
     settleUntil.current = performance.now() + SETTLE_MS
     counters.current.settling = true
   }, [scene, qualityTier])
+
+  // Tab ẩn thì trình duyệt ngưng (hoặc thưa) khung hình: bỏ mẫu đang tích, không đếm khoảng hở, hiện lại thì bắt đầu quãng ổn định
+  useEffect(() => {
+    const handleVisibility = () => {
+      const current = counters.current
+      current.activeIntervals = 0
+      current.activeElapsedMs = 0
+      current.resumed = true
+      if (tabHidden()) return
+      settleUntil.current = performance.now() + SETTLE_MS
+      current.settling = true
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
+  }, [])
 
   useFrame(() => {
     frameStartedAt.current = performance.now()
@@ -103,13 +123,15 @@ export function PerfProbe({
       const timestamp = frameStartedAt.current
       const interval = timestamp - current.lastFrameAt
       const dpr = state.viewport.dpr
-      // Không tính quãng scene nghỉ giữa hai click là frame chậm, cũng không tính khung vừa đổi DPR (dựng lại bộ đệm).
-      if (current.requestedNextFrame && interval > 0 && dpr === current.lastDpr) {
+      const hidden = tabHidden()
+      // Không tính quãng scene nghỉ giữa hai click là frame chậm, cũng không tính khung vừa đổi DPR (dựng lại bộ đệm) hay quãng tab ẩn.
+      if (current.requestedNextFrame && interval > 0 && dpr === current.lastDpr && !hidden && !current.resumed) {
         current.activeIntervals += 1
         current.activeElapsedMs += interval
       }
       if (timestamp < settleUntil.current) current.settling = true
       current.lastDpr = dpr
+      current.resumed = hidden
       current.renderedFrames += 1
       current.lastFrameAt = timestamp
       current.requestedNextFrame = state.frameloop === 'always' || state.internal.frames > 0
@@ -125,7 +147,7 @@ export function PerfProbe({
     let publishedIdle = false
     const timer = window.setInterval(() => {
       const current = counters.current
-      if (current.renderedFrames === 0) return
+      if (current.renderedFrames === 0 || tabHidden()) return
       // `requestedNextFrame` chốt lúc frame cuối ghi xong; frame được xin sau đó (react-spring, con trỏ, effect) chỉ thấy ở đây
       const state = get()
       const pendingFrames = state.frameloop === 'always' ? 1 : state.internal.frames
@@ -145,6 +167,7 @@ export function PerfProbe({
         frameTimeMs,
         drawCalls: current.drawCalls,
         triangles: current.triangles,
+        shadowPasses: current.shadowPasses,
         placementCount,
         dpr: state.gl.getPixelRatio(),
         qualityTier,
@@ -167,4 +190,3 @@ export function PerfProbe({
 
   return null
 }
-        shadowPasses: current.shadowPasses,
