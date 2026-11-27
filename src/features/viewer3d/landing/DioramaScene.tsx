@@ -4,7 +4,7 @@ import { AdditiveBlending, Color, DoubleSide, Matrix4, type InstancedMesh, type 
 import type { VehicleConfig } from '@/domain/models'
 import { stopColor } from '@/lib/stops'
 import { readToken } from '@/lib/tokens'
-import { applyCargoSurface, createCargoSurface } from '../scene/cargo-surface'
+import { applyCargoSurface, CARGO_SURFACE_KEY, createCargoSurface } from '../scene/cargo-surface'
 import { containerSize } from '../scene/units'
 import { laneVisible, unloadVisible, type LaneSlot } from './diorama-layout'
 import { dioramaBaseGeometry, dioramaPalette, laneBoxGeometry } from './diorama-geometry'
@@ -131,7 +131,7 @@ export function DioramaScene({ slots, total, vehicle, story, low, reducedMotion 
     <instancedMesh name="diorama-lanes" key={`lanes-${slots.length}`} ref={lanes} args={[undefined, undefined, slots.length]}
       geometry={boxes} frustumCulled={false} raycast={() => null}>
       {surface
-        ? <meshStandardMaterial map={surface} onBeforeCompile={applyCargoSurface} customProgramCacheKey={() => 'cargo-surface-atlas-v1'} roughness={0.86} metalness={0.02} />
+        ? <meshStandardMaterial map={surface} onBeforeCompile={applyCargoSurface} customProgramCacheKey={() => CARGO_SURFACE_KEY} roughness={0.86} metalness={0.02} />
         : <meshLambertMaterial />}
     </instancedMesh>
     <mesh name="diorama-sweep" ref={sweep} visible={false} position={[0, height / 2, width / 2]} rotation={[0, Math.PI / 2, 0]} raycast={() => null}>

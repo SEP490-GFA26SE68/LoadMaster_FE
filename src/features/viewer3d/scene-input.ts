@@ -84,6 +84,7 @@ export function adaptResult({ trip, revision }: ResultSceneSource): ViewerSceneM
       packaging: 'carton',
       fragilityLevel: instance.fragilityLevel,
       fragile: instance.fragilityLevel === 'HIGH',
+      ...(instance.keepUpright ? { keepUpright: true } : {}),
       stackable: instance.stackable,
       // Ghim lưu cùng phương án (FE-BL-02): mở lại phương án đã duyệt vẫn thấy kiện đã ghim
       pinned: placement.pinned === true,
